@@ -1,5 +1,7 @@
 from z3 import *
 from Topology import Topology
+import time
+import random
 
 class ConstraintGenerator(object) :
 	def __init__(self, topo) :
@@ -7,9 +9,15 @@ class ConstraintGenerator(object) :
 
 		# Network Forwarding Function
 		self.F = Function('F', IntSort(), IntSort(), IntSort())
+		self.x = Int('x')  # Generic variable for nodes.
+		self.pc = Int('pc') # Generic variable for packet classes
 		self.z3Solver = Solver()
 
 	def generateAssertions(self) :	
+
+		start_t = time.time()
+		print "Adding Constraints at " + str(start_t)
+
 		self.addReachabilityConstraints(1,2,1)
 		self.addWaypointConstraints(1,2,1,[5])
 
@@ -25,9 +33,33 @@ class ConstraintGenerator(object) :
 		self.addTrafficIsolationConstraints(4,5)
 		self.addTrafficIsolationConstraints(3,5)
 		self.addTrafficIsolationConstraints(4,3)
-		
+
+
+		# Add Bound Constraints on x and pc.
+		self.addBoundConstraints(self.topology.getSwitchCount() - 1, 5)
+		self.addTopologyConstraints()
+	
+		# for i in range(50):
+		# 	if i % 2 == 0 :
+		# 		s = 1
+		# 	else :
+		# 		s = 2
+
+		# 	d = random.randint(3,10)
+		# 	self.addReachabilityConstraints(s,d,i)
+		# 	self.addWaypointConstraints(s,d,i, [random.randint(3,6), random.randint(7,10)])
+
+
+		end_t = time.time()
+		print "Time taken to add the constraints is" + str(end_t - start_t)
+
+		start_t = time.time()
+		print "Starting Solver at " + str(start_t)
 		print self.z3Solver.check()
 		print self.z3Solver.model()
+		end_t = time.time()
+		print "Time taken to find the network forwarding function is " + str(end_t - start_t)
+
 
 	# Returns F^n(x)
 	def composeF(self, n, x, pc) :
@@ -36,7 +68,7 @@ class ConstraintGenerator(object) :
 			cf = self.F(cf,pc)
 		return cf
 
-	def addTopologyConstraints(self, pc) :
+	def addTopologyConstraints(self) :
 		swCount = self.topology.getSwitchCount()
 
 		for sw in range(swCount) :
@@ -46,13 +78,14 @@ class ConstraintGenerator(object) :
 			topoAssert = False
 
 			for n in neighbours : 
-				topoAssert = Or(topoAssert, self.F(sw,pc) == n)
+				topoAssert = Or(topoAssert, self.F(sw,self.pc) == n)
 			
+			topoAssert = ForAll(self.pc, topoAssert)
 			self.z3Solver.add(topoAssert)
 
 	def addReachabilityConstraints(self, s, d, pc, isDest=True) :
-		# Add topology constraint for this packet loss :
-		self.addTopologyConstraints(pc)
+		# Add topology constraint for this packet class :
+		#self.addTopologyConstraints(pc)
 
 		maxPathLen = self.topology.getMaxPathLength()
 		reachAssert = False
@@ -68,7 +101,7 @@ class ConstraintGenerator(object) :
 		if isDest :
 			destAssert = (self.F(d,pc) == 0)
 			self.z3Solver.add(destAssert)
-	
+
 
 	def addWaypointConstraints(self, s, d, pc, W) :
 		for w in W :
@@ -80,8 +113,11 @@ class ConstraintGenerator(object) :
 
 		for sw in range(swCount) :
 			isolateAssert = Not( And ( self.F(sw,pc1) > 0, self.F(sw,pc1) == self.F(sw,pc2)))
-
 			self.z3Solver.add(isolateAssert)		
+
+	def addBoundConstraints(self, xRange, pcRange) :
+		self.z3Solver.add(self.pc < pcRange + 1)
+		self.z3Solver.add(self.x < xRange + 1)
 
 
 
