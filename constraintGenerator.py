@@ -18,36 +18,36 @@ class ConstraintGenerator(object) :
 		start_t = time.time()
 		print "Adding Constraints at " + str(start_t)
 
-		self.addReachabilityConstraints(1,2,1)
-		self.addWaypointConstraints(1,2,1,[5])
+		# self.addReachabilityConstraints(1,2,1)
+		# self.addWaypointConstraints(1,2,1,[5])
 
-		self.addReachabilityConstraints(1,2,2)
+		# self.addReachabilityConstraints(1,2,2)
 
-		self.addReachabilityConstraints(1,3,3)
-		self.addWaypointConstraints(1,3,3,[5])
+		# self.addReachabilityConstraints(1,3,3)
+		# self.addWaypointConstraints(1,3,3,[5])
 
-		self.addReachabilityConstraints(1,3,4)
+		# self.addReachabilityConstraints(1,3,4)
 
-		self.addReachabilityConstraints(1,3,5)
+		# self.addReachabilityConstraints(1,3,5)
 
-		self.addTrafficIsolationConstraints(4,5)
-		self.addTrafficIsolationConstraints(3,5)
-		self.addTrafficIsolationConstraints(4,3)
+		# self.addTrafficIsolationConstraints(4,5)
+		# self.addTrafficIsolationConstraints(3,5)
+		# self.addTrafficIsolationConstraints(4,3)
 
 
 		# Add Bound Constraints on x and pc.
 		self.addBoundConstraints(self.topology.getSwitchCount() - 1, 5)
 		self.addTopologyConstraints()
 	
-		# for i in range(50):
-		# 	if i % 2 == 0 :
-		# 		s = 1
-		# 	else :
-		# 		s = 2
+		for i in range(10):
+			if i % 2 == 0 :
+				s = 1
+			else :
+				s = 2
 
-		# 	d = random.randint(3,10)
-		# 	self.addReachabilityConstraints(s,d,i)
-		# 	self.addWaypointConstraints(s,d,i, [random.randint(3,6), random.randint(7,10)])
+			d = random.randint(3,10)
+			self.addReachabilityConstraints2(s,d,i)
+			self.addWaypointConstraints(s,d,i, [random.randint(3,6), random.randint(7,10)])
 
 
 		end_t = time.time()
@@ -75,7 +75,7 @@ class ConstraintGenerator(object) :
 			neighbours = self.topology.getSwitchNeighbours(sw)
 
 			# Add assertions to ensure f(sw,*) leads to a valid neighbour. 
-			topoAssert = False
+			topoAssert = self.F(sw,self.pc) == sw   # Can self loop to itself.
 
 			for n in neighbours : 
 				topoAssert = Or(topoAssert, self.F(sw,self.pc) == n)
@@ -83,7 +83,7 @@ class ConstraintGenerator(object) :
 			topoAssert = ForAll(self.pc, topoAssert)
 			self.z3Solver.add(topoAssert)
 
-	def addReachabilityConstraints(self, s, d, pc, isDest=True) :
+	def addReachabilityConstraints2(self, s, d, pc, isDest=True) :
 		# Add topology constraint for this packet class :
 		#self.addTopologyConstraints(pc)
 
@@ -95,11 +95,27 @@ class ConstraintGenerator(object) :
 
 		self.z3Solver.add(reachAssert)
 
-		# If Destination, then forwarding has to stop here. So, F(d,pc) must be zero. 
+		# If Destination, then forwarding has to stop here. So, F(d,pc) must be d. 
 		# When we perform the translation to rules, we can forward it to host accordingly.
 
 		if isDest :
-			destAssert = (self.F(d,pc) == 0)
+			destAssert = (self.F(d,pc) == d)
+			self.z3Solver.add(destAssert)
+
+	def addReachabilityConstraints(self, s, d, pc, isDest=True) :
+		# Add topology constraint for this packet class :
+		#self.addTopologyConstraints(pc)
+
+		maxPathLen = self.topology.getMaxPathLength()
+		reachAssert = self.composeF(maxPathLen,s,pc) == d
+
+		self.z3Solver.add(reachAssert)
+
+		# If Destination, then forwarding has to stop here. So, F(d,pc) must be d. 
+		# When we perform the translation to rules, we can forward it to host accordingly.
+
+		if isDest :
+			destAssert = (self.F(d,pc) == d)
 			self.z3Solver.add(destAssert)
 
 
@@ -112,7 +128,7 @@ class ConstraintGenerator(object) :
 		swCount = self.topology.getSwitchCount()
 
 		for sw in range(swCount) :
-			isolateAssert = Not( And ( self.F(sw,pc1) > 0, self.F(sw,pc1) == self.F(sw,pc2)))
+			isolateAssert = Not( And ( Not(self.F(sw,pc1) == sw), self.F(sw,pc1) == self.F(sw,pc2)))
 			self.z3Solver.add(isolateAssert)		
 
 	def addBoundConstraints(self, xRange, pcRange) :
