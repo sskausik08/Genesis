@@ -39,14 +39,14 @@ class ConstraintGenerator(object) :
 		self.addBoundConstraints(self.topology.getSwitchCount() - 1, 5)
 		self.addTopologyConstraints()
 	
-		for i in range(10):
+		for i in range(1,10):
 			if i % 2 == 0 :
 				s = 1
 			else :
 				s = 2
 
 			d = random.randint(3,10)
-			self.addReachabilityConstraints2(s,d,i)
+			self.addReachabilityConstraints(s,d,i)
 			self.addWaypointConstraints(s,d,i, [random.randint(3,6), random.randint(7,10)])
 
 
@@ -83,7 +83,7 @@ class ConstraintGenerator(object) :
 			topoAssert = ForAll(self.pc, topoAssert)
 			self.z3Solver.add(topoAssert)
 
-	def addReachabilityConstraints2(self, s, d, pc, isDest=True) :
+	def addIntermediateReachabilityConstraints(self, s, d, pc, isDest=True) :
 		# Add topology constraint for this packet class :
 		#self.addTopologyConstraints(pc)
 
@@ -121,7 +121,7 @@ class ConstraintGenerator(object) :
 
 	def addWaypointConstraints(self, s, d, pc, W) :
 		for w in W :
-			self.addReachabilityConstraints(s, w, pc, False)
+			self.addIntermediateReachabilityConstraints(s, w, pc, False)
 
 	def addTrafficIsolationConstraints(self, pc1, pc2) : 
 		# Isolation of traffic for packet classes pc1 and pc2. 
