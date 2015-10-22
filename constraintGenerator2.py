@@ -19,11 +19,37 @@ class ConstraintGenerator2(object) :
 		start_t = time.time()
 		print "Adding Constraints at " + str(start_t)
 
-		#self.addNeighbourConstraints()
-		self.addReachabilityConstraints(1,3,1)
-		self.addWaypointConstraints(1,3,1,[4,5])
+		# Add Bound Constraints on x and pc.
+		self.addBoundConstraints(self.topology.getSwitchCount() - 1, 5)
+		self.addTopologyConstraints()
 
-		# self.addReachabilityConstraints(1,2,2)
+		#self.addNeighbourConstraints()
+		for i in range(3, self.topology.getMaxPathLength() + 1) :
+			self.z3Solver.push()
+			self.addFinalReachabilityConstraints(1,3,1,i)
+			self.addWaypointConstraints(1,3,1,[4,5])
+			sat = self.z3Solver.check()
+			if sat == z3.sat : 
+				print "Sat " + str(i)
+				break
+			else :
+				print "unsat " + str(i)
+				self.z3Solver.pop()
+
+		# for i in range(1, self.topology.getMaxPathLength() + 1) :
+		# 	self.z3Solver.push()
+		# 	self.addFinalReachabilityConstraints(1,2,2,i)
+		# 	self.addWaypointConstraints(1,2,2,[4])
+		# 	sat = self.z3Solver.check()
+		# 	if sat == z3.sat : 
+		# 		print "2Sat " + str(i)
+		# 		break
+		# 	else :
+		# 		print "2unsat " + str(i)
+		# 		self.z3Solver.pop()
+
+		# print self.z3Solver.model()
+
 
 		# self.addReachabilityConstraints(1,3,3)
 		# self.addWaypointConstraints(1,3,3,[4])
@@ -37,22 +63,20 @@ class ConstraintGenerator2(object) :
 		# self.addTrafficIsolationConstraints(4,3)
 
 
-		# Add Bound Constraints on x and pc.
-		self.addBoundConstraints(self.topology.getSwitchCount() - 1, 5)
-		self.addTopologyConstraints()
+		
 	
-		# for i in range(1,20):
+		# for i in range(1,50):
 		# 	if i % 2 == 0 :
 		# 		s = 1
 		# 	else :
 		# 		s = 2
 
-		# 	d = random.randint(3,10)
+		# 	d = random.randint(4,6)
 		# 	self.addReachabilityConstraints(s,d,i)
-		# 	self.addWaypointConstraints(s,d,i, [random.randint(3,6), random.randint(7,10)])
+		# 	self.addWaypointConstraints(s,d,i, [3])
 
-		# 	if(i > 2) :
-		# 		self.addTrafficIsolationConstraints(i, i - 1)
+			# if(i > 2) :
+			# 	self.addTrafficIsolationConstraints(i, i - 1)
 
 
 		end_t = time.time()
@@ -106,6 +130,29 @@ class ConstraintGenerator2(object) :
 					self.z3Solver.add(self.N(sw,i) == True)
 				else :
 					self.z3Solver.add(self.N(sw,i) == False)
+
+	def addFinalReachabilityConstraints(self, s, d, pc, pathlen, isDest=True) :
+
+		# Add topology constraint for this packet class :
+		#self.addTopologyConstraints(pc)
+		reachAssert = self.F(s,d,pc,pathlen) == True
+
+		self.z3Solver.add(reachAssert)
+
+		# If Destination, then forwarding has to stop here. So, F(d,neighbour(d),pc,1) == False 
+		# When we perform the translation to rules, we can forward it to host accordingly.
+		
+		neighbours = self.topology.getSwitchNeighbours(d)
+
+		if isDest : 
+			destAssert = True
+			for n in neighbours :
+				destAssert = And(destAssert, self.F(d,n,pc,1) == False)
+
+			self.z3Solver.add(destAssert)
+
+		# Add Path Constraints
+		self.addPathConstraints(s,d,pc)
 
 	def addReachabilityConstraints(self, s, d, pc, isDest=True) :
 
@@ -195,6 +242,9 @@ class ConstraintGenerator2(object) :
 
 			path1Assert = self.F(s,i,pc,1) == True
 			self.z3Solver.add(Or(path1Assert, path2Assert))
+
+			# Path len > 1 always.
+			self.z3Solver.add(self.F(s,i,pc,0) == False)
 
 
 
