@@ -92,7 +92,8 @@ class ConstraintGenerator2(object) :
 
 	def addTopologyConstraints(self) :
 		swCount = self.topology.getSwitchCount()
-
+		# \forall sw \forall n \in neighbours(sw) and NextHop = {n | F(sw,n,pc,1) = True}. |NextHop| \leq 1 
+		# None or only one of F(sw,n,pc,1) can be true.
 		for sw in range(1,swCount+1) :
 			neighbours = self.topology.getSwitchNeighbours(sw)
 
@@ -113,7 +114,11 @@ class ConstraintGenerator2(object) :
 			topoAssert = Or(topoAssert, unreachedAssert) # Either one forwarding rule or no forwarding rules.
 			topoAssert = ForAll(self.pc, topoAssert)
 			self.z3Solver.add(topoAssert)
-
+			
+			# \forall n such that n \notin neighbours or n \not\eq sw . F(sw,n,pc,1) = False
+			# Cannot reach nodes which are not neighbours in step 1. 
+			# This constraint is needed because there is no restriction from the above constraints 
+			# regarding the values of non-neighbours.
 			for s in range(1,swCount + 1) :
 				if s == sw or s in neighbours : 
 					continue
