@@ -41,7 +41,7 @@ class Topology(object):
 		self.neighbours = []
 
 		# Add the drop node (node 0) neighbours.
-		self.neighbours.append([0])
+		self.neighbours.append([])
 
 		# read the topology configuration files
 		self.read()
@@ -62,7 +62,7 @@ class Topology(object):
 
 			# Initialising the neighbours list for the switch. 
 			# Every switch is connected to the "drop switch". 
-			self.neighbours.append([0])
+			self.neighbours.append([])
 
 
 		# Read the links of the topology and update the neighbours of each switch
