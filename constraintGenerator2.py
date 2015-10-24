@@ -13,6 +13,7 @@ class ConstraintGenerator2(object) :
 		self.x = Int('x')  # Generic variable for nodes.
 		self.pc = Int('pc') # Generic variable for packet classes
 		self.z3Solver = Solver()
+		self.fwdmodel = None 
 
 	def generateAssertions(self) :	
 
@@ -80,15 +81,16 @@ class ConstraintGenerator2(object) :
 
 
 		end_t = time.time()
-		print "Time taken to add the constraints is" + str(end_t - start_t)
+		print "Time taken to solve the constraints is" + str(end_t - start_t)
+
+		self.fwdmodel = self.z3Solver.model()
+		print self.fwdmodel
+		
+		print self.fwdmodel.evaluate(self.F(1,2,1,1))
+		print self.fwdmodel.evaluate(self.F(2,1,1,1))
 
 		start_t = time.time()
-		print "Starting Solver at " + str(start_t)
-		print self.z3Solver.check()
-		print self.z3Solver.model()
-		end_t = time.time()
-		print "Time taken to find the network forwarding function is " + str(end_t - start_t)
-
+		print self.getPath(1,1)
 
 	def addTopologyConstraints(self) :
 		swCount = self.topology.getSwitchCount()
@@ -257,13 +259,27 @@ class ConstraintGenerator2(object) :
 		# Isolation of traffic for packet classes pc1 and pc2. 
 		swCount = self.topology.getSwitchCount()
 
-		for sw in range(1,swCount) :
+		for sw in range(1, swCount + 1) :
 			isolateAssert = Not( And ( Not(self.F(sw,pc1) == sw), self.F(sw,pc1) == self.F(sw,pc2)))
 			self.z3Solver.add(isolateAssert)		
 
 	def addBoundConstraints(self, xRange, pcRange) :
 		self.z3Solver.add(self.pc < pcRange + 1)
 		self.z3Solver.add(self.x < xRange + 1)
+
+	def getPath(self, s, pc) :
+		path = [s]
+		swCount = self.topology.getSwitchCount()
+		
+		for sw in range(1, swCount + 1) :
+			if sw == s : 
+				continue
+			if is_true(self.fwdmodel.evaluate(self.F(s,sw,pc,1))) :
+				path.extend(self.getPath(sw,pc))
+				return path
+		
+		return path
+		
 
 
 
