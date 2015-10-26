@@ -24,18 +24,18 @@ class ConstraintGenerator2(object) :
 		self.addBoundConstraints(self.topology.getSwitchCount() - 1, 5)
 		self.addTopologyConstraints()
 
-		#self.addNeighbourConstraints()
-		for i in range(3, self.topology.getMaxPathLength() + 1) :
-			self.z3Solver.push()
-			self.addFinalReachabilityConstraints(1,3,1,i)
-			self.addWaypointConstraints(1,3,1,[4,5])
-			sat = self.z3Solver.check()
-			if sat == z3.sat : 
-				print "Sat " + str(i)
-				break
-			else :
-				print "unsat " + str(i)
-				self.z3Solver.pop()
+		# #self.addNeighbourConstraints()
+		# for i in range(3, self.topology.getMaxPathLength() + 1) :
+		# 	self.z3Solver.push()
+		# 	self.addFinalReachabilityConstraints(1,3,1,i)
+		# 	self.addWaypointConstraints(1,3,1,[4,5])
+		# 	sat = self.z3Solver.check()
+		# 	if sat == z3.sat : 
+		# 		print "Sat " + str(i)
+		# 		break
+		# 	else :
+		# 		print "unsat " + str(i)
+		# 		self.z3Solver.pop()
 
 		# for i in range(1, self.topology.getMaxPathLength() + 1) :
 		# 	self.z3Solver.push()
@@ -66,31 +66,28 @@ class ConstraintGenerator2(object) :
 
 		
 	
-		# for i in range(1,50):
-		# 	if i % 2 == 0 :
-		# 		s = 1
-		# 	else :
-		# 		s = 2
+		for i in range(1,50):
+			if i % 2 == 0 :
+				s = 1
+			else :
+				s = 2
 
-		# 	d = random.randint(4,6)
-		# 	self.addReachabilityConstraints(s,d,i)
-		# 	self.addWaypointConstraints(s,d,i, [3])
+			d = random.randint(8,10)
+			self.addFinalReachabilityConstraints(s,d,i,self.topology.getMaxPathLength())
+			self.addWaypointConstraints(s,d,i, [random.randint(3,5), random.randint(6,7)])
 
-			# if(i > 2) :
-			# 	self.addTrafficIsolationConstraints(i, i - 1)
+			if(i > 2) :
+				self.addTrafficIsolationConstraints(i, i - 1)
+
+
+		self.z3Solver.check()
+		self.fwdmodel = self.z3Solver.model()
+		print self.fwdmodel
 
 
 		end_t = time.time()
 		print "Time taken to solve the constraints is" + str(end_t - start_t)
 
-		self.fwdmodel = self.z3Solver.model()
-		print self.fwdmodel
-		
-		print self.fwdmodel.evaluate(self.F(1,2,1,1))
-		print self.fwdmodel.evaluate(self.F(2,1,1,1))
-
-		start_t = time.time()
-		print self.getPath(1,1)
 
 	def addTopologyConstraints(self) :
 		swCount = self.topology.getSwitchCount()
@@ -260,8 +257,10 @@ class ConstraintGenerator2(object) :
 		swCount = self.topology.getSwitchCount()
 
 		for sw in range(1, swCount + 1) :
-			isolateAssert = Not( And ( Not(self.F(sw,pc1) == sw), self.F(sw,pc1) == self.F(sw,pc2)))
-			self.z3Solver.add(isolateAssert)		
+			for n in self.topology.getSwitchNeighbours(sw) :
+				isolateAssert = Not( And (self.F(sw,n,pc1,1) == True, self.F(sw,n,pc2,1) == True))
+				self.z3Solver.add(isolateAssert)		
+
 
 	def addBoundConstraints(self, xRange, pcRange) :
 		self.z3Solver.add(self.pc < pcRange + 1)
