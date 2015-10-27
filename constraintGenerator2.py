@@ -14,6 +14,7 @@ class ConstraintGenerator2(object) :
 		self.pc = Int('pc') # Generic variable for packet classes
 		self.z3Solver = Solver()
 		self.fwdmodel = None 
+		self.pcRange = 50
 
 	def generateAssertions(self) :	
 
@@ -52,10 +53,10 @@ class ConstraintGenerator2(object) :
 		# print self.z3Solver.model()
 
 
-		# self.addReachabilityConstraints(1,3,3)
-		# self.addWaypointConstraints(1,3,3,[4])
+		# self.addFinalReachabilityConstraints(1,3,1,self.topology.getMaxPathLength())
+		# self.addWaypointConstraints(1,3,1,[4,5])
 
-		# self.addReachabilityConstraints(1,3,4)
+		# self.addFinalReachabilityConstraints(1,3,2,self.topology.getMaxPathLength())
 
 		# self.addReachabilityConstraints(1,3,5)
 
@@ -63,10 +64,7 @@ class ConstraintGenerator2(object) :
 		# self.addTrafficIsolationConstraints(3,5)
 		# self.addTrafficIsolationConstraints(4,3)
 
-
-		
-	
-		for i in range(1,50):
+		for i in range(1,self.pcRange):
 			if i % 2 == 0 :
 				s = 1
 			else :
@@ -74,7 +72,7 @@ class ConstraintGenerator2(object) :
 
 			d = random.randint(8,10)
 			self.addFinalReachabilityConstraints(s,d,i,self.topology.getMaxPathLength())
-			self.addWaypointConstraints(s,d,i, [random.randint(3,5), random.randint(6,7)])
+			self.addWaypointConstraints(s,d,i,[random.randint(3,5), random.randint(6,7)])
 
 			if(i > 2) :
 				self.addTrafficIsolationConstraints(i, i - 1)
@@ -83,6 +81,9 @@ class ConstraintGenerator2(object) :
 		self.z3Solver.check()
 		self.fwdmodel = self.z3Solver.model()
 		print self.fwdmodel
+
+		print self.getPath(2,1)
+		print self.getPath(1,2)
 
 
 		end_t = time.time()
@@ -93,36 +94,37 @@ class ConstraintGenerator2(object) :
 		swCount = self.topology.getSwitchCount()
 		# \forall sw \forall n \in neighbours(sw) and NextHop = {n | F(sw,n,pc,1) = True}. |NextHop| \leq 1 
 		# None or only one of F(sw,n,pc,1) can be true.
-		for sw in range(1,swCount+1) :
-			neighbours = self.topology.getSwitchNeighbours(sw)
+		
+		for pc in range(1,self.pcRange + 1) :
+			for sw in range(1,swCount+1) :
+				neighbours = self.topology.getSwitchNeighbours(sw)
 
-			# Add assertions to ensure f(sw,*) leads to a valid neighbour. 
-			topoAssert = False
-			unreachedAssert = True
+				# Add assertions to ensure f(sw,*) leads to a valid neighbour. 
+				topoAssert = False
+				unreachedAssert = True
 
-			for n in neighbours : 
-				neighbourAssert = self.F(sw,n,self.pc,1) == True
-				unreachedAssert = And(unreachedAssert, self.F(sw,n,self.pc,1) == False)
-				for n1 in neighbours :
-					if n == n1 : 
+				for n in neighbours : 
+					neighbourAssert = self.F(sw,n,pc,1) == True
+					unreachedAssert = And(unreachedAssert, self.F(sw,n,pc,1) == False)
+					for n1 in neighbours :
+						if n == n1 : 
+							continue
+						else :
+							neighbourAssert = And(neighbourAssert, self.F(sw,n1,pc,1) == False)
+					topoAssert = Or(topoAssert, neighbourAssert)
+
+				topoAssert = Or(topoAssert, unreachedAssert) # Either one forwarding rule or no forwarding rules.
+				self.z3Solver.add(topoAssert)
+				
+				# \forall n such that n \notin neighbours or n \not\eq sw . F(sw,n,pc,1) = False
+				# Cannot reach nodes which are not neighbours in step 1. 
+				# This constraint is needed because there is no restriction from the above constraints 
+				# regarding the values of non-neighbours.
+				for s in range(1,swCount + 1) :
+					if s == sw or s in neighbours : 
 						continue
 					else :
-						neighbourAssert = And(neighbourAssert, self.F(sw,n1,self.pc,1) == False)
-				topoAssert = Or(topoAssert, neighbourAssert)
-
-			topoAssert = Or(topoAssert, unreachedAssert) # Either one forwarding rule or no forwarding rules.
-			topoAssert = ForAll(self.pc, topoAssert)
-			self.z3Solver.add(topoAssert)
-			
-			# \forall n such that n \notin neighbours or n \not\eq sw . F(sw,n,pc,1) = False
-			# Cannot reach nodes which are not neighbours in step 1. 
-			# This constraint is needed because there is no restriction from the above constraints 
-			# regarding the values of non-neighbours.
-			for s in range(1,swCount + 1) :
-				if s == sw or s in neighbours : 
-					continue
-				else :
-					self.z3Solver.add(ForAll(self.pc, self.F(sw,s,self.pc,1) == False))
+						self.z3Solver.add(self.F(sw,s,pc,1) == False)
 
 	def addNeighbourConstraints(self) :
 		swCount = self.topology.getSwitchCount()
@@ -189,7 +191,7 @@ class ConstraintGenerator2(object) :
 	def addPathConstraints(self,s,d,pc) :
 		l = Int('l')
 		self.z3Solver.add(l > 0)
-		self.z3Solver.add(l < self.topology.getMaxPathLength() + 1)
+		self.z3Solver.add(l < self.topology.getMaxPathLength())
 		# s1 = Int('s1')
 		# d1 = Int('d1')
 		# reachedAssert = ForAll(self.pc, ForAll(s1, ForAll(d1, ForAll(l, (Implies (self.F(s1,d1,self.pc,l-1), self.F(s1,d1,self.pc,l)))))))
@@ -212,7 +214,24 @@ class ConstraintGenerator2(object) :
 
 		swCount = self.topology.getSwitchCount()
 		maxPathLen = self.topology.getMaxPathLength()
+		
+		nvar = Int('n')
+		reachedAssert = Implies (And(nvar > 0, nvar < swCount + 1, Not(nvar == s), l > 0, l < maxPathLen, self.F(s,nvar,pc,l)), self.F(s,nvar,pc,l + 1))
+		reachedAssert = ForAll(nvar, ForAll(l, reachedAssert))
+		self.z3Solver.add(reachedAssert)
 
+		nvar1 = Int('n1')
+		nvar2 = Int('n2')
+		l1 = Int('l1')
+
+		nextHopAssert = And(nvar1 > 0, nvar2 > 0, Not(nvar1 == s), Not(nvar2 == s), nvar1 < swCount + 1, nvar2 < swCount + 1,  l1 > 0, l1 < maxPathLen, self.F(s,nvar1,pc,l1) == True, self.F(nvar1,nvar2,pc,1) == True)
+		nextHopAssert = Implies(nextHopAssert, self.F(s,nvar2,pc,l1 + 1))
+		nextHopAssert = ForAll([l,nvar1,nvar2], nextHopAssert)
+		self.z3Solver.add(nextHopAssert)
+
+		unreachedAssert = And(nvar1 > 0, nvar2 > 0, Not(nvar1 == s), Not(nvar2 == s), nvar1 < swCount + 1, nvar2 < swCount + 1, self.F(s,nvar1,pc,maxPathLen) == False)
+		unreachedAssert = ForAll([nvar1, nvar2], Implies(unreachedAssert, self.F(nvar1,nvar2,pc,1) == False))
+		self.z3Solver.add(unreachedAssert)
 
 		for i in range(1,swCount+1) :
 			if i == s : 
@@ -220,7 +239,7 @@ class ConstraintGenerator2(object) :
 
 			for pathlen in range(2,maxPathLen+1) :	
 				reachedAssert = (Implies (self.F(s,i,pc,pathlen-1), self.F(s,i,pc,pathlen)))
-				self.z3Solver.add(reachedAssert)
+				#self.z3Solver.add(reachedAssert)
 
 			ineighbours = self.topology.getSwitchNeighbours(i) 
 
@@ -229,10 +248,10 @@ class ConstraintGenerator2(object) :
 			for isw in ineighbours : 
 				for pathlen in range(1,maxPathLen) :
 					nextHopAssert = Implies(And(self.F(s,i,pc,pathlen) == True,self.F(i,isw,pc,1)) == True,self.F(s,isw,pc,pathlen+1) == True)
-					self.z3Solver.add(nextHopAssert)
+					#self.z3Solver.add(nextHopAssert)
 
 				unreachedAssert = Implies(self.F(s,i,pc,maxPathLen) == False, self.F(i,isw,pc,1) == False)
-				self.z3Solver.add(unreachedAssert)	
+				#self.z3Solver.add(unreachedAssert)	
 
 			
 			# Paths of length 2.
