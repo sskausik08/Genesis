@@ -10,10 +10,13 @@ class ConstraintGenerator2(object) :
 		# Network Forwarding Function
 		self.F = Function('F', IntSort(), IntSort(), IntSort(), IntSort(), BoolSort())
 		self.N = Function('N', IntSort(), IntSort(), BoolSort())
-		self.x = Int('x')  # Generic variable for nodes.
 		self.pc = Int('pc') # Generic variable for packet classes
 		self.z3Solver = Solver()
 		self.fwdmodel = None 
+
+		# Add Common Constraints 
+		self.addBoundConstraints(self.topology.getSwitchCount() - 1, 5)
+		self.addTopologyConstraints()
 
 	def generateAssertions(self) :	
 
@@ -21,21 +24,20 @@ class ConstraintGenerator2(object) :
 		print "Adding Constraints at " + str(start_t)
 
 		# Add Bound Constraints on x and pc.
-		self.addBoundConstraints(self.topology.getSwitchCount() - 1, 5)
-		self.addTopologyConstraints()
+		
 
 		# #self.addNeighbourConstraints()
-		# for i in range(3, self.topology.getMaxPathLength() + 1) :
-		# 	self.z3Solver.push()
-		# 	self.addFinalReachabilityConstraints(1,3,1,i)
-		# 	self.addWaypointConstraints(1,3,1,[4,5])
-		# 	sat = self.z3Solver.check()
-		# 	if sat == z3.sat : 
-		# 		print "Sat " + str(i)
-		# 		break
-		# 	else :
-		# 		print "unsat " + str(i)
-		# 		self.z3Solver.pop()
+		for i in range(3, self.topology.getMaxPathLength() + 1) :
+			self.z3Solver.push()
+			self.addFinalReachabilityConstraints(1,3,1,i)
+			self.addWaypointConstraints(1,3,1,[4,5])
+			sat = self.z3Solver.check()
+			if sat == z3.sat : 
+				print "Sat " + str(i)
+				break
+			else :
+				print "unsat " + str(i)
+				self.z3Solver.pop()
 
 		# for i in range(1, self.topology.getMaxPathLength() + 1) :
 		# 	self.z3Solver.push()
@@ -66,27 +68,28 @@ class ConstraintGenerator2(object) :
 
 		
 	
-		for i in range(1,50):
-			if i % 2 == 0 :
-				s = 1
-			else :
-				s = 2
+		# for i in range(1,10):
+		# 	if i % 2 == 0 :
+		# 		s = 1
+		# 	else :
+		# 		s = 2
 
-			d = random.randint(8,10)
-			self.addFinalReachabilityConstraints(s,d,i,self.topology.getMaxPathLength())
-			self.addWaypointConstraints(s,d,i, [random.randint(3,5), random.randint(6,7)])
+		# 	d = random.randint(8,10)
+		# 	self.addFinalReachabilityConstraints(s,d,i,self.topology.getMaxPathLength())
+		# 	self.addWaypointConstraints(s,d,i, [random.randint(3,5), random.randint(6,7)])
 
-			if(i > 2) :
-				self.addTrafficIsolationConstraints(i, i - 1)
+		# 	if(i > 2) :
+		# 		self.addTrafficIsolationConstraints(i, i - 1)
 
 
-		self.z3Solver.check()
+		#self.z3Solver.check()
 		self.fwdmodel = self.z3Solver.model()
 		print self.fwdmodel
 
 
 		end_t = time.time()
 		print "Time taken to solve the constraints is" + str(end_t - start_t)
+		print self.getPath(1,1)
 
 
 	def addTopologyConstraints(self) :
@@ -156,50 +159,19 @@ class ConstraintGenerator2(object) :
 			self.z3Solver.add(destAssert)
 
 		# Add Path Constraints
-		self.addPathConstraints(s,d,pc)
-
-	def addReachabilityConstraints(self, s, d, pc, isDest=True) :
-
-		# Add topology constraint for this packet class :
-		#self.addTopologyConstraints(pc)
-		maxPathLen = self.topology.getMaxPathLength()
-		reachAssert = self.F(s,d,pc,maxPathLen) == True
-
-		self.z3Solver.add(reachAssert)
-
-		# If Destination, then forwarding has to stop here. So, F(d,neighbour(d),pc,1) == False 
-		# When we perform the translation to rules, we can forward it to host accordingly.
-		
-		neighbours = self.topology.getSwitchNeighbours(d)
-
-		if isDest : 
-			destAssert = True
-			for n in neighbours :
-				destAssert = And(destAssert, self.F(d,n,pc,1) == False)
-
-			self.z3Solver.add(destAssert)
-
-		# Add Path Constraints
-		self.addPathConstraints(s,d,pc)
+		self.addPathConstraints(s,pc)
 
 	def addWaypointConstraints(self, s, d, pc, W) :
+		maxPathLen = self.topology.getMaxPathLength()
 		for w in W :
-			self.addReachabilityConstraints(s, w, pc, False)
+			reachAssert = self.F(s,w,pc,maxPathLen) == True
+			self.z3Solver.add(reachAssert)
+			
 
-	def addPathConstraints(self,s,d,pc) :
+	def addPathConstraints(self, s, pc) :
 		l = Int('l')
 		self.z3Solver.add(l > 0)
 		self.z3Solver.add(l < self.topology.getMaxPathLength() + 1)
-		# s1 = Int('s1')
-		# d1 = Int('d1')
-		# reachedAssert = ForAll(self.pc, ForAll(s1, ForAll(d1, ForAll(l, (Implies (self.F(s1,d1,self.pc,l-1), self.F(s1,d1,self.pc,l)))))))
-		# w = Int('w')
-		# nextHopAssert = Implies(And(self.F(s1,w,self.pc,l),self.F(w,d1,self.pc,1)),self.F(s1,d1,self.pc,l+1))
-		# nextHopAssert = And(nextHopAssert, Implies(self.F(s,d,self.pc,l+1),And(self.F(s,w,self.pc,l),self.F(w,d,self.pc,1))))
-		# pathAssert = ForAll(self.pc, ForAll(s1, ForAll(d1, ForAll(w, ForAll(l, And(nextHopAssert, self.N(w,d1)))))))
-
-		#self.z3Solver.add(reachedAssert)
-		# self.z3Solver.add(pathAssert)
 
 		neighbours = self.topology.getSwitchNeighbours(s)
 		# Add assertions to ensure f(s,*) leads to a valid neighbour. 
@@ -264,7 +236,6 @@ class ConstraintGenerator2(object) :
 
 	def addBoundConstraints(self, xRange, pcRange) :
 		self.z3Solver.add(self.pc < pcRange + 1)
-		self.z3Solver.add(self.x < xRange + 1)
 
 	def getPath(self, s, pc) :
 		path = [s]
