@@ -13,20 +13,17 @@ class ConstraintGenerator2(object) :
 		self.pc = Int('pc') # Generic variable for packet classes
 		self.z3Solver = Solver()
 		self.fwdmodel = None 
+		self.pcRange = 5
 
 		# Add Common Constraints 
-		self.addBoundConstraints(self.topology.getSwitchCount() - 1, 5)
+		self.addBoundConstraints(self.pcRange)
 		self.addTopologyConstraints()
 
 	def generateAssertions(self) :	
 
 		start_t = time.time()
 		print "Adding Constraints at " + str(start_t)
-
-		# Add Bound Constraints on x and pc.
-		
-
-		# #self.addNeighbourConstraints()
+	
 		for i in range(3, self.topology.getMaxPathLength() + 1) :
 			self.z3Solver.push()
 			self.addFinalReachabilityConstraints(1,3,1,i)
@@ -234,7 +231,7 @@ class ConstraintGenerator2(object) :
 				self.z3Solver.add(isolateAssert)		
 
 
-	def addBoundConstraints(self, xRange, pcRange) :
+	def addBoundConstraints(self, pcRange) :
 		self.z3Solver.add(self.pc < pcRange + 1)
 
 	def getPath(self, s, pc) :
@@ -250,8 +247,53 @@ class ConstraintGenerator2(object) :
 		
 		return path
 		
+	def validateIsolation(self, pc1, pc2) :
+		""" Validation of packet classes pc1 and pc2 are isolated."""
+
+		path1 = self.getPath(pc1,)
 
 
+"""Policy Database is used to maintain the database of policies incorporated in the network. 
+This will help in better bookmarking and aid in policy change synthesis."""
+class policyDatabase(object) :
+	def __init__(self) :
+		self.pc = 0
+		self.endpointTable = []
+		self.waypointTable = []
+		self.IsolationTable = []
+
+	def addAllowPolicy(self, srcIP, srcSw, dstIP, dstSw, W=None) :
+		""" srcSw = source IP next hop switch
+			dstSw = Destination IP next hop switch
+			W = List of Waypoints. """
+
+		self.endpointTable.append([srcIP, dstIP, srcSw, dstSw])
+		if W == None : 
+			self.waypointTable.append([])
+
+		self.pc += 1
+		return self.pc - 1
+
+
+	def addIsolationPolicy(self, srcIP1, dstIP1, srcIP2, dstIP2) :
+		# Find the Packet Class numbers
+		i = 0
+		pc1 = -1
+		pc2 = -1
+		for ep in endpointTable :
+			if ep[0] == srcIP1 and ep[1] == dstIP1 :
+				pc1 = i 
+			if ep[0] == srcIP2 and ep[1] == dstIP2 :
+				pc2 = i
+			i += 1	
+
+		if pc1 == -1 :
+			#Flows dont exist. 
+			raise LookupError(srcIP1 + "->" + dstIP1 + " is not a valid packet class flow.")
+		elif pc2 == -1 :
+			raise LookupError(srcIP1 + "->" + dstIP2 + " is not a valid packet class flow.")
+		else : 
+			self.IsolationTable.append([pc1,pc2])
 
 
 t = Topology()
