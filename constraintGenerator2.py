@@ -13,32 +13,39 @@ class ConstraintGenerator2(object) :
 		self.pc = Int('pc') # Generic variable for packet classes
 		self.z3Solver = Solver()
 		self.fwdmodel = None 
-		self.pcRange = 5
 
-		# Add Common Constraints 
-		self.addBoundConstraints(self.pcRange)
+		# Policy Database. 
+		self.pdb = PolicyDatabase()
+		
+		# Add Packet Class Agnostic Constraints 
 		self.addTopologyConstraints()
 
-	def generateAssertions(self) :	
+		# Generate the assertions.
+		self.addPolicies()
+
+		print self.getPath(1,0)
+		print self.getPath(1,1)
+
+	def addPolicies(self) :	
 
 		start_t = time.time()
 		print "Adding Constraints at " + str(start_t)
 	
-		for i in range(3, self.topology.getMaxPathLength() + 1) :
-			self.z3Solver.push()
-			self.addFinalReachabilityConstraints(1,3,1,i)
-			self.addWaypointConstraints(1,3,1,[4,5])
-			sat = self.z3Solver.check()
-			if sat == z3.sat : 
-				print "Sat " + str(i)
-				break
-			else :
-				print "unsat " + str(i)
-				self.z3Solver.pop()
+		# for i in range(3, self.topology.getMaxPathLength() + 1) :
+		# 	self.z3Solver.push()
+		# 	self.addReachabilityConstraints("1.2", 1, "1.3", 2, [5])
+		# 	#self.addWaypointConstraints(1,3,1,[4,5])
+		# 	sat = self.z3Solver.check()
+		# 	if sat == z3.sat : 
+		# 		print "Sat " + str(i)
+		# 		break
+		# 	else :
+		# 		print "unsat " + str(i)
+		# 		self.z3Solver.pop()
 
 		# for i in range(1, self.topology.getMaxPathLength() + 1) :
 		# 	self.z3Solver.push()
-		# 	self.addFinalReachabilityConstraints(1,2,2,i)
+		# 	self.addReachabilityConstraints(1,2,2,i)
 		# 	self.addWaypointConstraints(1,2,2,[4])
 		# 	sat = self.z3Solver.check()
 		# 	if sat == z3.sat : 
@@ -72,22 +79,24 @@ class ConstraintGenerator2(object) :
 		# 		s = 2
 
 		# 	d = random.randint(8,10)
-		# 	self.addFinalReachabilityConstraints(s,d,i,self.topology.getMaxPathLength())
+		# 	self.addReachabilityConstraints(s,d,i,self.topology.getMaxPathLength())
 		# 	self.addWaypointConstraints(s,d,i, [random.randint(3,5), random.randint(6,7)])
 
 		# 	if(i > 2) :
 		# 		self.addTrafficIsolationConstraints(i, i - 1)
 
 
-		#self.z3Solver.check()
+		self.addReachabilityConstraints("1.2", 1, "1.3", 2, None, 4)
+		self.addReachabilityConstraints("1.3", 1, "1.4", 2)
+		self.addTrafficIsolationConstraints(["1.2", "1.3"] , ["1.3", "1.4"])
+
+		self.z3Solver.check()
 		self.fwdmodel = self.z3Solver.model()
 		print self.fwdmodel
 
 
 		end_t = time.time()
 		print "Time taken to solve the constraints is" + str(end_t - start_t)
-		print self.getPath(1,1)
-
 
 	def addTopologyConstraints(self) :
 		swCount = self.topology.getSwitchCount()
@@ -135,34 +144,42 @@ class ConstraintGenerator2(object) :
 				else :
 					self.z3Solver.add(self.N(sw,i) == False)
 
-	def addFinalReachabilityConstraints(self, s, d, pc, pathlen, isDest=True) :
+	def addReachabilityConstraints(self, srcIP, s, dstIP, d, W=None, pathlen=0) :
+		""" s = next hop switch of source host(s) 
+			d = next hop switch of destination host(s)
+			W = Waypoint Set (list of nodes) """
 
-		# Add topology constraint for this packet class :
-		#self.addTopologyConstraints(pc)
+		# Add policy to PDB : 
+		pc = self.pdb.addAllowPolicy(srcIP, s, dstIP, d, W)
+
+		if pathlen == 0 :
+			# Default argument. Set to max.
+			pathlen = self.topology.getMaxPathLength()
+
+		# Add Reachability in atmost pathlen steps constraint. 
 		reachAssert = self.F(s,d,pc,pathlen) == True
-
 		self.z3Solver.add(reachAssert)
 
-		# If Destination, then forwarding has to stop here. So, F(d,neighbour(d),pc,1) == False 
+		# At Destination, forwarding has to stop here. So, F(d,neighbour(d),pc,1) == False 
 		# When we perform the translation to rules, we can forward it to host accordingly.
 		
 		neighbours = self.topology.getSwitchNeighbours(d)
 
-		if isDest : 
-			destAssert = True
-			for n in neighbours :
-				destAssert = And(destAssert, self.F(d,n,pc,1) == False)
+		
+		destAssert = True
+		for n in neighbours :
+			destAssert = And(destAssert, self.F(d,n,pc,1) == False)
 
-			self.z3Solver.add(destAssert)
+		self.z3Solver.add(destAssert)
 
-		# Add Path Constraints
-		self.addPathConstraints(s,pc)
+		if not W == None : 
+			# Add the Waypoint Constraints. 
+			for w in W :
+				reachAssert = self.F(s,w,pc,pathlen) == True
+				self.z3Solver.add(reachAssert)
 
-	def addWaypointConstraints(self, s, d, pc, W) :
-		maxPathLen = self.topology.getMaxPathLength()
-		for w in W :
-			reachAssert = self.F(s,w,pc,maxPathLen) == True
-			self.z3Solver.add(reachAssert)
+		# Add Path Constraints for this flow to find the forwarding model for this flow.
+		self.addPathConstraints(s,pc)		
 			
 
 	def addPathConstraints(self, s, pc) :
@@ -221,13 +238,14 @@ class ConstraintGenerator2(object) :
 
 
 
-	def addTrafficIsolationConstraints(self, pc1, pc2) : 
-		# Isolation of traffic for packet classes pc1 and pc2. 
-		swCount = self.topology.getSwitchCount()
+	def addTrafficIsolationConstraints(self, ep1, ep2) : 
+		# Isolation of traffic for packet classes (end-points) ep1 and ep2. 
+		pc = self.pdb.addIsolationPolicy(ep1[0], ep1[1], ep2[0], ep2[1]) # Returns [pc1,pc2]
 
+		swCount = self.topology.getSwitchCount()
 		for sw in range(1, swCount + 1) :
 			for n in self.topology.getSwitchNeighbours(sw) :
-				isolateAssert = Not( And (self.F(sw,n,pc1,1) == True, self.F(sw,n,pc2,1) == True))
+				isolateAssert = Not( And (self.F(sw,n,pc[0],1) == True, self.F(sw,n,pc[1],1) == True))
 				self.z3Solver.add(isolateAssert)		
 
 
@@ -247,15 +265,13 @@ class ConstraintGenerator2(object) :
 		
 		return path
 		
-	def validateIsolation(self, pc1, pc2) :
+	def validateIsolationPolicy(self, pc1, pc2) :
 		""" Validation of packet classes pc1 and pc2 are isolated."""
-
-		path1 = self.getPath(pc1,)
-
+		pass
 
 """Policy Database is used to maintain the database of policies incorporated in the network. 
 This will help in better bookmarking and aid in policy change synthesis."""
-class policyDatabase(object) :
+class PolicyDatabase(object) :
 	def __init__(self) :
 		self.pc = 0
 		self.endpointTable = []
@@ -280,7 +296,7 @@ class policyDatabase(object) :
 		i = 0
 		pc1 = -1
 		pc2 = -1
-		for ep in endpointTable :
+		for ep in self.endpointTable :
 			if ep[0] == srcIP1 and ep[1] == dstIP1 :
 				pc1 = i 
 			if ep[0] == srcIP2 and ep[1] == dstIP2 :
@@ -295,7 +311,10 @@ class policyDatabase(object) :
 		else : 
 			self.IsolationTable.append([pc1,pc2])
 
+		return [pc1,pc2]
+
+	def getPacketClassRange(self) :
+		return self.pc
 
 t = Topology()
 c = ConstraintGenerator2(t)
-c.generateAssertions()
