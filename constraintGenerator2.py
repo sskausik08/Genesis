@@ -84,19 +84,14 @@ class ConstraintGenerator2(object) :
 		self.addPolicies()
 		self.enforcePolicies()
 
-		self.z3Solver.check()
-		self.fwdmodel = self.z3Solver.model()
+		
 		#print self.fwdmodel
 
 		end_t = time.time()
 		print "Time taken to solve the constraints is" + str(end_t - start_t)
 
 		print self.validateIsolationPolicy(["1.2", "1.3"] , ["1.3", "1.4"])
-		print self.getPath(0)
-		print self.getPath(1)
-		print self.getPath(2)
-
-
+	
 	def addPolicies(self) :
 		self.addReachabilityPolicy("1.2", 1, "1.3", 2, [4,6])
 		self.addReachabilityPolicy("1.3", 1, "1.4", 2)
@@ -108,7 +103,7 @@ class ConstraintGenerator2(object) :
 		self.addReachabilityPolicy("2.5", 1, "2.5", 2)
 		self.addReachabilityPolicy("2.6", 1, "2.6", 2)
 		self.addTrafficIsolationPolicy(["2.4", "2.4"] , ["2.5", "2.5"])
-		self.addTrafficIsolationPolicy( ["1.4", "1.4"], ["2.5", "2.5"])
+		#self.addTrafficIsolationPolicy( ["1.4", "1.4"], ["2.5", "2.5"])
 
 	def addReachabilityPolicy(self, srcIP, s, dstIP, d, W=None) :
 		""" s = next hop switch of source host(s) 
@@ -125,15 +120,31 @@ class ConstraintGenerator2(object) :
 	def enforcePolicies(self) :
 		""" Enforcement of Policies stored in the PDB. """
 		# Create Relational Packet Classses.
-		relClasses = self.createRelationalClasses()
+		relClasses = self.pdb.createRelationalClasses()
 
-		# Reachability Policies.
-		count = self.pdb.getAllowPolicyCount()
+		for relClass in relClasses :
+			for pc in relClass : 
+				policy = self.pdb.getAllowPolicy(pc)
+				self.addReachabilityConstraints(srcIP=policy[0][0], srcSw=policy[0][2], dstIP=policy[0][1], dstSw=policy[0][3],pc=pc, W=policy[1]) 
 
-		for pc in range(count) :
-			policy = self.pdb.getAllowPolicy(pc)
-			self.addReachabilityConstraints(srcIP=policy[0][0], srcSw=policy[0][2], dstIP=policy[0][1], dstSw=policy[0][3],pc=pc, W=policy[1]) 
+			# Add traffic constraints. 
+			for pno in range(self.pdb.getIsolationPolicyCount()) :
+				pc = self.pdb.getIsolationPolicy(pno)
+				pc1 = pc[0]
+				pc2 = pc[1]
+				if pc1 in relClass and pc2 in relClass : 
+					self.addTrafficIsolationConstraints(pc1, pc2)
 
+
+			# Each relational class can be synthesised independently.
+			modelsat = self.z3Solver.check()
+			if modelsat == z3.sat : 
+				print "SAT"
+				self.fwdmodel = self.z3Solver.model()
+				for pc in relClass :
+					print "pc " + str(pc) + " Path:" + str(self.getPath(pc))
+			else :
+				print "Input Policies not realisable"
 
 
 	def addTopologyConstraints(self) :
@@ -269,13 +280,13 @@ class ConstraintGenerator2(object) :
 
 
 
-	def addTrafficIsolationConstraints(self, ep1, ep2) : 
+	def addTrafficIsolationConstraints(self, pc1, pc2) : 
 		""" Adding constraints for Isolation Policy enforcement of traffic for packet classes (end-points) ep1 and ep2. """
 
 		swCount = self.topology.getSwitchCount()
 		for sw in range(1, swCount + 1) :
 			for n in self.topology.getSwitchNeighbours(sw) :
-				isolateAssert = Not( And (self.F(sw,n,pc[0],1) == True, self.F(sw,n,pc[1],1) == True))
+				isolateAssert = Not( And (self.F(sw,n,pc1,1) == True, self.F(sw,n,pc2,1) == True))
 				self.z3Solver.add(isolateAssert)		
 
 
@@ -324,44 +335,6 @@ class ConstraintGenerator2(object) :
 
 		return True
 
-	def createRelationalClasses(self) :
-		""" Create Relational classes of packet classes. A relational class is a maximal set of
-		packet classes which need to be synthesised together because of inter-class policies like
-		isolation """
-
-		relClasses = []
-
-		# For now, our inter-class policy is isolation.
-		for pno in range(self.pdb.getIsolationPolicyCount()) :
-			pc = self.pdb.getIsolationPolicy(pno)
-			pc1 = pc[0]
-			pc2 = pc[1]
-			pc1rc = None
-			pc2rc = None
-			for relClass in relClasses :
-				if pc1 in relClass : 
-					pc1rc = relClass
-				if pc2 in relClass :
-					pc2rc = relClass
-
-			# If pc1rc and pc2rc are same, dont do anything.
-			if pc1rc == pc2rc and not pc1rc == None :
-				continue # Both are in same relational class, dont do anything. 
-			elif not pc1rc == None and pc2rc == None : 
-				pc1rc.append(pc2)
-			elif pc1rc == None and not pc2rc == None : 
-				pc2rc.append(pc1)
-			elif pc1rc == None and pc2rc == None :
-				rc = [pc1,pc2]
-				relClasses.append(rc)
-			else :
-				# Both are in different packet classes. Join them.
-				pc1rc.extend(pc2rc)
-				relClasses.remove(pc2rc)
-			print relClasses
-
-		return relClasses
-
 
 
 
@@ -378,6 +351,7 @@ class PolicyDatabase(object) :
 		self.endpointTable = []
 		self.waypointTable = []
 		self.isolationTable = []
+		self.relClasses = []
 
 	def addAllowPolicy(self, srcIP, srcSw, dstIP, dstSw, W=None) :
 		""" srcSw = source IP next hop switch
@@ -390,6 +364,7 @@ class PolicyDatabase(object) :
 		else :
 			self.waypointTable.append(W)
 
+		self.relClasses.append([self.pc])
 		self.pc += 1
 		return self.pc - 1
 
@@ -436,6 +411,42 @@ class PolicyDatabase(object) :
 
 	def getIsolationPolicyCount(self) :
 		return len(self.isolationTable)
+
+	def createRelationalClasses(self) :
+		""" Create Relational classes of packet classes. A relational class is a maximal set of
+		packet classes which need to be synthesised together because of inter-class policies like
+		isolation """
+
+		# For now, our inter-class policy is isolation.
+		for pno in range(self.getIsolationPolicyCount()) :
+			pc = self.getIsolationPolicy(pno)
+			pc1 = pc[0]
+			pc2 = pc[1]
+			pc1rc = None
+			pc2rc = None
+			for relClass in self.relClasses :
+				if pc1 in relClass : 
+					pc1rc = relClass
+				if pc2 in relClass :
+					pc2rc = relClass
+
+			# If pc1rc and pc2rc are same, dont do anything.
+			if pc1rc == pc2rc and not pc1rc == None :
+				continue # Both are in same relational class, dont do anything. 
+			elif not pc1rc == None and pc2rc == None : 
+				pc1rc.append(pc2)
+			elif pc1rc == None and not pc2rc == None : 
+				pc2rc.append(pc1)
+			elif pc1rc == None and pc2rc == None :
+				rc = [pc1,pc2]
+				self.relClasses.append(rc)
+			else :
+				# Both are in different packet classes. Join them.
+				pc1rc.extend(pc2rc)
+				self.relClasses.remove(pc2rc)
+			print self.relClasses
+
+		return self.relClasses
 
 	def getPacketClassRange(self) :
 		return self.pc
