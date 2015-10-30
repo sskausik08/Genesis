@@ -11,6 +11,7 @@ class ConstraintGenerator2(object) :
 		self.F = Function('F', IntSort(), IntSort(), IntSort(), IntSort(), BoolSort())
 		self.N = Function('N', IntSort(), IntSort(), BoolSort())
 		self.pc = Int('pc') # Generic variable for packet classes
+
 		self.z3Solver = Solver()
 		self.fwdmodel = None 
 
@@ -88,9 +89,9 @@ class ConstraintGenerator2(object) :
 		#print self.fwdmodel
 
 		end_t = time.time()
+		print self.pdb.getPath(1)
+		print self.pdb.validateIsolationPolicy(1)
 		print "Time taken to solve the constraints is" + str(end_t - start_t)
-
-		print self.validateIsolationPolicy(["1.2", "1.3"] , ["1.3", "1.4"])
 	
 	def addPolicies(self) :
 		self.addReachabilityPolicy("1.2", 1, "1.3", 2, [4,6])
@@ -123,6 +124,8 @@ class ConstraintGenerator2(object) :
 		relClasses = self.pdb.createRelationalClasses()
 
 		for relClass in relClasses :
+			# Independent Synthesis of relClass.
+			self.z3Solver.push()
 			for pc in relClass : 
 				policy = self.pdb.getAllowPolicy(pc)
 				self.addReachabilityConstraints(srcIP=policy[0][0], srcSw=policy[0][2], dstIP=policy[0][1], dstSw=policy[0][3],pc=pc, W=policy[1]) 
@@ -142,9 +145,12 @@ class ConstraintGenerator2(object) :
 				print "SAT"
 				self.fwdmodel = self.z3Solver.model()
 				for pc in relClass :
-					print "pc " + str(pc) + " Path:" + str(self.getPath(pc))
+					self.pdb.addPath(pc, self.getPathFromModel(pc))
+					
 			else :
 				print "Input Policies not realisable"
+
+			self.z3Solver.pop()
 
 
 	def addTopologyConstraints(self) :
@@ -295,7 +301,7 @@ class ConstraintGenerator2(object) :
 
 	
 		
-	def getPath(self, pc) :
+	def getPathFromModel(self, pc) :
 		def getPathHelper(s, pc) :
 			path = [s]
 			swCount = self.topology.getSwitchCount()
@@ -312,35 +318,6 @@ class ConstraintGenerator2(object) :
 		return getPathHelper(self.pdb.getSourceSwitch(pc), pc)
 
 
-	def validateIsolationPolicy(self, ep1, ep2) :
-
-		""" Validation of packet class flow pc1 and pc2 are isolated."""
-		pc1 = self.pdb.getPacketClass(ep1)
-		pc2 = self.pdb.getPacketClass(ep2)
-
-		path1 = self.getPath(pc1)
-		path2 = self.getPath(pc2)
-
-		for i in range(len(path1)) :
-			try :
-				# Find common switch.
-				pos = path2.index(path1[i])
-
-				# Check next hop is not equal.
-				if i + 1 < len(path1) and pos + 1 < len(path2) :
-					if path1[i+1] == path2[pos + 1] : 
-						return False
-			except ValueError:
-				continue
-
-		return True
-
-
-
-
-
-
-
 
 
 """Policy Database is used to maintain the database of policies incorporated in the network. 
@@ -352,6 +329,7 @@ class PolicyDatabase(object) :
 		self.waypointTable = []
 		self.isolationTable = []
 		self.relClasses = []
+		self.paths = dict()
 
 	def addAllowPolicy(self, srcIP, srcSw, dstIP, dstSw, W=None) :
 		""" srcSw = source IP next hop switch
@@ -381,6 +359,12 @@ class PolicyDatabase(object) :
 			else :
 				return [self.endpointTable[no], self.waypointTable[no]]
 
+	def addPath(self, pc, path) :
+		self.paths[pc] = path
+
+	def getPath(self, pc) :
+		return self.paths[pc]
+
 	def addIsolationPolicy(self, ep1, ep2) :
 		# Find the Packet Class numbers
 		i = 0
@@ -404,10 +388,19 @@ class PolicyDatabase(object) :
 		return [pc1,pc2]
 
 	def getIsolationPolicy(self, no) :
-		if no > len(self.endpointTable) - 1 : 
+		if no > len(self.isolationTable) - 1 : 
 			return None
 		else :
 			return self.isolationTable[no]
+
+	def isIsolated(self, pc1, pc2) :
+		for policy in self.isolationTable :
+			if (policy[0] == pc1 and policy[1] == pc2) or (policy[1] == pc1 and policy[0] == pc2) : 
+				return True
+		return False
+
+
+
 
 	def getIsolationPolicyCount(self) :
 		return len(self.isolationTable)
@@ -447,6 +440,40 @@ class PolicyDatabase(object) :
 			print self.relClasses
 
 		return self.relClasses
+
+	def getRelationalClass(self, pc) :
+		""" Returns the relational class containing pc"""
+
+		for relClass in self.relClasses :
+			if pc in relClass :
+				return relClass
+
+	def validateIsolationPolicy(self, pc) :
+
+		""" Validation of packet class flow pc w.r.t all its isolation policies"""
+		path1 = self.getPath(pc)
+
+		relClass = self.getRelationalClass(pc)
+
+		for pc2 in relClass : 
+			if pc == pc2 or self.isIsolated(pc,pc2) :
+				continue
+
+			path2 = self.getPath(pc2)
+
+			for i in range(len(path1)) :
+				try :
+					# Find common switch.
+					pos = path2.index(path1[i])
+
+					# Check next hop is not equal.
+					if i + 1 < len(path1) and pos + 1 < len(path2) :
+						if path1[i+1] == path2[pos + 1] : 
+							return False
+				except ValueError:
+					continue
+
+		return True
 
 	def getPacketClassRange(self) :
 		return self.pc
