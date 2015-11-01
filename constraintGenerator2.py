@@ -21,12 +21,6 @@ class ConstraintGenerator2(object) :
 		start_t = time.time()
 		print "Adding Constraints at " + str(start_t)
 
-		# Add Packet Class Agnostic Constraints 
-		self.addTopologyConstraints()
-
-		
-		
-	
 		# for i in range(3, self.topology.getMaxPathLength() + 1) :
 		# 	self.z3Solver.push()
 		# 	self.addReachabilityConstraints("1.2", 1, "1.3", 2, [5])
@@ -83,28 +77,37 @@ class ConstraintGenerator2(object) :
 
 		# Generate the assertions.
 		self.addPolicies()
+
+		# Add Topology Constraints 
+		self.addTopologyConstraints()
+	
 		self.enforcePolicies()
+
+		self.pdb.printPaths()
 
 		
 		#print self.fwdmodel
 
 		end_t = time.time()
-		print self.pdb.getPath(1)
-		print self.pdb.validateIsolationPolicy(1)
+		#print self.pdb.getPath(1)
+		#print self.pdb.validateIsolationPolicy(1)
 		print "Time taken to solve the constraints is" + str(end_t - start_t)
 	
 	def addPolicies(self) :
-		self.addReachabilityPolicy("1.2", 1, "1.3", 2, [4,6])
-		self.addReachabilityPolicy("1.3", 1, "1.4", 2)
-		self.addReachabilityPolicy("1.4", 1, "1.4", 2)
-		self.addTrafficIsolationPolicy(["1.2", "1.3"] , ["1.3", "1.4"])
-		self.addTrafficIsolationPolicy(["1.4", "1.4"] , ["1.3", "1.4"])
+		self.addReachabilityPolicy("0", 1, "0", 2, [4,6])
+		self.addReachabilityPolicy("1", 1, "1", 2)
+		self.addReachabilityPolicy("2", 1, "2", 2)
+		self.addTrafficIsolationPolicy(["0", "0"] , ["1", "1"])
+		self.addTrafficIsolationPolicy(["1", "1"] , ["2", "2"])
 
-		self.addReachabilityPolicy("2.4", 1, "2.4", 2)
-		self.addReachabilityPolicy("2.5", 1, "2.5", 2)
-		self.addReachabilityPolicy("2.6", 1, "2.6", 2)
-		self.addTrafficIsolationPolicy(["2.4", "2.4"] , ["2.5", "2.5"])
-		#self.addTrafficIsolationPolicy( ["1.4", "1.4"], ["2.5", "2.5"])
+		self.addMulticastPolicy("3", 1, ["3", "3"], [6, 5])
+		self.addReachabilityPolicy("4", 1, "4", 2)
+		self.addReachabilityPolicy("5", 1, "5", 2)
+		self.addReachabilityPolicy("6", 1, "6", 2)
+		self.addTrafficIsolationPolicy(["4", "4"] , ["5", "5"])
+		self.addTrafficIsolationPolicy( ["2", "2"], ["5", "5"])
+
+		
 
 	def addReachabilityPolicy(self, srcIP, s, dstIP, d, W=None) :
 		""" s = next hop switch of source host(s) 
@@ -118,6 +121,9 @@ class ConstraintGenerator2(object) :
 		# Isolation of traffic for packet classes (end-points) ep1 and ep2. 
 		pc = self.pdb.addIsolationPolicy(ep1,ep2) # Returns [pc1,pc2]
 
+	def addMulticastPolicy(self, srcIP, srcSw, dstIPs, dstSws) :
+		pc = self.pdb.addMulticastPolicy(srcIP, srcSw, dstIPs, dstSws)
+
 	def enforcePolicies(self) :
 		""" Enforcement of Policies stored in the PDB. """
 		# Create Relational Packet Classses.
@@ -126,9 +132,10 @@ class ConstraintGenerator2(object) :
 		for relClass in relClasses :
 			# Independent Synthesis of relClass.
 			self.z3Solver.push()
-			for pc in relClass : 
-				policy = self.pdb.getAllowPolicy(pc)
-				self.addReachabilityConstraints(srcIP=policy[0][0], srcSw=policy[0][2], dstIP=policy[0][1], dstSw=policy[0][3],pc=pc, W=policy[1]) 
+			for pc in relClass :
+				if not self.pdb.isMulticast(pc) :  
+					policy = self.pdb.getAllowPolicy(pc)
+					self.addReachabilityConstraints(srcIP=policy[0][0], srcSw=policy[0][2], dstIP=policy[0][1], dstSw=policy[0][3],pc=pc, W=policy[1]) 
 
 			# Add traffic constraints. 
 			for pno in range(self.pdb.getIsolationPolicyCount()) :
@@ -153,35 +160,97 @@ class ConstraintGenerator2(object) :
 			self.z3Solver.pop()
 
 
+		# Enforcement of Mutltcast Policies. 
+
+		for pc in range(self.pdb.getPacketClassRange()) :
+			if self.pdb.isMulticast(pc) :
+				self.z3Solver.push()
+				policy = self.pdb.getMulticastPolicy(pc)
+
+				self.addMulticastConstraints(policy[1], policy[3], pc, 3) 
+
+				modelsat = self.z3Solver.check()
+				if modelsat == z3.sat : 
+					print "SAT"
+					self.fwdmodel = self.z3Solver.model()	
+					self.pdb.addPath(pc, self.getMulticastPathFromModel(pc))			
+				else :
+					print "Input Policies not realisable"
+
+
+
+
+	def enforcePoliciesFuzzy(self) :
+		""" Fuzzy Enforcement of Policies stored in the PDB. """
+		# Create Relational Packet Classses.
+		relClasses = self.pdb.createRelationalClasses()
+
+		for relClass in relClasses :
+			# Independent Synthesis of relClass.
+
+			for pc in relClass : 
+				self.z3Solver.push()
+				policy = self.pdb.getAllowPolicy(pc)
+				self.addReachabilityConstraints(srcIP=policy[0][0], srcSw=policy[0][2], dstIP=policy[0][1], dstSw=policy[0][3],pc=pc, W=policy[1]) 
+
+				# Each packet class in Relational class is fuzzily synthesised.
+				modelsat = self.z3Solver.check()
+				if modelsat == z3.sat : 
+					self.fwdmodel = self.z3Solver.model()
+					self.pdb.addPath(pc, self.getPathFromModel(pc))
+					print self.pdb.getPath(pc)
+					self.z3Solver.pop()
+				else :
+					print "Input Policies not realisable"
+
+			# All packet classes have been computed. Validate the isolation policies. 
+
+			#self.z3Solver.push()
+			for pc in relClass : 
+				isolatedFlag = self.pdb.validateIsolationPolicy(pc)
+				print str(pc) + " : IF is " +  str(isolatedFlag)
+
+				if isolatedFlag == False : 
+					# Need to ensure isolation. 
+					pass
+
+
 	def addTopologyConstraints(self) :
 		swCount = self.topology.getSwitchCount()
 		# \forall sw \forall n \in neighbours(sw) and NextHop = {n | F(sw,n,pc,1) = True}. |NextHop| \leq 1 
 		# None or only one of F(sw,n,pc,1) can be true.
 		for sw in range(1,swCount+1) :
-			neighbours = self.topology.getSwitchNeighbours(sw)
+			for pc in range(self.pdb.getPacketClassRange()) :
+				if not self.pdb.isMulticast(pc) : 
+					""" Unicast packet class """
+					neighbours = self.topology.getSwitchNeighbours(sw)
 
-			# Add assertions to ensure f(sw,*) leads to a valid neighbour. 
-			topoAssert = False
-			unreachedAssert = True
+					# Add assertions to ensure f(sw,*) leads to a valid neighbour. 
+					topoAssert = False
+					unreachedAssert = True
 
-			for n in neighbours : 
-				neighbourAssert = self.F(sw,n,self.pc,1) == True
-				unreachedAssert = And(unreachedAssert, self.F(sw,n,self.pc,1) == False)
-				for n1 in neighbours :
-					if n == n1 : 
-						continue
-					else :
-						neighbourAssert = And(neighbourAssert, self.F(sw,n1,self.pc,1) == False)
-				topoAssert = Or(topoAssert, neighbourAssert)
+					for n in neighbours : 
+						neighbourAssert = self.F(sw,n,pc,1) == True
+						unreachedAssert = And(unreachedAssert, self.F(sw,n,pc,1) == False)
+						for n1 in neighbours :
+							if n == n1 : 
+								continue
+							else :
+								neighbourAssert = And(neighbourAssert, self.F(sw,n1,pc,1) == False)
+						topoAssert = Or(topoAssert, neighbourAssert)
 
-			topoAssert = Or(topoAssert, unreachedAssert) # Either one forwarding rule or no forwarding rules.
-			topoAssert = ForAll(self.pc, topoAssert)
-			self.z3Solver.add(topoAssert)
+					topoAssert = Or(topoAssert, unreachedAssert) # Either one forwarding rule or no forwarding rules.
+					self.z3Solver.add(topoAssert)
+				else :
+					""" Multicast packet class. No restrictions on forwarding set """
+					pass
+
 			
 			# \forall n such that n \notin neighbours or n \not\eq sw . F(sw,n,pc,1) = False
 			# Cannot reach nodes which are not neighbours in step 1. 
 			# This constraint is needed because there is no restriction from the above constraints 
 			# regarding the values of non-neighbours.
+			neighbours = self.topology.getSwitchNeighbours(sw)
 			for s in range(1,swCount + 1) :
 				if s == sw or s in neighbours : 
 					continue
@@ -295,12 +364,48 @@ class ConstraintGenerator2(object) :
 				isolateAssert = Not( And (self.F(sw,n,pc1,1) == True, self.F(sw,n,pc2,1) == True))
 				self.z3Solver.add(isolateAssert)		
 
+	def addMulticastConstraints(self, srcSw, dstSwList, pc, pathlen=0) :
+		if pathlen == 0 :
+			# Default argument. Set to max.
+			pathlen = self.topology.getMaxPathLength()
+
+		# Add Reachability in "exactly" pathlen steps constraint. 
+		for dstSw in dstSwList : 
+			reachAssert = self.F(srcSw,dstSw,pc,pathlen) == True
+			reachAssert = And(reachAssert, self.F(srcSw,dstSw,pc,pathlen - 1) == False)
+			self.z3Solver.add(reachAssert)
+
+		# At Destination, forwarding has to stop here. So, F(d,neighbour(d),pc,1) == False 
+		# When we perform the translation to rules, we can forward it to host accordingly.
+		for dstSw in dstSwList : 
+			neighbours = self.topology.getSwitchNeighbours(dstSw)
+		
+			destAssert = True
+			for n in neighbours :
+				destAssert = And(destAssert, self.F(dstSw,n,pc,1) == False)
+
+			self.z3Solver.add(destAssert)
+
+		# Add Path Constraints for this flow to find the forwarding model for this flow.
+		self.addPathConstraints(srcSw,pc)	
+
+		# Need to add cycle constraints as well!	
+		fname = "rank" + str(pc)
+		rankfn = Function(fname, IntSort(), IntSort())
+
+		self.z3Solver.add(rankfn(srcSw) == 0)
+		
+		for i in range(1,self.topology.getSwitchCount() +1) :
+			ineighbours = self.topology.getSwitchNeighbours(i) 
+
+			for n in ineighbours :
+				self.z3Solver.add(Implies(self.F(i,n,pc,1) == True, rankfn(n) > rankfn(i)))
+
 
 	def addBoundConstraints(self, pcRange) :
 		self.z3Solver.add(self.pc < pcRange + 1)
 
 	
-		
 	def getPathFromModel(self, pc) :
 		def getPathHelper(s, pc) :
 			path = [s]
@@ -317,7 +422,29 @@ class ConstraintGenerator2(object) :
 
 		return getPathHelper(self.pdb.getSourceSwitch(pc), pc)
 
+	def getMulticastPathFromModel(self, pc) :
+		def getPathHelper(s, pc) :
+			paths = []
+			swCount = self.topology.getSwitchCount()
+			
+			isDst = True
+			for sw in range(1, swCount + 1) :
+				if sw == s : 
+					continue
+				if is_true(self.fwdmodel.evaluate(self.F(s,sw,pc,1))) :
+					isDst = False
+					nextPaths = getPathHelper(sw,pc)
+					for path in nextPaths :
+						srcpath = [s]
+						srcpath.extend(path)
+						paths.append(srcpath)
+			
+			if isDst : 
+				return [[s]]
+			else : 
+				return paths
 
+		return getPathHelper(self.pdb.getSourceSwitch(pc), pc)
 
 
 """Policy Database is used to maintain the database of policies incorporated in the network. 
@@ -325,9 +452,10 @@ This will help in better bookmarking and aid in policy change synthesis."""
 class PolicyDatabase(object) :
 	def __init__(self) :
 		self.pc = 0
-		self.endpointTable = []
-		self.waypointTable = []
+		self.endpointTable = dict()
+		self.waypointTable = dict()
 		self.isolationTable = []
+		self.mutlicastTable = dict()
 		self.relClasses = []
 		self.paths = dict()
 
@@ -336,11 +464,11 @@ class PolicyDatabase(object) :
 			dstSw = Destination IP next hop switch
 			W = List of Waypoints. """
 
-		self.endpointTable.append([srcIP, dstIP, srcSw, dstSw])
+		self.endpointTable[self.pc] = [srcIP, dstIP, srcSw, dstSw]
 		if W == None : 
-			self.waypointTable.append([])
+			self.waypointTable[self.pc] = []
 		else :
-			self.waypointTable.append(W)
+			self.waypointTable[self.pc] = W
 
 		self.relClasses.append([self.pc])
 		self.pc += 1
@@ -351,7 +479,7 @@ class PolicyDatabase(object) :
 
 	def getAllowPolicy(self, no) :
 		""" Policy is of the form : [[srcIP, dstIP, srcSw, dstSw], Waypoints] """
-		if no > len(self.endpointTable) - 1 : 
+		if no not in self.endpointTable : 
 			return None
 		else :
 			if self.waypointTable[no] == [] :
@@ -365,17 +493,27 @@ class PolicyDatabase(object) :
 	def getPath(self, pc) :
 		return self.paths[pc]
 
+	def printPaths(self) :
+		for pc in range(self.getPacketClassRange()) :
+			if not self.isMulticast(pc) :
+				ep = self.endpointTable[pc]
+				path = self.paths[pc]
+				print "PC#" + str(pc) + ": Endpoint Information : " + str(ep) + " Path : " + str(path) 
+			else :
+				policy = self.mutlicastTable[pc]
+				path = self.paths[pc]
+				print "PC#" + str(pc) + ": Endpoint Information : " + str(policy) + " Path : " + str(path)
+
 	def addIsolationPolicy(self, ep1, ep2) :
 		# Find the Packet Class numbers
-		i = 0
 		pc1 = -1
 		pc2 = -1
-		for ep in self.endpointTable :
+		for i in self.endpointTable.keys() :
+			ep = self.endpointTable[i]
 			if ep[0] == ep1[0] and ep[1] == ep1[1] :
-				pc1 = i 
+				pc1 = i
 			if ep[0] == ep2[0] and ep[1] == ep2[1] :
 				pc2 = i
-			i += 1	
 
 		if pc1 == -1 :
 			#Flows dont exist. 
@@ -398,9 +536,6 @@ class PolicyDatabase(object) :
 			if (policy[0] == pc1 and policy[1] == pc2) or (policy[1] == pc1 and policy[0] == pc2) : 
 				return True
 		return False
-
-
-
 
 	def getIsolationPolicyCount(self) :
 		return len(self.isolationTable)
@@ -456,7 +591,7 @@ class PolicyDatabase(object) :
 		relClass = self.getRelationalClass(pc)
 
 		for pc2 in relClass : 
-			if pc == pc2 or self.isIsolated(pc,pc2) :
+			if pc == pc2 or not self.isIsolated(pc,pc2) :
 				continue
 
 			path2 = self.getPath(pc2)
@@ -475,6 +610,20 @@ class PolicyDatabase(object) :
 
 		return True
 
+	def isMulticast(self, pc) :
+		if pc in self.mutlicastTable :
+			return True
+		else :
+			return False
+
+	def addMulticastPolicy(self, srcIP, srcSw, dstIPs, dstSws) :
+		self.mutlicastTable[self.pc] = [srcIP, srcSw, dstIPs, dstSws]
+		self.pc += 1
+		return self.pc - 1
+
+	def getMulticastPolicy(self, pc) :
+		return self.mutlicastTable[pc]
+
 	def getPacketClassRange(self) :
 		return self.pc
 
@@ -482,13 +631,15 @@ class PolicyDatabase(object) :
 		""" Returns packet class for a pair of end-points"""
 
 		i = 0
-		for ep in self.endpointTable :
+		for ep in self.endpointTable.values() :
 			if ep[0] == epIn[0] and ep[1] == epIn[1] :
 				return i
 			i += 1
 
 	def getSourceSwitch(self, pc) :
-		if pc > len(self.endpointTable) :
+		if self.isMulticast(pc) :
+			return self.mutlicastTable[pc][1]
+		if pc not in self.endpointTable :
 			raise LookupError(str(pc) + " is not a valid packet class flow number.")
 		return self.endpointTable[pc][2]
 
