@@ -167,6 +167,7 @@ class PolicyDatabase(object) :
 			return True
 		else :
 			return False
+
 	def isEqualMulticast(self, pc) :
 		if pc in self.equalMulticastPolicy :
 			return True
@@ -176,6 +177,11 @@ class PolicyDatabase(object) :
 	def addEqualMulticastPolicy(self, srcIP, srcSw, dstIPs, dstSws) :
 		self.mutlicastTable[self.pc] = [srcIP, srcSw, dstIPs, dstSws]
 		self.equalMulticastPolicy[self.pc] = True 
+		self.pc += 1
+		return self.pc - 1
+
+	def addMulticastPolicy(self, srcIP, srcSw, dstIPs, dstSws) :
+		self.mutlicastTable[self.pc] = [srcIP, srcSw, dstIPs, dstSws]
 		self.pc += 1
 		return self.pc - 1
 

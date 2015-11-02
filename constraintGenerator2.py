@@ -22,60 +22,6 @@ class ConstraintGenerator2(object) :
 		start_t = time.time()
 		print "Adding Constraints at " + str(start_t)
 
-		# for i in range(3, self.topology.getMaxPathLength() + 1) :
-		# 	self.z3Solver.push()
-		# 	self.addReachabilityConstraints("1.2", 1, "1.3", 2, [5])
-		# 	#self.addWaypointConstraints(1,3,1,[4,5])
-		# 	sat = self.z3Solver.check()
-		# 	if sat == z3.sat : 
-		# 		print "Sat " + str(i)
-		# 		break
-		# 	else :
-		# 		print "unsat " + str(i)
-		# 		self.z3Solver.pop()
-
-		# for i in range(1, self.topology.getMaxPathLength() + 1) :
-		# 	self.z3Solver.push()
-		# 	self.addReachabilityConstraints(1,2,2,i)
-		# 	self.addWaypointConstraints(1,2,2,[4])
-		# 	sat = self.z3Solver.check()
-		# 	if sat == z3.sat : 
-		# 		print "2Sat " + str(i)
-		# 		break
-		# 	else :
-		# 		print "2unsat " + str(i)
-		# 		self.z3Solver.pop()
-
-		# print self.z3Solver.model()
-
-
-		# self.addReachabilityConstraints(1,3,3)
-		# self.addWaypointConstraints(1,3,3,[4])
-
-		# self.addReachabilityConstraints(1,3,4)
-
-		# self.addReachabilityConstraints(1,3,5)
-
-		# self.addTrafficIsolationConstraints(4,5)
-		# self.addTrafficIsolationConstraints(3,5)
-		# self.addTrafficIsolationConstraints(4,3)
-
-
-		
-	
-		# for i in range(1,10):
-		# 	if i % 2 == 0 :
-		# 		s = 1
-		# 	else :
-		# 		s = 2
-
-		# 	d = random.randint(8,10)
-		# 	self.addReachabilityConstraints(s,d,i,self.topology.getMaxPathLength())
-		# 	self.addWaypointConstraints(s,d,i, [random.randint(3,5), random.randint(6,7)])
-
-		# 	if(i > 2) :
-		# 		self.addTrafficIsolationConstraints(i, i - 1)
-
 		# Generate the assertions.
 		self.addPolicies()
 
@@ -85,10 +31,7 @@ class ConstraintGenerator2(object) :
 		self.enforcePolicies()
 
 		self.pdb.printPaths()
-
 		
-		#print self.fwdmodel
-
 		end_t = time.time()
 		#print self.pdb.getPath(1)
 		#print self.pdb.validateIsolationPolicy(1)
@@ -102,6 +45,7 @@ class ConstraintGenerator2(object) :
 		self.addTrafficIsolationPolicy(["1", "1"] , ["2", "2"])
 
 		self.addEqualMulticastPolicy("3", 1, ["3", "3"], [6, 5])
+		self.addMulticastPolicy("8", 1, ["8", "8"], [6, 5, 4])
 		self.addReachabilityPolicy("4", 1, "4", 2)
 		self.addReachabilityPolicy("5", 1, "5", 2)
 		self.addReachabilityPolicy("6", 1, "6", 2)
@@ -124,6 +68,9 @@ class ConstraintGenerator2(object) :
 
 	def addEqualMulticastPolicy(self, srcIP, srcSw, dstIPs, dstSws) :
 		pc = self.pdb.addEqualMulticastPolicy(srcIP, srcSw, dstIPs, dstSws)
+
+	def addMulticastPolicy(self, srcIP, srcSw, dstIPs, dstSws) :
+		pc = self.pdb.addMulticastPolicy(srcIP, srcSw, dstIPs, dstSws)
 
 	def enforcePolicies(self) :
 		""" Enforcement of Policies stored in the PDB. """
@@ -162,20 +109,36 @@ class ConstraintGenerator2(object) :
 
 
 		# Enforcement of Mutltcast Policies. 
-
 		for pc in range(self.pdb.getPacketClassRange()) :
 			if self.pdb.isMulticast(pc) :
 				self.z3Solver.push()
 			
 				policy = self.pdb.getMulticastPolicy(pc)
 
-				self.addEqualMulticastConstraints(policy[1], policy[3], pc, 3) 
+				if self.pdb.isEqualMulticast(pc) : 
+					self.addEqualMulticastConstraints(policy[1], policy[3], pc, 3) 
+				else :
+					self.addEqualMulticastConstraints(policy[1], policy[3], pc)
 
 				modelsat = self.z3Solver.check()
 				if modelsat == z3.sat : 
 					print "SAT"
 					self.fwdmodel = self.z3Solver.model()	
-					self.pdb.addPath(pc, self.getMulticastPathFromModel(pc))			
+					paths = self.getMulticastPathFromModel(pc)
+					""" IMPORTANT NOTE : So, the Multicast Policy enforcement provides the paths asked, but also 
+					other paths not needed (Because of non-restriction of paths). So, the model provides paths for 
+					all dst in the destination list, but also other destinations not needed. Instead of refining the 
+					constraints, Genesis will store only paths asked by the policy. 
+					Caveat : This works, because our Multicast functionality is treated in isolation. If we need to 
+					isolate Multicast flows, then the problme could get a lot trickier. """
+					dstPaths = []
+					for path in paths : 
+						for dst in policy[3] :
+							if dst in path : 
+								dstPaths.append(path)
+								break
+
+					self.pdb.addPath(pc, dstPaths)		
 				else :
 					print "Input Policies not realisable"
 
@@ -281,7 +244,6 @@ class ConstraintGenerator2(object) :
 		# When we perform the translation to rules, we can forward it to host accordingly.
 		
 		neighbours = self.topology.getSwitchNeighbours(dstSw)
-
 		
 		destAssert = True
 		for n in neighbours :
@@ -311,7 +273,6 @@ class ConstraintGenerator2(object) :
 			neighbourAssert = Or(neighbourAssert, self.F(s,n,pc,1) == True)
 
 		self.z3Solver.add(neighbourAssert)
-		
 
 		swCount = self.topology.getSwitchCount()
 		maxPathLen = self.topology.getMaxPathLength()
@@ -366,14 +327,17 @@ class ConstraintGenerator2(object) :
 
 	def addEqualMulticastConstraints(self, srcSw, dstSwList, pc, pathlen=0) :
 		if pathlen == 0 :
-			# Default argument. Set to max.
+			# Default argument. Do normal Multicast.
 			pathlen = self.topology.getMaxPathLength()
-
-		# Add Reachability in "exactly" pathlen steps constraint. 
-		for dstSw in dstSwList : 
-			reachAssert = self.F(srcSw,dstSw,pc,pathlen) == True
-			reachAssert = And(reachAssert, self.F(srcSw,dstSw,pc,pathlen - 1) == False)
-			self.z3Solver.add(reachAssert)
+			for dstSw in dstSwList : 
+				reachAssert = self.F(srcSw,dstSw,pc,pathlen) == True
+				self.z3Solver.add(reachAssert)
+		else :
+			# Add Reachability in "exactly" pathlen steps constraint. 
+			for dstSw in dstSwList : 
+				reachAssert = self.F(srcSw,dstSw,pc,pathlen) == True
+				reachAssert = And(reachAssert, self.F(srcSw,dstSw,pc,pathlen - 1) == False)
+				self.z3Solver.add(reachAssert)
 
 		# At Destination, forwarding has to stop here. So, F(d,neighbour(d),pc,1) == False 
 		# When we perform the translation to rules, we can forward it to host accordingly.
@@ -385,6 +349,24 @@ class ConstraintGenerator2(object) :
 				destAssert = And(destAssert, self.F(dstSw,n,pc,1) == False)
 
 			self.z3Solver.add(destAssert)
+
+		# We need to ensure only a single path to destination. 
+		for dstSw in dstSwList : 
+			neighbours = self.topology.getSwitchNeighbours(dstSw)
+
+			# Add assertions to ensure f(sw,*) leads to a valid neighbour. 
+			singlePathAssert = False
+
+			for n in neighbours : 
+				neighbourAssert = self.F(n,dstSw,pc,1) == True
+				for n1 in neighbours :
+					if n == n1 : 
+						continue
+					else :
+						neighbourAssert = And(neighbourAssert, self.F(n1,dstSw,pc,1) == False)
+				singlePathAssert = Or(singlePathAssert, neighbourAssert)
+
+			self.z3Solver.add(singlePathAssert)
 
 		# Add Path Constraints for this flow to find the forwarding model for this flow.
 		self.addPathConstraints(srcSw,pc)	
