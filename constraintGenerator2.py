@@ -16,6 +16,7 @@ class ConstraintGenerator2(object) :
 		self.z3Solver = Solver()
 		self.fwdmodel = None 
 
+		self.count = 100
 		# Policy Database. 
 		self.pdb = PolicyDatabase()
 		
@@ -24,33 +25,38 @@ class ConstraintGenerator2(object) :
 
 		# Generate the assertions.
 		self.addPolicies()
-
-		# Add Topology Constraints 
-		self.addTopologyConstraints()
 	
-		self.enforcePolicies()
+		self.enforcePoliciesFuzzy()
 
 		self.pdb.printPaths()
-		
+
 		end_t = time.time()
 		#print self.pdb.getPath(1)
-		#print self.pdb.validateIsolationPolicy(1)
+		
+		for pc in range(self.count) :
+			print "pc#" + str(pc) + ":" + str(self.pdb.validateIsolationPolicy(pc))
 		print "Time taken to solve the constraints is" + str(end_t - start_t)
 	
 	def addPolicies(self) :
-		self.addReachabilityPolicy("0", 1, "0", 2, [4,6])
-		self.addReachabilityPolicy("1", 1, "1", 2)
-		self.addReachabilityPolicy("2", 1, "2", 2)
-		self.addTrafficIsolationPolicy(["0", "0"] , ["1", "1"])
-		self.addTrafficIsolationPolicy(["1", "1"] , ["2", "2"])
+		# self.addReachabilityPolicy("0", 1, "0", 2, [4,6])
+		# self.addReachabilityPolicy("1", 1, "1", 2)
+		# self.addReachabilityPolicy("2", 1, "2", 2)
+		# self.addTrafficIsolationPolicy(["0", "0"] , ["1", "1"])
+		# self.addTrafficIsolationPolicy(["1", "1"] , ["2", "2"])
 
-		self.addEqualMulticastPolicy("3", 1, ["3", "3"], [6, 5])
-		self.addMulticastPolicy("8", 1, ["8", "8"], [6, 5, 4])
-		self.addReachabilityPolicy("4", 1, "4", 2)
-		self.addReachabilityPolicy("5", 1, "5", 2)
-		self.addReachabilityPolicy("6", 1, "6", 2)
-		self.addTrafficIsolationPolicy(["4", "4"] , ["5", "5"])
-		self.addTrafficIsolationPolicy( ["2", "2"], ["5", "5"])
+		# # self.addEqualMulticastPolicy("3", 1, ["3", "3"], [6, 5])
+		# # self.addMulticastPolicy("8", 1, ["8", "8"], [6, 5, 4])
+		# self.addReachabilityPolicy("4", 1, "4", 2)
+		# self.addReachabilityPolicy("5", 1, "5", 2)
+		# #self.addReachabilityPolicy("6", 1, "6", 2)
+		# self.addTrafficIsolationPolicy(["4", "4"] , ["5", "5"])
+		# self.addTrafficIsolationPolicy( ["2", "2"], ["5", "5"])
+
+		for i in range(self.count) :
+			self.addReachabilityPolicy(str(i), i%2 + 1, str(i), random.randint(8,10), [random.randint(3,5), random.randint(6,7)])
+
+		for i in range(self.count - 1) :
+			self.addTrafficIsolationPolicy([str(i), str(i)] , [str(i+1), str(i+1)])
 
 		
 
@@ -73,6 +79,9 @@ class ConstraintGenerator2(object) :
 		pc = self.pdb.addMulticastPolicy(srcIP, srcSw, dstIPs, dstSws)
 
 	def enforcePolicies(self) :
+		# Add Topology Constraints 
+		self.addTopologyConstraints(0, self.pdb.getPacketClassRange())
+
 		""" Enforcement of Policies stored in the PDB. """
 		# Create Relational Packet Classses.
 		relClasses = self.pdb.createRelationalClasses()
@@ -106,7 +115,6 @@ class ConstraintGenerator2(object) :
 				print "Input Policies not realisable"
 
 			self.z3Solver.pop()
-
 
 		# Enforcement of Mutltcast Policies. 
 		for pc in range(self.pdb.getPacketClassRange()) :
@@ -150,40 +158,78 @@ class ConstraintGenerator2(object) :
 
 		for relClass in relClasses :
 			# Independent Synthesis of relClass.
+			rel1 = range(0,self.count/2)
+			rel2 = range(self.count/2,self.count)
 
-			for pc in relClass : 
-				self.z3Solver.push()
+			self.z3Solver.push()
+
+			# Add Topology Constraints 
+			self.addTopologyConstraints(0, self.count)
+
+			for pc in rel1: 
 				policy = self.pdb.getAllowPolicy(pc)
 				self.addReachabilityConstraints(srcIP=policy[0][0], srcSw=policy[0][2], dstIP=policy[0][1], dstSw=policy[0][3],pc=pc, W=policy[1]) 
 
-				# Each packet class in Relational class is fuzzily synthesised.
-				modelsat = self.z3Solver.check()
-				if modelsat == z3.sat : 
-					self.fwdmodel = self.z3Solver.model()
+			# Add traffic constraints. 
+			for pno in range(self.pdb.getIsolationPolicyCount()) :
+				pc = self.pdb.getIsolationPolicy(pno)
+				pc1 = pc[0]
+				pc2 = pc[1]
+				if pc1 in rel1 and pc2 in rel1 : 
+					self.addTrafficIsolationConstraints(pc1, pc2)
+
+			
+			modelsat = self.z3Solver.check()
+			if modelsat == z3.sat : 
+				self.fwdmodel = self.z3Solver.model()
+				for pc in rel1 :
 					self.pdb.addPath(pc, self.getPathFromModel(pc))
-					print self.pdb.getPath(pc)
-					self.z3Solver.pop()
-				else :
-					print "Input Policies not realisable"
+					print pc
+				self.z3Solver.pop()
+			else :
+				print "Input Policies not realisable"
+				return
+
+			self.z3Solver.push()
+
+			# Add Topology Constraints 
+			self.addTopologyConstraints(self.count/2, self.count)
+			
+
+			self.addPathIsolationConstraints(self.count/2, self.pdb.getPath(self.count/2 - 1))
+			for pc in rel2: 
+				policy = self.pdb.getAllowPolicy(pc)
+				self.addReachabilityConstraints(srcIP=policy[0][0], srcSw=policy[0][2], dstIP=policy[0][1], dstSw=policy[0][3],pc=pc, W=policy[1]) 
+
+			# Add traffic constraints. 
+			for pno in range(self.pdb.getIsolationPolicyCount()) :
+				pc = self.pdb.getIsolationPolicy(pno)
+				pc1 = pc[0]
+				pc2 = pc[1]
+				if pc1 in rel2 and pc2 in rel2 : 
+					self.addTrafficIsolationConstraints(pc1, pc2)
+
+			
+			modelsat = self.z3Solver.check()
+			if modelsat == z3.sat : 
+				self.fwdmodel = self.z3Solver.model()
+				for pc in rel2 :
+					self.pdb.addPath(pc, self.getPathFromModel(pc))
+				self.z3Solver.pop()
+			else :
+				print "Input Policies not realisable"
+				return
 
 			# All packet classes have been computed. Validate the isolation policies. 
 
-			#self.z3Solver.push()
-			for pc in relClass : 
-				isolatedFlag = self.pdb.validateIsolationPolicy(pc)
-				print str(pc) + " : IF is " +  str(isolatedFlag)
-
-				if isolatedFlag == False : 
-					# Need to ensure isolation. 
-					pass
 
 
-	def addTopologyConstraints(self) :
+	def addTopologyConstraints(self, pcStart, pcEnd) :
 		swCount = self.topology.getSwitchCount()
 		# \forall sw \forall n \in neighbours(sw) and NextHop = {n | F(sw,n,pc,1) = True}. |NextHop| \leq 1 
 		# None or only one of F(sw,n,pc,1) can be true.
 		for sw in range(1,swCount+1) :
-			for pc in range(self.pdb.getPacketClassRange()) :
+			for pc in range(pcStart, pcEnd) :
 				if not self.pdb.isMulticast(pc) : 
 					""" Unicast packet class """
 					neighbours = self.topology.getSwitchNeighbours(sw)
@@ -323,7 +369,14 @@ class ConstraintGenerator2(object) :
 		for sw in range(1, swCount + 1) :
 			for n in self.topology.getSwitchNeighbours(sw) :
 				isolateAssert = Not( And (self.F(sw,n,pc1,1) == True, self.F(sw,n,pc2,1) == True))
-				self.z3Solver.add(isolateAssert)		
+				self.z3Solver.add(isolateAssert)	
+
+	def addPathIsolationConstraints(self, pc, path) :
+		""" Adding constraints such that the path of pc is isolated by 'path' argument"""
+		i = 0
+		for i in range(len(path) - 1) :
+			self.z3Solver.add(self.F(path[i], path[i+1], pc, 1) == False)
+
 
 	def addEqualMulticastConstraints(self, srcSw, dstSwList, pc, pathlen=0) :
 		if pathlen == 0 :
@@ -351,22 +404,27 @@ class ConstraintGenerator2(object) :
 			self.z3Solver.add(destAssert)
 
 		# We need to ensure only a single path to destination. 
-		for dstSw in dstSwList : 
-			neighbours = self.topology.getSwitchNeighbours(dstSw)
+		for dst in range(1,self.topology.getSwitchCount() +1) :
+			if dst == srcSw : 
+				continue
+			else : 
+				neighbours = self.topology.getSwitchNeighbours(dst)
 
-			# Add assertions to ensure f(sw,*) leads to a valid neighbour. 
-			singlePathAssert = False
+				# Add assertions to ensure f(sw,*) leads to a valid neighbour. 
+				singlePathAssert = False
+				unreachedAssert = True
 
-			for n in neighbours : 
-				neighbourAssert = self.F(n,dstSw,pc,1) == True
-				for n1 in neighbours :
-					if n == n1 : 
-						continue
-					else :
-						neighbourAssert = And(neighbourAssert, self.F(n1,dstSw,pc,1) == False)
-				singlePathAssert = Or(singlePathAssert, neighbourAssert)
+				for n in neighbours : 
+					neighbourAssert = self.F(n,dst,pc,1) == True
+					unreachedAssert = And(unreachedAssert, self.F(n,dst,pc,1) == False)
+					for n1 in neighbours :
+						if n == n1 : 
+							continue
+						else :
+							neighbourAssert = And(neighbourAssert, self.F(n1,dst,pc,1) == False)
+					singlePathAssert = Or(singlePathAssert, neighbourAssert)
 
-			self.z3Solver.add(singlePathAssert)
+				self.z3Solver.add(Or(unreachedAssert, singlePathAssert))
 
 		# Add Path Constraints for this flow to find the forwarding model for this flow.
 		self.addPathConstraints(srcSw,pc)	
