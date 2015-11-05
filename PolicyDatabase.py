@@ -1,3 +1,6 @@
+import networkx as nx
+import metis
+
 """Policy Database is used to maintain the database of policies incorporated in the network. 
 This will help in better bookmarking and aid in policy change synthesis."""
 class PolicyDatabase(object) :
@@ -9,6 +12,8 @@ class PolicyDatabase(object) :
 		self.mutlicastTable = dict()
 		self.equalMulticastPolicy = dict()
 		self.relClasses = []
+		self.relClassGraphs = []
+		self.relationalClassCreationFlag = False
 		self.paths = dict()
 
 	def addAllowPolicy(self, srcIP, srcSw, dstIP, dstSw, W=None) :
@@ -126,6 +131,10 @@ class PolicyDatabase(object) :
 				self.relClasses.remove(pc2rc)
 			print self.relClasses
 
+		for relClass in self.relClasses : 
+			self.createRelationalClassGraph(relClass)
+
+		self.relationalClassCreationFlag = True
 		return self.relClasses
 
 	def getRelationalClass(self, pc) :
@@ -156,6 +165,8 @@ class PolicyDatabase(object) :
 					# Check next hop is not equal.
 					if i + 1 < len(path1) and pos + 1 < len(path2) :
 						if path1[i+1] == path2[pos + 1] : 
+							print path2[pos + 1] 
+							print "Neg above."
 							return False
 				except ValueError:
 					continue
@@ -206,3 +217,31 @@ class PolicyDatabase(object) :
 		if pc not in self.endpointTable :
 			raise LookupError(str(pc) + " is not a valid packet class flow number.")
 		return self.endpointTable[pc][2]
+
+	def createRelationalClassGraph(self, relClass) :
+		""" Creation of a Graph of edges of each packet class in the relational Class to leverage policy interactions to 
+		perform fuzzy synthesis"""
+
+		G = nx.Graph()
+		
+		for pc in relClass :
+			G.add_node(pc, switch=str(pc))
+
+		for policy in self.isolationTable : 	
+			if policy[0] in relClass : 
+				G.add_edge(policy[0],policy[1])
+
+		self.relClassGraphs.append(G)
+
+		return G
+
+	def getRelationalClassGraphs(self) :
+		return self.relClassGraphs
+
+
+
+
+
+
+
+

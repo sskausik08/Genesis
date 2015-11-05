@@ -3,6 +3,8 @@ from Topology import Topology
 from PolicyDatabase import PolicyDatabase
 import time
 import random
+import metis
+import networkx as nx
 
 class ConstraintGenerator2(object) :
 	def __init__(self, topo) :
@@ -16,48 +18,75 @@ class ConstraintGenerator2(object) :
 		self.z3Solver = Solver()
 		self.fwdmodel = None 
 
-		self.count = 100
+		self.count = 50
 		# Policy Database. 
 		self.pdb = PolicyDatabase()
+
+		# Topology Optimizations 
+		self.fatTreeOptimizeFlag = True
 		
+		# Fuzzy Synthesis Constants. 
+		self.CUT_THRESHOLD = 5
+		self.GRAPH_SIZE_THRESHOLD = 3
+
+		# Fuzzy Synthesis Flags 
+		self.fuzzySynthesisFlag = True
+
 		start_t = time.time()
 		print "Adding Constraints at " + str(start_t)
 
 		# Generate the assertions.
 		self.addPolicies()
+		assert self.pdb.relationalClassCreationFlag == True
+
+		# Add Unreachable Constraints 
+		self.addUnreachableHopConstraints()
 	
-		self.enforcePoliciesFuzzy()
+		if self.fuzzySynthesisFlag : 
+			rcGraphs = self.pdb.getRelationalClassGraphs()
+
+			for rcGraph in rcGraphs :
+				synPaths = self.enforceGraphPoliciesFuzzy(rcGraph)
+				for pc in synPaths.keys() :
+					self.pdb.addPath(pc, synPaths[pc])
+		else :
+			self.enforcePolicies()
 
 		self.pdb.printPaths()
 
 		end_t = time.time()
 		#print self.pdb.getPath(1)
 		
-		for pc in range(self.count) :
+		for pc in range(self.pdb.getPacketClassRange()) :
 			print "pc#" + str(pc) + ":" + str(self.pdb.validateIsolationPolicy(pc))
 		print "Time taken to solve the constraints is" + str(end_t - start_t)
-	
+
 	def addPolicies(self) :
-		# self.addReachabilityPolicy("0", 1, "0", 2, [4,6])
+		# self.addReachabilityPolicy("0", 1, "0", 5, [17,6])
 		# self.addReachabilityPolicy("1", 1, "1", 2)
-		# self.addReachabilityPolicy("2", 1, "2", 2)
+		# self.addReachabilityPolicy("2", 3, "2", 6)
+		# self.addReachabilityPolicy("3", 3, "3", 6)
 		# self.addTrafficIsolationPolicy(["0", "0"] , ["1", "1"])
 		# self.addTrafficIsolationPolicy(["1", "1"] , ["2", "2"])
 
-		# # self.addEqualMulticastPolicy("3", 1, ["3", "3"], [6, 5])
-		# # self.addMulticastPolicy("8", 1, ["8", "8"], [6, 5, 4])
+		# # # self.addEqualMulticastPolicy("3", 1, ["3", "3"], [6, 5])
+		# # # self.addMulticastPolicy("8", 1, ["8", "8"], [6, 5, 4])
 		# self.addReachabilityPolicy("4", 1, "4", 2)
 		# self.addReachabilityPolicy("5", 1, "5", 2)
-		# #self.addReachabilityPolicy("6", 1, "6", 2)
-		# self.addTrafficIsolationPolicy(["4", "4"] , ["5", "5"])
+		# self.addReachabilityPolicy("6", 1, "6", 2)
+		# self.addTrafficIsolationPolicy(["5", "5"] , ["4", "4"])
+		# self.addTrafficIsolationPolicy(["4", "4"] , ["3", "3"])
 		# self.addTrafficIsolationPolicy( ["2", "2"], ["5", "5"])
 
+		
+		# random.seed(8)
+
 		for i in range(self.count) :
-			self.addReachabilityPolicy(str(i), i%2 + 1, str(i), random.randint(8,10), [random.randint(3,5), random.randint(6,7)])
+			self.addReachabilityPolicy(str(i), i%2 + 1, str(i), random.randint(3,8), [16 + i%4])
 
 		for i in range(self.count - 1) :
 			self.addTrafficIsolationPolicy([str(i), str(i)] , [str(i+1), str(i+1)])
-
+		self.pdb.createRelationalClasses()
 		
 
 	def addReachabilityPolicy(self, srcIP, s, dstIP, d, W=None) :
@@ -150,81 +179,156 @@ class ConstraintGenerator2(object) :
 				else :
 					print "Input Policies not realisable"
 
+	def enforceGraphPolicies(self, rcGraph, pathConstraints=None) :
+		""" Synthesis of the Relational Class Graph given some path constraints"""
+		synPaths = dict()
 
-	def enforcePoliciesFuzzy(self) :
-		""" Fuzzy Enforcement of Policies stored in the PDB. """
-		# Create Relational Packet Classses.
-		relClasses = self.pdb.createRelationalClasses()
+		self.z3Solver.push()
+		pclist = []
+		for node in rcGraph.nodes() :
+			pclist.append(int(node))
 
-		for relClass in relClasses :
-			# Independent Synthesis of relClass.
-			rel1 = range(0,self.count/2)
-			rel2 = range(self.count/2,self.count)
-
-			self.z3Solver.push()
-
-			# Add Topology Constraints 
-			self.addTopologyConstraints(0, self.count)
-
-			for pc in rel1: 
+		for pc in pclist : 
+			if not self.pdb.isMulticast(pc) :  
 				policy = self.pdb.getAllowPolicy(pc)
 				self.addReachabilityConstraints(srcIP=policy[0][0], srcSw=policy[0][2], dstIP=policy[0][1], dstSw=policy[0][3],pc=pc, W=policy[1]) 
 
-			# Add traffic constraints. 
-			for pno in range(self.pdb.getIsolationPolicyCount()) :
-				pc = self.pdb.getIsolationPolicy(pno)
-				pc1 = pc[0]
-				pc2 = pc[1]
-				if pc1 in rel1 and pc2 in rel1 : 
-					self.addTrafficIsolationConstraints(pc1, pc2)
+				# Add Topology Constraints
+				self.addTopologyConstraints(pc)
+
+		# Add traffic constraints. 
+		for pno in range(self.pdb.getIsolationPolicyCount()) :
+			pc = self.pdb.getIsolationPolicy(pno)
+			pc1 = pc[0]
+			pc2 = pc[1]
+			if pc1 in pclist and pc2 in pclist : 
+				self.addTrafficIsolationConstraints(pc1, pc2)
+
+		if not pathConstraints == None :
+			# path Constraint : [pc1, path]. All pcs which are connected to this rcGraph across the cut
+			# will be added as Path constraints. 
+			for pathConstraint in pathConstraints : 
+				for pno in range(self.pdb.getIsolationPolicyCount()) :
+					pc = self.pdb.getIsolationPolicy(pno)
+					pc1 = pc[0]
+					pc2 = pc[1]
+					if pc1 in pclist and pc2 == pathConstraint[0] :
+						self.addPathIsolationConstraints(pc1, pathConstraint[1])
+					elif pc2 in pclist and pc1 == pathConstraint[0] :
+						self.addPathIsolationConstraints(pc2, pathConstraint[1])
+
+
+		# Each relational class is be synthesised independently.
+		modelsat = self.z3Solver.check()
+		if modelsat == z3.sat : 
+			print "SAT"
+			self.fwdmodel = self.z3Solver.model()
+			for pc in pclist :
+				synPaths[pc] = self.getPathFromModel(pc)
+				self.pdb.addPath(pc, self.getPathFromModel(pc))
+				
+		else :
+			print "Input Policies not realisable"
+
+		self.z3Solver.pop()
+		return synPaths
 
 			
-			modelsat = self.z3Solver.check()
-			if modelsat == z3.sat : 
-				self.fwdmodel = self.z3Solver.model()
-				for pc in rel1 :
-					self.pdb.addPath(pc, self.getPathFromModel(pc))
-					print pc
-				self.z3Solver.pop()
+	def enforceGraphPoliciesFuzzy(self, rcGraph, pathConstraints=None) :
+		""" Fuzzy Enforcement of Policies in arg 'rcGraph' """
+		
+		synPaths = dict()
+
+		# print "SAT Call"
+		# disp = ""
+		# for node in rcGraph.nodes() :
+		# 	disp += str(node)
+		
+		# print disp
+		# print pathConstraints
+
+		# If the graph size is smaller than a threshold, perform complete synthesis. 
+		if rcGraph.number_of_nodes() <= self.GRAPH_SIZE_THRESHOLD :
+			return self.enforceGraphPolicies(rcGraph,pathConstraints)
+
+		# Fuzzy Synthesis of rcGraph.
+		(edgecuts, partitions) = metis.part_graph(rcGraph, 2) # Note : Metis overhead is minimal.
+
+		# If the min-cut between the two partitions is greater than a threshold, dont partition. 
+		if edgecuts > self.CUT_THRESHOLD :
+			return self.enforceGraphPolicies(rcGraph, pathConstraints)
+
+		# Graph Partitioned in two. Apply Fuzzy Synthesis on both of them. 
+		# Append the first graph as constraints to second. 
+
+		# Create the Graphs.
+		rcGraph1 = nx.Graph()
+		rcGraph2 = nx.Graph()
+		i = 0
+		for node in rcGraph.nodes():
+			pc = int(node)
+			if partitions[i] == 0 :
+				rcGraph1.add_node(int(rcGraph.node[pc]['switch']), switch=str(rcGraph.node[pc]['switch'])) 
+			elif partitions[i] == 1 :
+				rcGraph2.add_node(int(rcGraph.node[pc]['switch']), switch=str(rcGraph.node[pc]['switch'])) 
+			i += 1
+
+		cutEdges = [] # Paths from one graph must be passed as path constraints to other graph.
+		for edge in rcGraph.edges() :
+			if edge[0] in rcGraph1.nodes() and edge[1] in rcGraph1.nodes() :
+				# Internal edge. Add to rcGraph1.
+				rcGraph1.add_edge(*edge)
+			elif edge[0] in rcGraph2.nodes() and edge[1] in rcGraph2.nodes() :
+				# Internal edge. Add to rcGraph1.
+				rcGraph2.add_edge(*edge)
 			else :
-				print "Input Policies not realisable"
-				return
+				# Cut Edges. 
+				cutEdges.append(edge)
 
-			self.z3Solver.push()
+		if pathConstraints == None : 
+			synPaths1 = self.enforceGraphPoliciesFuzzy(rcGraph1)
+		else :
+			synPaths1 = self.enforceGraphPoliciesFuzzy(rcGraph1, pathConstraints)
 
-			# Add Topology Constraints 
-			self.addTopologyConstraints(self.count/2, self.count)
-			
+		if pathConstraints == None :
+			localPathConstraints = []
+		else :
+			localPathConstraints = list(pathConstraints)
 
-			self.addPathIsolationConstraints(self.count/2, self.pdb.getPath(self.count/2 - 1))
-			for pc in rel2: 
-				policy = self.pdb.getAllowPolicy(pc)
-				self.addReachabilityConstraints(srcIP=policy[0][0], srcSw=policy[0][2], dstIP=policy[0][1], dstSw=policy[0][3],pc=pc, W=policy[1]) 
+		for cut in cutEdges :
+			if cut[0] in rcGraph1 : 
+				localPathConstraints.append([cut[0], synPaths1[cut[0]]])	
+			elif cut[1] in rcGraph1 : 
+				localPathConstraints.append([cut[1], synPaths1[cut[1]]])
 
-			# Add traffic constraints. 
-			for pno in range(self.pdb.getIsolationPolicyCount()) :
-				pc = self.pdb.getIsolationPolicy(pno)
-				pc1 = pc[0]
-				pc2 = pc[1]
-				if pc1 in rel2 and pc2 in rel2 : 
-					self.addTrafficIsolationConstraints(pc1, pc2)
+		if localPathConstraints == [] :
+			synPaths2 = self.enforceGraphPoliciesFuzzy(rcGraph2)
+		else :
+			synPaths2 = self.enforceGraphPoliciesFuzzy(rcGraph2, localPathConstraints)
 
-			
-			modelsat = self.z3Solver.check()
-			if modelsat == z3.sat : 
-				self.fwdmodel = self.z3Solver.model()
-				for pc in rel2 :
-					self.pdb.addPath(pc, self.getPathFromModel(pc))
-				self.z3Solver.pop()
-			else :
-				print "Input Policies not realisable"
-				return
+		synPaths1.update(synPaths2)
+		return synPaths1
 
-			# All packet classes have been computed. Validate the isolation policies. 
+	def addUnreachableHopConstraints(self) :
+		swCount = self.topology.getSwitchCount()
+		for sw in range(1,swCount+1) :
+			# \forall n such that n \notin neighbours or n \not\eq sw . F(sw,n,pc,1) = False
+			# Cannot reach nodes which are not neighbours in step 1. 
+			# This constraint is needed because there is no restriction from the above constraints 
+			# regarding the values of non-neighbours.
+			neighbours = self.topology.getSwitchNeighbours(sw)
+			for s in range(1,swCount + 1) :
+				if s == sw or s in neighbours : 
+					continue
+				else :
+					self.z3Solver.add(ForAll(self.pc, self.F(sw,s,self.pc,1) == False))
 
 
+	def addTopologyConstraints(self, pcStart, pcEnd=0) :
+		if pcEnd == 0 :
+			""" Topology Constraint for one packet class"""
+			pcEnd = pcStart + 1
 
-	def addTopologyConstraints(self, pcStart, pcEnd) :
 		swCount = self.topology.getSwitchCount()
 		# \forall sw \forall n \in neighbours(sw) and NextHop = {n | F(sw,n,pc,1) = True}. |NextHop| \leq 1 
 		# None or only one of F(sw,n,pc,1) can be true.
@@ -255,16 +359,7 @@ class ConstraintGenerator2(object) :
 					pass
 
 			
-			# \forall n such that n \notin neighbours or n \not\eq sw . F(sw,n,pc,1) = False
-			# Cannot reach nodes which are not neighbours in step 1. 
-			# This constraint is needed because there is no restriction from the above constraints 
-			# regarding the values of non-neighbours.
-			neighbours = self.topology.getSwitchNeighbours(sw)
-			for s in range(1,swCount + 1) :
-				if s == sw or s in neighbours : 
-					continue
-				else :
-					self.z3Solver.add(ForAll(self.pc, self.F(sw,s,self.pc,1) == False))
+			
 
 	def addNeighbourConstraints(self) :
 		swCount = self.topology.getSwitchCount()
@@ -281,6 +376,10 @@ class ConstraintGenerator2(object) :
 		if pathlen == 0 :
 			# Default argument. Set to max.
 			pathlen = self.topology.getMaxPathLength()
+
+		# Specific case for a fat tree to apply path length upper bounds. 
+		if self.fatTreeOptimizeFlag :
+			pathlen = self.fatTreePathLengthOptimizations(W)
 
 		# Add Reachability in atmost pathlen steps constraint. 
 		reachAssert = self.F(srcSw,dstSw,pc,pathlen) == True
@@ -305,7 +404,20 @@ class ConstraintGenerator2(object) :
 
 		# Add Path Constraints for this flow to find the forwarding model for this flow.
 		self.addPathConstraints(srcSw,pc)		
-			
+		
+	def fatTreePathLengthOptimizations(self, W) :
+		""" In a fat tree, source and destination are connected to edge switches. 
+		Assumes all Waypoints are edge switches and provides a upper bound on max length of the path. """
+		IsolationDetour = 4 # To switch from a core switch to another. 
+		minPathLength = IsolationDetour + 4 # Shortest path from one-edge switch to another.  
+
+		if W == None : 
+			return minPathLength
+		else : 
+			if minPathLength + len(W) * 4 > self.topology.getMaxPathLength() :
+				return self.topology.getMaxPathLength() 
+			else :
+				return minPathLength + len(W) * 4
 
 	def addPathConstraints(self, s, pc) :
 		l = Int('l')
@@ -490,3 +602,7 @@ class ConstraintGenerator2(object) :
 
 t = Topology()
 c = ConstraintGenerator2(t)
+
+# nuZ3
+# maxSAT
+# US Backbone, RocketFuelS
