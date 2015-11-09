@@ -18,7 +18,7 @@ class ConstraintGenerator2(object) :
 		self.z3Solver = Solver()
 		self.fwdmodel = None 
 
-		self.count = 50
+		self.count = 200
 		# Policy Database. 
 		self.pdb = PolicyDatabase()
 
@@ -26,11 +26,19 @@ class ConstraintGenerator2(object) :
 		self.fatTreeOptimizeFlag = True
 		
 		# Fuzzy Synthesis Constants. 
-		self.CUT_THRESHOLD = 5
+		self.CUT_THRESHOLD = 50
 		self.GRAPH_SIZE_THRESHOLD = 3
 
 		# Fuzzy Synthesis Flags 
 		self.fuzzySynthesisFlag = True
+
+
+		# Profiling Information.
+		self.z3addTime = 0  # Time taken to add the constraints.
+		self.z3solveTime = 0 # Time taken to solve the constraints. 
+		self.metisTime = 0	# Time taken to partition  the graphs.
+		self.z3SolveCount = 0	# Count of z3 solve instances. 
+
 
 		start_t = time.time()
 		print "Adding Constraints at " + str(start_t)
@@ -46,9 +54,11 @@ class ConstraintGenerator2(object) :
 			rcGraphs = self.pdb.getRelationalClassGraphs()
 
 			for rcGraph in rcGraphs :
-				synPaths = self.enforceGraphPoliciesFuzzy(rcGraph)
+				(rcGraphSat, synPaths) = self.enforceGraphPoliciesFuzzy(rcGraph)
 				for pc in synPaths.keys() :
 					self.pdb.addPath(pc, synPaths[pc])
+
+			self.enforceMulticastPolicies()
 		else :
 			self.enforcePolicies()
 
@@ -57,20 +67,20 @@ class ConstraintGenerator2(object) :
 		end_t = time.time()
 		#print self.pdb.getPath(1)
 		
-		for pc in range(self.pdb.getPacketClassRange()) :
-			print "pc#" + str(pc) + ":" + str(self.pdb.validateIsolationPolicy(pc))
+		# for pc in range(self.pdb.getPacketClassRange()) :
+		# 	print "pc#" + str(pc) + ":" + str(self.pdb.validateIsolationPolicy(pc))
 		print "Time taken to solve the constraints is" + str(end_t - start_t)
 
 	def addPolicies(self) :
-		# self.addReachabilityPolicy("0", 1, "0", 5, [17,6])
-		# self.addReachabilityPolicy("1", 1, "1", 2)
-		# self.addReachabilityPolicy("2", 3, "2", 6)
-		# self.addReachabilityPolicy("3", 3, "3", 6)
-		# self.addTrafficIsolationPolicy(["0", "0"] , ["1", "1"])
-		# self.addTrafficIsolationPolicy(["1", "1"] , ["2", "2"])
+		self.addReachabilityPolicy("0", 1, "0", 5, [17,6])
+		self.addReachabilityPolicy("1", 1, "1", 2)
+		self.addReachabilityPolicy("2", 3, "2", 6)
+		self.addReachabilityPolicy("3", 3, "3", 6)
+		self.addTrafficIsolationPolicy(["0", "0"] , ["1", "1"])
+		self.addTrafficIsolationPolicy(["1", "1"] , ["2", "2"])
 
-		# # # self.addEqualMulticastPolicy("3", 1, ["3", "3"], [6, 5])
-		# # # self.addMulticastPolicy("8", 1, ["8", "8"], [6, 5, 4])
+		self.addEqualMulticastPolicy("9", 1, ["9", "9"], [6, 5])
+		self.addMulticastPolicy("8", 1, ["8", "8"], [6, 5, 4])
 		# self.addReachabilityPolicy("4", 1, "4", 2)
 		# self.addReachabilityPolicy("5", 1, "5", 2)
 		# self.addReachabilityPolicy("6", 1, "6", 2)
@@ -81,13 +91,19 @@ class ConstraintGenerator2(object) :
 		
 		# random.seed(8)
 
-		for i in range(self.count) :
-			self.addReachabilityPolicy(str(i), i%2 + 1, str(i), random.randint(3,8), [16 + i%4])
+		# for i in range(self.count) :
+		# 	self.addReachabilityPolicy(str(i), i%2 + 1, str(i), random.randint(3,8), [16 + i%4])
 
-		for i in range(self.count - 1) :
-			self.addTrafficIsolationPolicy([str(i), str(i)] , [str(i+1), str(i+1)])
-		self.pdb.createRelationalClasses()
+		# for i in range(self.count - 1) :
+		# 	self.addTrafficIsolationPolicy([str(i), str(i)] , [str(i+1), str(i+1)])
 		
+		# for i in range(self.count - 3) :
+		# 	self.addTrafficIsolationPolicy([str(i), str(i)] , [str(i+3), str(i+3)])
+
+		# for i in range(self.count - 10):
+		# 	self.addTrafficIsolationPolicy([str(i), str(i)] , [str(i+7), str(i+7)])
+		
+		self.pdb.createRelationalClasses()
 
 	def addReachabilityPolicy(self, srcIP, s, dstIP, d, W=None) :
 		""" s = next hop switch of source host(s) 
@@ -188,6 +204,10 @@ class ConstraintGenerator2(object) :
 		for node in rcGraph.nodes() :
 			pclist.append(int(node))
 
+		if len(pclist) == 0 :
+			print "Function should not be called on empty graph."
+			exit(0)
+
 		for pc in pclist : 
 			if not self.pdb.isMulticast(pc) :  
 				policy = self.pdb.getAllowPolicy(pc)
@@ -219,19 +239,21 @@ class ConstraintGenerator2(object) :
 
 
 		# Each relational class is be synthesised independently.
+		print "Starting Z3 check."
 		modelsat = self.z3Solver.check()
 		if modelsat == z3.sat : 
+			graphSat = True
 			print "SAT"
 			self.fwdmodel = self.z3Solver.model()
 			for pc in pclist :
 				synPaths[pc] = self.getPathFromModel(pc)
-				self.pdb.addPath(pc, self.getPathFromModel(pc))
-				
+				self.pdb.addPath(pc, self.getPathFromModel(pc))		
 		else :
+			graphSat = False
 			print "Input Policies not realisable"
 
 		self.z3Solver.pop()
-		return synPaths
+		return (graphSat, synPaths)
 
 			
 	def enforceGraphPoliciesFuzzy(self, rcGraph, pathConstraints=None) :
@@ -249,14 +271,25 @@ class ConstraintGenerator2(object) :
 
 		# If the graph size is smaller than a threshold, perform complete synthesis. 
 		if rcGraph.number_of_nodes() <= self.GRAPH_SIZE_THRESHOLD :
-			return self.enforceGraphPolicies(rcGraph,pathConstraints)
+			(graphSat, synPaths) = self.enforceGraphPolicies(rcGraph,pathConstraints)
+			return (graphSat, synPaths)
 
 		# Fuzzy Synthesis of rcGraph.
+		print "Metis starting. Is this the problem?"
+		start_t = time.time()
 		(edgecuts, partitions) = metis.part_graph(rcGraph, 2) # Note : Metis overhead is minimal.
+		end_t = time.time() - start_t
+		print str(end_t) + " is the metis partition time."
+
+		# Cannot partition the graph further. Apply synthesis. 
+		if edgecuts == 0 :
+			(graphSat, synPaths) = self.enforceGraphPolicies(rcGraph,pathConstraints)
+			return (graphSat, synPaths)
 
 		# If the min-cut between the two partitions is greater than a threshold, dont partition. 
 		if edgecuts > self.CUT_THRESHOLD :
-			return self.enforceGraphPolicies(rcGraph, pathConstraints)
+			(graphSat, synPaths) = self.enforceGraphPolicies(rcGraph,pathConstraints)
+			return (graphSat, synPaths)
 
 		# Graph Partitioned in two. Apply Fuzzy Synthesis on both of them. 
 		# Append the first graph as constraints to second. 
@@ -286,9 +319,9 @@ class ConstraintGenerator2(object) :
 				cutEdges.append(edge)
 
 		if pathConstraints == None : 
-			synPaths1 = self.enforceGraphPoliciesFuzzy(rcGraph1)
+			(rcGraph1Sat, synPaths1) = self.enforceGraphPoliciesFuzzy(rcGraph1)
 		else :
-			synPaths1 = self.enforceGraphPoliciesFuzzy(rcGraph1, pathConstraints)
+			(rcGraph1Sat, synPaths1) = self.enforceGraphPoliciesFuzzy(rcGraph1, pathConstraints)
 
 		if pathConstraints == None :
 			localPathConstraints = []
@@ -302,12 +335,50 @@ class ConstraintGenerator2(object) :
 				localPathConstraints.append([cut[1], synPaths1[cut[1]]])
 
 		if localPathConstraints == [] :
-			synPaths2 = self.enforceGraphPoliciesFuzzy(rcGraph2)
+			(rcGraph2Sat, synPaths2) = self.enforceGraphPoliciesFuzzy(rcGraph2)
 		else :
-			synPaths2 = self.enforceGraphPoliciesFuzzy(rcGraph2, localPathConstraints)
+			(rcGraph2Sat, synPaths2) = self.enforceGraphPoliciesFuzzy(rcGraph2, localPathConstraints)
 
 		synPaths1.update(synPaths2)
-		return synPaths1
+		return (True, synPaths1)
+
+	def enforceMulticastPolicies(self) :
+		# Enforcement of Mutltcast Policies. 
+		for pc in range(self.pdb.getPacketClassRange()) :
+			if self.pdb.isMulticast(pc) :
+				self.z3Solver.push()
+			
+				policy = self.pdb.getMulticastPolicy(pc)
+
+				if self.pdb.isEqualMulticast(pc) : 
+					self.addEqualMulticastConstraints(policy[1], policy[3], pc, 8) 
+				else :
+					self.addEqualMulticastConstraints(policy[1], policy[3], pc)
+
+				modelsat = self.z3Solver.check()
+				if modelsat == z3.sat : 
+					print "SAT"
+					self.fwdmodel = self.z3Solver.model()	
+					paths = self.getMulticastPathFromModel(pc)
+					""" IMPORTANT NOTE : So, the Multicast Policy enforcement provides the paths asked, but also 
+					other paths not needed (Because of non-restriction of paths). So, the model provides paths for 
+					all dst in the destination list, but also other destinations not needed. Instead of refining the 
+					constraints, Genesis will store only paths asked by the policy. 
+					Caveat : This works, because our Multicast functionality is treated in isolation. If we need to 
+					isolate Multicast flows, then the problme could get a lot trickier. """
+					dstPaths = []
+					for path in paths : 
+						for dst in policy[3] :
+							if dst in path : 
+								dstPaths.append(path)
+								break
+
+					self.pdb.addPath(pc, dstPaths)		
+				else :
+					print "Multicast Input Policy" +  str(policy) + " is not realisable"
+					self.pdb.addPath(pc, [])	
+
+				self.z3Solver.pop()
 
 	def addUnreachableHopConstraints(self) :
 		swCount = self.topology.getSwitchCount()
