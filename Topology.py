@@ -56,6 +56,9 @@ class Topology(object):
 
 		# Read the switches file and initialise the network database
 		for line in lines : 
+			if line[0] == "#" : 
+				continue 
+			
 			fields = line.split()
 			# Inserting switch in the network database
 			self.networkDatabase.insertSwitch(fields[0])
@@ -70,6 +73,8 @@ class Topology(object):
 		lines = f2.readlines()
 
 		for line in lines : 
+			if line[0] == "#" : 
+				continue 
 			fields = line.split()
 
 			sw1 = self.networkDatabase.getSwID(fields[0])

@@ -7,7 +7,7 @@ import metis
 import networkx as nx
 
 class ConstraintGenerator2(object) :
-	def __init__(self, topo) :
+	def __init__(self, topo, policyCount=20, fuzzy=True) :
 		self.topology = topo
 
 		# Network Forwarding Function
@@ -16,21 +16,22 @@ class ConstraintGenerator2(object) :
 		self.pc = Int('pc') # Generic variable for packet classes
 
 		self.z3Solver = Solver()
+		self.z3Solver.set(unsat_core=True)
 		self.fwdmodel = None 
 
-		self.count = 200
+		self.count = policyCount
 		# Policy Database. 
 		self.pdb = PolicyDatabase()
 
 		# Topology Optimizations 
-		self.fatTreeOptimizeFlag = True
+		self.fatTreeOptimizeFlag = False
 		
 		# Fuzzy Synthesis Constants. 
-		self.CUT_THRESHOLD = 50
-		self.GRAPH_SIZE_THRESHOLD = 3
+		self.CUT_THRESHOLD = 1000
+		self.GRAPH_SIZE_THRESHOLD = 1
 
 		# Fuzzy Synthesis Flags 
-		self.fuzzySynthesisFlag = True
+		self.fuzzySynthesisFlag = fuzzy
 
 
 		# Profiling Information.
@@ -58,9 +59,10 @@ class ConstraintGenerator2(object) :
 				for pc in synPaths.keys() :
 					self.pdb.addPath(pc, synPaths[pc])
 
-			self.enforceMulticastPolicies()
+			self.enforceMulticastPolicies()		
 		else :
-			self.enforcePolicies()
+			self.enforceUnicastPolicies()
+			self.enforceMulticastPolicies()		
 
 		self.pdb.printPaths()
 
@@ -69,18 +71,18 @@ class ConstraintGenerator2(object) :
 		
 		# for pc in range(self.pdb.getPacketClassRange()) :
 		# 	print "pc#" + str(pc) + ":" + str(self.pdb.validateIsolationPolicy(pc))
-		print "Time taken to solve the constraints is" + str(end_t - start_t)
+		print "Time taken to solve the " + str(policyCount) + " policies with fuzzy flag " + str(fuzzy) + "is " + str(end_t - start_t)
 
 	def addPolicies(self) :
-		self.addReachabilityPolicy("0", 1, "0", 5, [17,6])
-		self.addReachabilityPolicy("1", 1, "1", 2)
-		self.addReachabilityPolicy("2", 3, "2", 6)
-		self.addReachabilityPolicy("3", 3, "3", 6)
-		self.addTrafficIsolationPolicy(["0", "0"] , ["1", "1"])
-		self.addTrafficIsolationPolicy(["1", "1"] , ["2", "2"])
+		# self.addReachabilityPolicy("0", 1, "0", 5, [17,6])
+		# self.addReachabilityPolicy("1", 1, "1", 2)
+		# self.addReachabilityPolicy("2", 3, "2", 6)
+		# self.addReachabilityPolicy("3", 3, "3", 6)
+		# self.addTrafficIsolationPolicy(["0", "0"] , ["1", "1"])
+		# self.addTrafficIsolationPolicy(["1", "1"] , ["2", "2"])
 
-		self.addEqualMulticastPolicy("9", 1, ["9", "9"], [6, 5])
-		self.addMulticastPolicy("8", 1, ["8", "8"], [6, 5, 4])
+		# self.addEqualMulticastPolicy("9", 1, ["9", "9"], [6, 5])
+		# self.addMulticastPolicy("8", 1, ["8", "8"], [6, 5, 4])
 		# self.addReachabilityPolicy("4", 1, "4", 2)
 		# self.addReachabilityPolicy("5", 1, "5", 2)
 		# self.addReachabilityPolicy("6", 1, "6", 2)
@@ -88,17 +90,30 @@ class ConstraintGenerator2(object) :
 		# self.addTrafficIsolationPolicy(["4", "4"] , ["3", "3"])
 		# self.addTrafficIsolationPolicy( ["2", "2"], ["5", "5"])
 
-		
-		# random.seed(8)
 
-		# for i in range(self.count) :
-		# 	self.addReachabilityPolicy(str(i), i%2 + 1, str(i), random.randint(3,8), [16 + i%4])
+		for i in range(self.count) :
+			self.addReachabilityPolicy(str(i), 1, str(i), 5)
 
-		# for i in range(self.count - 1) :
-		# 	self.addTrafficIsolationPolicy([str(i), str(i)] , [str(i+1), str(i+1)])
-		
+		for i in range(self.count, self.count * 2) :
+			self.addReachabilityPolicy(str(i), 5, str(i), 1, [12])
+
+		for i in range(self.count - 1) :
+			self.addTrafficIsolationPolicy([str(i), str(i)] , [str(i+1), str(i+1)])
+
+		for i in range(self.count - 2) :
+			self.addTrafficIsolationPolicy([str(i), str(i)] , [str(i+2), str(i+2)])
+
+		self.addReachabilityPolicy(str(100), 15, str(100), 16)
+		self.addTrafficIsolationPolicy([str(100), str(100)] , [str(0), str(0)])
+		self.addTrafficIsolationPolicy([str(100), str(100)] , [str(10), str(10)])
+		self.addTrafficIsolationPolicy([str(100), str(100)] , [str(1), str(1)])
+		self.addTrafficIsolationPolicy([str(100), str(100)] , [str(11), str(11)])
+
 		# for i in range(self.count - 3) :
 		# 	self.addTrafficIsolationPolicy([str(i), str(i)] , [str(i+3), str(i+3)])
+		
+		# for i in range(self.count - 4) :
+		# 	self.addTrafficIsolationPolicy([str(i), str(i)] , [str(i+4), str(i+4)])
 
 		# for i in range(self.count - 10):
 		# 	self.addTrafficIsolationPolicy([str(i), str(i)] , [str(i+7), str(i+7)])
@@ -123,7 +138,7 @@ class ConstraintGenerator2(object) :
 	def addMulticastPolicy(self, srcIP, srcSw, dstIPs, dstSws) :
 		pc = self.pdb.addMulticastPolicy(srcIP, srcSw, dstIPs, dstSws)
 
-	def enforcePolicies(self) :
+	def enforceUnicastPolicies(self) :
 		# Add Topology Constraints 
 		self.addTopologyConstraints(0, self.pdb.getPacketClassRange())
 
@@ -161,42 +176,13 @@ class ConstraintGenerator2(object) :
 
 			self.z3Solver.pop()
 
-		# Enforcement of Mutltcast Policies. 
-		for pc in range(self.pdb.getPacketClassRange()) :
-			if self.pdb.isMulticast(pc) :
-				self.z3Solver.push()
-			
-				policy = self.pdb.getMulticastPolicy(pc)
-
-				if self.pdb.isEqualMulticast(pc) : 
-					self.addEqualMulticastConstraints(policy[1], policy[3], pc, 3) 
-				else :
-					self.addEqualMulticastConstraints(policy[1], policy[3], pc)
-
-				modelsat = self.z3Solver.check()
-				if modelsat == z3.sat : 
-					print "SAT"
-					self.fwdmodel = self.z3Solver.model()	
-					paths = self.getMulticastPathFromModel(pc)
-					""" IMPORTANT NOTE : So, the Multicast Policy enforcement provides the paths asked, but also 
-					other paths not needed (Because of non-restriction of paths). So, the model provides paths for 
-					all dst in the destination list, but also other destinations not needed. Instead of refining the 
-					constraints, Genesis will store only paths asked by the policy. 
-					Caveat : This works, because our Multicast functionality is treated in isolation. If we need to 
-					isolate Multicast flows, then the problme could get a lot trickier. """
-					dstPaths = []
-					for path in paths : 
-						for dst in policy[3] :
-							if dst in path : 
-								dstPaths.append(path)
-								break
-
-					self.pdb.addPath(pc, dstPaths)		
-				else :
-					print "Input Policies not realisable"
-
 	def enforceGraphPolicies(self, rcGraph, pathConstraints=None) :
 		""" Synthesis of the Relational Class Graph given some path constraints"""
+
+		# Clean up path Constraints.
+		if not pathConstraints == None :
+			pathConstraints = self.cleanPathConstraints(pathConstraints)
+
 		synPaths = dict()
 
 		self.z3Solver.push()
@@ -233,13 +219,13 @@ class ConstraintGenerator2(object) :
 					pc1 = pc[0]
 					pc2 = pc[1]
 					if pc1 in pclist and pc2 == pathConstraint[0] :
-						self.addPathIsolationConstraints(pc1, pathConstraint[1])
+						self.addPathIsolationConstraints(pc1, pathConstraint[1], pathConstraint[0])
 					elif pc2 in pclist and pc1 == pathConstraint[0] :
-						self.addPathIsolationConstraints(pc2, pathConstraint[1])
+						self.addPathIsolationConstraints(pc2, pathConstraint[1], pathConstraint[0])
 
 
 		# Each relational class is be synthesised independently.
-		print "Starting Z3 check."
+		print "Starting Z3 check for " + str(pclist)
 		modelsat = self.z3Solver.check()
 		if modelsat == z3.sat : 
 			graphSat = True
@@ -251,6 +237,10 @@ class ConstraintGenerator2(object) :
 		else :
 			graphSat = False
 			print "Input Policies not realisable"
+			print pclist
+			print pathConstraints
+			print self.z3Solver.unsat_core()
+			exit(0)
 
 		self.z3Solver.pop()
 		return (graphSat, synPaths)
@@ -258,16 +248,12 @@ class ConstraintGenerator2(object) :
 			
 	def enforceGraphPoliciesFuzzy(self, rcGraph, pathConstraints=None) :
 		""" Fuzzy Enforcement of Policies in arg 'rcGraph' """
+
+		# Clean up path Constraints.
+		if not pathConstraints == None :
+			pathConstraints = self.cleanPathConstraints(pathConstraints)
 		
 		synPaths = dict()
-
-		# print "SAT Call"
-		# disp = ""
-		# for node in rcGraph.nodes() :
-		# 	disp += str(node)
-		
-		# print disp
-		# print pathConstraints
 
 		# If the graph size is smaller than a threshold, perform complete synthesis. 
 		if rcGraph.number_of_nodes() <= self.GRAPH_SIZE_THRESHOLD :
@@ -281,11 +267,6 @@ class ConstraintGenerator2(object) :
 		end_t = time.time() - start_t
 		print str(end_t) + " is the metis partition time."
 
-		# Cannot partition the graph further. Apply synthesis. 
-		if edgecuts == 0 :
-			(graphSat, synPaths) = self.enforceGraphPolicies(rcGraph,pathConstraints)
-			return (graphSat, synPaths)
-
 		# If the min-cut between the two partitions is greater than a threshold, dont partition. 
 		if edgecuts > self.CUT_THRESHOLD :
 			(graphSat, synPaths) = self.enforceGraphPolicies(rcGraph,pathConstraints)
@@ -297,14 +278,25 @@ class ConstraintGenerator2(object) :
 		# Create the Graphs.
 		rcGraph1 = nx.Graph()
 		rcGraph2 = nx.Graph()
+
+		rc1empty = True
+		rc2empty = True
 		i = 0
 		for node in rcGraph.nodes():
 			pc = int(node)
 			if partitions[i] == 0 :
 				rcGraph1.add_node(int(rcGraph.node[pc]['switch']), switch=str(rcGraph.node[pc]['switch'])) 
+				rc1empty = False
 			elif partitions[i] == 1 :
 				rcGraph2.add_node(int(rcGraph.node[pc]['switch']), switch=str(rcGraph.node[pc]['switch'])) 
+				rc2empty = False
 			i += 1
+
+		if rc1empty == True or rc2empty == True: 
+			print "Cannot be partitioned"
+			# Cannot partition the graph further. Apply synthesis. 
+			(graphSat, synPaths) = self.enforceGraphPolicies(rcGraph,pathConstraints)
+			return (graphSat, synPaths)
 
 		cutEdges = [] # Paths from one graph must be passed as path constraints to other graph.
 		for edge in rcGraph.edges() :
@@ -323,6 +315,10 @@ class ConstraintGenerator2(object) :
 		else :
 			(rcGraph1Sat, synPaths1) = self.enforceGraphPoliciesFuzzy(rcGraph1, pathConstraints)
 
+		if rcGraph1Sat == False : 
+			# Function cannot find a solution on the complete graph, as partial graph failed.
+			return (False, [])
+
 		if pathConstraints == None :
 			localPathConstraints = []
 		else :
@@ -339,8 +335,28 @@ class ConstraintGenerator2(object) :
 		else :
 			(rcGraph2Sat, synPaths2) = self.enforceGraphPoliciesFuzzy(rcGraph2, localPathConstraints)
 
-		synPaths1.update(synPaths2)
-		return (True, synPaths1)
+		if rcGraph2Sat == True : 
+			# Partial graph solutions can be combined. 
+			synPaths1.update(synPaths2)
+			return (True, synPaths1)
+		else : 
+			# Recovery can be performed at this level, as additional constraints failed the solution.
+			pass
+	
+	def cleanPathConstraints(self, pathConstraints) :
+		newPathConstraints = []
+		for pathConstraint in pathConstraints :
+			exists = False
+			for newPathConstraint in newPathConstraints :
+				if newPathConstraint[0] == pathConstraint[0] :
+					exists = True
+					break
+			if exists :
+				continue
+			else :
+				newPathConstraints.append(pathConstraint)
+
+		return newPathConstraints
 
 	def enforceMulticastPolicies(self) :
 		# Enforcement of Mutltcast Policies. 
@@ -427,9 +443,7 @@ class ConstraintGenerator2(object) :
 					self.z3Solver.add(topoAssert)
 				else :
 					""" Multicast packet class. No restrictions on forwarding set """
-					pass
-
-			
+					pass	
 			
 
 	def addNeighbourConstraints(self) :
@@ -451,6 +465,7 @@ class ConstraintGenerator2(object) :
 		# Specific case for a fat tree to apply path length upper bounds. 
 		if self.fatTreeOptimizeFlag :
 			pathlen = self.fatTreePathLengthOptimizations(W)
+		
 
 		# Add Reachability in atmost pathlen steps constraint. 
 		reachAssert = self.F(srcSw,dstSw,pc,pathlen) == True
@@ -554,11 +569,11 @@ class ConstraintGenerator2(object) :
 				isolateAssert = Not( And (self.F(sw,n,pc1,1) == True, self.F(sw,n,pc2,1) == True))
 				self.z3Solver.add(isolateAssert)	
 
-	def addPathIsolationConstraints(self, pc, path) :
+	def addPathIsolationConstraints(self, pc, path, tracker=0) :
 		""" Adding constraints such that the path of pc is isolated by 'path' argument"""
 		i = 0
 		for i in range(len(path) - 1) :
-			self.z3Solver.add(self.F(path[i], path[i+1], pc, 1) == False)
+			self.z3Solver.assert_and_track(self.F(path[i], path[i+1], pc, 1) == False, "p"+str(tracker))
 
 
 	def addEqualMulticastConstraints(self, srcSw, dstSwList, pc, pathlen=0) :
@@ -672,7 +687,9 @@ class ConstraintGenerator2(object) :
 
 
 t = Topology()
-c = ConstraintGenerator2(t)
+for i in range(1,2) :
+	c = ConstraintGenerator2(t, i*10, True)
+
 
 # nuZ3
 # maxSAT
