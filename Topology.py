@@ -84,7 +84,6 @@ class Topology(object):
 			self.neighbours[sw1].append(sw2)
 			self.neighbours[sw2].append(sw1)
 
-		print self.neighbours
 
 	def getMaxPathLength(self) :
 		return self.getSwitchCount()

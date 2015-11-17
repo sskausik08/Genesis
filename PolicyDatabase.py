@@ -129,7 +129,6 @@ class PolicyDatabase(object) :
 				# Both are in different packet classes. Join them.
 				pc1rc.extend(pc2rc)
 				self.relClasses.remove(pc2rc)
-			print self.relClasses
 
 		for relClass in self.relClasses : 
 			self.createRelationalClassGraph(relClass)
@@ -165,8 +164,8 @@ class PolicyDatabase(object) :
 					# Check next hop is not equal.
 					if i + 1 < len(path1) and pos + 1 < len(path2) :
 						if path1[i+1] == path2[pos + 1] : 
-							print path2[pos + 1] 
-							print "Neg above."
+							print "Packet Class #" + str(pc) + " violated isolation policy with Packet Class #" + str(pc2)
+							print "DEBUG: PC#" + str(pc) + ":" + str(path1) + " PC#" + str(pc2) + ":" + str(path2) 
 							return False
 				except ValueError:
 					continue
