@@ -30,8 +30,12 @@ class ConstraintGenerator2(object) :
 		self.CUT_THRESHOLD = 1000
 		self.GRAPH_SIZE_THRESHOLD = 1
 
+		# Different Solution Recovery Constants. 
+		self.DIFF_SOL_RETRY_COUNT = 4
+
 		# Fuzzy Synthesis Flags 
 		self.fuzzySynthesisFlag = fuzzy
+		self.recoveryFlag = True
 
 
 		# Profiling Information.
@@ -60,7 +64,7 @@ class ConstraintGenerator2(object) :
 					self.pdb.addPath(pc, synPaths[pc])
 
 			self.enforceMulticastPolicies()		
-		else :
+		else : 
 			self.enforceUnicastPolicies()
 			self.enforceMulticastPolicies()		
 
@@ -94,20 +98,21 @@ class ConstraintGenerator2(object) :
 		for i in range(self.count) :
 			self.addReachabilityPolicy(str(i), 1, str(i), 5)
 
-		for i in range(self.count, self.count * 2) :
-			self.addReachabilityPolicy(str(i), 5, str(i), 1, [12])
+
+		# for i in range(self.count, self.count * 2) :
+		# 	self.addReachabilityPolicy(str(i), 5, str(i), 1, [12])
 
 		for i in range(self.count - 1) :
 			self.addTrafficIsolationPolicy([str(i), str(i)] , [str(i+1), str(i+1)])
 
-		for i in range(self.count - 2) :
-			self.addTrafficIsolationPolicy([str(i), str(i)] , [str(i+2), str(i+2)])
+		# for i in range(self.count - 2) :
+		# 	self.addTrafficIsolationPolicy([str(i), str(i)] , [str(i+2), str(i+2)])
 
-		self.addReachabilityPolicy(str(100), 15, str(100), 16)
-		self.addTrafficIsolationPolicy([str(100), str(100)] , [str(0), str(0)])
-		self.addTrafficIsolationPolicy([str(100), str(100)] , [str(10), str(10)])
-		self.addTrafficIsolationPolicy([str(100), str(100)] , [str(1), str(1)])
-		self.addTrafficIsolationPolicy([str(100), str(100)] , [str(11), str(11)])
+		# self.addReachabilityPolicy(str(100), 15, str(100), 16)
+		# self.addTrafficIsolationPolicy([str(100), str(100)] , [str(0), str(0)])
+		# self.addTrafficIsolationPolicy([str(100), str(100)] , [str(10), str(10)])
+		# self.addTrafficIsolationPolicy([str(100), str(100)] , [str(1), str(1)])
+		# self.addTrafficIsolationPolicy([str(100), str(100)] , [str(11), str(11)])
 
 		# for i in range(self.count - 3) :
 		# 	self.addTrafficIsolationPolicy([str(i), str(i)] , [str(i+3), str(i+3)])
@@ -176,12 +181,14 @@ class ConstraintGenerator2(object) :
 
 			self.z3Solver.pop()
 
-	def enforceGraphPolicies(self, rcGraph, pathConstraints=None) :
-		""" Synthesis of the Relational Class Graph given some path constraints"""
+	def enforceGraphPolicies(self, rcGraph, isolatePathConstraints=None, differentPathConstraints=None) :
+		""" Synthesis of the Relational Class Graph given some path constraints (isolation and inequality). 
+		If True, return the sat core paths for the RC Graph. 
+		If False, return the unsat core paths to aid search for different constraints of isolation"""
 
 		# Clean up path Constraints.
-		if not pathConstraints == None :
-			pathConstraints = self.cleanPathConstraints(pathConstraints)
+		if not isolatePathConstraints == None :
+			isolatePathConstraints = self.prunePathIsolationConstraints(isolatePathConstraints)
 
 		synPaths = dict()
 
@@ -210,10 +217,10 @@ class ConstraintGenerator2(object) :
 			if pc1 in pclist and pc2 in pclist : 
 				self.addTrafficIsolationConstraints(pc1, pc2)
 
-		if not pathConstraints == None :
+		if not isolatePathConstraints == None :
 			# path Constraint : [pc1, path]. All pcs which are connected to this rcGraph across the cut
 			# will be added as Path constraints. 
-			for pathConstraint in pathConstraints : 
+			for pathConstraint in isolatePathConstraints : 
 				for pno in range(self.pdb.getIsolationPolicyCount()) :
 					pc = self.pdb.getIsolationPolicy(pno)
 					pc1 = pc[0]
@@ -223,9 +230,14 @@ class ConstraintGenerator2(object) :
 					elif pc2 in pclist and pc1 == pathConstraint[0] :
 						self.addPathIsolationConstraints(pc2, pathConstraint[1], pathConstraint[0])
 
+		if not differentPathConstraints == None : 
+			# Unsat Cores: [pc1, path]. pc1 must find a solution which is not equal to path. 
+			for unsatCores in differentPathConstraints : 
+				self.addDifferentSolutionConstraint(unsatCores)
+				
 
-		# Each relational class is be synthesised independently.
 		print "Starting Z3 check for " + str(pclist)
+
 		modelsat = self.z3Solver.check()
 		if modelsat == z3.sat : 
 			graphSat = True
@@ -238,42 +250,45 @@ class ConstraintGenerator2(object) :
 			graphSat = False
 			print "Input Policies not realisable"
 			print pclist
-			print pathConstraints
-			print self.z3Solver.unsat_core()
-			exit(0)
-
+			print isolatePathConstraints
+			unsatCores = self.z3Solver.unsat_core()
+			if len(unsatCores) == 0:
+				print "Unsatisfiability not due to any partial isolation solutions to the rcGraph. Thus, solution does not exist"
+				exit(0)
+			for core in unsatCores :
+				pc = int(str(core).split("p")[1])
+				for pathConstraint in isolatePathConstraints :
+					if pathConstraint[0] == pc : 
+						synPaths[pc] = pathConstraint[1]
+						break
 		self.z3Solver.pop()
 		return (graphSat, synPaths)
 
 			
-	def enforceGraphPoliciesFuzzy(self, rcGraph, pathConstraints=None) :
+	def enforceGraphPoliciesFuzzy(self, rcGraph, isolatePathConstraints=None, differentPathConstraints=None) :
 		""" Fuzzy Enforcement of Policies in arg 'rcGraph' """
 
 		# Clean up path Constraints.
-		if not pathConstraints == None :
-			pathConstraints = self.cleanPathConstraints(pathConstraints)
+		if not isolatePathConstraints == None :
+			isolatePathConstraints = self.prunePathIsolationConstraints(isolatePathConstraints)
 		
 		synPaths = dict()
 
 		# If the graph size is smaller than a threshold, perform complete synthesis. 
 		if rcGraph.number_of_nodes() <= self.GRAPH_SIZE_THRESHOLD :
-			(graphSat, synPaths) = self.enforceGraphPolicies(rcGraph,pathConstraints)
+			(graphSat, synPaths) = self.enforceGraphPolicies(rcGraph,isolatePathConstraints,differentPathConstraints)
 			return (graphSat, synPaths)
 
 		# Fuzzy Synthesis of rcGraph.
-		print "Metis starting. Is this the problem?"
-		start_t = time.time()
 		(edgecuts, partitions) = metis.part_graph(rcGraph, 2) # Note : Metis overhead is minimal.
-		end_t = time.time() - start_t
-		print str(end_t) + " is the metis partition time."
 
 		# If the min-cut between the two partitions is greater than a threshold, dont partition. 
 		if edgecuts > self.CUT_THRESHOLD :
-			(graphSat, synPaths) = self.enforceGraphPolicies(rcGraph,pathConstraints)
+			(graphSat, synPaths) = self.enforceGraphPolicies(rcGraph,isolatePathConstraints,differentPathConstraints)
 			return (graphSat, synPaths)
 
 		# Graph Partitioned in two. Apply Fuzzy Synthesis on both of them. 
-		# Append the first graph as constraints to second. 
+		# Propagate the first graph solutions as constraints to second. 
 
 		# Create the Graphs.
 		rcGraph1 = nx.Graph()
@@ -282,7 +297,18 @@ class ConstraintGenerator2(object) :
 		rc1empty = True
 		rc2empty = True
 		i = 0
+
+		# # For testing, take input from user about partition. 
+		# pclist = []
+		# for node in rcGraph.nodes():
+		# 	pclist.append(int(node))
+
+		# print "Enter Partition for " + str(pclist)
+		# s = raw_input()
+		# partitions = map(int, s.split())
+
 		for node in rcGraph.nodes():
+			
 			pc = int(node)
 			if partitions[i] == 0 :
 				rcGraph1.add_node(int(rcGraph.node[pc]['switch']), switch=str(rcGraph.node[pc]['switch'])) 
@@ -295,7 +321,7 @@ class ConstraintGenerator2(object) :
 		if rc1empty == True or rc2empty == True: 
 			print "Cannot be partitioned"
 			# Cannot partition the graph further. Apply synthesis. 
-			(graphSat, synPaths) = self.enforceGraphPolicies(rcGraph,pathConstraints)
+			(graphSat, synPaths) = self.enforceGraphPolicies(rcGraph,isolatePathConstraints,differentPathConstraints)
 			return (graphSat, synPaths)
 
 		cutEdges = [] # Paths from one graph must be passed as path constraints to other graph.
@@ -310,40 +336,67 @@ class ConstraintGenerator2(object) :
 				# Cut Edges. 
 				cutEdges.append(edge)
 
-		if pathConstraints == None : 
-			(rcGraph1Sat, synPaths1) = self.enforceGraphPoliciesFuzzy(rcGraph1)
-		else :
-			(rcGraph1Sat, synPaths1) = self.enforceGraphPoliciesFuzzy(rcGraph1, pathConstraints)
+		(rcGraph1Sat, synPaths1) = self.enforceGraphPoliciesFuzzy(rcGraph1, isolatePathConstraints, differentPathConstraints)
 
 		if rcGraph1Sat == False : 
 			# Function cannot find a solution on the complete graph, as partial graph failed.
-			return (False, [])
+			return (False, synPaths1)  # synPaths1 is the unsat cores that failed the synthesis of rcGraph1.
 
-		if pathConstraints == None :
-			localPathConstraints = []
+		if isolatePathConstraints == None :
+			localIsolatePathConstraints = []
 		else :
-			localPathConstraints = list(pathConstraints)
+			localIsolatePathConstraints = list(isolatePathConstraints)
 
+		# Propagating the solutions as isolation constraints. 
 		for cut in cutEdges :
 			if cut[0] in rcGraph1 : 
-				localPathConstraints.append([cut[0], synPaths1[cut[0]]])	
+				localIsolatePathConstraints.append([cut[0], synPaths1[cut[0]]])	
 			elif cut[1] in rcGraph1 : 
-				localPathConstraints.append([cut[1], synPaths1[cut[1]]])
+				localIsolatePathConstraints.append([cut[1], synPaths1[cut[1]]])
 
-		if localPathConstraints == [] :
-			(rcGraph2Sat, synPaths2) = self.enforceGraphPoliciesFuzzy(rcGraph2)
-		else :
-			(rcGraph2Sat, synPaths2) = self.enforceGraphPoliciesFuzzy(rcGraph2, localPathConstraints)
+		(rcGraph2Sat, synPaths2) = self.enforceGraphPoliciesFuzzy(rcGraph2, localIsolatePathConstraints, differentPathConstraints)
 
 		if rcGraph2Sat == True : 
 			# Partial graph solutions can be combined. 
 			synPaths1.update(synPaths2)
 			return (True, synPaths1)
 		else : 
+			if self.recoveryFlag == False :
+				print "Program failed to find a solution"
+				exit(0)
 			# Recovery can be performed at this level, as additional constraints failed the solution.
-			pass
+			# We try to find another solution for rcGraph1 and then apply synthesis of rcGraph2.
+			if differentPathConstraints == None :
+				localDifferentPathConstraints = []
+			else : 
+				localDifferentPathConstraints = list(differentPathConstraints)
+
+			unsatCorePathConstraints = []
+			for pc in synPaths2.keys() :
+				path = synPaths2[pc]
+				unsatCorePathConstraints.append([pc, path])
+			localDifferentPathConstraints.append(unsatCorePathConstraints)
+
+			# Pruning the different solutions to include only the relevant ones. 
+			localDifferentPathConstraints = self.pruneDifferentPathConstraints(localDifferentPathConstraints, rcGraph1)
+
+			if len(localDifferentPathConstraints) == 0 :
+				# Cannot perform recovery at this level as none of the unsat core paths belong to rcGraph1.
+				return (False, synPaths2) # SynPaths returns the unsat core paths. 
+
+			# Attempt different solution recovery. 
+			(recoverySat, synPaths) = self.differentSolutionRecovery(self.DIFF_SOL_RETRY_COUNT, rcGraph1, rcGraph2, cutEdges, isolatePathConstraints, localDifferentPathConstraints)
+
+			if recoverySat == True :
+				return (recoverySat, synPaths)
+			else :
+				# Different Solution Recovery failed one time. Exit for now.
+				print "Recovery Failed"
+				exit()
+				return self.enforceGraphPolicies(rcGraph, isolatePathConstraints, differentPathConstraints)
 	
-	def cleanPathConstraints(self, pathConstraints) :
+	def prunePathIsolationConstraints(self, pathConstraints) :
+		"""Removes duplicate path constraints"""
 		newPathConstraints = []
 		for pathConstraint in pathConstraints :
 			exists = False
@@ -357,6 +410,75 @@ class ConstraintGenerator2(object) :
 				newPathConstraints.append(pathConstraint)
 
 		return newPathConstraints
+
+	def pruneDifferentPathConstraints(self, differentPathConstraints, rcGraph) :
+		pclist = []
+		for node in rcGraph.nodes() :
+			pclist.append(int(node))
+
+		newPathConstraints = []
+		for unsatCore in differentPathConstraints :
+			prunedUnsatCore = []
+			for pathConstraint in unsatCore : 
+				if pathConstraint[0] in pclist :
+					prunedUnsatCore.append(pathConstraint)
+			if len(prunedUnsatCore) > 0 :
+				newPathConstraints.append(prunedUnsatCore)
+		
+		return newPathConstraints
+
+
+	def differentSolutionRecovery(self, attempt, rcGraph1, rcGraph2, cutEdges, isolatePathConstraints, differentPathConstraints) :
+		print "Recovery Attempt #" + str(attempt) + " " + str(differentPathConstraints)
+		if differentPathConstraints == None :
+			localDifferentPathConstraints = []
+		else : 
+			localDifferentPathConstraints = list(differentPathConstraints)
+
+		(rcGraph1Sat, synPaths1) = self.enforceGraphPoliciesFuzzy(rcGraph1, isolatePathConstraints, localDifferentPathConstraints)
+			
+		if rcGraph1Sat == False : 
+			print "Recovery Failed"
+			# Function cannot find a different solution. Stop different solution recovery. 
+			return (False, dict())
+			# Returning the empty dict because the failure of rcGraph1 is due to the absence of different solutions 
+			# apart from the ones we found. Failure is not due to external isolate constraints. 
+	
+		if isolatePathConstraints == None :
+			localIsolatePathConstraints = []
+		else :
+			localIsolatePathConstraints = list(isolatePathConstraints)
+
+		for cut in cutEdges :
+			if cut[0] in rcGraph1 : 
+				localIsolatePathConstraints.append([cut[0], synPaths1[cut[0]]])	
+			elif cut[1] in rcGraph1 : 
+				localIsolatePathConstraints.append([cut[1], synPaths1[cut[1]]])
+
+		(rcGraph2Sat, synPaths2) = self.enforceGraphPoliciesFuzzy(rcGraph2, localIsolatePathConstraints, differentPathConstraints)
+
+		if rcGraph2Sat == True : 
+			# Partial graph solutions can be combined. 
+			synPaths1.update(synPaths2)
+			return (True, synPaths1)
+		else : 
+			# Append the tried and failed solution to the different path list.
+			unsatCorePathConstraints = []
+			for pc in synPaths2.keys() :   # SynPaths2 provides the unsat core paths. 
+				path = synPaths2[pc]
+				unsatCorePathConstraints.append([pc, path])
+			localDifferentPathConstraints.append(unsatCorePathConstraints)
+
+			attempt = attempt - 1 # Decrease attempt number by 1.
+
+			if attempt == 0 :
+				# Different Solution Recovery could not find solution after 'n' attempts. 
+				return (False, dict())
+
+			return self.differentSolutionRecovery(attempt, rcGraph1, rcGraph2, cutEdges, isolatePathConstraints, localDifferentPathConstraints)
+
+	def incrementalGraphRecovery(self, attempt, rcG) :
+		pass
 
 	def enforceMulticastPolicies(self) :
 		# Enforcement of Mutltcast Policies. 
@@ -410,7 +532,6 @@ class ConstraintGenerator2(object) :
 				else :
 					self.z3Solver.add(ForAll(self.pc, self.F(sw,s,self.pc,1) == False))
 
-
 	def addTopologyConstraints(self, pcStart, pcEnd=0) :
 		if pcEnd == 0 :
 			""" Topology Constraint for one packet class"""
@@ -445,7 +566,6 @@ class ConstraintGenerator2(object) :
 					""" Multicast packet class. No restrictions on forwarding set """
 					pass	
 			
-
 	def addNeighbourConstraints(self) :
 		swCount = self.topology.getSwitchCount()
 		for sw in range(0,swCount) :
@@ -558,8 +678,6 @@ class ConstraintGenerator2(object) :
 			# Path len > 1 always.
 			self.z3Solver.add(self.F(s,i,pc,0) == False)
 
-
-
 	def addTrafficIsolationConstraints(self, pc1, pc2) : 
 		""" Adding constraints for Isolation Policy enforcement of traffic for packet classes (end-points) ep1 and ep2. """
 
@@ -575,6 +693,27 @@ class ConstraintGenerator2(object) :
 		for i in range(len(path) - 1) :
 			self.z3Solver.assert_and_track(self.F(path[i], path[i+1], pc, 1) == False, "p"+str(tracker))
 
+	def addDifferentPathConstraint(self, pc, path) :
+		""" Adding constraint such that pc finds a solution different from path"""
+		i = 0
+		diffPathAssert = True
+		for i in range(len(path) - 1) :
+			diffPathAssert = And(diffPathAssert, self.F(path[i], path[i+1], pc, 1) == True)
+
+		self.z3Solver.add(Not(diffPathAssert))
+
+	def addDifferentSolutionConstraint(self, pathConstraints) :
+		""" Adding constraints such that the solution obtained is different from the solution provided by arg pathConstraints
+			pathConstraints = List of [pc, path]"""
+		diffPathAssert = True
+		for pathConstraint in pathConstraints :
+			i = 0
+			pc = pathConstraint[0]
+			path = pathConstraint[1]
+			for i in range(len(path) - 1) :
+				diffPathAssert = And(diffPathAssert, self.F(path[i], path[i+1], pc, 1) == True)
+
+		self.z3Solver.add(Not(diffPathAssert))
 
 	def addEqualMulticastConstraints(self, srcSw, dstSwList, pc, pathlen=0) :
 		if pathlen == 0 :
@@ -639,10 +778,8 @@ class ConstraintGenerator2(object) :
 			for n in ineighbours :
 				self.z3Solver.add(Implies(self.F(i,n,pc,1) == True, rankfn(n) > rankfn(i)))
 
-
 	def addBoundConstraints(self, pcRange) :
 		self.z3Solver.add(self.pc < pcRange + 1)
-
 	
 	def getPathFromModel(self, pc) :
 		def getPathHelper(s, pc) :
