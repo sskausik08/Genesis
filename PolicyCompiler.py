@@ -44,19 +44,17 @@ class PolicyCompiler(Parser):
 
     tokens = (
         'NAME','NUMBER',
-        'PLUS','MINUS','EXP', 'TIMES','DIVIDE','EQUALS',
+        'EQUALS', 'DOT', 'SLASH', 'DOUBLEQUOTE',
         'LPAREN','RPAREN', 'SEMICOLON', 'COMMA', 'LBRACKET', 'RBRACKET',
-        'ISOLATE'     
+        'ISOLATE', 'REACH'
         )
 
     # Tokens
 
-    t_PLUS    = r'\+'
-    t_MINUS   = r'-'
-    t_EXP     = r'\*\*'
-    t_TIMES   = r'\*'
-    t_DIVIDE  = r'/'
     t_EQUALS  = r'='
+    t_DOT = r'\.'
+    t_DOUBLEQUOTE = r'\"'
+    t_SLASH = r'\/'
     t_LPAREN  = r'\('
     t_RPAREN  = r'\)'
     t_SEMICOLON = r';'
@@ -67,7 +65,7 @@ class PolicyCompiler(Parser):
     def t_ISOLATE(self, t): r'isolate'; return t
 
     def t_REACH(self, t): r'reach'; return t
-    
+
     def t_NAME(self, t):
         r'[a-zA-Z_][a-zA-Z0-9_]*'
         return t
@@ -105,22 +103,76 @@ class PolicyCompiler(Parser):
         'program : statement'
         pass
 
-    # def p_statement_declaration(self, p):
-    #     'statement : declaration_statement'
-    #     pass
-
-    def p_statement_isolate_varlist(self, p):
-        'statement : ISOLATE LPAREN variable RPAREN SEMICOLON'
+    def p_statement_declaration(self, p):
+        'statement : declaration_statement'
         pass
 
-    def p_statement_isolate_bivar(self, p):
-        'statement : ISOLATE LPAREN variable COMMA variable RPAREN SEMICOLON'
+    def p_statement_isolate(self, p):
+        'statement : isolate_statement'
+        pass
+
+    def p_statement_reach(self, p):
+        'statement : reach_statement'
+        pass
+
+    def p_declaration_reach(self, p):
+        'declaration_statement : variable EQUALS reach_statement'
+        pass
+
+    def p_declaration_ip(self, p):
+        'declaration_statement : variable EQUALS ip SEMICOLON'
+        pass
+
+    def p_declaration_sw(self, p):
+        'declaration_statement : variable EQUALS DOUBLEQUOTE NAME DOUBLEQUOTE SEMICOLON'
+        pass
+
+    def p_isolate_varlist(self, p):
+        'isolate_statement : ISOLATE LPAREN variable RPAREN SEMICOLON'
+        pass
+
+    def p_isolate_bivar(self, p):
+        'isolate_statement : ISOLATE LPAREN variable COMMA variable RPAREN SEMICOLON'
         print "Parsed."
+
+    def p_reach(self, p):
+        'reach_statement : REACH LPAREN ipvar COMMA ipvar COMMA swvar COMMA swvar COMMA swvarlist RPAREN SEMICOLON'
+        pass
     
+    def p_ipvar_ip(self, p):
+        'ipvar : ip'
+        print "Here"
+        pass
+    
+    def p_ipvar_var(self, p):
+        'ipvar : variable'
+        pass
+
+    def p_swarlist(self, p):
+        'swvarlist : LBRACKET swvar RBRACKET'
+        pass
+    
+    def p_swvar_sw(self, p):
+        'swvar : DOUBLEQUOTE NAME DOUBLEQUOTE'
+        pass
+    
+    def p_swvar_var(self, p):
+        'swvar : variable'
+        pass
+
     def p_variable_name(self, p):
         'variable : NAME'
         pass
     
+    def  p_ip_subnet(self, p):
+        'ip : NUMBER DOT NUMBER DOT NUMBER DOT NUMBER SLASH NUMBER'
+        print "Subnet"
+        pass
+
+    def p_ip_address(self, p):
+        'ip : NUMBER DOT NUMBER DOT NUMBER DOT NUMBER'
+        print "address"
+        pass
 
     def p_error(self, p):
         print "Syntax error at '%s'" % p.value
