@@ -45,7 +45,7 @@ class PolicyCompiler(Parser):
     tokens = (
         'NAME','NUMBER',
         'EQUALS', 'DOT', 'SLASH', 'DOUBLEQUOTE',
-        'LPAREN','RPAREN', 'SEMICOLON', 'COMMA', 'LBRACKET', 'RBRACKET',
+        'LPAREN','RPAREN', 'SEMICOLON', 'COMMA', 'LBRACKET', 'RBRACKET', 'LBRACE', 'RBRACE',
         'ISOLATE', 'REACH'
         )
 
@@ -61,6 +61,8 @@ class PolicyCompiler(Parser):
     t_COMMA = r','
     t_LBRACKET = r'\['
     t_RBRACKET = r'\]'
+    t_LBRACE = r'\{'
+    t_RBRACE = r'\{'
    
     def t_ISOLATE(self, t): r'isolate'; return t
 
@@ -137,11 +139,10 @@ class PolicyCompiler(Parser):
 
     def p_reach(self, p):
         'reach_statement : REACH LPAREN ipvar COMMA ipvar COMMA swvar COMMA swvar COMMA swvarlist RPAREN SEMICOLON'
-        pass
-    
+        pass  
+
     def p_ipvar_ip(self, p):
         'ipvar : ip'
-        print "Here"
         pass
     
     def p_ipvar_var(self, p):
