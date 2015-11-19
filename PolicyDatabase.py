@@ -50,16 +50,20 @@ class PolicyDatabase(object) :
 	def getPath(self, pc) :
 		return self.paths[pc]
 
-	def printPaths(self) :
+	def printPaths(self, topology) :
 		for pc in range(self.getPacketClassRange()) :
 			if not self.isMulticast(pc) :
 				ep = self.endpointTable[pc]
-				path = self.paths[pc]
-				print "PC#" + str(pc) + ": Endpoint Information : " + str(ep) + " Path : " + str(path) 
+				lpath = self.paths[pc]
+				phypath = map(topology.getSwName, lpath)
+				print "PC#" + str(pc) + ": Endpoint Information : " + str(ep) + " Path : " + str(phypath) 
 			else :
 				policy = self.mutlicastTable[pc]
-				path = self.paths[pc]
-				print "PC#" + str(pc) + ": Endpoint Information : " + str(policy) + " Path : " + str(path)
+				lpaths = self.paths[pc]
+				phypaths = []
+				for lpath in lpaths :
+					phypaths.append(map(topology.getSwName, lpath))
+				print "PC#" + str(pc) + ": Endpoint Information : " + str(policy) + " Path : " + str(phypaths)
 
 	def addIsolationPolicy(self, ep1, ep2) :
 		# Find the Packet Class numbers

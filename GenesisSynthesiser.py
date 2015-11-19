@@ -28,14 +28,15 @@ class GenesisSynthesiser(object) :
 		
 		# Fuzzy Synthesis Constants. 
 		self.CUT_THRESHOLD = 1000
-		self.GRAPH_SIZE_THRESHOLD = 1
+		self.BASE_GRAPH_SIZE_THRESHOLD = 3
+		self.CURR_GRAPH_SIZE_THRESHOLD = 3
 
 		# Different Solution Recovery Constants. 
 		self.DIFF_SOL_RETRY_COUNT = 4
 
 		# Fuzzy Synthesis Flags 
 		self.fuzzySynthesisFlag = fuzzy
-		self.recoveryFlag = True
+		self.recoveryFlag = False
 		self.synthesisSuccessFlag = True
 
 
@@ -62,7 +63,19 @@ class GenesisSynthesiser(object) :
 			rcGraphs = self.pdb.getRelationalClassGraphs()
 
 			for rcGraph in rcGraphs :
-				(rcGraphSat, synPaths) = self.enforceGraphPoliciesFuzzy(rcGraph)
+				rcGraphSat = False
+				self.CURR_GRAPH_SIZE_THRESHOLD = self.BASE_GRAPH_SIZE_THRESHOLD # reset the graph size to base value.
+				
+				while rcGraphSat == False and self.CURR_GRAPH_SIZE_THRESHOLD < self.topology.getSwitchCount() : 
+					(rcGraphSat, synPaths) = self.enforceGraphPoliciesFuzzy(rcGraph)
+					if rcGraphSat == False : 
+						self.CURR_GRAPH_SIZE_THRESHOLD = self.CURR_GRAPH_SIZE_THRESHOLD * 2 # Doubling the current graph size
+						print "Incrementing the solver graph size to " + str(self.CURR_GRAPH_SIZE_THRESHOLD)
+
+				if rcGraphSat == False :
+					# Apply non-fuzzy synthesis. 
+					(rcGraphSat, synPaths) = self.enforceGraphPolicies(rcGraph)
+
 				self.synthesisSuccessFlag = self.synthesisSuccessFlag & rcGraphSat
 				for pc in synPaths.keys() :
 					self.pdb.addPath(pc, synPaths[pc])
@@ -73,7 +86,7 @@ class GenesisSynthesiser(object) :
 			self.enforceMulticastPolicies()		
 
 		if self.synthesisSuccessFlag: 
-			self.pdb.printPaths()
+			self.pdb.printPaths(self.topology)
 		else :
 			print "Synthesis failed."
 
@@ -85,26 +98,9 @@ class GenesisSynthesiser(object) :
 		print "Time taken to solve the policies with fuzzy flag is " + str(end_t - start_t)
 
 	def addPolicies(self) :
-		# self.addReachabilityPolicy("0", 1, "0", 5, [17,6])
-		# self.addReachabilityPolicy("1", 1, "1", 2)
-		# self.addReachabilityPolicy("2", 3, "2", 6)
-		# self.addReachabilityPolicy("3", 3, "3", 6)
-		# self.addTrafficIsolationPolicy(["0", "0"] , ["1", "1"])
-		# self.addTrafficIsolationPolicy(["1", "1"] , ["2", "2"])
-
-		# self.addEqualMulticastPolicy("9", 1, ["9", "9"], [6, 5])
-		# self.addMulticastPolicy("8", 1, ["8", "8"], [6, 5, 4])
-		# self.addReachabilityPolicy("4", 1, "4", 2)
-		# self.addReachabilityPolicy("5", 1, "5", 2)
-		# self.addReachabilityPolicy("6", 1, "6", 2)
-		# self.addTrafficIsolationPolicy(["5", "5"] , ["4", "4"])
-		# self.addTrafficIsolationPolicy(["4", "4"] , ["3", "3"])
-		# self.addTrafficIsolationPolicy( ["2", "2"], ["5", "5"])
-
-
+		self.count = 20
 		for i in range(self.count) :
-			self.addReachabilityPolicy(str(i), 1, str(i), 5)
-
+			self.addReachabilityPolicy(str(i), "s1", str(i), "s5")
 
 		# for i in range(self.count, self.count * 2) :
 		# 	self.addReachabilityPolicy(str(i), 5, str(i), 1, [12])
@@ -112,8 +108,8 @@ class GenesisSynthesiser(object) :
 		for i in range(self.count - 1) :
 			self.addTrafficIsolationPolicy([str(i), str(i)] , [str(i+1), str(i+1)])
 
-		# for i in range(self.count - 2) :
-		# 	self.addTrafficIsolationPolicy([str(i), str(i)] , [str(i+2), str(i+2)])
+		for i in range(self.count - 2) :
+			self.addTrafficIsolationPolicy([str(i), str(i)] , [str(i+2), str(i+2)])
 
 		# self.addReachabilityPolicy(str(100), 15, str(100), 16)
 		# self.addTrafficIsolationPolicy([str(100), str(100)] , [str(0), str(0)])
@@ -215,7 +211,7 @@ class GenesisSynthesiser(object) :
 
 		if len(pclist) == 0 :
 			print "Function should not be called on empty graph."
-			exit(0)
+			#exit(0)
 
 		for pc in pclist : 
 			if not self.pdb.isMulticast(pc) :  
@@ -269,14 +265,16 @@ class GenesisSynthesiser(object) :
 			print isolatePathConstraints
 			unsatCores = self.z3Solver.unsat_core()
 			if len(unsatCores) == 0:
-				print "Unsatisfiability not due to any partial isolation solutions to the rcGraph. Thus, solution does not exist"
-				exit(0)
-			for core in unsatCores :
-				pc = int(str(core).split("p")[1])
-				for pathConstraint in isolatePathConstraints :
-					if pathConstraint[0] == pc : 
-						synPaths[pc] = pathConstraint[1]
-						break
+				# print "Unsatisfiability not due to any partial isolation solutions to the rcGraph. Thus, solution does not exist"
+				#exit(0)
+				pass
+			else :
+				for core in unsatCores :
+					pc = int(str(core).split("p")[1])
+					for pathConstraint in isolatePathConstraints :
+						if pathConstraint[0] == pc : 
+							synPaths[pc] = pathConstraint[1]
+							break
 		self.z3Solver.pop()
 		return (graphSat, synPaths)
 
@@ -291,7 +289,7 @@ class GenesisSynthesiser(object) :
 		synPaths = dict()
 
 		# If the graph size is smaller than a threshold, perform complete synthesis. 
-		if rcGraph.number_of_nodes() <= self.GRAPH_SIZE_THRESHOLD :
+		if rcGraph.number_of_nodes() <= self.CURR_GRAPH_SIZE_THRESHOLD :
 			(graphSat, synPaths) = self.enforceGraphPolicies(rcGraph,isolatePathConstraints,differentPathConstraints)
 			return (graphSat, synPaths)
 
@@ -379,7 +377,7 @@ class GenesisSynthesiser(object) :
 		else : 
 			if self.recoveryFlag == False :
 				print "Program failed to find a solution"
-				exit(0)
+				#exit(0)
 			# Recovery can be performed at this level, as additional constraints failed the solution.
 			# We try to find another solution for rcGraph1 and then apply synthesis of rcGraph2.
 			if differentPathConstraints == None :
@@ -406,11 +404,8 @@ class GenesisSynthesiser(object) :
 			if recoverySat == True :
 				return (recoverySat, synPaths)
 			else :
-				# Different Solution Recovery failed one time. Exit for now.
-				print "Recovery Failed"
-				exit()
-				return self.enforceGraphPolicies(rcGraph, isolatePathConstraints, differentPathConstraints)
-	
+				return (False, synPaths2)
+
 	def prunePathIsolationConstraints(self, pathConstraints) :
 		"""Removes duplicate path constraints"""
 		newPathConstraints = []

@@ -75,30 +75,23 @@ class GPLInterpreter(object):
 
     def p_program_stmts(self, p):
         'program : program statement'
-        #self.names[p[1]] = p[3]
-        pass
 
     def p_program_stmt(self, p):
         'program : statement'
-        pass
 
     def p_statement_declaration(self, p):
         'statement : declaration_statement SEMICOLON'
-        pass
 
     def p_statement_isolate(self, p):
         'statement : isolate_statement SEMICOLON'
-        pass
 
     def p_statement_reach(self, p):
         'statement : reach_statement SEMICOLON'
-        pass
 
     def p_declaration_reach(self, p):
         'declaration_statement : variable EQUALS reach_statement'
         var = p[1]
         self.variableTable[var.getName()] = p[3]
-        pass
 
     def p_declaration_var(self, p):
         'declaration_statement : variable EQUALS variable'
@@ -109,7 +102,6 @@ class GPLInterpreter(object):
             exit(0)
 
         self.variableTable[lvar.getName()] = p[3]
-        pass
 
     def p_declaration_endpoint(self, p):
         'declaration_statement : variable EQUALS ipvar COLON swvar'
@@ -124,7 +116,6 @@ class GPLInterpreter(object):
             exit(0)
         
         self.variableTable[var.getName()] = EndpointAst(ip, sw)
-        pass
 
     def p_declaration_ip(self, p):
         'declaration_statement : variable EQUALS ip'
@@ -135,7 +126,6 @@ class GPLInterpreter(object):
         'declaration_statement : variable EQUALS DOUBLEQUOTE NAME DOUBLEQUOTE'
         var = p[1]
         self.variableTable[var.getName()] = SwAst(p[4])
-        pass
 
     def p_isolate_bivar(self, p):
         'isolate_statement :  reachvar ISOLATE reachvar'
@@ -224,7 +214,6 @@ class GPLInterpreter(object):
         'ip : NUMBER DOT NUMBER DOT NUMBER DOT NUMBER SLASH NUMBER'
         prefix = str(p[1]) + "." + str(p[3]) + "." + str(p[5]) + "." + str(p[7])
         p[0] = IpAst(prefix, p[9])
-        pass
 
     def p_ip_address(self, p):
         'ip : NUMBER DOT NUMBER DOT NUMBER DOT NUMBER'
@@ -249,9 +238,4 @@ class GPLInterpreter(object):
     def run(self) :
         config = self.policyFile.read()
         yacc.parse(config)
-
-
-# if __name__ == '__main__':
-#     pc = PolicyCompiler()
-#     pc.run()
 

@@ -15,6 +15,7 @@ class Genesis(object):
         
     def run(self):
         self.parser.run()
+        self.genesisSynthesiser.addPolicies()
         self.genesisSynthesiser.enforcePolicies()
 
 genesis = Genesis()
