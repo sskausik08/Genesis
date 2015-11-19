@@ -6,7 +6,7 @@ import random
 import metis
 import networkx as nx
 
-class ConstraintGenerator2(object) :
+class GenesisSynthesiser(object) :
 	def __init__(self, topo, policyCount=20, fuzzy=True) :
 		self.topology = topo
 
@@ -36,6 +36,7 @@ class ConstraintGenerator2(object) :
 		# Fuzzy Synthesis Flags 
 		self.fuzzySynthesisFlag = fuzzy
 		self.recoveryFlag = True
+		self.synthesisSuccessFlag = True
 
 
 		# Profiling Information.
@@ -45,11 +46,13 @@ class ConstraintGenerator2(object) :
 		self.z3SolveCount = 0	# Count of z3 solve instances. 
 
 
+	def enforcePolicies(self): 
 		start_t = time.time()
+
 		print "Adding Constraints at " + str(start_t)
 
 		# Generate the assertions.
-		self.addPolicies()
+		self.pdb.createRelationalClasses()
 		assert self.pdb.relationalClassCreationFlag == True
 
 		# Add Unreachable Constraints 
@@ -60,6 +63,7 @@ class ConstraintGenerator2(object) :
 
 			for rcGraph in rcGraphs :
 				(rcGraphSat, synPaths) = self.enforceGraphPoliciesFuzzy(rcGraph)
+				self.synthesisSuccessFlag = self.synthesisSuccessFlag & rcGraphSat
 				for pc in synPaths.keys() :
 					self.pdb.addPath(pc, synPaths[pc])
 
@@ -68,14 +72,17 @@ class ConstraintGenerator2(object) :
 			self.enforceUnicastPolicies()
 			self.enforceMulticastPolicies()		
 
-		self.pdb.printPaths()
+		if self.synthesisSuccessFlag: 
+			self.pdb.printPaths()
+		else :
+			print "Synthesis failed."
 
 		end_t = time.time()
 		#print self.pdb.getPath(1)
 		
 		# for pc in range(self.pdb.getPacketClassRange()) :
 		# 	print "pc#" + str(pc) + ":" + str(self.pdb.validateIsolationPolicy(pc))
-		print "Time taken to solve the " + str(policyCount) + " policies with fuzzy flag " + str(fuzzy) + "is " + str(end_t - start_t)
+		print "Time taken to solve the policies with fuzzy flag is " + str(end_t - start_t)
 
 	def addPolicies(self) :
 		# self.addReachabilityPolicy("0", 1, "0", 5, [17,6])
@@ -123,15 +130,24 @@ class ConstraintGenerator2(object) :
 		# for i in range(self.count - 10):
 		# 	self.addTrafficIsolationPolicy([str(i), str(i)] , [str(i+7), str(i+7)])
 		
-		self.pdb.createRelationalClasses()
 
 	def addReachabilityPolicy(self, srcIP, s, dstIP, d, W=None) :
 		""" s = next hop switch of source host(s) 
 			d = next hop switch of destination host(s)
 			W = Waypoint Set (list of nodes) """
 
+		# Translate s, d, W into logical topology numbers.
+		srcSw = self.topology.getSwID(s)
+		dstSw = self.topology.getSwID(d)
+		waypoints = None
+		if not W == None :
+			waypoints = []
+			for w in W :
+				waypoints.append(self.topology.getSwID(w))
+
 		# Add policy to PDB : 
-		pc = self.pdb.addAllowPolicy(srcIP, s, dstIP, d, W)
+		pc = self.pdb.addAllowPolicy(srcIP, srcSw, dstIP, dstSw, waypoints)
+		return pc
 
 	def addTrafficIsolationPolicy(self, ep1, ep2) : 
 		# Isolation of traffic for packet classes (end-points) ep1 and ep2. 
@@ -821,11 +837,6 @@ class ConstraintGenerator2(object) :
 
 		return getPathHelper(self.pdb.getSourceSwitch(pc), pc)
 
-
-
-t = Topology()
-for i in range(1,2) :
-	c = ConstraintGenerator2(t, i*10, True)
 
 
 # nuZ3

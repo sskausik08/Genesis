@@ -20,7 +20,7 @@ class NetworkDatabase(object) :
 			if swName == self.switchMap[i] :
 				return i
 
-		raise LookupError(swName + " not in the network database")
+		raise LookupError(str(swName) + " not in the network database")
 
 
 	def getSwitchName(self, swID) :
@@ -84,6 +84,8 @@ class Topology(object):
 			self.neighbours[sw1].append(sw2)
 			self.neighbours[sw2].append(sw1)
 
+	def getSwID(self, swName) :
+		return self.networkDatabase.getSwID(swName)
 
 	def getMaxPathLength(self) :
 		return self.getSwitchCount()
