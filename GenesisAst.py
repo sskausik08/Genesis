@@ -5,8 +5,6 @@ class Type(Enum):
 	SW = 2
 	ENDPT = 3
 	REACH = 4
-	SWLIST = 5
-	NUM = 6
 
 class GPLAst(object):
 	def __init__(self, type) :
@@ -19,15 +17,6 @@ class GPLAst(object):
 	def setType(self, type) :
 		self.type = type
 
-	def addVariable(self, var) :
-		self.context[var] = None
-
-	def inContext(self, var) :
-		return var in self.context.keys()
-
-	def addValue(self, var, val) :
-		self.context[var] = val
-
 class IpAst(GPLAst) :
 	def __init__(self, prefix, plen=32) :
 		GPLAst.__init__(self, type=Type.IP)
@@ -39,7 +28,6 @@ class IpAst(GPLAst) :
 
 	def getIp(self) :
 		return self.prefix + "/" + str(self.plen)
-
 
 class SwAst(GPLAst) :
 	def __init__(self, name) :
@@ -60,14 +48,6 @@ class EndpointAst(GPLAst):
 
 	def getSw(self) :
 		return self.sw.getSw()
-
-class NumberAst(GPLAst):
-	def __init__(self, num):
-		GPLAst.__init__(self, type=Type.NUM)
-		self.num = num
-
-	def getNum(self) :
-		return self.num
 		
 class VariableAst(GPLAst) :
 	def __init__(self, name):
@@ -76,15 +56,6 @@ class VariableAst(GPLAst) :
 
 	def getName(self) :
 		return self.name
-
-class ArrayAst(GPLAst) :
-	def __init__(self, name, index):
-		GPLAst.__init__(self, type=Type.VAR)
-		self.name = name
-		self.index = index
-
-	def getName(self) :
-		return self.name + "#" + str(self.index)
 		
 class ReachAst(GPLAst):
 	def __init__(self, endpoint1, endpoint2, waypoints=None) :
@@ -96,6 +67,3 @@ class ReachAst(GPLAst):
 	def getIpEndpoints(self) :
 		""" Returns [src.ip, dst.ip] """
 		return [self.src.getIp(), self.dst.getIp()]		
-
-
-

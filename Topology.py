@@ -11,6 +11,12 @@ class NetworkDatabase(object) :
 		self.swID += 1
 		return self.swID - 1
 
+	def existsSwitch(self, swName) :
+		for i in range(len(self.switchMap)) :
+			if swName == self.switchMap[i] :
+				return True
+		return False
+
 	def insertHost(self, hostName, swName) :
 		sw = self.getSwID(swName)
 		hostMap[hostName] = sw
@@ -38,51 +44,29 @@ class Topology(object):
 	def __init__(self, name="topo-0"):
 		self.name = name
 		self.networkDatabase = NetworkDatabase()
-		self.neighbours = []
-
-		# Add the drop node (node 0) neighbours.
-		self.neighbours.append([])
-
-		# read the topology configuration files
-		self.read()
-
+		self.neighbours = dict()
 
 	def getName(self) :
 		return self.name
 
-	def read(self) :
-		f1 = open("./topoConf/switches")
-		lines = f1.readlines()
+	def addSwitch(self, name, neighbours) :
+		if not self.networkDatabase.existsSwitch(name):
+			swID = self.networkDatabase.insertSwitch(name)
+			self.neighbours[swID] = []
+		else :
+			swID = self.networkDatabase.getSwID(name)
 
-		# Read the switches file and initialise the network database
-		for line in lines : 
-			if line[0] == "#" : 
-				continue 
-			
-			fields = line.split()
-			# Inserting switch in the network database
-			self.networkDatabase.insertSwitch(fields[0])
+		for n in neighbours :
+			if not self.networkDatabase.existsSwitch(n) :
+				nID = self.networkDatabase.insertSwitch(n)
+				self.neighbours[nID] = []
+			else :
+				nID = self.networkDatabase.getSwID(n)
 
-			# Initialising the neighbours list for the switch. 
-			# Every switch is connected to the "drop switch". 
-			self.neighbours.append([])
-
-
-		# Read the links of the topology and update the neighbours of each switch
-		f2 = open("./topoConf/links") 
-		lines = f2.readlines()
-
-		for line in lines : 
-			if line[0] == "#" : 
-				continue 
-			fields = line.split()
-
-			sw1 = self.networkDatabase.getSwID(fields[0])
-			sw2 = self.networkDatabase.getSwID(fields[1])
-
-			# Update the neighbour set of both the switches 
-			self.neighbours[sw1].append(sw2)
-			self.neighbours[sw2].append(sw1)
+			if not nID in self.neighbours[swID] :
+				self.neighbours[swID].append(nID)
+			if not swID in self.neighbours[nID] :
+				self.neighbours[nID].append(swID)
 
 	def getSwID(self, swName) :
 		return self.networkDatabase.getSwID(swName)

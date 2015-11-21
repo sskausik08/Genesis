@@ -11,11 +11,11 @@ class Genesis(object):
 
         self.topology = Topology()
         self.genesisSynthesiser = GenesisSynthesiser(self.topology)
-        self.parser = GPLInterpreter(sys.argv[1], self.genesisSynthesiser)
+        self.parser = GPLInterpreter(sys.argv[1], self.genesisSynthesiser, self.topology)
         
     def run(self):
         self.parser.run()
-        self.genesisSynthesiser.addPolicies()
+        #self.genesisSynthesiser.addPolicies()
         self.genesisSynthesiser.enforcePolicies()
 
 genesis = Genesis()
