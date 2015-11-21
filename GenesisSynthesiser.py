@@ -12,7 +12,7 @@ class GenesisSynthesiser(object) :
 
 		# Network Forwarding Function
 		self.F = Function('F', IntSort(), IntSort(), IntSort(), IntSort(), BoolSort())
-		self.N = Function('N', IntSort(), IntSort(), BoolSort())
+		self.Val = Function('Val', IntSort(), IntSort(), IntSort(), IntSort())
 		self.pc = Int('pc') # Generic variable for packet classes
 
 		self.z3Solver = Solver()
@@ -49,8 +49,6 @@ class GenesisSynthesiser(object) :
 
 	def enforcePolicies(self): 
 		start_t = time.time()
-
-		print "Adding Constraints at " + str(start_t)
 
 		# Generate the assertions.
 		self.pdb.createRelationalClasses()
@@ -792,6 +790,10 @@ class GenesisSynthesiser(object) :
 	def addBoundConstraints(self, pcRange) :
 		self.z3Solver.add(self.pc < pcRange + 1)
 	
+	def addSwitchTableConstraints(self, sw, maxSize) :
+		#self.z3Solver.add(ForAll([sw, nsw, pc], Implies(F(sw, nsw, pc, 1), self.Val) )
+		pass
+
 	def getPathFromModel(self, pc) :
 		def getPathHelper(s, pc) :
 			path = [s]

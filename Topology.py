@@ -87,6 +87,9 @@ class Topology(object):
 	def getSwID(self, swName) :
 		return self.networkDatabase.getSwID(swName)
 
+	def getSwName(self, swID) :
+		return self.networkDatabase.getSwitchName(swID)
+
 	def getMaxPathLength(self) :
 		return self.getSwitchCount()
 		
