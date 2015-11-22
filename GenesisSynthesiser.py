@@ -12,7 +12,7 @@ class GenesisSynthesiser(object) :
 
 		# Network Forwarding Function
 		self.F = Function('F', IntSort(), IntSort(), IntSort(), IntSort(), BoolSort())
-		self.Val = Function('Val', IntSort(), IntSort(), IntSort(), IntSort())
+		self.Val = Function('Val', IntSort(), IntSort(), IntSort())
 		self.pc = Int('pc') # Generic variable for packet classes
 
 		self.z3Solver = Solver()
@@ -153,6 +153,10 @@ class GenesisSynthesiser(object) :
 	def addMulticastPolicy(self, srcIP, srcSw, dstIPs, dstSws) :
 		pc = self.pdb.addMulticastPolicy(srcIP, srcSw, dstIPs, dstSws)
 
+	def addSwitchTablePolicy(self, swName, tableSize) :
+		swID = self.topology.getSwID(swName)
+		self.pdb.addSwitchTableConstraint(swID, tableSize)
+
 	def enforceUnicastPolicies(self) :
 		# Add Topology Constraints 
 		self.addTopologyConstraints(0, self.pdb.getPacketClassRange())
@@ -177,7 +181,8 @@ class GenesisSynthesiser(object) :
 				if pc1 in relClass and pc2 in relClass : 
 					self.addTrafficIsolationConstraints(pc1, pc2)
 
-
+			self.addSwitchTableConstraints()  # Adding switch table constraints.
+						
 			# Each relational class can be synthesised independently.
 			modelsat = self.z3Solver.check()
 			if modelsat == z3.sat : 
@@ -635,9 +640,6 @@ class GenesisSynthesiser(object) :
 				return minPathLength + len(W) * 4
 
 	def addPathConstraints(self, s, pc) :
-		l = Int('l')
-		self.z3Solver.add(l > 0)
-		self.z3Solver.add(l < self.topology.getMaxPathLength() + 1)
 
 		neighbours = self.topology.getSwitchNeighbours(s)
 		# Add assertions to ensure f(s,*) leads to a valid neighbour. 
@@ -686,6 +688,11 @@ class GenesisSynthesiser(object) :
 
 			# Path len > 1 always.
 			self.z3Solver.add(self.F(s,i,pc,0) == False)
+
+			# Remove source to source reachabilty
+			for pathlen in range(1,maxPathLen+1) :
+				self.z3Solver.add(self.F(s,s,pc,pathlen) == False)
+
 
 	def addTrafficIsolationConstraints(self, pc1, pc2) : 
 		""" Adding constraints for Isolation Policy enforcement of traffic for packet classes (end-points) ep1 and ep2. """
@@ -790,9 +797,37 @@ class GenesisSynthesiser(object) :
 	def addBoundConstraints(self, pcRange) :
 		self.z3Solver.add(self.pc < pcRange + 1)
 	
-	def addSwitchTableConstraints(self, sw, maxSize) :
-		#self.z3Solver.add(ForAll([sw, nsw, pc], Implies(F(sw, nsw, pc, 1), self.Val) )
-		pass
+	def addSwitchTableConstraints(self) :
+		constraints = self.pdb.getSwitchTableConstraints()
+		if len(constraints) == 0 : return
+		""" Constraints : List of [switch-name, max-size]"""
+
+		for pc in range(self.pdb.getPacketClassRange()) :
+			src = self.pdb.getSourceSwitch(pc)
+			dst = self.pdb.getDestinationSwitch(pc)
+			swCount = self.topology.getSwitchCount()
+			maxPathLen = self.topology.getMaxPathLength()
+
+			if pc == 0: 
+				for i in range(1,swCount+1) : 
+					if not i == dst : 
+						self.z3Solver.add(Implies(self.F(src, i, pc, maxPathLen) == True, self.Val(i, pc) == 1))
+						self.z3Solver.add(Implies(self.F(src, i, pc, maxPathLen) == False, self.Val(i, pc) == 0))
+					else :
+						self.z3Solver.add(self.Val(i, pc) == 0)
+			else :
+				for i in range(1,swCount+1) :
+					if not i == dst :
+						self.z3Solver.add(Implies(self.F(src, i, pc, maxPathLen) == True, self.Val(i, pc) == self.Val(i, pc-1) + 1))
+						self.z3Solver.add(Implies(self.F(src, i, pc, maxPathLen) == False, self.Val(i, pc) == self.Val(i, pc-1)))
+					else :
+						self.z3Solver.add(self.Val(i, pc) == self.Val(i, pc-1))
+
+		maxpc = self.pdb.getPacketClassRange() - 1
+		for constraint in constraints :
+			sw = constraint[0]
+			self.z3Solver.add(self.Val(sw, maxpc) < constraint[1] + 1)
+
 
 	def getPathFromModel(self, pc) :
 		def getPathHelper(s, pc) :

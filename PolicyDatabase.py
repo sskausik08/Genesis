@@ -15,6 +15,7 @@ class PolicyDatabase(object) :
 		self.relClassGraphs = []
 		self.relationalClassCreationFlag = False
 		self.paths = dict()
+		self.switchTableConstraints = []
 
 	def addAllowPolicy(self, srcIP, srcSw, dstIP, dstSw, W=None) :
 		""" srcSw = source IP next hop switch
@@ -221,6 +222,13 @@ class PolicyDatabase(object) :
 			raise LookupError(str(pc) + " is not a valid packet class flow number.")
 		return self.endpointTable[pc][2]
 
+	def getDestinationSwitch(self, pc):
+		if self.isMulticast(pc) :
+			return self.mutlicastTable[pc][3]
+		if pc not in self.endpointTable :
+			raise LookupError(str(pc) + " is not a valid packet class flow number.")
+		return self.endpointTable[pc][3]
+
 	def createRelationalClassGraph(self, relClass) :
 		""" Creation of a Graph of edges of each packet class in the relational Class to leverage policy interactions to 
 		perform fuzzy synthesis"""
@@ -240,6 +248,12 @@ class PolicyDatabase(object) :
 
 	def getRelationalClassGraphs(self) :
 		return self.relClassGraphs
+
+	def addSwitchTableConstraint(self, sw, size) :
+		self.switchTableConstraints.append([sw, size])
+
+	def getSwitchTableConstraints(self):
+		return self.switchTableConstraints
 
 
 

@@ -8,9 +8,9 @@ import os
 from GenesisAst import *
     
 class GPLInterpreter(object):
-    def __init__(self, name, genesisSynthesiser, topology):
+    def __init__(self, fname, genesisSynthesiser, topology):
         #Parser.__init__(self, name)
-        self.policyFile =  open(name)
+        self.policyFile =  open(fname)
         self.variableTable = dict()
         self.genesisSynthesiser = genesisSynthesiser
         self.topology = topology
@@ -76,6 +76,12 @@ class GPLInterpreter(object):
 
     def p_program_topology_gpl(self, p):
         'program : topology SEP gpl'
+
+    def p_program_topology_gpl_cons(self, p):
+        'program : topology SEP gpl SEP constraints'
+        for constraint in p[5]:
+            print constraint.getSw()
+            self.genesisSynthesiser.addSwitchTablePolicy(constraint.getSw(), constraint.getMaxSize())
 
     def p_topology_switches(self, p):
         'topology : topology swdesc'
@@ -288,6 +294,19 @@ class GPLInterpreter(object):
         'ip : NUMBER DOT NUMBER DOT NUMBER DOT NUMBER'
         address = str(p[1]) + "." + str(p[3]) + "." + str(p[5]) + "." + str(p[7])
         p[0] = IpAst(address)
+
+    def p_constraints(self, p):
+        'constraints : constraints constraint'
+        p[1].append(p[2])
+        p[0] = p[1]
+
+    def p_constraints_constraint(self, p):
+        'constraints : constraint'
+        p[0] = [p[1]]
+
+    def p_constraint(self, p):
+        'constraint : NAME COLON NUMBER'
+        p[0] = ConstraintAst(p[1], p[3])
 
     def p_error(self, p):
         print "Syntax error at '%s'" % p.value

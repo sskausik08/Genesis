@@ -5,6 +5,7 @@ class Type(Enum):
 	SW = 2
 	ENDPT = 3
 	REACH = 4
+	CSRT = 5
 
 class GPLAst(object):
 	def __init__(self, type) :
@@ -67,3 +68,16 @@ class ReachAst(GPLAst):
 	def getIpEndpoints(self) :
 		""" Returns [src.ip, dst.ip] """
 		return [self.src.getIp(), self.dst.getIp()]		
+
+class ConstraintAst(GPLAst):
+	def __init__(self, name, size):
+		GPLAst.__init__(self, type=Type.CSRT)
+		self.sw = name
+		self.maxSize = size
+
+	def getSw(self) :
+		return self.sw
+
+	def getMaxSize(self):
+		return self.maxSize
+

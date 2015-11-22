@@ -10,7 +10,7 @@ class Genesis(object):
             exit(0)
 
         self.topology = Topology()
-        self.genesisSynthesiser = GenesisSynthesiser(self.topology)
+        self.genesisSynthesiser = GenesisSynthesiser(topo=self.topology, fuzzy=False)
         self.parser = GPLInterpreter(sys.argv[1], self.genesisSynthesiser, self.topology)
         
     def run(self):
