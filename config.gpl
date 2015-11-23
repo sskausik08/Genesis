@@ -1,3 +1,4 @@
+# Topology Description
 s1 : [s2, s6, s9]
 s2 : [s3]
 s3 : [s4]
@@ -6,19 +7,20 @@ s6 : [s7]
 s7 : [s8]
 s8 : [s5]
 s9 : [s10]
-s10 : [s11]
+s10 : [s11] # Hello
 s11 : [s5]
-==
-ip1 = 24.24.53.55/89
-sw1 = "s1"
+== 
+# GPL Policy Descriptions
+ip1 = 24.24.53.55/89  # IP declaration
+sw1 = "s1"	 # Switch Declaration
 ip2 = 24.24.53.56/89
 sw2 = "s5"
-f1 = ip1:sw1 >> ip2:sw2
+f1 = ip1:sw1 >> ip2:sw2  
 f2 = 10.0.0.1:"s1" >> ["s2"] >> 10.0.0.1:"s5" in 6
-f1 || f2
-f1 || 10.0.0.2:"s1" >> ["s9"] >> 10.0.0.2:"s5"
+f3 = 10.0.0.2:"s1" >> ["s9"] >> 10.0.0.2:"s5"
 10.0.0.1:"s1" >>>> [10.0.0.1:"s2", 10.0.0.1:"s2"] in 5
 ==
+# Switch Table Constraints.
 s2 : 1
 s6 : 1
 s9 : 1

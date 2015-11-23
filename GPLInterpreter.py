@@ -27,7 +27,8 @@ class GPLInterpreter(object):
         'NAME','NUMBER',
         'EQUALS', 'SEP', 'DOT', 'SLASH', 'DOUBLEQUOTE', 'COLON', 
         'COMMA', 'LBRACKET', 'RBRACKET', 
-        'ISOLATE', 'REACH', 'IN'
+        'ISOLATE', 'REACH', 'IN',
+        'COMMENT'
         )
 
     # Tokens
@@ -51,6 +52,11 @@ class GPLInterpreter(object):
     def t_NAME(self, t):
         r'[a-zA-Z_][a-zA-Z0-9_]*'
         return t
+
+    def t_COMMENT(self, t):
+        r'\#.*'
+        pass
+        # No return value. Token discarded
 
     def t_NUMBER(self, t):
         r'\d+'

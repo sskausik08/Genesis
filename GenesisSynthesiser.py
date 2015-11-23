@@ -169,11 +169,13 @@ class GenesisSynthesiser(object) :
 		# Create Relational Packet Classses.
 		relClasses = self.pdb.createRelationalClasses()
 
-		for relClass in relClasses :
-			# Independent Synthesis of relClass.
-			self.z3Solver.push()
-			for pc in relClass :
-				if not self.pdb.isMulticast(pc) :  
+		switchTableConstraints = self.pdb.getSwitchTableConstraints()
+		self.addSwitchTableConstraints(switchTableConstraints)  # Adding switch table constraints.
+
+		if len(switchTableConstraints) > 0 :
+			# Cannot synthesise relational Classes independently. 
+			for pc in range(self.pdb.getPacketClassRange()) :
+				if not self.pdb.isMulticast(pc) : 
 					policy = self.pdb.getAllowPolicy(pc)
 					self.addReachabilityConstraints(srcIP=policy[0][0], srcSw=policy[0][2], dstIP=policy[0][1], dstSw=policy[0][3],pc=pc, W=policy[1]) 
 
@@ -182,23 +184,46 @@ class GenesisSynthesiser(object) :
 				pc = self.pdb.getIsolationPolicy(pno)
 				pc1 = pc[0]
 				pc2 = pc[1]
-				if pc1 in relClass and pc2 in relClass : 
-					self.addTrafficIsolationConstraints(pc1, pc2)
-
-			self.addSwitchTableConstraints()  # Adding switch table constraints.
-						
-			# Each relational class can be synthesised independently.
+				self.addTrafficIsolationConstraints(pc1, pc2)
+			
+			# Apply synthesis
 			modelsat = self.z3Solver.check()
 			if modelsat == z3.sat : 
 				print "SAT"
 				self.fwdmodel = self.z3Solver.model()
-				for pc in relClass :
-					self.pdb.addPath(pc, self.getPathFromModel(pc))
-					
+				for pc in range(self.pdb.getPacketClassRange()) :
+					self.pdb.addPath(pc, self.getPathFromModel(pc))		
 			else :
 				print "Input Policies not realisable"
+		else : 			
+			for relClass in relClasses :
+				# Independent Synthesis of relClass.
+				self.z3Solver.push()
+				for pc in relClass :
+					if not self.pdb.isMulticast(pc) :  
+						policy = self.pdb.getAllowPolicy(pc)
+						self.addReachabilityConstraints(srcIP=policy[0][0], srcSw=policy[0][2], dstIP=policy[0][1], dstSw=policy[0][3],pc=pc, W=policy[1]) 
 
-			self.z3Solver.pop()
+				# Add traffic constraints. 
+				for pno in range(self.pdb.getIsolationPolicyCount()) :
+					pc = self.pdb.getIsolationPolicy(pno)
+					pc1 = pc[0]
+					pc2 = pc[1]
+					if pc1 in relClass and pc2 in relClass : 
+						self.addTrafficIsolationConstraints(pc1, pc2)
+			
+				# Each relational class can be synthesised independently.
+				modelsat = self.z3Solver.check()
+				if modelsat == z3.sat : 
+					print "SAT"
+					self.fwdmodel = self.z3Solver.model()
+					for pc in relClass :
+						self.pdb.addPath(pc, self.getPathFromModel(pc))
+						
+				else :
+					print "Input Policies not realisable"
+
+				self.z3Solver.pop()
 
 	def enforceGraphPolicies(self, rcGraph, isolatePathConstraints=None, differentPathConstraints=None) :
 		""" Synthesis of the Relational Class Graph given some path constraints (isolation and inequality). 
@@ -802,8 +827,7 @@ class GenesisSynthesiser(object) :
 	def addBoundConstraints(self, pcRange) :
 		self.z3Solver.add(self.pc < pcRange + 1)
 	
-	def addSwitchTableConstraints(self) :
-		constraints = self.pdb.getSwitchTableConstraints()
+	def addSwitchTableConstraints(self, constraints) :
 		if len(constraints) == 0 : return
 		""" Constraints : List of [switch-name, max-size]"""
 
