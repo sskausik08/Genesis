@@ -119,10 +119,9 @@ class PolicyDatabase(object) :
 				pc1rc.extend(pc2rc)
 				self.relClasses.remove(pc2rc)
 
-			print self.relClasses
 
 		# Clear graphs as we re-create them. 
-		#self.relClassGraphs = []
+		self.relClassGraphs = []
 
 		for relClass in self.relClasses : 
 			self.createRelationalClassGraph(relClass)
@@ -137,7 +136,7 @@ class PolicyDatabase(object) :
 			if pc in relClass :
 				return relClass
 
-	def getUnenforcedRelationalClass(self):
+	def getUnenforcedRelationalClasses(self):
 		unenforcedRCs = []
 		for relClass in self.relClasses :
 			for pc in relClass :
@@ -145,6 +144,18 @@ class PolicyDatabase(object) :
 					unenforcedRCs.append(relClass)
 					break
 		return unenforcedRCs
+
+	def getUnenforcedRelationalClassGraphs(self):
+		unenforcedRCs = []
+		for relClass in self.relClasses :
+			for pc in relClass :
+				if not pc in self.enforcementStatusTable:
+					unenforcedRCs.append(relClass)
+					break
+		return unenforcedRCs
+
+	def isEnforced(self, pc):
+		return pc in self.enforcementStatusTable 
 
 	def validateIsolationPolicy(self, pc) :
 

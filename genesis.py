@@ -28,6 +28,25 @@ class Genesis(object):
         #self.genesisSynthesiser.addPolicies()
         self.genesisSynthesiser.enforcePolicies()
 
+        while True:
+	        s = raw_input('--> ') 
+	        if len(s) == 0:
+	        	continue
+	        fields = s.split()
+	    	if fields[0] == "change" and len(fields[1]) > 0:
+	    		gplfile = open(fields[1])
+	    		gpl = gplfile.read()
+	    		self.parser.parseGPL(gpl)
+	    		#newpc = self.genesisSynthesiser.addReachabilityPolicy("10.0.0.2", "s1", "10.0.0.8", "s5", ["s9"])
+        		#self.genesisSynthesiser.addTrafficIsolationPolicy(0, newpc)
+	    		self.genesisSynthesiser.enforceChangedPolicies()
+	    	elif fields[0] == "exit" :
+	    		break
+
+        
+        
+        
+
     # Add API support.
     def addReachPolicy(self, srcIP, srcSw, dstIP, dstSw):
     	"""

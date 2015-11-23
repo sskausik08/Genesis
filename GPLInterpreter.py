@@ -19,7 +19,9 @@ class GPLInterpreter(object):
 
         # Build the lexer and parser
         lex.lex(module=self)
+        self.gplyacc = yacc.yacc(module=self, start='gpl')
         yacc.yacc(module=self)
+
 
     tokens = (
         'NAME','NUMBER',
@@ -330,4 +332,7 @@ class GPLInterpreter(object):
     def run(self) :
         config = self.policyFile.read()
         yacc.parse(config)
+
+    def parseGPL(self, gpl):
+        self.gplyacc.parse(gpl)
 

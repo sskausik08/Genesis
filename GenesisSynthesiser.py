@@ -621,6 +621,7 @@ class GenesisSynthesiser(object) :
 		self.z3Solver.add(destAssert)
 
 		if not W == None : 
+			print W
 			# Add the Waypoint Constraints. 
 			for w in W :
 				reachAssert = self.F(srcSw,w,pc,pathlen) == True
@@ -875,8 +876,54 @@ class GenesisSynthesiser(object) :
 
 	def enforceChangedPolicies(self):
 		# A model already exists. Synthesis of newly added policies. 
-		pass
+		self.addTopologyConstraints(0, self.pdb.getPacketClassRange())
 
+		#create the updated relational Classes.
+		self.pdb.createRelationalClasses()
+		relClasses = self.pdb.getUnenforcedRelationalClasses()
+		print relClasses
+
+		# Naive synthesis approach : Apply enforced policies as constraints to the unenforced ones.
+		for relClass in relClasses:
+			self.z3Solver.push()
+			for pc in relClass :
+				if not self.pdb.isEnforced(pc): 
+					if not self.pdb.isMulticast(pc) :  
+						policy = self.pdb.getAllowPolicy(pc)
+						print policy
+						self.addReachabilityConstraints(srcIP=policy[0][0], srcSw=policy[0][2], dstIP=policy[0][1], dstSw=policy[0][3],pc=pc, W=policy[1]) 
+
+			# Add traffic constraints. 
+			for pno in range(self.pdb.getIsolationPolicyCount()) :
+				pc = self.pdb.getIsolationPolicy(pno)
+				pc1 = pc[0]
+				pc2 = pc[1]
+				if pc1 in relClass and pc2 in relClass : 
+					if self.pdb.isEnforced(pc1) and self.pdb.isEnforced(pc2) :
+						continue
+					elif self.pdb.isEnforced(pc1) :
+						self.addPathIsolationConstraints(pc2, self.pdb.getPath(pc1), pc1)
+					elif self.pdb.isEnforced(pc2) :
+						self.addPathIsolationConstraints(pc1, self.pdb.getPath(pc2), pc2)
+					else :
+						self.addTrafficIsolationConstraints(pc1, pc2)
+
+			#self.addSwitchTableConstraints()  # Adding switch table constraints.
+						
+			# Each relational class can be synthesised independently.
+			modelsat = self.z3Solver.check()
+			if modelsat == z3.sat : 
+				print "SAT"
+				self.fwdmodel = self.z3Solver.model()
+				for pc in relClass :
+					if not self.pdb.isEnforced(pc) :
+						self.pdb.addPath(pc, self.getPathFromModel(pc))	
+			else :
+				print "Input Policies not realisable"
+
+			self.z3Solver.pop()
+
+		self.pdb.printPaths(self.topology)
 
 # nuZ3
 # maxSAT
