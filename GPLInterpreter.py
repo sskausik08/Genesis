@@ -169,7 +169,7 @@ class GPLInterpreter(object):
             print "Isolation Policy has incorrect arguments"
             exit(0)
 
-        self.genesisSynthesiser.addTrafficIsolationPolicy(p[1].getIpEndpoints(), p[3].getIpEndpoints())
+        self.genesisSynthesiser.addTrafficIsolationPolicy(p[1].getPacketClass(), p[3].getPacketClass())
 
     def p_reachvar_var(self, p):
         'reachvar : variable'
@@ -187,7 +187,8 @@ class GPLInterpreter(object):
             print "Reach Policy has incorrect arguments"
             exit(0)
         reachPolicy = ReachAst(p[1], p[3])
-        self.genesisSynthesiser.addReachabilityPolicy(p[1].getIp(), p[1].getSw(), p[3].getIp(), p[3].getSw())
+        pc = self.genesisSynthesiser.addReachabilityPolicy(p[1].getIp(), p[1].getSw(), p[3].getIp(), p[3].getSw())
+        reachPolicy.setPacketClass(pc)
         p[0] = reachPolicy  
 
     def p_reach_waypoint(self, p):
@@ -201,7 +202,8 @@ class GPLInterpreter(object):
         for sw in p[4] :
             waypoints.append(sw.getSw())
 
-        self.genesisSynthesiser.addReachabilityPolicy(p[1].getIp(), p[1].getSw(), p[7].getIp(), p[7].getSw(), waypoints) 
+        pc = self.genesisSynthesiser.addReachabilityPolicy(p[1].getIp(), p[1].getSw(), p[7].getIp(), p[7].getSw(), waypoints) 
+        reachPolicy.setPacketClass(pc)
         p[0] = reachPolicy 
 
     def p_reach_len(self, p):
@@ -211,7 +213,8 @@ class GPLInterpreter(object):
             print "Reach Policy has incorrect arguments"
             exit(0)
         reachPolicy = ReachAst(p[1], p[3])
-        self.genesisSynthesiser.addReachabilityPolicy(p[1].getIp(), p[1].getSw(), p[3].getIp(), p[3].getSw())
+        pc = self.genesisSynthesiser.addReachabilityPolicy(p[1].getIp(), p[1].getSw(), p[3].getIp(), p[3].getSw())
+        reachPolicy.setPacketClass(pc)
         p[0] = reachPolicy  
 
     def p_reach_waypoint_len(self, p):
@@ -225,7 +228,8 @@ class GPLInterpreter(object):
         for sw in p[4] :
             waypoints.append(sw.getSw())
 
-        self.genesisSynthesiser.addReachabilityPolicy(p[1].getIp(), p[1].getSw(), p[7].getIp(), p[7].getSw(), waypoints) 
+        pc = self.genesisSynthesiser.addReachabilityPolicy(p[1].getIp(), p[1].getSw(), p[7].getIp(), p[7].getSw(), waypoints) 
+        reachPolicy.setPacketClass(pc)
         p[0] = reachPolicy 
 
     def p_mcast(self, p) :

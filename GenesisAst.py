@@ -64,10 +64,17 @@ class ReachAst(GPLAst):
 		self.src = endpoint1
 		self.dst = endpoint2
 		self.waypoints = waypoints
+		self.pc = -1
 
 	def getIpEndpoints(self) :
 		""" Returns [src.ip, dst.ip] """
 		return [self.src.getIp(), self.dst.getIp()]		
+
+	def setPacketClass(self, pc):
+		self.pc = pc
+
+	def getPacketClass(self):
+		return self.pc
 
 class ConstraintAst(GPLAst):
 	def __init__(self, name, size):

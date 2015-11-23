@@ -8,6 +8,7 @@ class PolicyDatabase(object) :
 		self.pc = 0
 		self.endpointTable = dict()
 		self.waypointTable = dict()
+		self.enforcementStatusTable = dict()
 		self.isolationTable = []
 		self.mutlicastTable = dict()
 		self.equalMulticastPolicy = dict()
@@ -47,6 +48,8 @@ class PolicyDatabase(object) :
 
 	def addPath(self, pc, path) :
 		self.paths[pc] = path
+		if len(path) > 0 :
+			self.enforcementStatusTable[pc] = True # Policy #pc has been enforced. 
 
 	def getPath(self, pc) :
 		return self.paths[pc]
@@ -66,26 +69,8 @@ class PolicyDatabase(object) :
 					phypaths.append(map(topology.getSwName, lpath))
 				print "PC#" + str(pc) + ": Endpoint Information : " + str(policy) + " Path : " + str(phypaths)
 
-	def addIsolationPolicy(self, ep1, ep2) :
-		# Find the Packet Class numbers
-		pc1 = -1
-		pc2 = -1
-		for i in self.endpointTable.keys() :
-			ep = self.endpointTable[i]
-			if ep[0] == ep1[0] and ep[1] == ep1[1] :
-				pc1 = i
-			if ep[0] == ep2[0] and ep[1] == ep2[1] :
-				pc2 = i
-
-		if pc1 == -1 :
-			#Flows dont exist. 
-			raise LookupError(srcIP1 + "->" + dstIP1 + " is not a valid packet class flow.")
-		elif pc2 == -1 :
-			raise LookupError(srcIP1 + "->" + dstIP2 + " is not a valid packet class flow.")
-		else : 
-			self.isolationTable.append([pc1,pc2])
-
-		return [pc1,pc2]
+	def addIsolationPolicy(self, pc1, pc2) :
+		self.isolationTable.append([pc1,pc2])
 
 	def getIsolationPolicy(self, no) :
 		if no > len(self.isolationTable) - 1 : 
@@ -106,7 +91,6 @@ class PolicyDatabase(object) :
 		""" Create Relational classes of packet classes. A relational class is a maximal set of
 		packet classes which need to be synthesised together because of inter-class policies like
 		isolation """
-
 		# For now, our inter-class policy is isolation.
 		for pno in range(self.getIsolationPolicyCount()) :
 			pc = self.getIsolationPolicy(pno)
@@ -135,6 +119,11 @@ class PolicyDatabase(object) :
 				pc1rc.extend(pc2rc)
 				self.relClasses.remove(pc2rc)
 
+			print self.relClasses
+
+		# Clear graphs as we re-create them. 
+		#self.relClassGraphs = []
+
 		for relClass in self.relClasses : 
 			self.createRelationalClassGraph(relClass)
 
@@ -147,6 +136,15 @@ class PolicyDatabase(object) :
 		for relClass in self.relClasses :
 			if pc in relClass :
 				return relClass
+
+	def getUnenforcedRelationalClass(self):
+		unenforcedRCs = []
+		for relClass in self.relClasses :
+			for pc in relClass :
+				if not pc in self.enforcementStatusTable:
+					unenforcedRCs.append(relClass)
+					break
+		return unenforcedRCs
 
 	def validateIsolationPolicy(self, pc) :
 

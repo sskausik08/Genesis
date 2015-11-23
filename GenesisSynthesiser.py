@@ -12,7 +12,7 @@ class GenesisSynthesiser(object) :
 
 		# Network Forwarding Function
 		self.F = Function('F', IntSort(), IntSort(), IntSort(), IntSort(), BoolSort())
-		self.Val = Function('Val', IntSort(), IntSort(), IntSort())
+		self.R = Function('R', IntSort(), IntSort(), IntSort())
 		self.pc = Int('pc') # Generic variable for packet classes
 
 		self.z3Solver = Solver()
@@ -75,8 +75,12 @@ class GenesisSynthesiser(object) :
 					(rcGraphSat, synPaths) = self.enforceGraphPolicies(rcGraph)
 
 				self.synthesisSuccessFlag = self.synthesisSuccessFlag & rcGraphSat
-				for pc in synPaths.keys() :
-					self.pdb.addPath(pc, synPaths[pc])
+				if rcGraphSat:
+					for pc in synPaths.keys() :
+						self.pdb.addPath(pc, synPaths[pc])
+				else :
+					for pc in synPaths.keys() :
+						self.pdb.addPath(pc, [])
 
 			self.enforceMulticastPolicies()		
 		else : 
@@ -103,11 +107,11 @@ class GenesisSynthesiser(object) :
 		# for i in range(self.count, self.count * 2) :
 		# 	self.addReachabilityPolicy(str(i), 5, str(i), 1, [12])
 
-		for i in range(self.count - 1) :
-			self.addTrafficIsolationPolicy([str(i), str(i)] , [str(i+1), str(i+1)])
+		# for i in range(self.count - 1) :
+		# 	self.addTrafficIsolationPolicy([str(i), str(i)] , [str(i+1), str(i+1)])
 
-		for i in range(self.count - 2) :
-			self.addTrafficIsolationPolicy([str(i), str(i)] , [str(i+2), str(i+2)])
+		# for i in range(self.count - 2) :
+		# 	self.addTrafficIsolationPolicy([str(i), str(i)] , [str(i+2), str(i+2)])
 
 		# self.addReachabilityPolicy(str(100), 15, str(100), 16)
 		# self.addTrafficIsolationPolicy([str(100), str(100)] , [str(0), str(0)])
@@ -143,9 +147,9 @@ class GenesisSynthesiser(object) :
 		pc = self.pdb.addAllowPolicy(srcIP, srcSw, dstIP, dstSw, waypoints)
 		return pc
 
-	def addTrafficIsolationPolicy(self, ep1, ep2) : 
-		# Isolation of traffic for packet classes (end-points) ep1 and ep2. 
-		pc = self.pdb.addIsolationPolicy(ep1,ep2) # Returns [pc1,pc2]
+	def addTrafficIsolationPolicy(self, policy1, policy2) : 
+		# Isolation of traffic for Policies policy1 and policy2
+		pc = self.pdb.addIsolationPolicy(policy1,policy2) 
 
 	def addEqualMulticastPolicy(self, srcIP, srcSw, dstIPs, dstSws) :
 		pc = self.pdb.addEqualMulticastPolicy(srcIP, srcSw, dstIPs, dstSws)
@@ -811,22 +815,22 @@ class GenesisSynthesiser(object) :
 			if pc == 0: 
 				for i in range(1,swCount+1) : 
 					if not i == dst : 
-						self.z3Solver.add(Implies(self.F(src, i, pc, maxPathLen) == True, self.Val(i, pc) == 1))
-						self.z3Solver.add(Implies(self.F(src, i, pc, maxPathLen) == False, self.Val(i, pc) == 0))
+						self.z3Solver.add(Implies(self.F(src, i, pc, maxPathLen) == True, self.R(i, pc) == 1))
+						self.z3Solver.add(Implies(self.F(src, i, pc, maxPathLen) == False, self.R(i, pc) == 0))
 					else :
-						self.z3Solver.add(self.Val(i, pc) == 0)
+						self.z3Solver.add(self.R(i, pc) == 0)
 			else :
 				for i in range(1,swCount+1) :
 					if not i == dst :
-						self.z3Solver.add(Implies(self.F(src, i, pc, maxPathLen) == True, self.Val(i, pc) == self.Val(i, pc-1) + 1))
-						self.z3Solver.add(Implies(self.F(src, i, pc, maxPathLen) == False, self.Val(i, pc) == self.Val(i, pc-1)))
+						self.z3Solver.add(Implies(self.F(src, i, pc, maxPathLen) == True, self.R(i, pc) == self.R(i, pc-1) + 1))
+						self.z3Solver.add(Implies(self.F(src, i, pc, maxPathLen) == False, self.R(i, pc) == self.R(i, pc-1)))
 					else :
-						self.z3Solver.add(self.Val(i, pc) == self.Val(i, pc-1))
+						self.z3Solver.add(self.R(i, pc) == self.R(i, pc-1))
 
 		maxpc = self.pdb.getPacketClassRange() - 1
 		for constraint in constraints :
 			sw = constraint[0]
-			self.z3Solver.add(self.Val(sw, maxpc) < constraint[1] + 1)
+			self.z3Solver.add(self.R(sw, maxpc) < constraint[1] + 1)
 
 
 	def getPathFromModel(self, pc) :
@@ -869,6 +873,9 @@ class GenesisSynthesiser(object) :
 
 		return getPathHelper(self.pdb.getSourceSwitch(pc), pc)
 
+	def enforceChangedPolicies(self):
+		# A model already exists. Synthesis of newly added policies. 
+		pass
 
 
 # nuZ3
