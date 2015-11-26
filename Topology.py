@@ -9,7 +9,7 @@ class NetworkDatabase(object) :
 	def insertSwitch(self, swName) :
 		self.switchMap.append(swName)
 		self.swID += 1
-		print swName + ":" + str(self.swID - 1)
+		#print swName + ":" + str(self.swID - 1)
 		return self.swID - 1
 
 	def existsSwitch(self, swName) :

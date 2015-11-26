@@ -59,16 +59,13 @@ class VariableAst(GPLAst) :
 		return self.name
 		
 class ReachAst(GPLAst):
-	def __init__(self, endpoint1, endpoint2, waypoints=None) :
+	def __init__(self, predicate, src, dst, waypoints=None) :
 		GPLAst.__init__(self, type=Type.REACH)
-		self.src = endpoint1
-		self.dst = endpoint2
+		self.src = src
+		self.dst = dst
+		self.match = predicate
 		self.waypoints = waypoints
 		self.pc = -1
-
-	def getIpEndpoints(self) :
-		""" Returns [src.ip, dst.ip] """
-		return [self.src.getIp(), self.dst.getIp()]		
 
 	def setPacketClass(self, pc):
 		self.pc = pc

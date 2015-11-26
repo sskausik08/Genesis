@@ -8,6 +8,7 @@ class PolicyDatabase(object) :
 		self.pc = 0
 		self.endpointTable = dict()
 		self.waypointTable = dict()
+		self.pathLengthTable = dict()
 		self.enforcementStatusTable = dict()
 		self.isolationTable = []
 		self.mutlicastTable = dict()
@@ -18,16 +19,19 @@ class PolicyDatabase(object) :
 		self.paths = dict()
 		self.switchTableConstraints = []
 
-	def addAllowPolicy(self, srcIP, srcSw, dstIP, dstSw, W=None) :
+	def addAllowPolicy(self, predicate, srcSw, dstSw, W=None, len=None) :
 		""" srcSw = source IP next hop switch
 			dstSw = Destination IP next hop switch
 			W = List of Waypoints. """
 
-		self.endpointTable[self.pc] = [srcIP, dstIP, srcSw, dstSw]
+		self.endpointTable[self.pc] = [predicate, None, srcSw, dstSw]
 		if W == None : 
 			self.waypointTable[self.pc] = []
 		else :
 			self.waypointTable[self.pc] = W
+
+		if not len == None :
+			self.pathLengthTable[self.pc] = len
 
 		self.relClasses.append([self.pc])
 		self.pc += 1
@@ -40,11 +44,17 @@ class PolicyDatabase(object) :
 		""" Policy is of the form : [[srcIP, dstIP, srcSw, dstSw], Waypoints] """
 		if no not in self.endpointTable : 
 			return None
+		policy = [self.endpointTable[no]]
+		if self.waypointTable[no] == [] :
+			policy.append(None)
 		else :
-			if self.waypointTable[no] == [] :
-				return [self.endpointTable[no],None] 
-			else :
-				return [self.endpointTable[no], self.waypointTable[no]]
+			policy.append(self.waypointTable[no])
+		if no in self.pathLengthTable :
+			policy.append(self.pathLengthTable[no])
+		else :
+			policy.append(None)
+		return policy
+
 
 	def addPath(self, pc, path) :
 		self.paths[pc] = path
@@ -60,7 +70,7 @@ class PolicyDatabase(object) :
 				ep = self.endpointTable[pc]
 				lpath = self.paths[pc]
 				phypath = map(topology.getSwName, lpath)
-				print "PC#" + str(pc) + ": Endpoint Information : " + str(ep) + " Path : " + str(phypath) 
+				print "PC#" + str(pc) + ": Endpoint Information : " + ep[0].getStr() + " Path : " + str(phypath) 
 			else :
 				policy = self.mutlicastTable[pc]
 				lpaths = self.paths[pc]

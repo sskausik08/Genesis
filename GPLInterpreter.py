@@ -6,34 +6,40 @@ import ply.lex as lex
 import ply.yacc as yacc
 import os
 from GenesisAst import *
+from NetworkPredicate import *
     
 class GPLInterpreter(object):
-    def __init__(self, fname, genesisSynthesiser, topology):
+    def __init__(self, gplfile, topofile, genesisSynthesiser, topology):
         #Parser.__init__(self, name)
-        self.policyFile =  open(fname)
-        self.variableTable = dict()
+        self.gplfile =  open(gplfile)
+        self.topofile = open(topofile)
+        self.policyTable = dict()
         self.genesisSynthesiser = genesisSynthesiser
         self.topology = topology
-
+        self.tabmodule = "GPLInterpreter" + "_" + "parsetab"
         self.inForLoopFlag = False
 
         # Build the lexer and parser
         lex.lex(module=self)
-        self.gplyacc = yacc.yacc(module=self, start='gpl')
-        yacc.yacc(module=self)
+        self.gplyacc = yacc.yacc(module=self, tabmodule=self.tabmodule)
+        self.topoyacc = yacc.yacc(module=self, tabmodule=self.tabmodule, start = 'topology')
+
 
 
     tokens = (
         'NAME','NUMBER',
-        'EQUALS', 'SEP', 'DOT', 'SLASH', 'DOUBLEQUOTE', 'COLON', 
+        'EQUALS', 'SEP', 'DOT', 'SLASH', 'DOUBLEQUOTE', 'COLON', 'ASSIGN', 'ARROW',
         'COMMA', 'LBRACKET', 'RBRACKET', 
         'ISOLATE', 'REACH', 'IN',
-        'COMMENT'
+        'COMMENT', 
+        'AND', 'OR', 'NOT', 'TRUE', 'FALSE'
         )
 
     # Tokens
 
     t_EQUALS  = r'='
+    t_ASSIGN = r'\:='
+    t_ARROW = r'\-\>'
     t_SEP = r'=='
     t_DOT = r'\.'
     t_DOUBLEQUOTE = r'\"'
@@ -47,7 +53,17 @@ class GPLInterpreter(object):
 
     def t_REACH(self, t): r'\>\>'; return t
 
-    def t_IN(self, t): r'in'; return t   
+    def t_IN(self, t): r'in'; return t 
+
+    def t_AND(self, t): r'and'; return t 
+
+    def t_OR(self, t): r'or'; return t   
+
+    def t_NOT(self, t): r'not'; return t 
+
+    def t_TRUE(self, t): r'true'; return t 
+
+    def t_FALSE(self, t): r'false'; return t 
 
     def t_NAME(self, t):
         r'[a-zA-Z_][a-zA-Z0-9_]*'
@@ -80,222 +96,170 @@ class GPLInterpreter(object):
 
     # Parsing rules
 
-    precedence = ()
+    precedence = (
+        ('left', 'OR'),
+        ('left', 'AND'),
+        ('right', 'NOT'),
+    )
 
-    def p_program_topology_gpl(self, p):
-        'program : topology SEP gpl'
+    def p_program_gpl(self, p):
+        'program : gplreach'
 
-    def p_program_topology_gpl_cons(self, p):
-        'program : topology SEP gpl SEP constraints'
-        for constraint in p[5]:
-            print constraint.getSw()
-            self.genesisSynthesiser.addSwitchTablePolicy(constraint.getSw(), constraint.getMaxSize())
+    def p_program_gplreach_gplisolate(self, p):
+        'program : gplreach SEP gplisolate'
+        # for constraint in p[5]:
+        #     print constraint.getSw()
+        #     self.genesisSynthesiser.addSwitchTablePolicy(constraint.getSw(), constraint.getMaxSize())
 
-    def p_topology_switches(self, p):
-        'topology : topology swdesc'
+    def p_program_gplreach_cons(self, p):
+        'program : gplreach SEP constraints'
 
-    def p_topology_switch(self, p):
-        'topology : swdesc'
+    def p_program_gplreach_isolate_cons(self, p):
+        'program : gplreach SEP gplisolate SEP constraints'
+        # for constraint in p[5]:
+        #     print constraint.getSw()
+        #     self.genesisSynthesiser.addSwitchTablePolicy(constraint.getSw(), constraint.getMaxSize())
 
-    def p_swdesc(self, p):
-        'swdesc : NAME COLON LBRACKET swnames RBRACKET'
-        neighbours = []
-        for sw in p[4]:
-            neighbours.append(sw.getSw())
-        self.topology.addSwitch(p[1], neighbours)
+    def p_gplreach_stmts(self, p):
+        'gplreach : gplreach statement'
 
-    def p_swnames(self, p):
-        'swnames : swnames COMMA NAME'
-        p[1].append(SwAst(p[3]))
-        p[0] = p[1]
-
-    def p_swnames_name(self, p):
-        'swnames : NAME'
-        p[0] = [SwAst(p[1])]
-
-    def p_gpl_stmts(self, p):
-        'gpl : gpl statement'
-
-    def p_gpl_stmt(self, p):
-        'gpl : statement'
-
-    def p_statement_declaration(self, p):
-        'statement : declaration_statement'
-
-    def p_statement_isolate(self, p):
-        'statement : isolate_statement'
+    def p_gplreach_stmt(self, p):
+        'gplreach : statement'
 
     def p_statement_reach(self, p):
         'statement : reach_statement'
 
-    def p_statement_mcast(self, p):
-        'statement : mcast_statement'
-
-    def p_declaration_reach(self, p):
-        'declaration_statement : variable EQUALS reach_statement'
-        var = p[1]
-        self.variableTable[var.getName()] = p[3]
-
-    def p_declaration_var(self, p):
-        'declaration_statement : variable EQUALS variable'
-        lvar = p[1]
-        rvar = p[3]
-        if rvar.getType == type.VAR :
-            print rvar.getName() + " is undeclared."
-            exit(0)
-
-        self.variableTable[lvar.getName()] = p[3]
-
-    def p_declaration_endpoint(self, p):
-        'declaration_statement : variable EQUALS ipvar COLON swvar'
-        var = p[1]
-        ip = p[3]
-        if not ip.getType == Type.IP : 
-            print "Invalid IP variable."
-            exit(0)
-        sw = p[5] 
-        if not sw.getType == Type.SW : 
-            print "Invalid SW variable."
-            exit(0)
-    
-        self.variableTable[var.getName()] = EndpointAst(ip, sw)
-
-    def p_declaration_ip(self, p):
-        'declaration_statement : variable EQUALS ip'
-        var = p[1]
-        self.variableTable[var.getName()] = p[3]
-
-    def p_declaration_sw(self, p):
-        'declaration_statement : variable EQUALS DOUBLEQUOTE NAME DOUBLEQUOTE'
-        var = p[1]
-        self.variableTable[var.getName()] = SwAst(p[4])
-
-
-    def p_isolate_bivar(self, p):
-        'isolate_statement :  reachvar ISOLATE reachvar'
-        if not p[1].type == Type.REACH or not p[3].type == Type.REACH :
-            print "Isolation Policy has incorrect arguments"
-            exit(0)
-
-        self.genesisSynthesiser.addTrafficIsolationPolicy(p[1].getPacketClass(), p[3].getPacketClass())
-
-    def p_reachvar_var(self, p):
-        'reachvar : variable'
-        p[0] = self.getVal(p[1].getName())
-       
-
-    def p_reachvar_reach(self, p):
-        'reachvar : reach_statement'
-        p[0] = p[1]
+    # def p_statement_mcast(self, p):
+    #     'statement : mcast_statement'
 
     def p_reach(self, p):
-        'reach_statement : endpoint REACH endpoint'
+        'reach_statement : NAME ASSIGN predicate COLON NAME REACH NAME'
         # Add Reachability Policy.
-        if not p[1].type == Type.ENDPT or not p[3].type == Type.ENDPT :
-            print "Reach Policy has incorrect arguments"
-            exit(0)
-        reachPolicy = ReachAst(p[1], p[3])
-        pc = self.genesisSynthesiser.addReachabilityPolicy(p[1].getIp(), p[1].getSw(), p[3].getIp(), p[3].getSw())
+        reachPolicy = ReachAst(p[3], p[5], p[7])
+        pc = self.genesisSynthesiser.addReachabilityPolicy(p[3], p[5], p[7])
         reachPolicy.setPacketClass(pc)
+        self.policyTable[p[1]] = reachPolicy
         p[0] = reachPolicy  
 
     def p_reach_waypoint(self, p):
-        'reach_statement : endpoint REACH LBRACKET swvars RBRACKET REACH endpoint'
-        if not p[1].type == Type.ENDPT or not p[7].type == Type.ENDPT :
-            print "Reach Policy has incorrect arguments"
-            exit(0)
-        reachPolicy = ReachAst(p[1], p[7], p[4])
-        
-        waypoints = []
-        for sw in p[4] :
-            waypoints.append(sw.getSw())
-
-        pc = self.genesisSynthesiser.addReachabilityPolicy(p[1].getIp(), p[1].getSw(), p[7].getIp(), p[7].getSw(), waypoints) 
-        reachPolicy.setPacketClass(pc)
-        p[0] = reachPolicy 
-
-    def p_reach_len(self, p):
-        'reach_statement : endpoint REACH endpoint IN NUMBER'
+        'reach_statement : NAME ASSIGN predicate COLON NAME REACH LBRACKET namelist RBRACKET REACH NAME'
         # Add Reachability Policy.
-        if not p[1].type == Type.ENDPT or not p[3].type == Type.ENDPT :
-            print "Reach Policy has incorrect arguments"
-            exit(0)
-        reachPolicy = ReachAst(p[1], p[3])
-        pc = self.genesisSynthesiser.addReachabilityPolicy(p[1].getIp(), p[1].getSw(), p[3].getIp(), p[3].getSw())
+        reachPolicy = ReachAst(p[3], p[5], p[11], p[8])
+        pc = self.genesisSynthesiser.addReachabilityPolicy(p[3], p[5], p[11], p[8])
         reachPolicy.setPacketClass(pc)
+        self.policyTable[p[1]] = reachPolicy
         p[0] = reachPolicy  
 
-    def p_reach_waypoint_len(self, p):
-        'reach_statement : endpoint REACH LBRACKET swvars RBRACKET REACH endpoint IN NUMBER'
-        if not p[1].type == Type.ENDPT or not p[7].type == Type.ENDPT :
-            print "Reach Policy has incorrect arguments"
-            exit(0)
-        reachPolicy = ReachAst(p[1], p[7], p[4])
-    
-        waypoints = []
-        for sw in p[4] :
-            waypoints.append(sw.getSw())
+    def p_predicate_and(self, p):
+        'predicate : predicate AND predicate'
+        p[0] = AndNP(p[1], p[3])
 
-        pc = self.genesisSynthesiser.addReachabilityPolicy(p[1].getIp(), p[1].getSw(), p[7].getIp(), p[7].getSw(), waypoints) 
-        reachPolicy.setPacketClass(pc)
-        p[0] = reachPolicy 
+    def p_predicate_or(self, p):
+        'predicate : predicate OR predicate'
+        p[0] = OrNP(p[1], p[3])
 
-    def p_mcast(self, p) :
-        'mcast_statement : endpoint REACH REACH LBRACKET endpoints RBRACKET' 
+    def p_predicate_not(self, p):
+        'predicate : NOT predicate'
+        p[0] = NotNP(p[1])
 
-    def p_mcast_equal(self, p):
-        'mcast_statement : endpoint REACH REACH LBRACKET endpoints RBRACKET IN NUMBER '
+    def p_predicate_true(self, p):
+        'predicate : TRUE'
+        p[0] = TrueNP()
 
-    def p_endpoints(self, p):
-        'endpoints : endpoints COMMA endpoint'
+    def p_predicate_false(self, p):
+        'predicate : FALSE'
+        p[0] = FalseNP()
 
-    def p_endpoints_endpoint(self, p):
-        'endpoints : endpoint'
+    def p_predicate_header(self, p):
+        'predicate : NAME DOT NAME EQUALS headervalue'
+        header = p[1] + "." + p[3]
+        p[0] = EqualNP(header, p[5])
 
-    def p_endpoint_var(self, p):
-        'endpoint : variable'
-        p[0] = self.getVal(p[1].getName())
-
-    def p_endpoint_ip_switch(self, p):
-        'endpoint : ipvar COLON swvar '
-        if not p[1].type == Type.IP :
-            print "Endpoint object has incorrect arguments"
-            exit(0)
-        if not p[3].type == Type.SW : 
-            print "Endpoint object has incorrect arguments"
-            exit(0)
-        p[0] = EndpointAst(p[1], p[3])
-
-    def p_ipvar_ip(self, p):
-        'ipvar : ip '
+    def p_headervalue_num(self, p):
+        'headervalue : NUMBER'
         p[0] = p[1]
 
-    def p_ipvar_var(self, p):
-        'ipvar : variable'
-        p[0] = self.getVal(p[1].getName())
-        
+    def p_headervalue_ip(self, p):
+        'headervalue : ip'
+        p[0] = p[1].getIp()
 
-    def p_swvars(self, p) :
-        'swvars : swvars COMMA swvar'
+    def p_gplisolate(self, p):
+        'gplisolate : gplisolate isolate_statement'
+
+    def p_gplisolate_isolate(self, p):
+        'gplisolate : isolate_statement'
+
+    def p_isolate(self, p):
+        'isolate_statement : NAME ISOLATE NAME'
+        if p[1] in self.policyTable : 
+            p1 = self.policyTable[p[1]]
+        else :
+            print "Policy " + p[1] + " is not defined."
+            exit(0)
+
+        if p[3] in self.policyTable : 
+            p2 = self.policyTable[p[3]]
+        else :
+            print "Policy " + p[3] + " is not defined."
+            exit(0)
+
+        # Add isolation policy.
+        self.genesisSynthesiser.addTrafficIsolationPolicy(p1.getPacketClass(), p2.getPacketClass())
+
+    def p_isolate_allisolated(self, p):
+        'isolate_statement : ISOLATE LBRACKET namelist RBRACKET'
+        # Check for policies
+        for policy in p[3] :
+            if not policy in self.policyTable :
+                print "Policy " + policy + " is not defined."
+                exit(0)
+
+        # Add Policies.
+        for i in range(len(p[3])) :
+            for j in range(i + 1,len(p[3])) :
+                p1 = self.policyTable[ p[3][i] ]
+                p2 = self.policyTable[ p[3][j] ]
+
+                # Add isolation policy. 
+                self.genesisSynthesiser.addTrafficIsolationPolicy(p1.getPacketClass(), p2.getPacketClass())
+
+    def p_isolate_crossprod(self, p):
+        'isolate_statement : LBRACKET namelist RBRACKET ISOLATE LBRACKET namelist RBRACKET'
+        # Check for policies
+        for policy in p[2] :
+            if not policy in self.policyTable :
+                print "Policy " + policy + " is not defined."
+                exit(0)
+
+        for policy in p[6] :
+            if not policy in self.policyTable :
+                print "Policy " + policy + " is not defined."
+                exit(0)
+
+        # Add Policies.
+        for i in range(len(p[2])) :
+            for j in range(len(p[6])) :
+                p1 = self.policyTable[ p[2][i] ]
+                p2 = self.policyTable[ p[6][j] ]
+
+                # Add isolation policy. 
+                print p1.getPacketClass(), p2.getPacketClass()
+                self.genesisSynthesiser.addTrafficIsolationPolicy(p1.getPacketClass(), p2.getPacketClass())
+
+    # def p_mcast(self, p) :
+    #     'mcast_statement : endpoint REACH REACH LBRACKET endpoints RBRACKET' 
+
+    # def p_mcast_equal(self, p):
+    #     'mcast_statement : endpoint REACH REACH LBRACKET endpoints RBRACKET IN NUMBER '     
+
+    def p_namelist(self, p) :
+        'namelist : namelist COMMA NAME'
         p[1].append(p[3])
         p[0] = p[1]
 
-    def p_swvars_var(self, p):
-        'swvars : swvar'
+    def p_namelist_name(self, p):
+        'namelist : NAME'
         p[0] = [p[1]]
-    
-    def p_swvar_sw(self, p):
-        'swvar : DOUBLEQUOTE NAME DOUBLEQUOTE'
-        p[0] = SwAst(p[2])
-    
-    def p_swvar_var(self, p):
-        'swvar : variable'
-        p[0] = self.getVal(p[1].getName())
-        
-
-    def p_variable_name(self, p):
-        'variable : NAME'
-        p[0] = VariableAst(p[1])
 
     def  p_ip_subnet(self, p):
         'ip : NUMBER DOT NUMBER DOT NUMBER DOT NUMBER SLASH NUMBER'
@@ -323,10 +287,33 @@ class GPLInterpreter(object):
     def p_error(self, p):
         print "Syntax error at '%s'" % p.value
 
+    # Topology Parsing rules
+    def p_topology_switches(self, p):
+        'topology : topology swdesc'
+
+    def p_topology_switch(self, p):
+        'topology : swdesc'
+
+    def p_swdesc(self, p):
+        'swdesc : NAME COLON LBRACKET swnames RBRACKET'
+        neighbours = []
+        for sw in p[4]:
+            neighbours.append(sw)
+        self.topology.addSwitch(p[1], neighbours)
+
+    def p_swnames(self, p):
+        'swnames : swnames COMMA NAME'
+        p[1].append(p[3])
+        p[0] = p[1]
+
+    def p_swnames_name(self, p):
+        'swnames : NAME'
+        p[0] = [p[1]]
+
     def getVal(self, name) :
         try :
             """ Deferences a variable to find object"""
-            val = self.variableTable[name]
+            val = self.policyTable[name]
             if not val.getType() == Type.VAR :
                 return val
             else :
@@ -335,10 +322,12 @@ class GPLInterpreter(object):
             print name + " is not defined."
             exit(0)
         
-    def run(self) :
-        config = self.policyFile.read()
-        yacc.parse(config)
+    def parseGPL(self) :
+        config = self.gplfile.read()
+        self.gplyacc.parse(config)
 
-    def parseGPL(self, gpl):
-        self.gplyacc.parse(gpl)
+    def parseTopo(self) :
+        topo = self.topofile.read()
+        self.topoyacc.parse(topo)
+    
 

@@ -1,10 +1,12 @@
 from z3 import *
 from Topology import Topology
 from PolicyDatabase import PolicyDatabase
+from NetworkPredicate import *
 import time
 import random
 import metis
 import networkx as nx
+
 
 class GenesisSynthesiser(object) :
 	def __init__(self, topo, policyCount=20, fuzzy=True) :
@@ -101,14 +103,16 @@ class GenesisSynthesiser(object) :
 
 	def addPolicies(self) :
 		self.count = 20
+		pc = dict()
 		for i in range(self.count) :
-			self.addReachabilityPolicy(str(i), "s1", str(i), "s5")
+			pred = EqualNP("ip.src", "10.1.3.4")
+			pc[i] = self.addReachabilityPolicy(pred, "s1", "s5")
 
 		# for i in range(self.count, self.count * 2) :
 		# 	self.addReachabilityPolicy(str(i), 5, str(i), 1, [12])
 
-		# for i in range(self.count - 1) :
-		# 	self.addTrafficIsolationPolicy([str(i), str(i)] , [str(i+1), str(i+1)])
+		for i in range(self.count - 1) :
+			self.addTrafficIsolationPolicy(pc[i], pc[i+1])
 
 		# for i in range(self.count - 2) :
 		# 	self.addTrafficIsolationPolicy([str(i), str(i)] , [str(i+2), str(i+2)])
@@ -129,10 +133,11 @@ class GenesisSynthesiser(object) :
 		# 	self.addTrafficIsolationPolicy([str(i), str(i)] , [str(i+7), str(i+7)])
 		
 
-	def addReachabilityPolicy(self, srcIP, s, dstIP, d, W=None) :
+	def addReachabilityPolicy(self, predicate, s, d, W=None, pathlen=None) :
 		""" s = next hop switch of source host(s) 
 			d = next hop switch of destination host(s)
-			W = Waypoint Set (list of nodes) """
+			W = Waypoint Set (list of nodes) 
+			pathlen = Maxpath length of the path from source to destination"""
 
 		# Translate s, d, W into logical topology numbers.
 		srcSw = self.topology.getSwID(s)
@@ -144,7 +149,7 @@ class GenesisSynthesiser(object) :
 				waypoints.append(self.topology.getSwID(w))
 
 		# Add policy to PDB : 
-		pc = self.pdb.addAllowPolicy(srcIP, srcSw, dstIP, dstSw, waypoints)
+		pc = self.pdb.addAllowPolicy(predicate, srcSw, dstSw, waypoints, pathlen)
 		return pc
 
 	def addTrafficIsolationPolicy(self, policy1, policy2) : 
@@ -177,6 +182,7 @@ class GenesisSynthesiser(object) :
 			for pc in range(self.pdb.getPacketClassRange()) :
 				if not self.pdb.isMulticast(pc) : 
 					policy = self.pdb.getAllowPolicy(pc)
+					print policy
 					self.addReachabilityConstraints(srcIP=policy[0][0], srcSw=policy[0][2], dstIP=policy[0][1], dstSw=policy[0][3],pc=pc, W=policy[1]) 
 
 			# Add traffic constraints. 
