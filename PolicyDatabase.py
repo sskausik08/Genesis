@@ -18,6 +18,7 @@ class PolicyDatabase(object) :
 		self.relationalClassCreationFlag = False
 		self.paths = dict()
 		self.switchTableConstraints = []
+		self.linkCapacityConstraints = []
 
 	def addAllowPolicy(self, predicate, srcSw, dstSw, W=None, len=None) :
 		""" srcSw = source IP next hop switch
@@ -274,7 +275,13 @@ class PolicyDatabase(object) :
 	def getSwitchTableConstraints(self):
 		return self.switchTableConstraints
 
+	def addLinkCapacityConstraint(self, sw1, sw2, capacity) :
+		self.linkCapacityConstraints.append([sw1, sw2, capacity])
 
+	def getLinkCapacityConstraints(self) :
+		return self.linkCapacityConstraints
+
+	
 
 
 

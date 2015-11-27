@@ -15,8 +15,9 @@ class GenesisSynthesiser(object) :
 		# Network Forwarding Function
 		self.F = Function('F', IntSort(), IntSort(), IntSort(), IntSort(), BoolSort())
 		self.R = Function('R', IntSort(), IntSort(), IntSort())
+		self.L = Function('L', IntSort(), IntSort(), IntSort(), IntSort())
 		self.pc = Int('pc') # Generic variable for packet classes
-
+		
 		self.z3Solver = Solver()
 		self.z3Solver.set(unsat_core=True)
 		self.fwdmodel = None 
@@ -32,6 +33,7 @@ class GenesisSynthesiser(object) :
 		self.CUT_THRESHOLD = 1000
 		self.BASE_GRAPH_SIZE_THRESHOLD = 3
 		self.CURR_GRAPH_SIZE_THRESHOLD = 3
+
 
 		# Different Solution Recovery Constants. 
 		self.DIFF_SOL_RETRY_COUNT = 4
@@ -166,6 +168,11 @@ class GenesisSynthesiser(object) :
 		swID = self.topology.getSwID(swName)
 		self.pdb.addSwitchTableConstraint(swID, tableSize)
 
+	def addLinkCapacityPolicy(self, sw1, sw2, cap) :
+		swID1 = self.topology.getSwID(sw1)
+		swID2 = self.topology.getSwID(sw2)
+		self.pdb.addLinkCapacityConstraint(swID1, swID2, cap)
+
 	def enforceUnicastPolicies(self) :
 		# Add Topology Constraints 
 		self.addTopologyConstraints(0, self.pdb.getPacketClassRange())
@@ -174,15 +181,17 @@ class GenesisSynthesiser(object) :
 		# Create Relational Packet Classses.
 		relClasses = self.pdb.createRelationalClasses()
 
-		switchTableConstraints = self.pdb.getSwitchTableConstraints()
-		self.addSwitchTableConstraints(switchTableConstraints)  # Adding switch table constraints.
+		# switchTableConstraints = self.pdb.getSwitchTableConstraints()
+		# self.addSwitchTableConstraints(switchTableConstraints)  # Adding switch table constraints.
 
-		if len(switchTableConstraints) > 0 :
+		linkCapacityConstraints = self.pdb.getLinkCapacityConstraints()
+		self.addLinkConstraints(linkCapacityConstraints)
+
+		if len(linkCapacityConstraints) > 0 :
 			# Cannot synthesise relational Classes independently. 
 			for pc in range(self.pdb.getPacketClassRange()) :
 				if not self.pdb.isMulticast(pc) : 
 					policy = self.pdb.getAllowPolicy(pc)
-					print policy
 					self.addReachabilityConstraints(srcIP=policy[0][0], srcSw=policy[0][2], dstIP=policy[0][1], dstSw=policy[0][3],pc=pc, W=policy[1]) 
 
 			# Add traffic constraints. 
@@ -863,6 +872,27 @@ class GenesisSynthesiser(object) :
 			sw = constraint[0]
 			self.z3Solver.add(self.R(sw, maxpc) < constraint[1] + 1)
 
+	def addLinkConstraints(self, constraints):
+		if len(constraints) == 0 : return
+		""" Constraints : List of [sw1, sw2, max-number-of-flows]"""
+
+		maxpc = self.pdb.getPacketClassRange() - 1
+		for constraint in constraints :
+			sw1 = constraint[0]
+			sw2 = constraint[1]
+			self.z3Solver.add(self.L(sw1, sw2, maxpc) < constraint[2] + 1)
+
+		for pc in range(self.pdb.getPacketClassRange()) :
+			for constraint in constraints :
+				sw1 = constraint[0]
+				sw2 = constraint[1]
+
+				if pc == 0 :
+					self.z3Solver.add(Implies(self.F(sw1, sw2, pc, 1) == True, self.L(sw1, sw2, pc) == 1))
+					self.z3Solver.add(Implies(self.F(sw1, sw2, pc, 1) == False, self.L(sw1, sw2, pc) == 0))
+				else :
+					self.z3Solver.add(Implies(self.F(sw1, sw2, pc, 1) == True, self.L(sw1, sw2, pc) == self.L(sw1, sw2, pc - 1) + 1))
+					self.z3Solver.add(Implies(self.F(sw1, sw2, pc, 1) == False, self.L(sw1, sw2, pc) == self.L(sw1, sw2, pc - 1)))
 
 	def getPathFromModel(self, pc) :
 		def getPathHelper(s, pc) :

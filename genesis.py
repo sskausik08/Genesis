@@ -3,6 +3,7 @@ Genesis : Endpoint Policy Enforcement using Flow Table Synthesis
 """
 
 from GPLInterpreter import GPLInterpreter
+from TopologyInterpreter import TopologyInterpreter
 from Topology import Topology
 from GenesisSynthesiser import GenesisSynthesiser
 import sys
@@ -15,16 +16,23 @@ class Genesis(object):
     	"""
         Construct a new Genesis object.
         """
-        if not len(sys.argv) == 2 :
-            print "Usage : python PolicyCompiler.py <name--of-configuration-file>"
-            exit(0)
+        # Parse the command line arguments
+        no = 0
+        for arg in sys.argv : 
+            if arg == "-gpl" :
+                self.gplfile = sys.argv[no + 1]
+            if arg == "-topo" :
+                self.topofile = sys.argv[no + 1]
+            no += 1
+
 
         self.topology = Topology()
         self.genesisSynthesiser = GenesisSynthesiser(topo=self.topology, fuzzy=False)
-        self.parser = GPLInterpreter(sys.argv[1], self.genesisSynthesiser, self.topology)
+        self.gplparser = GPLInterpreter(self.gplfile, self.topofile, self.genesisSynthesiser, self.topology)
         
     def run(self):
-        self.parser.run()
+        self.gplparser.parseTopo()
+        self.gplparser.parseGPL()
         #self.genesisSynthesiser.addPolicies()
         self.genesisSynthesiser.enforcePolicies()
 

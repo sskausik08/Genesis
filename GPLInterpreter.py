@@ -24,8 +24,6 @@ class GPLInterpreter(object):
         self.gplyacc = yacc.yacc(module=self, tabmodule=self.tabmodule)
         self.topoyacc = yacc.yacc(module=self, tabmodule=self.tabmodule, start = 'topology')
 
-
-
     tokens = (
         'NAME','NUMBER',
         'EQUALS', 'SEP', 'DOT', 'SLASH', 'DOUBLEQUOTE', 'COLON', 'ASSIGN', 'ARROW',
@@ -243,7 +241,6 @@ class GPLInterpreter(object):
                 p2 = self.policyTable[ p[6][j] ]
 
                 # Add isolation policy. 
-                print p1.getPacketClass(), p2.getPacketClass()
                 self.genesisSynthesiser.addTrafficIsolationPolicy(p1.getPacketClass(), p2.getPacketClass())
 
     # def p_mcast(self, p) :
@@ -273,16 +270,20 @@ class GPLInterpreter(object):
 
     def p_constraints(self, p):
         'constraints : constraints constraint'
-        p[1].append(p[2])
-        p[0] = p[1]
 
     def p_constraints_constraint(self, p):
         'constraints : constraint'
-        p[0] = [p[1]]
 
-    def p_constraint(self, p):
+    def p_constraint_switch(self, p):
         'constraint : NAME COLON NUMBER'
-        p[0] = ConstraintAst(p[1], p[3])
+        # Switch Table Constraint.
+        self.genesisSynthesiser.addSwitchTablePolicy(p[1], p[3])
+
+    def p_constraint_link(self, p):
+        'constraint : NAME ARROW NAME COLON NUMBER'
+        # Switch Table Constraint.
+        self.genesisSynthesiser.addLinkCapacityPolicy(p[1], p[3], p[5])
+
 
     def p_error(self, p):
         print "Syntax error at '%s'" % p.value

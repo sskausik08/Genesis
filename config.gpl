@@ -7,13 +7,17 @@ f3 := tcp.port= 70 : s1 >> s5
 f4 := ip.src=10.0.0.2 : s1 >> s5
 ==
 #GPL Isolation Policies
-|| [f1,f2,f3]   # All packet classes in the list will be isolated to one other.
-[f1, f2] || [f1, f2] # All packet classes in list1 will be isolated to all packet classes in list2.
-#==
-# Switch Table Constraints.
+f2 || f3
+#|| [f1,f2,f3]   # All packet classes in the list will be isolated to one other.
+#[f1, f2] || [f1, f2] # All packet classes in list1 will be isolated to all packet classes in list2.
+==
+# Switch and Link Constraints.
 #s2 : 6
 #s6 : 20
 #s9 : 8
+s2 -> s3 : 2
+s6 -> s7 : 1
+s9 -> s10 : 1
 
 	
 

@@ -74,7 +74,7 @@ class ReachAst(GPLAst):
 		return self.pc
 
 class ConstraintAst(GPLAst):
-	def __init__(self, name, size):
+	def __init__(self, sw1, size):
 		GPLAst.__init__(self, type=Type.CSRT)
 		self.sw = name
 		self.maxSize = size
