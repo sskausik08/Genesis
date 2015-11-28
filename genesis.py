@@ -18,22 +18,33 @@ class Genesis(object):
         """
         # Parse the command line arguments
         no = 0
+        gplargFlag = False
+        topoargFlag = False
+        fuzzyFlag = False # Default Fuzzy flag is false.
         for arg in sys.argv : 
             if arg == "-gpl" :
                 self.gplfile = sys.argv[no + 1]
+                gplargFlag = True
             if arg == "-topo" :
                 self.topofile = sys.argv[no + 1]
+                topoargFlag = True
+            if arg == "-fuzzy" :
+                fuzzyFlag = True
             no += 1
+
+        if not (gplargFlag and topoargFlag) : 
+            print "GPL and Topology arguments not specified"
+            exit(0)
 
 
         self.topology = Topology()
-        self.genesisSynthesiser = GenesisSynthesiser(topo=self.topology, fuzzy=False)
+        self.genesisSynthesiser = GenesisSynthesiser(topo=self.topology, fuzzy=fuzzyFlag)
         self.gplparser = GPLInterpreter(self.gplfile, self.topofile, self.genesisSynthesiser, self.topology)
         
     def run(self):
         self.gplparser.parseTopo()
         self.gplparser.parseGPL()
-        #self.genesisSynthesiser.addPolicies()
+        self.genesisSynthesiser.addPolicies()
         self.genesisSynthesiser.enforcePolicies()
 
         while True:

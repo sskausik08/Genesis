@@ -168,8 +168,15 @@ class PolicyDatabase(object) :
 	def isEnforced(self, pc):
 		return pc in self.enforcementStatusTable 
 
-	def validateIsolationPolicy(self, pc) :
+	def validatePolicies(self) :
+		for pc in range(self.getPacketClassRange()) :
+			validFlag = self.validateReachabilityPolicy(pc) and self.validateIsolationPolicy(pc)
+			if not validFlag : 
+				print "Policy " + str(pc) + " not enforced correctly."
+				return False
+		return True
 
+	def validateIsolationPolicy(self, pc) :
 		""" Validation of packet class flow pc w.r.t all its isolation policies"""
 		path1 = self.getPath(pc)
 
@@ -196,6 +203,27 @@ class PolicyDatabase(object) :
 					continue
 
 		return True
+
+	def validateReachabilityPolicy(self, pc) :
+		path = self.getPath(pc)
+		policy = self.endpointTable[pc]
+		if not path[0] == policy[2] :
+			return False
+		if not path[len(path) - 1] == policy[3]:
+			return False
+		waypoints = self.waypointTable[pc]
+		if len(waypoints) == 0:
+			return True
+
+		waypointFlag = True
+		for w in waypoints : 
+			foundFlag = False
+			for sw in path : 
+				if sw == w :
+					foundFlag = True
+					break
+			waypointFlag = waypointFlag and foundFlag
+		return waypointFlag 
 
 	def isMulticast(self, pc) :
 		if pc in self.mutlicastTable :
@@ -269,6 +297,13 @@ class PolicyDatabase(object) :
 	def getRelationalClassGraphs(self) :
 		return self.relClassGraphs
 
+	def getRelationalClassGraphDegree(self, pc) :
+		count = 0
+		for policy in self.isolationTable :
+			if (policy[0] == pc) or (policy[1] == pc) : 
+				count += 1
+		return count
+
 	def addSwitchTableConstraint(self, sw, size) :
 		self.switchTableConstraints.append([sw, size])
 
@@ -281,7 +316,7 @@ class PolicyDatabase(object) :
 	def getLinkCapacityConstraints(self) :
 		return self.linkCapacityConstraints
 
-	
+
 
 
 
