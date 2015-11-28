@@ -129,7 +129,7 @@ class GenesisSynthesiser(object) :
 			self.addTrafficIsolationPolicy(pc[i], pc[i+1])
 
 		for i in range(self.count - 15) :
-			self.addTrafficIsolationPolicy(pc[i], pc[i+1])
+			self.addTrafficIsolationPolicy(pc[i], pc[i+2])
 
 		# self.addReachabilityPolicy(str(100), 15, str(100), 16)
 		# self.addTrafficIsolationPolicy([str(100), str(100)] , [str(0), str(0)])
@@ -253,16 +253,12 @@ class GenesisSynthesiser(object) :
 
 				self.z3Solver.pop()
 
-	def enforceGraphPolicies(self, rcGraph, isolatePathConstraints=None, differentPathConstraints=None, recovery=True) :
+	def enforceGraphPolicies(self, rcGraph, differentPathConstraints=None, recovery=True) :
 		""" Synthesis of the Relational Class Graph given some path constraints (isolation and inequality). 
 		If True, return the sat core paths for the RC Graph. 
 		If False, return the unsat core paths to aid search for different constraints of isolation"""
 
 		print self.fuzzyLinkCapacityConstraints
-
-		# Clean up path Constraints.
-		if not isolatePathConstraints == None :
-			isolatePathConstraints = self.prunePathIsolationConstraints(isolatePathConstraints)
 
 		synPaths = dict()
 		unsatLinks = []
@@ -341,7 +337,6 @@ class GenesisSynthesiser(object) :
 			rcGraphSat = False
 			print "Input Policies not realisable"
 			print pclist
-			print isolatePathConstraints
 			unsatCores = self.z3Solver.unsat_core()
 			if len(unsatCores) == 0:
 				# print "Unsatisfiability not due to any partial isolation solutions to the rcGraph. Thus, solution does not exist"
@@ -375,18 +370,14 @@ class GenesisSynthesiser(object) :
 		return (rcGraphSat, synPaths)
 
 			
-	def enforceGraphPoliciesFuzzy(self, rcGraph, isolatePathConstraints=None, differentPathConstraints=None) :
+	def enforceGraphPoliciesFuzzy(self, rcGraph, differentPathConstraints=None) :
 		""" Fuzzy Enforcement of Policies in arg 'rcGraph' """
-
-		# Clean up path Constraints.
-		if not isolatePathConstraints == None :
-			isolatePathConstraints = self.prunePathIsolationConstraints(isolatePathConstraints)
 		
 		synPaths = dict()
 
 		# If the graph size is smaller than a threshold, perform complete synthesis. 
 		if rcGraph.number_of_nodes() <= self.CURR_GRAPH_SIZE_THRESHOLD :
-			(graphSat, synPaths) = self.enforceGraphPolicies(rcGraph,isolatePathConstraints,differentPathConstraints)
+			(graphSat, synPaths) = self.enforceGraphPolicies(rcGraph,differentPathConstraints)
 			return (graphSat, synPaths)
 
 		# Fuzzy Synthesis of rcGraph.
@@ -394,7 +385,7 @@ class GenesisSynthesiser(object) :
 
 		# If the min-cut between the two partitions is greater than a threshold, dont partition. 
 		if edgecuts > self.CUT_THRESHOLD :
-			(graphSat, synPaths) = self.enforceGraphPolicies(rcGraph,isolatePathConstraints,differentPathConstraints)
+			(graphSat, synPaths) = self.enforceGraphPolicies(rcGraph,differentPathConstraints)
 			return (graphSat, synPaths)
 
 		# Graph Partitioned in two. Apply Fuzzy Synthesis on both of them. 
@@ -431,10 +422,9 @@ class GenesisSynthesiser(object) :
 		if rc1empty == True or rc2empty == True: 
 			print "Cannot be partitioned"
 			# Cannot partition the graph further. Apply synthesis. 
-			(graphSat, synPaths) = self.enforceGraphPolicies(rcGraph,isolatePathConstraints,differentPathConstraints)
+			(graphSat, synPaths) = self.enforceGraphPolicies(rcGraph,differentPathConstraints)
 			return (graphSat, synPaths)
 
-		cutEdges = [] # Paths from one graph must be passed as path constraints to other graph.
 		for edge in rcGraph.edges() :
 			if edge[0] in rcGraph1.nodes() and edge[1] in rcGraph1.nodes() :
 				# Internal edge. Add to rcGraph1.
@@ -442,29 +432,16 @@ class GenesisSynthesiser(object) :
 			elif edge[0] in rcGraph2.nodes() and edge[1] in rcGraph2.nodes() :
 				# Internal edge. Add to rcGraph1.
 				rcGraph2.add_edge(*edge)
-			else :
-				# Cut Edges. 
-				cutEdges.append(edge)
+				
 
-		(rcGraph1Sat, synPaths1) = self.enforceGraphPoliciesFuzzy(rcGraph1, isolatePathConstraints, differentPathConstraints)
+		(rcGraph1Sat, synPaths1) = self.enforceGraphPoliciesFuzzy(rcGraph1, differentPathConstraints)
 
 		if rcGraph1Sat == False : 
 			# Function cannot find a solution on the complete graph, as partial graph failed.
 			return (False, synPaths1)  # synPaths1 is the unsat cores that failed the synthesis of rcGraph1.
 
-		if isolatePathConstraints == None :
-			localIsolatePathConstraints = []
-		else :
-			localIsolatePathConstraints = list(isolatePathConstraints)
 
-		# Propagating the solutions as isolation constraints. 
-		for cut in cutEdges :
-			if cut[0] in rcGraph1 : 
-				localIsolatePathConstraints.append([cut[0], synPaths1[cut[0]]])	
-			elif cut[1] in rcGraph1 : 
-				localIsolatePathConstraints.append([cut[1], synPaths1[cut[1]]])
-
-		(rcGraph2Sat, synPaths2) = self.enforceGraphPoliciesFuzzy(rcGraph2, localIsolatePathConstraints, differentPathConstraints)
+		(rcGraph2Sat, synPaths2) = self.enforceGraphPoliciesFuzzy(rcGraph2, differentPathConstraints)
 
 		if rcGraph2Sat == True : 
 			# Partial graph solutions can be combined. 
@@ -495,7 +472,7 @@ class GenesisSynthesiser(object) :
 				return (False, synPaths2) # SynPaths returns the unsat core paths. 
 
 			# Attempt different solution recovery. 
-			(recoverySat, synPaths) = self.differentSolutionRecovery(self.DIFF_SOL_RETRY_COUNT, rcGraph1, rcGraph2, cutEdges, isolatePathConstraints, localDifferentPathConstraints)
+			(recoverySat, synPaths) = self.differentSolutionRecovery(self.DIFF_SOL_RETRY_COUNT, rcGraph1, rcGraph2, localDifferentPathConstraints)
 
 			if recoverySat == True :
 				return (recoverySat, synPaths)
@@ -534,14 +511,14 @@ class GenesisSynthesiser(object) :
 		
 		return newPathConstraints
 
-	def differentSolutionRecovery(self, attempt, rcGraph1, rcGraph2, cutEdges, isolatePathConstraints, differentPathConstraints) :
+	def differentSolutionRecovery(self, attempt, rcGraph1, rcGraph2, differentPathConstraints) :
 		print "Recovery Attempt #" + str(attempt) + " " + str(differentPathConstraints)
 		if differentPathConstraints == None :
 			localDifferentPathConstraints = []
 		else : 
 			localDifferentPathConstraints = list(differentPathConstraints)
 
-		(rcGraph1Sat, synPaths1) = self.enforceGraphPoliciesFuzzy(rcGraph1, isolatePathConstraints, localDifferentPathConstraints)
+		(rcGraph1Sat, synPaths1) = self.enforceGraphPoliciesFuzzy(rcGraph1, localDifferentPathConstraints)
 			
 		if rcGraph1Sat == False : 
 			print "Recovery Failed"
@@ -549,19 +526,8 @@ class GenesisSynthesiser(object) :
 			return (False, dict())
 			# Returning the empty dict because the failure of rcGraph1 is due to the absence of different solutions 
 			# apart from the ones we found. Failure is not due to external isolate constraints. 
-	
-		if isolatePathConstraints == None :
-			localIsolatePathConstraints = []
-		else :
-			localIsolatePathConstraints = list(isolatePathConstraints)
 
-		for cut in cutEdges :
-			if cut[0] in rcGraph1 : 
-				localIsolatePathConstraints.append([cut[0], synPaths1[cut[0]]])	
-			elif cut[1] in rcGraph1 : 
-				localIsolatePathConstraints.append([cut[1], synPaths1[cut[1]]])
-
-		(rcGraph2Sat, synPaths2) = self.enforceGraphPoliciesFuzzy(rcGraph2, localIsolatePathConstraints, differentPathConstraints)
+		(rcGraph2Sat, synPaths2) = self.enforceGraphPoliciesFuzzy(rcGraph2, differentPathConstraints)
 
 		if rcGraph2Sat == True : 
 			# Partial graph solutions can be combined. 
@@ -581,7 +547,7 @@ class GenesisSynthesiser(object) :
 				# Different Solution Recovery could not find solution after 'n' attempts. 
 				return (False, dict())
 
-			return self.differentSolutionRecovery(attempt, rcGraph1, rcGraph2, cutEdges, isolatePathConstraints, localDifferentPathConstraints)
+			return self.differentSolutionRecovery(attempt, rcGraph1, rcGraph2, localDifferentPathConstraints)
 
 	def linkcapacityRecovery(self, attempt, unsatLinks, rcGraph, differentPathConstraints) :
 		# Remove atleast n flows flowing through the unsatLinks, and resynthesise rcGraph.
@@ -616,7 +582,7 @@ class GenesisSynthesiser(object) :
 					self.enforceReroute(pc, link[0], link[1])
 
 		# For all unsatLinks, we have performed reroutes. Synthesise original graph.
-		(rcGraphSat, synPaths) = self.enforceGraphPolicies(rcGraph, None, differentPathConstraints, False) 
+		(rcGraphSat, synPaths) = self.enforceGraphPolicies(rcGraph, differentPathConstraints, False) 
 		# Do not perform recovery in this, as we are already in recovery. 
 
 		if rcGraphSat == True :
