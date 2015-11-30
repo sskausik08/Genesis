@@ -16,17 +16,20 @@ class TopologyCreator(object):
 	def clique(self, size) :
 		# Make a clique topology of k switches. 
 
-		f1 = open("./topoConf/switches", 'w')
-
-		for i in range(1,size+1) :
-			f1.write("s" + str(i) + "\n")
-
-		f2 = open("./topoConf/links", 'w')
+		f1 = open("./clique-" + str(size) + ".topo", 'w')
+		f1.write("# CLique topology of " + str(size) + " switches \n")
 
 		for i in range(1, size + 1) :
+			if i == size : 
+				line = "s" + str(i) + ": [ ]"
+			else :
+				line = "s" + str(i) + ": [ "
 			for j in range(i + 1, size + 1) :
-				f2.write("s" + str(i) + " s" + str(j) + "\n")
-
+				if j == size : 
+					line = line + "s" + str(j) + " ] \n"
+				else :
+					line = line + "s" + str(j) + " , "
+			f1.write(line)
 
 	def random(self, size) :
 		# Make a random topology of k switches
@@ -40,24 +43,30 @@ class TopologyCreator(object):
 		aggregation = range(k*k/2, k*k)
 		core = range(k*k,k*k+(k*k/4))
 
-		f1 = open("./topoConf/switches", 'w')
-		f2 = open("./topoConf/links", 'w')
+		f1 = open("fattree-" + str(k) + ".topo", 'w')
 
 		for e in edge :
-			f1.write("e" + str(e) + "\n")
+			f1.write("e" + str(e) + ": [")
 			pod = e / (k/2)
 			for off in range(0,k/2) :
 				agg = k * (k / 2) + (pod * (k/2)) + off
-				f2.write("e" + str(e) + " a" + str(agg) + "\n")				
+				if off == k/2 - 1: 				
+					f1.write(" a" + str(agg) + "]\n")
+				else :
+					f1.write(" a" + str(agg) + ",")
+
 
 		for a in aggregation :
-			f1.write("a" + str(a) + "\n")
+			f1.write("a" + str(a) + ": [")
 			firstCore = k*k + (a % (k/2)) * (k/2)
 			for c in range(firstCore, firstCore + k/2) :
-				f2.write("a" + str(a) + " c" + str(c) + "\n")			
+				if c == firstCore + k/2 - 1 :
+					f1.write(" c" + str(c) + "]\n")
+				else : 
+					f1.write(" c" + str(c) + ",")			
 
 		for c in core :
-			f1.write("c" + str(c) + "\n")
+			f1.write("c" + str(c) + ": []\n")
 
 
 
