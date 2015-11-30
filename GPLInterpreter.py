@@ -320,6 +320,10 @@ class GPLInterpreter(object):
             neighbours.append(sw)
         self.topology.addSwitch(p[1], neighbours)
 
+    def p_swdesc_empty(self, p):
+        'swdesc : NAME COLON LBRACKET RBRACKET'
+        self.topology.addSwitch(p[1], [])
+
     def p_swnames(self, p):
         'swnames : swnames COMMA NAME'
         p[1].append(p[3])

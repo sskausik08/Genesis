@@ -69,7 +69,7 @@ class GenesisSynthesiser(object) :
 		assert self.pdb.relationalClassCreationFlag == True
 
 		# Add Unreachable Constraints 
-		self.addUnreachableHopConstraints()
+		self.addUnreachableHopConstraints() # Takes 2 seconds for a 78-node fat tree topology. 
 	
 		if self.fuzzySynthesisFlag : 
 			rcGraphs = self.pdb.getRelationalClassGraphs()
@@ -258,12 +258,13 @@ class GenesisSynthesiser(object) :
 		If True, return the sat core paths for the RC Graph. 
 		If False, return the unsat core paths to aid search for different constraints of isolation"""
 
-		print self.fuzzyLinkCapacityConstraints
-
 		synPaths = dict()
 		unsatLinks = []
 
 		self.z3Solver.push()
+
+		st = time.time()
+		print "Adding constraints."
 		pclist = []
 		for node in rcGraph.nodes() :
 			pclist.append(int(node))
@@ -301,9 +302,11 @@ class GenesisSynthesiser(object) :
 		self.addLinkConstraints(pclist, self.fuzzyLinkCapacityConstraints)
 
 		print "Starting Z3 check for " + str(pclist)
-
+		print "Time taken to add constraints is " + str(time.time() - st)
+		st = time.time()
 		modelsat = self.z3Solver.check()
 		if modelsat == z3.sat : 
+			print "Time taken to solve the constraints is " + str(time.time() - st)
 			rcGraphSat = True
 			print "SAT"
 			self.fwdmodel = self.z3Solver.model()
@@ -722,7 +725,6 @@ class GenesisSynthesiser(object) :
 		if self.fatTreeOptimizeFlag :
 			pathlen = self.fatTreePathLengthOptimizations(W)
 		
-
 		# Add Reachability in atmost pathlen steps constraint. 
 		reachAssert = self.F(srcSw,dstSw,pc,pathlen) == True
 		self.z3Solver.add(reachAssert)
@@ -763,15 +765,6 @@ class GenesisSynthesiser(object) :
 				return minPathLength + len(W) * 4
 
 	def addPathConstraints(self, s, pc) :
-
-		neighbours = self.topology.getSwitchNeighbours(s)
-		# Add assertions to ensure f(s,*) leads to a valid neighbour. 
-		neighbourAssert = False
-		for n in neighbours :
-			neighbourAssert = Or(neighbourAssert, self.F(s,n,pc,1) == True)
-
-		self.z3Solver.add(neighbourAssert)
-
 		swCount = self.topology.getSwitchCount()
 		maxPathLen = self.topology.getMaxPathLength()
 
