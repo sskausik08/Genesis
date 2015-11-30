@@ -134,7 +134,16 @@ class GPLInterpreter(object):
         'reach_statement : NAME ASSIGN predicate COLON NAME REACH NAME'
         # Add Reachability Policy.
         reachPolicy = ReachAst(p[3], p[5], p[7])
-        pc = self.genesisSynthesiser.addReachabilityPolicy(p[3], p[5], p[7])
+        pc = self.genesisSynthesiser.addReachabilityPolicy(predicate=p[3], src=p[5], dst=p[7])
+        reachPolicy.setPacketClass(pc)
+        self.policyTable[p[1]] = reachPolicy
+        p[0] = reachPolicy  
+
+    def p_reach_len(self, p):
+        'reach_statement : NAME ASSIGN predicate COLON NAME REACH NAME IN NUMBER'
+        # Add Reachability Policy.
+        reachPolicy = ReachAst(p[3], p[5], p[7])
+        pc = self.genesisSynthesiser.addReachabilityPolicy(predicate=p[3], src=p[5], dst=p[7], pathlen=p[9])
         reachPolicy.setPacketClass(pc)
         self.policyTable[p[1]] = reachPolicy
         p[0] = reachPolicy  
@@ -143,7 +152,16 @@ class GPLInterpreter(object):
         'reach_statement : NAME ASSIGN predicate COLON NAME REACH LBRACKET namelist RBRACKET REACH NAME'
         # Add Reachability Policy.
         reachPolicy = ReachAst(p[3], p[5], p[11], p[8])
-        pc = self.genesisSynthesiser.addReachabilityPolicy(p[3], p[5], p[11], p[8])
+        pc = self.genesisSynthesiser.addReachabilityPolicy(predicate=p[3], src=p[5], dst=p[11], waypoints=p[8])
+        reachPolicy.setPacketClass(pc)
+        self.policyTable[p[1]] = reachPolicy
+        p[0] = reachPolicy  
+
+    def p_reach_waypoint_len(self, p):
+        'reach_statement : NAME ASSIGN predicate COLON NAME REACH LBRACKET namelist RBRACKET REACH NAME IN NUMBER'
+        # Add Reachability Policy.
+        reachPolicy = ReachAst(p[3], p[5], p[11], p[8])
+        pc = self.genesisSynthesiser.addReachabilityPolicy(predicate=p[3], src=p[5], dst=p[11], waypoints=p[8], pathlen=p[13])
         reachPolicy.setPacketClass(pc)
         self.policyTable[p[1]] = reachPolicy
         p[0] = reachPolicy  

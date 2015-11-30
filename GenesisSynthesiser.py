@@ -147,23 +147,23 @@ class GenesisSynthesiser(object) :
 		# 	self.addTrafficIsolationPolicy([str(i), str(i)] , [str(i+7), str(i+7)])
 		
 
-	def addReachabilityPolicy(self, predicate, s, d, W=None, pathlen=None) :
-		""" s = next hop switch of source host(s) 
-			d = next hop switch of destination host(s)
+	def addReachabilityPolicy(self, predicate, src, dst, waypoints=None, pathlen=None) :
+		""" src = next hop switch of source host(s) 
+			dst = next hop switch of destination host(s)
 			W = Waypoint Set (list of nodes) 
 			pathlen = Maxpath length of the path from source to destination"""
 
 		# Translate s, d, W into logical topology numbers.
-		srcSw = self.topology.getSwID(s)
-		dstSw = self.topology.getSwID(d)
-		waypoints = None
-		if not W == None :
-			waypoints = []
-			for w in W :
-				waypoints.append(self.topology.getSwID(w))
+		srcSw = self.topology.getSwID(src)
+		dstSw = self.topology.getSwID(dst)
+		W = None
+		if not waypoints == None :
+			W = []
+			for w in waypoints :
+				W.append(self.topology.getSwID(w))
 
 		# Add policy to PDB : 
-		pc = self.pdb.addAllowPolicy(predicate, srcSw, dstSw, waypoints, pathlen)
+		pc = self.pdb.addAllowPolicy(predicate, srcSw, dstSw, W, pathlen)
 		return pc
 
 	def addTrafficIsolationPolicy(self, policy1, policy2) : 
@@ -204,7 +204,7 @@ class GenesisSynthesiser(object) :
 			for pc in range(self.pdb.getPacketClassRange()) :
 				if not self.pdb.isMulticast(pc) : 
 					policy = self.pdb.getAllowPolicy(pc)
-					self.addReachabilityConstraints(srcIP=policy[0][0], srcSw=policy[0][2], dstIP=policy[0][1], dstSw=policy[0][3],pc=pc, W=policy[1]) 
+					self.addReachabilityConstraints(srcIP=policy[0][0], srcSw=policy[0][2], dstIP=policy[0][1], dstSw=policy[0][3],pc=pc, W=policy[1], pathlen=policy[2]) 
 
 			# Add traffic constraints. 
 			for pno in range(self.pdb.getIsolationPolicyCount()) :
@@ -230,7 +230,7 @@ class GenesisSynthesiser(object) :
 				for pc in relClass :
 					if not self.pdb.isMulticast(pc) :  
 						policy = self.pdb.getAllowPolicy(pc)
-						self.addReachabilityConstraints(srcIP=policy[0][0], srcSw=policy[0][2], dstIP=policy[0][1], dstSw=policy[0][3],pc=pc, W=policy[1]) 
+						self.addReachabilityConstraints(srcIP=policy[0][0], srcSw=policy[0][2], dstIP=policy[0][1], dstSw=policy[0][3],pc=pc, W=policy[1], pathlen=policy[2]) 
 
 				# Add traffic constraints. 
 				for pno in range(self.pdb.getIsolationPolicyCount()) :
@@ -275,7 +275,7 @@ class GenesisSynthesiser(object) :
 		for pc in pclist : 
 			if not self.pdb.isMulticast(pc) :  
 				policy = self.pdb.getAllowPolicy(pc)
-				self.addReachabilityConstraints(srcIP=policy[0][0], srcSw=policy[0][2], dstIP=policy[0][1], dstSw=policy[0][3],pc=pc, W=policy[1]) 
+				self.addReachabilityConstraints(srcIP=policy[0][0], srcSw=policy[0][2], dstIP=policy[0][1], dstSw=policy[0][3],pc=pc, W=policy[1], pathlen=policy[2]) 
 
 				# Add Topology Constraints
 				self.addTopologyConstraints(pc)
@@ -860,7 +860,7 @@ class GenesisSynthesiser(object) :
 		self.z3Solver.push()
 
 		policy = self.pdb.getAllowPolicy(pc)
-		self.addReachabilityConstraints(srcIP=policy[0][0], srcSw=policy[0][2], dstIP=policy[0][1], dstSw=policy[0][3],pc=pc, W=policy[1]) 
+		self.addReachabilityConstraints(srcIP=policy[0][0], srcSw=policy[0][2], dstIP=policy[0][1], dstSw=policy[0][3],pc=pc, W=policy[1], pathlen=policy[2]) 
 
 		# Add Topology Constraints
 		self.addTopologyConstraints(pc)
@@ -1112,7 +1112,7 @@ class GenesisSynthesiser(object) :
 					if not self.pdb.isMulticast(pc) :  
 						policy = self.pdb.getAllowPolicy(pc)
 						print policy
-						self.addReachabilityConstraints(srcIP=policy[0][0], srcSw=policy[0][2], dstIP=policy[0][1], dstSw=policy[0][3],pc=pc, W=policy[1]) 
+						self.addReachabilityConstraints(srcIP=policy[0][0], srcSw=policy[0][2], dstIP=policy[0][1], dstSw=policy[0][3],pc=pc, W=policy[1], pathlen=policy[2]) 
 
 			# Add traffic constraints. 
 			for pno in range(self.pdb.getIsolationPolicyCount()) :

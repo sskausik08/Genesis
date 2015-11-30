@@ -2,9 +2,9 @@
 #f1 := true : s1 >> s5
 #f2 := true : s1 >> [s6] >> s5
 f1 := ip.src=10.0.0.4 : s1 >> [s2] >> s5
-f2 := tcp.port= 80 : s1 >> s5
+f2 := tcp.port= 80 : s1 >> s5 in 7
 f3 := tcp.port= 70 : s1 >> s5
-f4 := ip.src=10.0.0.2 : s1 >> s5
+f4 := ip.src=10.0.0.2 : s1 >> [s11] >> s5 in 7
 ==
 #GPL Isolation Policies
 f2 || f3

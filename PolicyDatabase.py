@@ -42,7 +42,7 @@ class PolicyDatabase(object) :
 		return len(self.endpointTable)
 
 	def getAllowPolicy(self, no) :
-		""" Policy is of the form : [[srcIP, dstIP, srcSw, dstSw], Waypoints] """
+		""" Policy is of the form : [[predicate, None, srcSw, dstSw], Waypoints, length] """
 		if no not in self.endpointTable : 
 			return None
 		policy = [self.endpointTable[no]]
@@ -53,7 +53,7 @@ class PolicyDatabase(object) :
 		if no in self.pathLengthTable :
 			policy.append(self.pathLengthTable[no])
 		else :
-			policy.append(None)
+			policy.append(0)
 		return policy
 
 
