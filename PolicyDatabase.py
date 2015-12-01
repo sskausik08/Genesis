@@ -59,6 +59,7 @@ class PolicyDatabase(object) :
 
 	def addPath(self, pc, path) :
 		self.paths[pc] = path
+		print "In pdb", self.paths[pc]
 		if len(path) > 0 :
 			self.enforcementStatusTable[pc] = True # Policy #pc has been enforced. 
 
@@ -67,18 +68,19 @@ class PolicyDatabase(object) :
 
 	def printPaths(self, topology) :
 		for pc in range(self.getPacketClassRange()) :
-			if not self.isMulticast(pc) :
-				ep = self.endpointTable[pc]
-				lpath = self.paths[pc]
-				phypath = map(topology.getSwName, lpath)
-				print "PC#" + str(pc) + ": Endpoint Information : " + ep[0].getStr() + " Path : " + str(phypath) 
-			else :
-				policy = self.mutlicastTable[pc]
-				lpaths = self.paths[pc]
-				phypaths = []
-				for lpath in lpaths :
-					phypaths.append(map(topology.getSwName, lpath))
-				print "PC#" + str(pc) + ": Endpoint Information : " + str(policy) + " Path : " + str(phypaths)
+			if pc in self.paths : 
+				if not self.isMulticast(pc) :
+					ep = self.endpointTable[pc]
+					lpath = self.paths[pc]
+					phypath = map(topology.getSwName, lpath)
+					print "PC#" + str(pc) + ": Endpoint Information : " + ep[0].getStr() + " Path : " + str(phypath) 
+				else :
+					policy = self.mutlicastTable[pc]
+					lpaths = self.paths[pc]
+					phypaths = []
+					for lpath in lpaths :
+						phypaths.append(map(topology.getSwName, lpath))
+					print "PC#" + str(pc) + ": Endpoint Information : " + str(policy) + " Path : " + str(phypaths)
 
 	def addIsolationPolicy(self, pc1, pc2) :
 		self.isolationTable.append([pc1,pc2])
@@ -97,6 +99,16 @@ class PolicyDatabase(object) :
 
 	def getIsolationPolicyCount(self) :
 		return len(self.isolationTable)
+
+	def getIsolatedPolicies(self, pc) :
+		""" returns all packet classes isolated to pc"""
+		pclist = []
+		for policy in self.isolationTable :
+			if policy[0] == pc :
+				pclist.append(policy[1])
+			if policy[1] == pc :
+				pclist.append(policy[0])
+		return pclist
 
 	def createRelationalClasses(self) :
 		""" Create Relational classes of packet classes. A relational class is a maximal set of

@@ -76,7 +76,7 @@ class Topology(object):
 		return self.networkDatabase.getSwitchName(swID)
 
 	def getMaxPathLength(self) :
-		return self.getSwitchCount()
+		return 12
 		
 	def getSwitchCount(self) :
 		return self.networkDatabase.getSwitchCount() - 1

@@ -90,25 +90,20 @@ class GenesisSynthesiser(object) :
 
 				if rcGraphSat == False :
 					# Apply non-fuzzy synthesis. 
-					(rcGraphSat, synPaths) = self.enforceGraphPolicies(rcGraph)
+					self.enforceUnicastPolicies()
 
 				self.synthesisSuccessFlag = self.synthesisSuccessFlag & rcGraphSat
-				if rcGraphSat:
-					for pc in synPaths.keys() :
-						self.pdb.addPath(pc, synPaths[pc])
-				else :
-					for pc in synPaths.keys() :
-						self.pdb.addPath(pc, [])
-
 			self.enforceMulticastPolicies()		
 		else : 
-			self.enforceUnicastPolicies()
+			self.synthesisSuccessFlag = self.enforceUnicastPolicies()
 			self.enforceMulticastPolicies()		
 
 		end_t = time.time()
 		print "Time taken to solve the policies with fuzzy flag is " + str(end_t - start_t)
 
 		if self.synthesisSuccessFlag: 
+			for pc in self.fuzzyPaths : 
+				self.pdb.addPath(pc, self.fuzzyPaths[pc])
 			self.pdb.validatePolicies()
 			self.pdb.printPaths(self.topology)
 		else :
@@ -264,7 +259,7 @@ class GenesisSynthesiser(object) :
 		self.z3Solver.push()
 
 		st = time.time()
-		print "Adding constraints."
+		#1print "Adding constraints."
 		pclist = []
 		for node in rcGraph.nodes() :
 			pclist.append(int(node))
@@ -276,10 +271,13 @@ class GenesisSynthesiser(object) :
 		for pc in pclist : 
 			if not self.pdb.isMulticast(pc) :  
 				policy = self.pdb.getAllowPolicy(pc)
+				st = time.time()
 				self.addReachabilityConstraints(srcIP=policy[0][0], srcSw=policy[0][2], dstIP=policy[0][1], dstSw=policy[0][3],pc=pc, W=policy[1], pathlen=policy[2]) 
-
+				#1print "Time taken to add Reachability constraints is " + str(time.time() - st)
+				st = time.time()
 				# Add Topology Constraints
 				self.addTopologyConstraints(pc)
+				#1print "Time taken to add Topology constraints is " + str(time.time() - st)
 
 		# Add traffic constraints. 
 		for pno in range(self.pdb.getIsolationPolicyCount()) :
@@ -302,11 +300,10 @@ class GenesisSynthesiser(object) :
 		self.addLinkConstraints(pclist, self.fuzzyLinkCapacityConstraints)
 
 		print "Starting Z3 check for " + str(pclist)
-		print "Time taken to add constraints is " + str(time.time() - st)
 		st = time.time()
 		modelsat = self.z3Solver.check()
 		if modelsat == z3.sat : 
-			print "Time taken to solve the constraints is " + str(time.time() - st)
+			#1print "Time taken to solve the constraints is " + str(time.time() - st)
 			rcGraphSat = True
 			print "SAT"
 			self.fwdmodel = self.z3Solver.model()
@@ -553,6 +550,7 @@ class GenesisSynthesiser(object) :
 			return self.differentSolutionRecovery(attempt, rcGraph1, rcGraph2, localDifferentPathConstraints)
 
 	def linkcapacityRecovery(self, attempt, unsatLinks, rcGraph, differentPathConstraints) :
+		self.pdb.printPaths(self.topology)
 		# Remove atleast n flows flowing through the unsatLinks, and resynthesise rcGraph.
 		pclist = []
 		for node in rcGraph.nodes() :
@@ -561,28 +559,30 @@ class GenesisSynthesiser(object) :
 		print "Perform link capacity recovery attempt#" + str(attempt) + " for " + str(pclist)
 		print "UnsatLinks : " + str(unsatLinks)
 
+		totalreroutes = 0
 		for link in unsatLinks : 
 			# Pick policies to reroute. 
-			reroutePCs = []
+			reroutedPCs = []
 			key = str(link[0]) + "-" + str(link[1])
 			trackedPCs = list(self.fuzzyTrackedPaths[key])
+			print "Tracked PCs", trackedPCs
 
-			for i in range(len(pclist)) :
+			while len(reroutedPCs) < len(pclist):
 				# Find n best pplicies to reroute.
 				bestpc = self.getBestReroutePacketClass(key, trackedPCs)
 				if bestpc == None :
 					break 
 				else :
-					reroutePCs.append(bestpc)
+					successFlag = self.enforceReroute(bestpc, link[0], link[1])
+					if successFlag : 
+						reroutedPCs.append(bestpc)
 				trackedPCs.remove(bestpc)
 
-			if reroutePCs == [] :
-				# Recovery cannot be performed. 
-				exit(0)
-			else :
-				# Best effort to reroute the policies :
-				for pc in reroutePCs :
-					self.enforceReroute(pc, link[0], link[1])
+			totalreroutes = totalreroutes + len(reroutedPCs)
+
+		if totalreroutes == 0 :
+			# None of the pcs were rerouted. Recovery cannot be performed. 
+			return False
 
 		# For all unsatLinks, we have performed reroutes. Synthesise original graph.
 		(rcGraphSat, synPaths) = self.enforceGraphPolicies(rcGraph, differentPathConstraints, False) 
@@ -604,6 +604,7 @@ class GenesisSynthesiser(object) :
 		# Returns the best packet class (least degree and unrerouted).
 		if (len(pclist)) == 0 :
 			return None
+		print pclist
 		minpc = pclist[0]
 		mindegree = self.pdb.getRelationalClassGraphDegree(minpc)
 		for pc in pclist :
@@ -624,10 +625,11 @@ class GenesisSynthesiser(object) :
 				return None
 
 		# minpc will be used in the recovery. Add attempt for linkKey.
-		if pc in self.fuzzyLinkRecoveryAttempts:
-			self.fuzzyLinkRecoveryAttempts[pc].append(linkKey)
+		if minpc in self.fuzzyLinkRecoveryAttempts:
+			self.fuzzyLinkRecoveryAttempts[minpc].append(linkKey)
 		else :
-			self.fuzzyLinkRecoveryAttempts[pc] = [linkKey]
+			self.fuzzyLinkRecoveryAttempts[minpc] = [linkKey]
+		print self.fuzzyLinkRecoveryAttempts[minpc]
 		return minpc
 
 	def enforceMulticastPolicies(self) :
@@ -747,8 +749,11 @@ class GenesisSynthesiser(object) :
 				reachAssert = self.F(srcSw,w,pc,pathlen) == True
 				self.z3Solver.add(reachAssert)
 
+		st = time.time()
 		# Add Path Constraints for this flow to find the forwarding model for this flow.
 		self.addPathConstraints(srcSw,pc)		
+		et = time.time()
+		#1print "Path Constraints time is " + str(et - st)
 		
 	def fatTreePathLengthOptimizations(self, W) :
 		""" In a fat tree, source and destination are connected to edge switches. 
@@ -764,11 +769,12 @@ class GenesisSynthesiser(object) :
 			else :
 				return minPathLength + len(W) * 4
 
+	# Note This functions take the most time for each pc. Look for ways to improve this
 	def addPathConstraints(self, s, pc) :
 		swCount = self.topology.getSwitchCount()
 		maxPathLen = self.topology.getMaxPathLength()
 
-
+		st = time.time()
 		for i in range(1,swCount+1) :
 			if i == s : 
 				continue
@@ -777,19 +783,33 @@ class GenesisSynthesiser(object) :
 				reachedAssert = (Implies (self.F(s,i,pc,pathlen-1), self.F(s,i,pc,pathlen)))
 				self.z3Solver.add(reachedAssert)
 
-			ineighbours = self.topology.getSwitchNeighbours(i) 
+		#1print "Path1 " + str(time.time() - st)
+		st = time.time()
 
+		for i in range(1,swCount+1) :
+			if i == s : 
+				continue
+
+			ineighbours = self.topology.getSwitchNeighbours(i) 
 			neighbourAssert = False
 
 			for isw in ineighbours : 
-				for pathlen in range(1,maxPathLen) :
-					nextHopAssert = Implies(And(self.F(s,i,pc,pathlen) == True,self.F(i,isw,pc,1)) == True,self.F(s,isw,pc,pathlen+1) == True)
-					self.z3Solver.add(nextHopAssert)
+				# for pathlen in range(1,maxPathLen) :
+				# 	nextHopAssert = Implies(And(self.F(s,i,pc,pathlen) == True,self.F(i,isw,pc,1)) == True,self.F(s,isw,pc,pathlen+1) == True)
+				# 	self.z3Solver.add(nextHopAssert)
+				nextHopAssert = Implies(And(self.F(s,i,pc,pathlen) == True,self.F(i,isw,pc,1)) == True,self.F(s,isw,pc,pathlen+1) == True)
+				plen = Int('plen')
+				self.z3Solver.add(ForAll(plen, nextHopAssert))
 
-				unreachedAssert = Implies(self.F(s,i,pc,maxPathLen) == False, self.F(i,isw,pc,1) == False)
-				self.z3Solver.add(unreachedAssert)	
+		#1print "Path2 " + str(time.time() - st)
+		st = time.time()
 
-			
+		for i in range(1,swCount+1) :
+			if i == s : 
+				continue
+
+			ineighbours = self.topology.getSwitchNeighbours(i) 
+
 			# Paths of length 2.
 			path2Assert = True
 			for pathlen in range(2,maxPathLen+1) :
@@ -798,6 +818,14 @@ class GenesisSynthesiser(object) :
 					beforeHopAssert = Or(beforeHopAssert, And(self.F(isw, i, pc, 1) == True, self.F(s, isw, pc, pathlen - 1) == True))
 				
 				path2Assert = And(path2Assert, Implies(self.F(s,i,pc,pathlen), beforeHopAssert))
+
+
+			# beforeHopAssert = False
+			# for isw in ineighbours : 
+			# 	beforeHopAssert = Or(beforeHopAssert, And(self.F(isw, i, pc, 1) == True, self.F(s, isw, pc, pathlen - 1) == True))
+			
+			# plen = Int('plen')
+			# path2Assert = ForAll(plen, Implies(And(plen > 1, plen < maxPathLen, self.F(s,i,pc,pathlen)), beforeHopAssert))
 
 			path1Assert = self.F(s,i,pc,1) == True
 			self.z3Solver.add(Or(path1Assert, path2Assert))
@@ -808,6 +836,9 @@ class GenesisSynthesiser(object) :
 			# Remove source to source reachabilty
 			for pathlen in range(1,maxPathLen+1) :
 				self.z3Solver.add(self.F(s,s,pc,pathlen) == False)
+
+		#1print "Path3 " + str(time.time() - st)
+		st = time.time()
 
 	def addTrafficIsolationConstraints(self, pc1, pc2) : 
 		""" Adding constraints for Isolation Policy enforcement of traffic for packet classes (end-points) ep1 and ep2. """
@@ -869,7 +900,7 @@ class GenesisSynthesiser(object) :
 				self.addPathIsolationConstraints(pc2, self.fuzzyPaths[pc1], pc1)
 
 		# Add Reroute Constraint. 
-		#self.z3Solver.add(self.F(sw1, sw2, pc, 1) == False)
+		self.z3Solver.add(self.F(sw1, sw2, pc, 1) == False)
 
 		# Add Link Capacity Constraints : 
 		self.addLinkConstraints([pc], self.fuzzyLinkCapacityConstraints)
@@ -878,12 +909,15 @@ class GenesisSynthesiser(object) :
 		modelsat = self.z3Solver.check()
 		if modelsat == z3.sat : 
 			successFlag = True
-			print "SAT"
+			print "Reroute successful : SAT", pc
 			self.fwdmodel = self.z3Solver.model()
 			path = self.getPathFromModel(pc)
 			self.pdb.addPath(pc, path)
 			self.fuzzyPaths[pc] = path
 
+			print "Old path", oldpath, "new path", path
+			if pc == 18 :
+				print self.pdb.getPath(18)
 			# Revert oldpath changes : 
 			for constraint in self.fuzzyLinkCapacityConstraints : 
 				try : 
@@ -920,6 +954,13 @@ class GenesisSynthesiser(object) :
 						self.fuzzyTrackedPaths[key] = [pc]
 				except ValueError:
 					continue
+
+			# Reset isolated policies (can be reattempted for reroute)
+			self.fuzzyLinkRecoveryAttempts[pc] = []
+			isolatedPcs = self.pdb.getIsolatedPolicies(pc)
+			for ipc in isolatedPcs : 
+				self.fuzzyLinkRecoveryAttempts[ipc] = []
+
 		# if model not satisfied, reroute not possible.
 		self.z3Solver.pop()
 
