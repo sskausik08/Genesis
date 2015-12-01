@@ -880,6 +880,23 @@ class GenesisSynthesiser(object) :
 	def enforceReroute(self, pc, sw1, sw2) :
 		""" Resynthesise path for pc so that it does not go through link sw1-sw2 """
 		oldpath = list(self.fuzzyPaths[pc])
+		# Revert oldpath changes : 
+		for constraint in self.fuzzyLinkCapacityConstraints : 
+			try : 
+				index = oldpath.index(constraint[0])
+				if index == len(oldpath) - 1:
+					continue # Last element. 
+				if oldpath[index + 1] == constraint[1] :
+					# Link was used. Increment constraint.
+					constraint[2] = constraint[2] + 1
+
+				# Remove pc from tracked paths.
+				key = str(constraint[0]) + "-" + str(constraint[1]) 
+				if key in self.fuzzyTrackedPaths : 
+					if pc in self.fuzzyTrackedPaths[key] :
+						self.fuzzyTrackedPaths[key].remove(pc)
+			except ValueError:
+					continue
 
 		self.z3Solver.push()
 
@@ -916,50 +933,35 @@ class GenesisSynthesiser(object) :
 			self.fuzzyPaths[pc] = path
 
 			print "Old path", oldpath, "new path", path
-			if pc == 18 :
-				print self.pdb.getPath(18)
-			# Revert oldpath changes : 
-			for constraint in self.fuzzyLinkCapacityConstraints : 
-				try : 
-					index = oldpath.index(constraint[0])
-					if index == len(path) - 1:
-						continue # Last element. 
-					if oldpath[index + 1] == constraint[1] :
-						# Link was used. Increment constraint.
-						constraint[2] = constraint[2] + 1
-
-					# Remove pc from tracked paths.
-					key = str(constraint[0]) + "-" + str(constraint[1]) 
-					if key in self.fuzzyTrackedPaths : 
-						if pc in self.fuzzyTrackedPaths[key] :
-							self.fuzzyTrackedPaths[key].remove(pc)
-				except ValueError:
-						continue
-
-			# Update fuzzy link capacity constraints.
-			for constraint in self.fuzzyLinkCapacityConstraints : 
-				try:
-					index = path.index(constraint[0])
-					if index == len(path) - 1:
-						continue # Last element. 
-					if path[index + 1] == constraint[1] :
-						# Link is used. Update constraint.
-						constraint[2] = constraint[2] - 1
-					
-					# Add pc to tracked Paths. 
-					key = str(constraint[0]) + "-" + str(constraint[1])
-					if key in self.fuzzyTrackedPaths : 
-						self.fuzzyTrackedPaths[key].append(pc)
-					else : 
-						self.fuzzyTrackedPaths[key] = [pc]
-				except ValueError:
-					continue
-
 			# Reset isolated policies (can be reattempted for reroute)
 			self.fuzzyLinkRecoveryAttempts[pc] = []
 			isolatedPcs = self.pdb.getIsolatedPolicies(pc)
 			for ipc in isolatedPcs : 
 				self.fuzzyLinkRecoveryAttempts[ipc] = []
+		else :
+			# Rerouting not possible. 
+			path = oldpath
+
+		# Update fuzzy link capacity constraints.
+		for constraint in self.fuzzyLinkCapacityConstraints : 
+			try:
+				index = path.index(constraint[0])
+				if index == len(path) - 1:
+					continue # Last element. 
+				if path[index + 1] == constraint[1] :
+					# Link is used. Update constraint.
+					constraint[2] = constraint[2] - 1
+				
+				# Add pc to tracked Paths. 
+				key = str(constraint[0]) + "-" + str(constraint[1])
+				if key in self.fuzzyTrackedPaths : 
+					self.fuzzyTrackedPaths[key].append(pc)
+				else : 
+					self.fuzzyTrackedPaths[key] = [pc]
+			except ValueError:
+				continue
+
+			
 
 		# if model not satisfied, reroute not possible.
 		self.z3Solver.pop()
