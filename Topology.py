@@ -9,7 +9,6 @@ class NetworkDatabase(object) :
 	def insertSwitch(self, swName) :
 		self.switchMap.append(swName)
 		self.swID += 1
-		#print swName + ":" + str(self.swID - 1)
 		return self.swID - 1
 
 	def existsSwitch(self, swName) :
@@ -29,7 +28,6 @@ class NetworkDatabase(object) :
 
 		raise LookupError(str(swName) + " not in the network database")
 
-
 	def getSwitchName(self, swID) :
 		if swID > len(self.switchMap) - 1 :
 			raise LookupError(str(swID) + " is not a valid switch ID")
@@ -38,7 +36,12 @@ class NetworkDatabase(object) :
 
 	def getSwitchCount(self) :
 		return len(self.switchMap)
-	
+
+	def printSwitchMappings(self) :
+		i = 0 :
+		for sw in self.switchMap : 
+			print swName, ":", i
+			i += 1
 
 class Topology(object):
 	"Class for a Topology"
@@ -76,7 +79,7 @@ class Topology(object):
 		return self.networkDatabase.getSwitchName(swID)
 
 	def getMaxPathLength(self) :
-		return 12
+		return 10
 		
 	def getSwitchCount(self) :
 		return self.networkDatabase.getSwitchCount() - 1
