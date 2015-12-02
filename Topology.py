@@ -38,7 +38,7 @@ class NetworkDatabase(object) :
 		return len(self.switchMap)
 
 	def printSwitchMappings(self) :
-		i = 0 :
+		i = 0 
 		for sw in self.switchMap : 
 			print swName, ":", i
 			i += 1
