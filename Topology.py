@@ -87,6 +87,95 @@ class Topology(object):
 	def getSwitchNeighbours(self, swID) :
 		return self.neighbours[swID]
 
+	def findTopologyBridges(self) :
+		""" Uses Schmidt Chain Decomposition Algorithm to find the bridges in the topology """ 
+		swCount = self.getSwitchCount()
+		self.visited = dict() # Stores if swID has been visited
+		self.dfSwList = [] # Stores the swIDs in order of DFS. 
+		self.dfEdges = dict() # Stores the directed edges according to Schmidt's Algorithm.
+		self.chainEdges = dict() # Store if an edge is part of a chain.
+		self.bridges = []
+		# Initialise variables.
+		for sw in range(1, swCount + 1):
+			self.visited[sw] = False
+			self.dfEdges[sw] = []
+
+		def dfs(sw) :
+			self.dfSwList.append(sw) 
+			self.visited[sw] = True
+			for n in self.neighbours[sw] :
+				# Is node visited and not parent. 
+				if self.visited[n] == True: 
+					pos1 = self.dfSwList.index(sw)
+					pos2 = self.dfSwList.index(n)
+					if not pos1 - pos2 == 1 and pos1 > pos2: 
+						# Back Edge. Add directed edge n -> sw
+						self.dfEdges[n].append(sw)				
+				else :  
+					# Node not visited. Apply DFS on child.
+					dfs(n)
+
+		dfs(1)
+		# Mark all vertices as unself.visited.
+		for sw in range(1, swCount + 1):
+			self.visited[sw] = False
+
+		chains = []
+		#Traverse in order of DFS Tree
+		for sw in self.dfSwList :
+			self.visited[sw] = True
+			for n in self.dfEdges[sw] : 
+				key = str(sw)+"-"+str(n)
+				# Back Edge. From Chain.
+				chain = [sw, n]
+
+				# Traverse back edge and back till we reach a self.visited vertex
+				self.visited[n] == True
+
+				pos = self.dfSwList.index(n) - 1
+				# traverse back to root.
+				while pos > -1 : 
+					swChain = self.dfSwList[pos]			
+					if self.visited[swChain] == False :
+						chain.append(swChain)
+						self.visited[swChain] = True
+					elif self.visited[swChain] == True:
+						# Last element of chain. 
+						chain.append(swChain)
+						break 
+					pos -= 1
+
+				chains.append(chain)
+
+		# Find all edges not in any chain. Those edges are bridges.
+		for chain in chains :
+			i = 0
+			while i < len(chain) - 1 :
+				if chain[i] > chain[i+1] :
+					edge = str(chain[i+1]) + "-" + str(chain[i]) 
+				else :
+					edge = str(chain[i]) + "-" + str(chain[i+1]) 
+				self.chainEdges[edge] = True
+				i += 1
+
+		for sw in range(1, swCount + 1):
+			for n in self.neighbours[sw] :
+				if sw > n : continue
+				else :
+					edge = str(sw) + "-" + str(n)
+					if not edge in self.chainEdges :
+						# Edge not in chain. It is a bridge
+						self.bridges.append([sw,n])
+
+		
+
+
+
+
+
+
+
+
 
 t = Topology("a")
 
