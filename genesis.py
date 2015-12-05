@@ -3,7 +3,6 @@ Genesis : Endpoint Policy Enforcement using Flow Table Synthesis
 """
 
 from GPLInterpreter import GPLInterpreter
-from TopologyInterpreter import TopologyInterpreter
 from Topology import Topology
 from GenesisSynthesiser import GenesisSynthesiser
 import sys
@@ -20,7 +19,7 @@ class Genesis(object):
         no = 0
         gplargFlag = False
         topoargFlag = False
-        fuzzyFlag = False # Default Fuzzy flag is false.
+        OptimisticFlag = False # Default Optimistic flag is false.
         for arg in sys.argv : 
             if arg == "-gpl" :
                 self.gplfile = sys.argv[no + 1]
@@ -28,8 +27,8 @@ class Genesis(object):
             if arg == "-topo" :
                 self.topofile = sys.argv[no + 1]
                 topoargFlag = True
-            if arg == "-fuzzy" :
-                fuzzyFlag = True
+            if arg == "-os" :
+                OptimisticFlag = True
             no += 1
 
         if not (gplargFlag and topoargFlag) : 
@@ -38,7 +37,7 @@ class Genesis(object):
 
 
         self.topology = Topology()
-        self.genesisSynthesiser = GenesisSynthesiser(topo=self.topology, fuzzy=fuzzyFlag)
+        self.genesisSynthesiser = GenesisSynthesiser(topo=self.topology, Optimistic=OptimisticFlag)
         self.gplparser = GPLInterpreter(self.gplfile, self.topofile, self.genesisSynthesiser, self.topology)
         
     def run(self):
@@ -62,9 +61,6 @@ class Genesis(object):
 	    	elif fields[0] == "exit" :
 	    		break
 
-        
-        
-        
 
     # Add API support.
     def addReachPolicy(self, srcIP, srcSw, dstIP, dstSw):

@@ -11,6 +11,7 @@ class PolicyDatabase(object) :
 		self.pathLengthTable = dict()
 		self.enforcementStatusTable = dict()
 		self.isolationTable = []
+		self.isolationMap = dict()
 		self.mutlicastTable = dict()
 		self.equalMulticastPolicy = dict()
 		self.relClasses = []
@@ -59,7 +60,6 @@ class PolicyDatabase(object) :
 
 	def addPath(self, pc, path) :
 		self.paths[pc] = path
-		print "In pdb", self.paths[pc]
 		if len(path) > 0 :
 			self.enforcementStatusTable[pc] = True # Policy #pc has been enforced. 
 
@@ -84,6 +84,15 @@ class PolicyDatabase(object) :
 
 	def addIsolationPolicy(self, pc1, pc2) :
 		self.isolationTable.append([pc1,pc2])
+		if pc1 in self.isolationMap : 
+			self.isolationMap[pc1].append(pc2)
+		else :
+			self.isolationMap[pc1] = [pc2]
+
+		if pc2 in self.isolationMap : 
+			self.isolationMap[pc2].append(pc1)
+		else :
+			self.isolationMap[pc2] = [pc1]
 
 	def getIsolationPolicy(self, no) :
 		if no > len(self.isolationTable) - 1 : 
@@ -92,8 +101,8 @@ class PolicyDatabase(object) :
 			return self.isolationTable[no]
 
 	def isIsolated(self, pc1, pc2) :
-		for policy in self.isolationTable :
-			if (policy[0] == pc1 and policy[1] == pc2) or (policy[1] == pc1 and policy[0] == pc2) : 
+		if pc1 in self.isolationMap:
+			if pc2 in self.isolationMap[pc1] :
 				return True
 		return False
 
@@ -102,13 +111,10 @@ class PolicyDatabase(object) :
 
 	def getIsolatedPolicies(self, pc) :
 		""" returns all packet classes isolated to pc"""
-		pclist = []
-		for policy in self.isolationTable :
-			if policy[0] == pc :
-				pclist.append(policy[1])
-			if policy[1] == pc :
-				pclist.append(policy[0])
-		return pclist
+		if pc in self.isolationMap : 
+			return self.isolationMap[pc]
+		else :
+			return []
 
 	def createRelationalClasses(self) :
 		""" Create Relational classes of packet classes. A relational class is a maximal set of
@@ -291,7 +297,7 @@ class PolicyDatabase(object) :
 
 	def createRelationalClassGraph(self, relClass) :
 		""" Creation of a Graph of edges of each packet class in the relational Class to leverage policy interactions to 
-		perform fuzzy synthesis"""
+		perform Optimistic synthesis"""
 
 		G = nx.Graph()
 		
