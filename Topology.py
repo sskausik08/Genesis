@@ -1,10 +1,11 @@
+import networkx as nx
+
 class NetworkDatabase(object) :
 	""" Database to store the switch mappings to integers """
 
 	def __init__(self) :
 		self.switchMap = ["dropSwitch"]
 		self.swID = 1
-		self.hostMap = dict()
 
 	def insertSwitch(self, swName) :
 		self.switchMap.append(swName)
@@ -40,7 +41,10 @@ class NetworkDatabase(object) :
 	def printSwitchMappings(self) :
 		i = 0 
 		for sw in self.switchMap : 
-			print swName, ":", i
+			if i == 0 : 
+				i += 1 
+				continue
+			print sw, ":", i
 			i += 1
 
 class Topology(object):
@@ -49,6 +53,13 @@ class Topology(object):
 		self.name = name
 		self.networkDatabase = NetworkDatabase()
 		self.neighbours = dict()
+		
+		# Topology Slicing variables.
+		self.slices = dict() # Stores the switches in every slice.
+		self.switchSliceMap = dict()  # Stores the slice number for each switch.
+		self.sliceGraph = nx.Graph()
+
+		self.useTopologySlicingFlag = False
 
 	def getName(self) :
 		return self.name
@@ -85,7 +96,17 @@ class Topology(object):
 		return self.networkDatabase.getSwitchCount() - 1
 
 	def getSwitchNeighbours(self, swID) :
-		return self.neighbours[swID]
+		if self.useTopologySlicingFlag : 
+			# Find the neighbours in the slice. 
+			slice = self.getSliceNumber(swID)
+			neighbours = self.neighbours[swID] 
+			sliceNeighbours = []
+			for n in neighbours : 
+				if n in self.slices[slice] :
+					sliceNeighbours.append(n)
+			return sliceNeighbours
+		else :
+			return self.neighbours[swID]
 
 	def findTopologyBridges(self) :
 		""" Uses Schmidt Chain Decomposition Algorithm to find the bridges in the topology """ 
@@ -167,8 +188,74 @@ class Topology(object):
 						# Edge not in chain. It is a bridge
 						self.bridges.append([sw,n])
 
-		
+	def useTopologySlicing(self) :
+		self.useTopologySlicingFlag = True
 
+	def createSliceGraph(self):
+		""" Creates the slice graph of the topology. Each slice is represented 
+		by a single node and slices are connected by a single edge if there exists 
+		a non-zero number of inter-slice edges"""
+
+		# Test Slice. Topo is slice.topo
+		self.setSlice(1,0)
+		self.setSlice(2,0)
+		self.setSlice(3,0)
+		self.setSlice(5,1)
+		self.setSlice(6,1)
+		self.setSlice(8,1)
+		self.setSlice(4,2)
+		self.setSlice(7,2)
+		self.setSlice(9,2)
+		self.setSlice(10,3)
+		self.setSlice(11,3)
+
+		for slice in self.slices.keys() : 
+			self.sliceGraph.add_node(slice, slice=str(slice))
+
+		for slice in self.slices.keys():
+			swList = self.slices[slice]
+
+			for sw in swList :
+				neighbours = self.neighbours[sw]
+				for n in neighbours :
+					slice2 = self.switchSliceMap[n]
+					if slice == slice2 : continue
+					elif self.sliceGraph.has_edge(slice, slice2) : continue
+					else : self.sliceGraph.add_edge(slice, slice2)
+
+		
+	def setSlice(self, sw, slice) :
+		if slice in self.slices : 
+			if not sw in self.slices[slice] :
+				self.slices[slice].append(sw)
+				self.switchSliceMap[sw] = slice
+		else :
+			self.slices[slice] = [sw]
+			self.switchSliceMap[sw] = slice
+		
+	def getSliceNumber(self, sw):
+		""" returns the topology slice number"""
+		return self.switchSliceMap[sw]
+
+	def getTopologySlice(self, slice) :
+		if slice in self.slices :  
+			return self.slices[slice]
+		else :
+			return []
+
+	def getSlicePaths(self, slice1, slice2) :
+		return nx.all_simple_paths(self.sliceGraph, source=slice1, target=slice2)
+
+	def getSliceEdges(self, slice1, slice2) :
+		swList1 = self.slices[slice1]
+		swList2 = self.slices[slice2]
+		sliceEdges = []
+		for sw in swList1 : 
+			neighbours = self.neighbours[sw]
+			for n in neighbours : 
+				if n in swList2 :
+					sliceEdges.append([sw,n])
+		return sliceEdges
 
 
 
