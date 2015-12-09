@@ -20,6 +20,7 @@ class Genesis(object):
         gplargFlag = False
         topoargFlag = False
         OptimisticFlag = False # Default Optimistic flag is false.
+        TopoSlicingFlag = False # Default Topology Slicing flag is flag
         for arg in sys.argv : 
             if arg == "-gpl" :
                 self.gplfile = sys.argv[no + 1]
@@ -29,6 +30,9 @@ class Genesis(object):
                 topoargFlag = True
             if arg == "-os" :
                 OptimisticFlag = True
+            if arg == "-tos" :
+                OptimisticFlag = True
+                TopoSlicingFlag = True
             no += 1
 
         if not (gplargFlag and topoargFlag) : 
@@ -37,15 +41,17 @@ class Genesis(object):
 
 
         self.topology = Topology()
-        self.genesisSynthesiser = GenesisSynthesiser(topo=self.topology, Optimistic=OptimisticFlag)
+        self.genesisSynthesiser = GenesisSynthesiser(topo=self.topology, Optimistic=OptimisticFlag, TopoSlicing=TopoSlicingFlag)
         self.gplparser = GPLInterpreter(self.gplfile, self.topofile, self.genesisSynthesiser, self.topology)
         
     def run(self):
         self.gplparser.parseTopo()
         self.gplparser.parseGPL()
-        self.genesisSynthesiser.addPolicies()
+        #self.genesisSynthesiser.addPolicies()
         self.genesisSynthesiser.enforcePolicies()
 
+        #self.topology.createSliceGraph()
+        exit(0)
         while True:
 	        s = raw_input('--> ') 
 	        if len(s) == 0:

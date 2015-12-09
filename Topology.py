@@ -243,7 +243,7 @@ class Topology(object):
 		else :
 			return []
 
-	def getSlicePaths(self, slice1, slice2) :
+	def getSliceGraphPaths(self, slice1, slice2) :
 		return nx.all_simple_paths(self.sliceGraph, source=slice1, target=slice2)
 
 	def getSliceEdges(self, slice1, slice2) :

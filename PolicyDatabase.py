@@ -21,7 +21,12 @@ class PolicyDatabase(object) :
 		self.switchTableConstraints = []
 		self.linkCapacityConstraints = []
 
-	def addAllowPolicy(self, predicate, srcSw, dstSw, W=None, len=None) :
+		# Support for topology 
+		self.sliceEndpointTable = dict()
+		self.sliceWaypointTable = dict()
+		self.originalPacketClasses = dict()
+
+	def addReachabilityPolicy(self, predicate, srcSw, dstSw, W=None, len=None) :
 		""" srcSw = source IP next hop switch
 			dstSw = Destination IP next hop switch
 			W = List of Waypoints. """
@@ -39,10 +44,10 @@ class PolicyDatabase(object) :
 		self.pc += 1
 		return self.pc - 1
 
-	def getAllowPolicyCount(self) :
+	def getReachabilityPolicyCount(self) :
 		return len(self.endpointTable)
 
-	def getAllowPolicy(self, no) :
+	def getReachabilityPolicy(self, no) :
 		""" Policy is of the form : [[predicate, None, srcSw, dstSw], Waypoints, length] """
 		if no not in self.endpointTable : 
 			return None
@@ -284,16 +289,24 @@ class PolicyDatabase(object) :
 	def getSourceSwitch(self, pc) :
 		if self.isMulticast(pc) :
 			return self.mutlicastTable[pc][1]
-		if pc not in self.endpointTable :
+		if pc in self.endpointTable :
+			return self.endpointTable[pc][2]
+		elif pc in self.sliceEndpointTable:
+			return self.sliceEndpointTable[pc][2]
+		else :
 			raise LookupError(str(pc) + " is not a valid packet class flow number.")
-		return self.endpointTable[pc][2]
+
 
 	def getDestinationSwitch(self, pc):
 		if self.isMulticast(pc) :
 			return self.mutlicastTable[pc][3]
-		if pc not in self.endpointTable :
+		if pc in self.endpointTable :
+			return self.endpointTable[pc][3]
+		elif pc in self.sliceEndpointTable:
+			return self.sliceEndpointTable[pc][3]
+		else : 
 			raise LookupError(str(pc) + " is not a valid packet class flow number.")
-		return self.endpointTable[pc][3]
+		
 
 	def createRelationalClassGraph(self, relClass) :
 		""" Creation of a Graph of edges of each packet class in the relational Class to leverage policy interactions to 
@@ -333,6 +346,47 @@ class PolicyDatabase(object) :
 
 	def getLinkCapacityConstraints(self) :
 		return self.linkCapacityConstraints
+
+	def addSliceReachabilityPolicy(self, originalpc, srcSw, dstSw, W=None):
+		""" Adds a temporary reach Policy. """
+		print "Adding", srcSw, dstSw
+		self.originalPacketClasses[self.pc] = originalpc
+		self.sliceEndpointTable[self.pc] = [None, None, srcSw, dstSw]
+		if not W == None :  
+			self.sliceWaypointTable[self.pc] = [W]
+		self.pc += 1
+		return self.pc - 1		
+
+	def getSliceReachabilityPolicy(self, pc) :
+		""" Returns a slice reach Policy """
+		if pc in self.endpointTable : 
+			return self.getReachabilityPolicy(pc)
+
+		if pc in self.sliceWaypointTable : 
+			return [self.sliceEndpointTable[pc],  self.sliceWaypointTable[pc]]
+		else :
+			return [self.sliceEndpointTable[pc], None]
+
+	def getOriginalPacketClass(self, pc) :
+		if pc in self.endpointTable : 
+			return pc
+		else : 
+			return self.originalPacketClasses[pc]
+
+	def clearSliceReachabilityPolicies(self) :
+		""" Clear slice Reachability Policies """
+		# Find least pc.
+		minpc = 100000000
+		for pc in self.sliceEndpointTable  :
+			if pc < minpc : 
+				minpc = pc
+		# Restore self.pc to minpc
+		self.pc = minpc
+
+		# Clear tables. 
+		self.sliceEndpointTable = dict()
+		self.sliceWaypointTable = dict()
+		self.originalPacketClasses = dict()
 
 
 
