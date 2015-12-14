@@ -1,4 +1,7 @@
 import networkx as nx
+import metis
+import time
+
 
 class NetworkDatabase(object) :
 	""" Database to store the switch mappings to integers """
@@ -57,7 +60,9 @@ class Topology(object):
 		# Topology Slicing variables.
 		self.slices = dict() # Stores the switches in every slice.
 		self.switchSliceMap = dict()  # Stores the slice number for each switch.
+		self.graph = nx.Graph()
 		self.sliceGraph = nx.Graph()
+		self.maxPathLength = 10
 
 		self.useTopologySlicingFlag = False
 
@@ -68,6 +73,7 @@ class Topology(object):
 		if not self.networkDatabase.existsSwitch(name):
 			swID = self.networkDatabase.insertSwitch(name)
 			self.neighbours[swID] = []
+			self.graph.add_node(swID, switch=str(swID))
 		else :
 			swID = self.networkDatabase.getSwID(name)
 
@@ -75,9 +81,11 @@ class Topology(object):
 			if not self.networkDatabase.existsSwitch(n) :
 				nID = self.networkDatabase.insertSwitch(n)
 				self.neighbours[nID] = []
+				self.graph.add_node(nID, switch=str(nID))
 			else :
 				nID = self.networkDatabase.getSwID(n)
 
+			self.graph.add_edge(swID, nID)
 			if not nID in self.neighbours[swID] :
 				self.neighbours[swID].append(nID)
 			if not swID in self.neighbours[nID] :
@@ -90,7 +98,10 @@ class Topology(object):
 		return self.networkDatabase.getSwitchName(swID)
 
 	def getMaxPathLength(self) :
-		return 10
+		return self.maxPathLength
+
+	def setMaxPathLength(self, pathlen):
+		self.maxPathLength = pathlen
 		
 	def getSwitchCount(self) :
 		return self.networkDatabase.getSwitchCount() - 1
@@ -197,17 +208,29 @@ class Topology(object):
 		a non-zero number of inter-slice edges"""
 
 		# Test Slice. Topo is slice.topo
-		self.setSlice(1,0)
-		self.setSlice(2,0)
-		self.setSlice(3,0)
-		self.setSlice(5,1)
-		self.setSlice(6,1)
-		self.setSlice(8,1)
-		self.setSlice(4,2)
-		self.setSlice(7,2)
-		self.setSlice(9,2)
-		self.setSlice(10,3)
-		self.setSlice(11,3)
+		# self.setSlice(1,0)
+		# self.setSlice(2,0)
+		# self.setSlice(3,0)
+		# self.setSlice(5,1)
+		# self.setSlice(6,1)
+		# self.setSlice(8,1)
+		# self.setSlice(4,2)
+		# self.setSlice(7,2)
+		# self.setSlice(9,2)
+		# self.setSlice(10,3)
+		# self.setSlice(11,3)
+		print nx.minimum_edge_cut(self.graph)
+		exit(0)
+		(edgecuts, partitions) = metis.part_graph(graph=self.graph, nparts=10, contig=True)
+		i = 0	
+		for node in self.graph.nodes():
+			sw = int(node)
+
+			# Set slice number. 
+			self.setSlice(sw, partitions[i])
+			print "Slice mapping",sw,partitions[i] 
+			i += 1
+
 
 		for slice in self.slices.keys() : 
 			self.sliceGraph.add_node(slice, slice=str(slice))
@@ -243,8 +266,23 @@ class Topology(object):
 		else :
 			return []
 
-	def getSliceGraphPaths(self, slice1, slice2) :
-		return nx.all_simple_paths(self.sliceGraph, source=slice1, target=slice2)
+	def getSliceGraphPaths(self, slice1, slice2, sliceWaypoints=None) :
+		st = time.time()
+		allpaths = nx.all_simple_paths(self.sliceGraph, source=slice1, target=slice2)
+		et = time.time() - st
+		validpaths = []
+		if sliceWaypoints == None : 
+			return allpaths
+
+		# Slice Waypoints.
+		for path in allpaths : 
+			valid = True
+			for slice in sliceWaypoints : 
+				valid = valid and (slice in path) 
+			if valid :
+				validpaths.append(path) 
+		
+		return validpaths
 
 	def getSliceEdges(self, slice1, slice2) :
 		swList1 = self.slices[slice1]
@@ -256,6 +294,9 @@ class Topology(object):
 				if n in swList2 :
 					sliceEdges.append([sw,n])
 		return sliceEdges
+
+	def printSwitchMappings(self) :
+		self.networkDatabase.printSwitchMappings() 
 
 
 
