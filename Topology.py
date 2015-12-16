@@ -220,7 +220,6 @@ class Topology(object):
 		# self.setSlice(10,3)
 		# self.setSlice(11,3)
 		print nx.minimum_edge_cut(self.graph)
-		exit(0)
 		(edgecuts, partitions) = metis.part_graph(graph=self.graph, nparts=10, contig=True)
 		i = 0	
 		for node in self.graph.nodes():
@@ -294,6 +293,24 @@ class Topology(object):
 				if n in swList2 :
 					sliceEdges.append([sw,n])
 		return sliceEdges
+
+	def getSliceGraph(self) :
+		""" Return slice graph in terms of [slice, edgeKey-list] for each slice to 
+		initialize the Slice Graph Solver"""
+
+		sliceGraph = []
+		for slice1 in self.slices : 
+			sliceEdgeKeys = []
+			for slice2 in self.slices : 
+				sliceEdges = self.getSliceEdges(slice1, slice2)
+				for edge in sliceEdges : 
+					if edge[0] < edge[1] :
+						sliceEdgeKeys.append(str(edge[0]) + "-" + str(edge[1]))
+					else : 
+						sliceEdgeKeys.append(str(edge[1]) + "-" + str(edge[0]))
+			sliceGraph.append([slice, sliceEdgeKeys])
+
+		return sliceGraph
 
 	def printSwitchMappings(self) :
 		self.networkDatabase.printSwitchMappings() 

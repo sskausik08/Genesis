@@ -6,6 +6,7 @@ import time
 import random
 import metis
 import networkx as nx
+from SliceGraphSolver import SliceGraphSolver
 
 
 class GenesisSynthesiser(object) :
@@ -13,7 +14,7 @@ class GenesisSynthesiser(object) :
 		self.topology = topo
 
 		# Network Forwarding Function
-		self.Fwd = Function('Fwd', IntSort(), IntSort(), IntSort(), BoolSort())
+		#self.Fwd = Function('Fwd', IntSort(), IntSort(), IntSort(), BoolSort())
 		self.Reach = Function('Reach', IntSort(), IntSort(), IntSort(), BoolSort())
 
 		self.R = Function('R', IntSort(), IntSort(), IntSort())
@@ -22,7 +23,10 @@ class GenesisSynthesiser(object) :
 		
 		self.z3Solver = Solver()
 		self.z3Solver.set(unsat_core=True)
+		#self.z3Solver.set("sat.phase", "always-false")
 		self.fwdmodel = None 
+
+		self.sliceGraphSolver = SliceGraphSolver()
 
 		self.count = policyCount
 		# Policy Database. 
@@ -64,13 +68,49 @@ class GenesisSynthesiser(object) :
 		self.addGlobalTopoFlag = False
 
 		# Profiling Information.
-		self.z3addTime = 0  # Time taken to add the constraints.
+		self.z3addTime = 0 # Time taken to add the constraints.
+		self.z3numberofadds = 0 # Count of adds.
 		self.z3solveTime = 0 # Time taken to solve the constraints. 
 		self.metisTime = 0	# Time taken to partition  the graphs.
 		self.z3SolveCount = 0	# Count of z3 solve instances. 
 
+	def initializeSATVariables(self) :
+		swCount = self.topology.getSwitchCount()
+		pcRange = self.pdb.getPacketClassRange()
+		maxPathLen = self.topology.getMaxPathLength()
+
+		self.fwdvars = [[[0 for x in range(pcRange)] for x in range(swCount + 1)] for x in range(swCount + 1)]
+		self.reachvars = [[[0 for x in range(maxPathLen+1)] for x in range(pcRange)] for x in range(swCount + 1)]
+
+		for sw1 in range(1,swCount+1):
+			for sw2 in range(1,swCount+1):
+				for pc in range(pcRange) :
+					self.fwdvars[sw1][sw2][pc] = Bool(str(sw1)+"-"+str(sw2)+":"+str(pc))
+
+		for sw in range(1,swCount+1):
+			for pc in range(pcRange) :
+				for plen in range(1,maxPathLen +1) :
+					self.reachvars[sw][pc][plen] = Bool(str(sw)+":"+str(pc)+":"+str(plen))
+
+	def Fwd(self, sw1, sw2, pc) :
+		neighbours = self.topology.getSwitchNeighbours(sw1)
+		if sw2 not in neighbours : 
+			return False
+		else : 
+			return self.fwdvars[sw1][sw2][pc]
+
+	def Reach(self, sw, pc, plen) :
+		return self.reachvars[sw][pc][plen]
 
 	def enforcePolicies(self): 
+		self.initializeSATVariables()
+
+		# Topology Slicing : 
+		if self.topologySlicingFlag : 
+			self.topology.useTopologySlicing()
+			self.topology.createSliceGraph()
+			self.initializeSliceGraphSolver()
+
 		start_t = time.time()
 
 		# Generate the assertions.
@@ -79,8 +119,8 @@ class GenesisSynthesiser(object) :
 
 		# Add Unreachable Constraints 
 		st = time.time()
-		self.addUnreachableHopConstraints() # Takes 2 seconds for a 78-node fat tree topology. 
-		#tprint "Unreachable Hop Constraints take ", time.time() - st
+		#self.addUnreachableHopConstraints() # Takes 2 seconds for a 78-node fat tree topology. 
+		print "Unreachable Hop Constraints take ", time.time() - st
 
 		st = time.time()
 		if(not self.OptimisticSynthesisFlag) or self.addGlobalTopoFlag :
@@ -114,6 +154,8 @@ class GenesisSynthesiser(object) :
 			self.synthesisSuccessFlag = self.enforceUnicastPolicies()
 			self.enforceMulticastPolicies()		
 
+		end_t = time.time()
+		print "Time taken to solve the policies with Optimistic flag is " + str(end_t - start_t)
 
 		if self.synthesisSuccessFlag and self.OptimisticSynthesisFlag: 
 			for pc in self.OptimisticPaths : 
@@ -124,8 +166,8 @@ class GenesisSynthesiser(object) :
 			self.pdb.validatePolicies()
 			self.pdb.printPaths(self.topology)
 
-		end_t = time.time()
-		print "Time taken to solve the policies with Optimistic flag is " + str(end_t - start_t)
+		self.printProfilingStats()
+
 
 	def addPolicies(self) :
 		self.count = 100
@@ -198,6 +240,7 @@ class GenesisSynthesiser(object) :
 	def enforceUnicastPolicies(self) :
 		""" Enforcement of Policies stored in the PDB. """
 
+		enforcetime = time.time()
 		# Create Relational Packet Classses.
 		relClasses = self.pdb.createRelationalClasses()
 
@@ -222,7 +265,9 @@ class GenesisSynthesiser(object) :
 				self.addTrafficIsolationConstraints(pc1, pc2)
 			
 			# Apply synthesis
+			solvetime = time.time()
 			modelsat = self.z3Solver.check()
+			self.z3solveTime += time.time() - solvetime
 			if modelsat == z3.sat : 
 				print "Solver return SAT"
 				self.fwdmodel = self.z3Solver.model()
@@ -249,7 +294,9 @@ class GenesisSynthesiser(object) :
 			
 				# Each relational class can be synthesised independently.
 				st = time.time()
+				solvetime = time.time()
 				modelsat = self.z3Solver.check()
+				self.z3solveTime += time.time() - solvetime
 				#tprint "Time taken to solve constraints is " + str(time.time() - st)
 				if modelsat == z3.sat : 
 					print "Solver return SAT"
@@ -321,7 +368,9 @@ class GenesisSynthesiser(object) :
 
 		print "Starting Z3 check for " + str(pclist)
 		st = time.time()
+		solvetime = time.time()
 		modelsat = self.z3Solver.check()
+		self.z3solveTime += time.time() - solvetime
 		if modelsat == z3.sat : 
 			#tprint "Time taken to solve the constraints is " + str(time.time() - st)
 			rcGraphSat = True
@@ -458,22 +507,13 @@ class GenesisSynthesiser(object) :
 		# Create the Graphs.
 		rcGraph1 = nx.Graph()
 		rcGraph2 = nx.Graph()
+		
+		OptimisticSolCount1 = 0
+		OptimisticSolCount2 = 0
 
 		rc1empty = True
 		rc2empty = True
 		i = 0
-
-		# # For testing, take input from user about partition. 
-		# pclist = []
-		# for node in rcGraph.nodes():
-		# 	pclist.append(int(node))
-
-		# print "Enter Partition for " + str(pclist)
-		# s = raw_input()
-		# partitions = map(int, s.split())
-
-		OptimisticSolCount1 = 0
-		OptimisticSolCount2 = 0
 
 		for node in rcGraph.nodes():
 			pc = int(node)
@@ -735,7 +775,9 @@ class GenesisSynthesiser(object) :
 				else :
 					self.addEqualMulticastConstraints(policy[1], policy[3], pc)
 
+				solvetime = time.time()
 				modelsat = self.z3Solver.check()
+				self.z3solveTime += time.time() - solvetime
 				if modelsat == z3.sat : 
 					print "SAT"
 					self.fwdmodel = self.z3Solver.model()	
@@ -760,20 +802,6 @@ class GenesisSynthesiser(object) :
 
 				self.z3Solver.pop()
 
-	def addUnreachableHopConstraints(self) :
-		swCount = self.topology.getSwitchCount()
-		for sw in range(1,swCount+1) :
-			# \forall n such that n \notin neighbours or n \not\eq sw . F(sw,n,pc,1) = False
-			# Cannot reach nodes which are not neighbours in step 1. 
-			# This constraint is needed because there is no restriction from the above constraints 
-			# regarding the values of non-neighbours.
-			neighbours = self.topology.getSwitchNeighbours(sw)
-			for s in range(1,swCount + 1) :
-				if s == sw or s in neighbours : 
-					continue
-				else :
-					#self.z3Solver.add(ForAll(self.pc, self.F(sw,s,self.pc,1) == False))
-					self.z3Solver.add(ForAll(self.pc, self.Fwd(sw,s,self.pc) == False))
 
 	def addTopologyConstraintsSAT(self, pcStart, pcEnd=0) :
 		if pcEnd == 0 :
@@ -805,7 +833,10 @@ class GenesisSynthesiser(object) :
 						topoAssert = Or(topoAssert, neighbourAssert)
 
 					topoAssert = Or(topoAssert, unreachedAssert) # Either one forwarding rule or no forwarding rules.
+					self.z3numberofadds += 1
+					addtime = time.time() # Profiling z3 add.
 					self.z3Solver.add(topoAssert)
+					self.z3addTime += time.time() - addtime
 				else :
 					""" Multicast packet class. No restrictions on forwarding set """
 					pass	
@@ -834,15 +865,30 @@ class GenesisSynthesiser(object) :
 					i = 0
 					for n in neighbours :
 						if n == neighbours[0] :
+							self.z3numberofadds += 1
+							addtime = time.time() # Profiling z3 add.
 							self.z3Solver.add(Implies(self.Fwd(sw, n, pc), fwdSet(sw, pc, n) == 1))
+							self.z3addTime += time.time() - addtime
+							self.z3numberofadds += 1
+							addtime = time.time() # Profiling z3 add.
 							self.z3Solver.add(Implies(self.Fwd(sw, n, pc) == False, fwdSet(sw, pc, n) == 0))
+							self.z3addTime += time.time() - addtime
 						else :
 							prevn = neighbours[i - 1]
+							self.z3numberofadds += 1
+							addtime = time.time() # Profiling z3 add.
 							self.z3Solver.add(Implies(self.Fwd(sw, n, pc), fwdSet(sw, pc, n) == 1 + fwdSet(sw, pc, prevn)))
+							self.z3addTime += time.time() - addtime
+							self.z3numberofadds += 1
+							addtime = time.time() # Profiling z3 add.
 							self.z3Solver.add(Implies(self.Fwd(sw, n, pc) == False, fwdSet(sw, pc, n) == fwdSet(sw, pc, prevn)))
+							self.z3addTime += time.time() - addtime
 						i +=1
 					n = neighbours[i - 1] # Last element in the list.
+					self.z3numberofadds += 1
+					addtime = time.time() # Profiling z3 add.
 					self.z3Solver.add(fwdSet(sw, pc, n) < 2)
+					self.z3addTime += time.time() - addtime
 				else :
 					""" Multicast packet class. No restrictions on forwarding set """
 					pass	
@@ -877,7 +923,10 @@ class GenesisSynthesiser(object) :
 						topoAssert = Or(topoAssert, neighbourAssert)
 
 					topoAssert = Or(topoAssert, unreachedAssert) # Either one forwarding rule or no forwarding rules.
+					self.z3numberofadds += 1
+					addtime = time.time() # Profiling z3 add.
 					self.z3Solver.add(topoAssert)
+					self.z3addTime += time.time() - addtime
 				else :
 					""" Multicast packet class. No restrictions on forwarding set """
 					pass
@@ -893,7 +942,10 @@ class GenesisSynthesiser(object) :
 		
 		# Add Reachability in atmost pathlen steps constraint. 
 		reachAssert = self.Reach(dstSw,pc,pathlen) == True
+		self.z3numberofadds += 1
+		addtime = time.time() # Profiling z3 add.
 		self.z3Solver.add(reachAssert)
+		self.z3addTime += time.time() - addtime
 
 		# At Destination, forwarding has to stop here. So, F(d,neighbour(d),pc,1) == False 
 		# When we perform the translation to rules, we can forward it to host accordingly.
@@ -904,14 +956,19 @@ class GenesisSynthesiser(object) :
 		for n in neighbours :
 			destAssert = And(destAssert, self.Fwd(dstSw,n,pc) == False)
 
+		self.z3numberofadds += 1
+		addtime = time.time() # Profiling z3 add.
 		self.z3Solver.add(destAssert)
+		self.z3addTime += time.time() - addtime
 
 		if not W == None : 
-			print W
 			# Add the Waypoint Constraints. 
 			for w in W :
 				reachAssert = self.Reach(w,pc,pathlen) == True
+				self.z3numberofadds += 1
+				addtime = time.time() # Profiling z3 add.
 				self.z3Solver.add(reachAssert)
+				self.z3addTime += time.time() - addtime
 
 		st = time.time()
 		# Add Path Constraints for this flow to find the forwarding model for this flow.
@@ -947,20 +1004,29 @@ class GenesisSynthesiser(object) :
 		neighbours = self.topology.getSwitchNeighbours(s)
 		for n in neighbours :
 			# If Fwd rule exists means we can reach in path length 1.
+			self.z3numberofadds += 1
+			addtime = time.time() # Profiling z3 add.
 			self.z3Solver.add(Implies(self.Fwd(s,n,pc), self.Reach(n,pc,1)))
+			self.z3addTime += time.time() - addtime
 		
 		for i in swList:
 			if i == s : continue
+			self.z3numberofadds += 1
+			addtime = time.time() # Profiling z3 add.
 			self.z3Solver.add(Implies(self.Reach(i,pc,1), self.Fwd(s,i,pc)))
+			self.z3addTime += time.time() - addtime
 
 		# Add assertions to ensure f(s,*) leads to a valid neighbour. 
 		neighbourAssert = False
 		for n in neighbours :
-			neighbourAssert = Or(neighbourAssert, self.Fwd(s,n,pc) == True)
+			neighbourAssert = Or(neighbourAssert, And(self.Fwd(s,n,pc) == True, self.Reach(n, pc, 1)))
 
+		self.z3numberofadds += 1
+		addtime = time.time() # Profiling z3 add.
 		self.z3Solver.add(neighbourAssert)
+		self.z3addTime += time.time() - addtime
 
-		# Existence of a rule only when we can reach node. 
+		# Existence of a rule implies we can reach node. 
 		for i in swList :
 			if i == s : 
 				continue
@@ -968,7 +1034,10 @@ class GenesisSynthesiser(object) :
 			ineighbours = self.topology.getSwitchNeighbours(i)
 			for isw in ineighbours :
 				ruleAssert = Implies(self.Fwd(i,isw,pc), self.Reach(i,pc,maxPathLen))
+				self.z3numberofadds += 1
+				addtime = time.time() # Profiling z3 add.
 				self.z3Solver.add(ruleAssert)
+				self.z3addTime += time.time() - addtime
 
 		st = time.time()
 		for i in swList :
@@ -977,7 +1046,10 @@ class GenesisSynthesiser(object) :
 
 			for pathlen in range(2,maxPathLen+1) :	
 				reachedAssert = (Implies (self.Reach(i,pc,pathlen-1), self.Reach(i,pc,pathlen)))
+				self.z3numberofadds += 1
+				addtime = time.time() # Profiling z3 add.
 				self.z3Solver.add(reachedAssert)
+				self.z3addTime += time.time() - addtime
 	
 		#tprint "Path1 " + str(time.time() - st)
 		st = time.time()
@@ -993,12 +1065,18 @@ class GenesisSynthesiser(object) :
 				for isw in ineighbours : 
 					plen = Int("plen" + "#" + str(i) + "#" + str(isw))
 					nextHopAssert = Implies(And(self.Reach(i,pc,plen) == True,self.Fwd(i,isw,pc) == True),self.Reach(isw,pc,plen + 1) == True)
+					self.z3numberofadds += 1
+					addtime = time.time() # Profiling z3 add.
 					self.z3Solver.add(ForAll(plen, nextHopAssert))
+					self.z3addTime += time.time() - addtime
 			else :
 				for isw in ineighbours : 
 					for pathlen in range(1,maxPathLen) :
 						nextHopAssert = Implies(And(self.Reach(i,pc,pathlen) == True,self.Fwd(i,isw,pc) == True),self.Reach(isw,pc,pathlen+1) == True)
+						self.z3numberofadds += 1
+						addtime = time.time() # Profiling z3 add.
 						self.z3Solver.add(nextHopAssert)
+						self.z3addTime += time.time() - addtime
 				
 
 		#tprint "Path2 " + str(time.time() - st)
@@ -1027,11 +1105,17 @@ class GenesisSynthesiser(object) :
 			# path2Assert = ForAll(plen, Implies(And(plen > 1, plen < maxPathLen, self.F(s,i,pc,pathlen)), beforeHopAssert))
 
 			path1Assert = self.Fwd(s,i,pc) == True
+			self.z3numberofadds += 1
+			addtime = time.time() # Profiling z3 add.
 			self.z3Solver.add(Or(path1Assert, path2Assert))
+			self.z3addTime += time.time() - addtime
 
 		for i in swList :
 			# Path len > 1 always.
+			self.z3numberofadds += 1
+			addtime = time.time() # Profiling z3 add.
 			self.z3Solver.add(self.Reach(i,pc,0) == False)
+			self.z3addTime += time.time() - addtime
 
 		for i in swList :
 			if i == s : 
@@ -1041,7 +1125,10 @@ class GenesisSynthesiser(object) :
 			ineighbours = self.topology.getSwitchNeighbours(i)
 
 			for isw in ineighbours :
+				self.z3numberofadds += 1
+				addtime = time.time() # Profiling z3 add.
 				self.z3Solver.add(Implies(self.Fwd(i,isw,pc), self.Reach(i,pc,maxPathLen)))
+				self.z3addTime += time.time() - addtime
 
 		#tprint "Path3 " + str(time.time() - st)
 		st = time.time()
@@ -1053,7 +1140,10 @@ class GenesisSynthesiser(object) :
 		for sw in range(1, swCount + 1) :
 			for n in self.topology.getSwitchNeighbours(sw) :
 				isolateAssert = Not( And (self.Fwd(sw,n,pc1) == True, self.Fwd(sw,n,pc2) == True))
+				self.z3numberofadds += 1
+				addtime = time.time() # Profiling z3 add.
 				self.z3Solver.add(isolateAssert)	
+				self.z3addTime += time.time() - addtime
 
 	def addSliceTrafficIsolationConstraints(self, slice, pc1, pc2) : 
 		""" Adding constraints for Isolation Policy enforcement of traffic for packet classes (end-points) ep1 and ep2. """
@@ -1062,7 +1152,10 @@ class GenesisSynthesiser(object) :
 		for sw in swList :
 			for n in self.topology.getSwitchNeighbours(sw) :
 				isolateAssert = Not( And (self.Fwd(sw,n,pc1) == True, self.Fwd(sw,n,pc2) == True))
-				self.z3Solver.add(isolateAssert)	
+				self.z3numberofadds += 1
+				addtime = time.time() # Profiling z3 add.
+				self.z3Solver.add(isolateAssert)
+				self.z3addTime += time.time() - addtime	
 
 	def addPathIsolationConstraints(self, pc, path, tracker=0) :
 		""" Adding constraints such that the path of pc is isolated by 'path' argument"""
@@ -1089,7 +1182,10 @@ class GenesisSynthesiser(object) :
 		for i in range(len(path) - 1) :
 			diffPathAssert = And(diffPathAssert, self.Fwd(path[i], path[i+1], pc) == True)
 
+		self.z3numberofadds += 1
+		addtime = time.time() # Profiling z3 add.
 		self.z3Solver.add(Not(diffPathAssert))
+		self.z3addTime += time.time() - addtime
 
 	def addDifferentSolutionConstraint(self, pathConstraints) :
 		""" Adding constraints such that the solution obtained is different from the solution provided by arg pathConstraints
@@ -1102,7 +1198,10 @@ class GenesisSynthesiser(object) :
 			for i in range(len(path) - 1) :
 				diffPathAssert = And(diffPathAssert, self.Fwd(path[i], path[i+1], pc) == True)
 
+		self.z3numberofadds += 1
+		addtime = time.time() # Profiling z3 add.
 		self.z3Solver.add(Not(diffPathAssert))
+		self.z3addTime += time.time() - addtime
 
 	def addSliceDifferentSolutionConstraint(self, slice, pathConstraints) :
 		""" Adding constraints such that the solution obtained is different from the solution provided by arg pathConstraints
@@ -1116,7 +1215,10 @@ class GenesisSynthesiser(object) :
 				if self.topology.getSliceNumber(path[i]) == slice and self.topology.getSliceNumber(path[i+1]) == slice :
 					diffPathAssert = And(diffPathAssert, self.Fwd(path[i], path[i+1], pc) == True)
 
+		self.z3numberofadds += 1
+		addtime = time.time() # Profiling z3 add.
 		self.z3Solver.add(Not(diffPathAssert))
+		self.z3addTime += time.time() - addtime
 
 	def enforceReroute(self, pc, sw1, sw2) :
 		""" Resynthesise path for pc so that it does not go through link sw1-sw2 """
@@ -1158,13 +1260,18 @@ class GenesisSynthesiser(object) :
 				self.addPathIsolationConstraints(pc2, self.OptimisticPaths[pc1], pc1)
 
 		# Add Reroute Constraint. 
+		self.z3numberofadds += 1
+		addtime = time.time() # Profiling z3 add.
 		self.z3Solver.add(self.Fwd(sw1, sw2, pc) == False)
+		self.z3addTime += time.time() - addtime
 
 		# Add Link Capacity Constraints : 
 		self.addLinkConstraints([pc], self.OptimisticLinkCapacityConstraints)
 
 		successFlag = False
+		solvetime = time.time()
 		modelsat = self.z3Solver.check()
+		self.z3solveTime += time.time() - solvetime
 		if modelsat == z3.sat : 
 			successFlag = True
 			print "Reroute successful : SAT", pc
@@ -1212,13 +1319,19 @@ class GenesisSynthesiser(object) :
 			pathlen = self.topology.getMaxPathLength()
 			for dstSw in dstSwList : 
 				reachAssert = self.F(srcSw,dstSw,pc,pathlen) == True
+				self.z3numberofadds += 1
+				addtime = time.time() # Profiling z3 add.
 				self.z3Solver.add(reachAssert)
+				self.z3addTime += time.time() - addtime
 		else :
 			# Add Reachability in "exactly" pathlen steps constraint. 
 			for dstSw in dstSwList : 
 				reachAssert = self.F(srcSw,dstSw,pc,pathlen) == True
 				reachAssert = And(reachAssert, self.F(srcSw,dstSw,pc,pathlen - 1) == False)
+				self.z3numberofadds += 1
+				addtime = time.time() # Profiling z3 add.
 				self.z3Solver.add(reachAssert)
+				self.z3addTime += time.time() - addtime
 
 		# At Destination, forwarding has to stop here. So, F(d,neighbour(d),pc,1) == False 
 		# When we perform the translation to rules, we can forward it to host accordingly.
@@ -1229,7 +1342,10 @@ class GenesisSynthesiser(object) :
 			for n in neighbours :
 				destAssert = And(destAssert, self.F(dstSw,n,pc,1) == False)
 
+			self.z3numberofadds += 1
+			addtime = time.time() # Profiling z3 add.
 			self.z3Solver.add(destAssert)
+			self.z3addTime += time.time() - addtime
 
 		# We need to ensure only a single path to destination. 
 		for dst in range(1,self.topology.getSwitchCount() +1) :
@@ -1252,7 +1368,10 @@ class GenesisSynthesiser(object) :
 							neighbourAssert = And(neighbourAssert, self.F(n1,dst,pc,1) == False)
 					singlePathAssert = Or(singlePathAssert, neighbourAssert)
 
+				self.z3numberofadds += 1
+				addtime = time.time() # Profiling z3 add.
 				self.z3Solver.add(Or(unreachedAssert, singlePathAssert))
+				self.z3addTime += time.time() - addtime
 
 		# Add Path Constraints for this flow to find the forwarding model for this flow.
 		self.addPathConstraints(srcSw,pc)	
@@ -1261,16 +1380,25 @@ class GenesisSynthesiser(object) :
 		fname = "rank" + str(pc)
 		rankfn = Function(fname, IntSort(), IntSort())
 
+		self.z3numberofadds += 1
+		addtime = time.time() # Profiling z3 add.
 		self.z3Solver.add(rankfn(srcSw) == 0)
+		self.z3addTime += time.time() - addtime
 		
 		for i in range(1,self.topology.getSwitchCount() +1) :
 			ineighbours = self.topology.getSwitchNeighbours(i) 
 
 			for n in ineighbours :
+				self.z3numberofadds += 1
+				addtime = time.time() # Profiling z3 add.
 				self.z3Solver.add(Implies(self.F(i,n,pc,1) == True, rankfn(n) > rankfn(i)))
+				self.z3addTime += time.time() - addtime
 
 	def addBoundConstraints(self, pcRange) :
+		self.z3numberofadds += 1
+		addtime = time.time() # Profiling z3 add.
 		self.z3Solver.add(self.pc < pcRange + 1)
+		self.z3addTime += time.time() - addtime
 	
 	def addSwitchTableConstraints(self, constraints) :
 		if len(constraints) == 0 : return
@@ -1285,22 +1413,43 @@ class GenesisSynthesiser(object) :
 			if pc == 0: 
 				for i in range(1,swCount+1) : 
 					if not i == dst : 
+						self.z3numberofadds += 1
+						addtime = time.time() # Profiling z3 add.
 						self.z3Solver.add(Implies(self.F(src, i, pc, maxPathLen) == True, self.R(i, pc) == 1))
+						self.z3addTime += time.time() - addtime
+						self.z3numberofadds += 1
+						addtime = time.time() # Profiling z3 add.
 						self.z3Solver.add(Implies(self.F(src, i, pc, maxPathLen) == False, self.R(i, pc) == 0))
+						self.z3addTime += time.time() - addtime
 					else :
+						self.z3numberofadds += 1
+						addtime = time.time() # Profiling z3 add.
 						self.z3Solver.add(self.R(i, pc) == 0)
+						self.z3addTime += time.time() - addtime
 			else :
 				for i in range(1,swCount+1) :
 					if not i == dst :
+						self.z3numberofadds += 1
+						addtime = time.time() # Profiling z3 add.
 						self.z3Solver.add(Implies(self.F(src, i, pc, maxPathLen) == True, self.R(i, pc) == self.R(i, pc-1) + 1))
+						self.z3addTime += time.time() - addtime
+						self.z3numberofadds += 1
+						addtime = time.time() # Profiling z3 add.
 						self.z3Solver.add(Implies(self.F(src, i, pc, maxPathLen) == False, self.R(i, pc) == self.R(i, pc-1)))
+						self.z3addTime += time.time() - addtime
 					else :
+						self.z3numberofadds += 1
+						addtime = time.time() # Profiling z3 add.
 						self.z3Solver.add(self.R(i, pc) == self.R(i, pc-1))
+						self.z3addTime += time.time() - addtime
 
 		maxpc = self.pdb.getPacketClassRange() - 1
 		for constraint in constraints :
 			sw = constraint[0]
+			self.z3numberofadds += 1
+			addtime = time.time() # Profiling z3 add.
 			self.z3Solver.add(self.R(sw, maxpc) < constraint[1] + 1)
+			self.z3addTime += time.time() - addtime
 
 	def addLinkConstraints(self, pclist, constraints):
 		if len(constraints) == 0 : return
@@ -1321,20 +1470,31 @@ class GenesisSynthesiser(object) :
 				sw2 = constraint[1]
 
 				if i == 0 :
+					self.z3numberofadds += 1
+					addtime = time.time() # Profiling z3 add.
 					self.z3Solver.add(Implies(self.Fwd(sw1, sw2, pc) == True, self.L(sw1, sw2, pc) == 1))
+					self.z3addTime += time.time() - addtime
+					self.z3numberofadds += 1
+					addtime = time.time() # Profiling z3 add.
 					self.z3Solver.add(Implies(self.Fwd(sw1, sw2, pc) == False, self.L(sw1, sw2, pc) == 0))
+					self.z3addTime += time.time() - addtime
 				else :
 					prevpc = pclist[i - 1]
+					self.z3numberofadds += 1
+					addtime = time.time() # Profiling z3 add.
 					self.z3Solver.add(Implies(self.Fwd(sw1, sw2, pc) == True, self.L(sw1, sw2, pc) == self.L(sw1, sw2, prevpc) + 1))
+					self.z3addTime += time.time() - addtime
+					self.z3numberofadds += 1
+					addtime = time.time() # Profiling z3 add.
 					self.z3Solver.add(Implies(self.Fwd(sw1, sw2, pc) == False, self.L(sw1, sw2, pc) == self.L(sw1, sw2, prevpc)))
+					self.z3addTime += time.time() - addtime
 			i += 1
 
 	def getPathFromModel(self, pc) :
 		def getPathHelper(s, pc) :
 			path = [s]
-			swCount = self.topology.getSwitchCount()
-			
-			for sw in range(1, swCount + 1) :
+			neighbours = self.topology.getSwitchNeighbours(s)
+			for sw in neighbours:
 				if sw == s : 
 					continue
 				if is_true(self.fwdmodel.evaluate(self.Fwd(s,sw,pc))) :
@@ -1406,7 +1566,9 @@ class GenesisSynthesiser(object) :
 			#self.addSwitchTableConstraints()  # Adding switch table constraints.
 						
 			# Each relational class can be synthesised independently.
+			solvetime = time.time()
 			modelsat = self.z3Solver.check()
+			self.z3solveTime += time.time() - solvetime
 			if modelsat == z3.sat : 
 				print "SAT"
 				self.fwdmodel = self.z3Solver.model()
@@ -1475,7 +1637,9 @@ class GenesisSynthesiser(object) :
 
 		print "Starting Z3 check for " + str(pclist)
 		st = time.time()
+		solvetime = time.time()
 		modelsat = self.z3Solver.check()
+		self.z3solveTime += time.time() - solvetime
 		if modelsat == z3.sat : 
 			#tprint "Time taken to solve the constraints is " + str(time.time() - st)
 			rcGraphSat = True
@@ -1493,9 +1657,6 @@ class GenesisSynthesiser(object) :
 		return (rcGraphSat, synPaths)
 
 	def applyTopologySlicing(self, rcGraph, differentPathConstraints=None) :
-		self.topology.useTopologySlicing()
-		self.topology.createSliceGraph()
-
 		slicePaths = dict()
 		pclist = []
 		for node in rcGraph.nodes() :
@@ -1527,6 +1688,189 @@ class GenesisSynthesiser(object) :
 			
 		return (True, dict())
 
+	def createSlicePolicy(self, pc) :
+		""" Takes a Reachability policy and converts it into an equivalent Slice reachabilty policy"""
+		policy = self.pdb.getReachabilityPolicy(pc)
+		srcSlice = self.topology.getSliceNumber(policy[0][2])
+		dstSlice = self.topology.getSliceNumber(policy[0][3])
+
+		sliceWaypoints = []
+		for waypoint in policy[1] :
+			sliceWaypoint = self.topology.getSliceNumber(waypoint)
+			if sliceWaypoint not in sliceWaypoints : 
+				sliceWaypoints.append(sliceWaypoint)
+
+		return [srcSlice, dstSlice, sliceWaypoints]
+
+
+	def createSliceRelationalGraphs2(self, pclist) :
+		""" Splits the reachabilty policies in pclist and returns a Relational Class graph"""
+		self.sliceGraphSolver.push()
+
+		sliceEdgeMappings = dict()
+		sliceGraphPaths = dict()
+		slicePacketClasses = dict()
+
+		for pc in pclist: 
+			# Find path in slice graph.
+			slicePolicy = self.createSlicePolicy(pc)
+			slicePacketClasses[pc] = self.sliceGraphSolver.addReachabilityPolicy(slicePolicy[0], slicePolicy[1], slicePolicy[2])
+
+		for pc in pclist : 
+			ipcs = self.pdb.getIsolatedPolicies(pc)
+			for ipc in ipcs : 
+				if ipc in pclist : 
+					self.sliceGraphSolver.addTrafficIsolationPolicy(slicePacketClasses[pc], slicePacketClasses[ipc])
+
+		self.sliceGraphSolver.enforcePolicies()
+
+		
+			
+
+		reachPolicies = dict()
+		mappingCount = dict()
+		sliceEdgeList = [] # Store relevant slice edges for this rcGraph.
+
+		for path in sliceGraphPaths.values():
+			i = 0
+			while i < len(path) - 1:
+				sedge = str(path[i]) + "-" + str(path[i+1])
+				if sedge not in sliceEdgeList :
+					sliceEdgeList.append(sedge)
+				i += 1
+
+		print sliceEdgeList
+		
+		sliceEdgeCount = dict()
+		for pc in pclist : 
+			sliceEdgeCount[pc] = dict()
+
+		for sedge in sliceEdgeList : 
+			slice1 = int(sedge.split("-")[0])
+			slice2 = int(sedge.split("-")[1])
+			
+			for pc in pclist : 
+				for edgeKey in sliceEdgeMappings.keys() :
+					edge = edgeKey.split("-") 
+					if slice1 == self.topology.getSliceNumber(int(edge[0])) and slice2 == self.topology.getSliceNumber(int(edge[1])) and pc in sliceEdgeMappings[edgeKey]: 
+
+						if sedge in sliceEdgeCount[pc] : 
+							sliceEdgeCount[pc][sedge] += 1
+						else :
+							sliceEdgeCount[pc][sedge] = 1
+
+		splitReachPolicyEdges = dict()
+		for sedge in sliceEdgeList : 
+			slice1 = int(sedge.split("-")[0])
+			slice2 = int(sedge.split("-")[1])
+
+			pclistUnmapped = []
+			# Add relevant pcs to the list
+			for pc in pclist : 
+				if sedge in sliceEdgeCount[pc] :
+					pclistUnmapped.append(pc)
+
+			while len(pclistUnmapped) > 0 :
+				mincount = 100000
+				for pc in pclistUnmapped : 
+					if mincount > sliceEdgeCount[pc][sedge] : 
+						mincount = sliceEdgeCount[pc][sedge]
+						minpc = pc
+
+				if mincount == 0 :
+					print "Mapping does not exist!" 
+					exit(0)
+
+				print "Mapping minpc", minpc, "for sedge", sedge
+				# Found minpc. Map one edge for this slice-edge to this pc.
+				for edgeKey in sliceEdgeMappings.keys() :
+					edge = edgeKey.split("-") 
+					if slice1 == self.topology.getSliceNumber(int(edge[0])) and slice2 == self.topology.getSliceNumber(int(edge[1])) and minpc in sliceEdgeMappings[edgeKey]: 
+						# Map this edge to sliceEdgeMapping. 
+						affectedpcs = sliceEdgeMappings[edgeKey]
+						sliceEdgeMappings[edgeKey] = []
+						
+						if minpc in splitReachPolicyEdges : 
+							splitReachPolicyEdges[minpc].append(edgeKey)
+						else : 
+							splitReachPolicyEdges[minpc] = [edgeKey]
+
+						# Remove minpc from Unmapped pcs
+						pclistUnmapped.remove(minpc)
+						# Decrement count of affectedpcs
+						for apc in affectedpcs :
+							if apc == minpc : continue
+							else : sliceEdgeCount[pc][sedge] -= 1
+
+						break
+		print splitReachPolicyEdges
+
+		rcGraphs = dict()
+		# Build the slice RC Graphs. 
+		for pc in pclist: 
+			slicePath = sliceGraphPaths[pc] 
+			if slicePath == [] : 
+				# No split of reach policy.
+				slice = self.topology.getSliceNumber(self.pdb.getSourceSwitch(pc))
+				if slice in rcGraphs : 
+					rcGraphs[slice].add_node(pc, switch=str(pc))
+				else : 
+					rcGraphs[slice] = nx.Graph()
+					rcGraphs[slice].add_node(pc, switch=str(pc))
+			else :
+				# Slice path exists. 
+				src = self.pdb.getSourceSwitch(pc)
+				srcSlice = self.topology.getSliceNumber(src)
+
+				i = 0
+				print slicePath
+				while i < len(slicePath) - 1:
+					nextSlice = slicePath[i + 1]
+
+					for edgeKey in splitReachPolicyEdges[pc] :
+						edge = edgeKey.split("-")
+						if self.topology.getSliceNumber(int(edge[0])) == srcSlice and self.topology.getSliceNumber(int(edge[1])) == nextSlice : 
+							if src == int(edge[0]) :
+								print "Don't need to add anything.", src
+							else :
+
+								slicepc = self.pdb.addSliceReachabilityPolicy(pc, src, int(edge[0]), self.getSliceWaypoints(pc, srcSlice) )
+								if srcSlice in rcGraphs : 
+									rcGraphs[srcSlice].add_node(slicepc, switch=str(slicepc))
+								else : 
+									rcGraphs[srcSlice] = nx.Graph()
+									rcGraphs[srcSlice].add_node(slicepc, switch=str(slicepc))
+							
+							srcSlice = nextSlice
+							src = int(edge[1])
+							break
+					i += 1
+
+				# Add Reachability to dst
+				if not src == self.pdb.getDestinationSwitch(pc) : 
+					slicepc = self.pdb.addSliceReachabilityPolicy(pc, src, self.pdb.getDestinationSwitch(pc), self.getSliceWaypoints(pc, srcSlice) )
+					if srcSlice in rcGraphs : 
+						rcGraphs[srcSlice].add_node(slicepc, switch=str(slicepc))
+					else : 
+						rcGraphs[srcSlice] = nx.Graph()
+						rcGraphs[srcSlice].add_node(slicepc, switch=str(slicepc))
+
+		# Adding policy edges in the rcGraphs.
+		for rcGraph in rcGraphs.values() :
+			pcs = []
+			for node in rcGraph.nodes() :
+				pcs.append(int(node))
+			for pc1 in pcs : 
+				for pc2 in pcs : 
+					if pc1 >= pc2 :
+						continue
+					else :
+						opc1 = self.pdb.getOriginalPacketClass(pc1)
+						opc2 = self.pdb.getOriginalPacketClass(pc2)
+						if self.pdb.isIsolated(opc1, opc2) :
+							rcGraph.add_edge(pc1, pc2)
+
+		return (rcGraphs, splitReachPolicyEdges, sliceGraphPaths)
 
 	def createSliceRelationalGraphs(self, pclist) :
 		""" Splits the reachabilty policies in pclist and returns a Relational Class graph"""
@@ -1535,17 +1879,10 @@ class GenesisSynthesiser(object) :
 		sliceGraphPaths = dict()
 		for pc in pclist: 
 			# Find path in slice graph.
-			src = self.pdb.getSourceSwitch(pc)
-			dst = self.pdb.getDestinationSwitch(pc)
-			srcSlice = self.topology.getSliceNumber(src)
-			dstSlice = self.topology.getSliceNumber(dst)
-
-			if srcSlice == dstSlice : 
-				sliceGraphPaths[pc] = []
-				continue
+			slicePolicy = self.createSlicePolicy(pc)
 			
 			slicePath = []
-			paths = self.topology.getSliceGraphPaths(srcSlice, dstSlice)
+			paths = self.topology.getSliceGraphPaths(slicePolicy[0], slicePolicy[1], slicePolicy[2])
 
 			for path in paths : 
 				# pick shortest path. 
@@ -1686,7 +2023,8 @@ class GenesisSynthesiser(object) :
 							if src == int(edge[0]) :
 								print "Don't need to add anything.", src
 							else :
-								slicepc = self.pdb.addSliceReachabilityPolicy(pc, src, int(edge[0]))
+
+								slicepc = self.pdb.addSliceReachabilityPolicy(pc, src, int(edge[0]), self.getSliceWaypoints(pc, srcSlice) )
 								if srcSlice in rcGraphs : 
 									rcGraphs[srcSlice].add_node(slicepc, switch=str(slicepc))
 								else : 
@@ -1700,7 +2038,7 @@ class GenesisSynthesiser(object) :
 
 				# Add Reachability to dst
 				if not src == self.pdb.getDestinationSwitch(pc) : 
-					slicepc = self.pdb.addSliceReachabilityPolicy(pc, src, self.pdb.getDestinationSwitch(pc))
+					slicepc = self.pdb.addSliceReachabilityPolicy(pc, src, self.pdb.getDestinationSwitch(pc), self.getSliceWaypoints(pc, srcSlice) )
 					if srcSlice in rcGraphs : 
 						rcGraphs[srcSlice].add_node(slicepc, switch=str(slicepc))
 					else : 
@@ -1724,7 +2062,18 @@ class GenesisSynthesiser(object) :
 
 		return (rcGraphs, splitReachPolicyEdges, sliceGraphPaths)
 
+	def getSliceWaypoints(self, pc, slice) :
+		""" Returns waypoints in a particular topology slice """
+		sliceWaypoints = []
+		waypoints = self.pdb.getReachabilityPolicy(pc)[1]
+		print "waypoints", waypoints
+		for waypoint in waypoints : 
+			if self.topology.getSliceNumber(waypoint) == slice and slice not in sliceWaypoints:
+				sliceWaypoints.append(waypoint)
+		print "sliceWaypoints", sliceWaypoints
+		return sliceWaypoints
 
+	# Solution Functions :
 	def addSlicePath(self, slicePath, path, sliceGraphPath) : 
 		slice = self.topology.getSliceNumber(path[0])
 		slicePath[sliceGraphPath.index(slice)] = path
@@ -1748,6 +2097,18 @@ class GenesisSynthesiser(object) :
 		return completePath
 
 
+	def initializeSliceGraphSolver(self) :
+		""" Initializes the Slice Graph Solver """
+		sliceGraph = self.topology.getSliceGraph() 
+		for sliceNode in sliceGraph : 
+			self.sliceGraphSolver.addSliceNode(sliceNode[0], sliceNode[1])
+
+
+	# Profiling Statistics : 
+	def printProfilingStats(self) :
+		print "Time taken to add constraints are ", self.z3addTime
+		print "Time taken to solve constraints are ", self.z3solveTime
+		print "Number of z3 adds to the solver are ", self.z3numberofadds
 
 
 

@@ -53,7 +53,7 @@ class PolicyDatabase(object) :
 			return None
 		policy = [self.endpointTable[no]]
 		if self.waypointTable[no] == [] :
-			policy.append(None)
+			policy.append([])
 		else :
 			policy.append(self.waypointTable[no])
 		if no in self.pathLengthTable :
@@ -88,6 +88,14 @@ class PolicyDatabase(object) :
 					print "PC#" + str(pc) + ": Endpoint Information : " + str(policy) + " Path : " + str(phypaths)
 
 	def addIsolationPolicy(self, pc1, pc2) :
+		if pc1 > pc2 : 
+			pc1, pc2 = pc2, pc1 
+
+		if pc1 in self.isolationMap : 
+			if pc2 in self.isolationMap[pc1] :
+				# Isolation Policy already added.
+				return 
+
 		self.isolationTable.append([pc1,pc2])
 		if pc1 in self.isolationMap : 
 			self.isolationMap[pc1].append(pc2)
@@ -323,6 +331,9 @@ class PolicyDatabase(object) :
 
 		self.relClassGraphs.append(G)
 
+		edges = nx.minimum_edge_cut(G)
+		print edges, "Edge"
+
 		return G
 
 	def getRelationalClassGraphs(self) :
@@ -353,7 +364,8 @@ class PolicyDatabase(object) :
 		self.originalPacketClasses[self.pc] = originalpc
 		self.sliceEndpointTable[self.pc] = [None, None, srcSw, dstSw]
 		if not W == None :  
-			self.sliceWaypointTable[self.pc] = [W]
+			print "Slice waypoints added", W
+			self.sliceWaypointTable[self.pc] = W
 		self.pc += 1
 		return self.pc - 1		
 
@@ -365,7 +377,7 @@ class PolicyDatabase(object) :
 		if pc in self.sliceWaypointTable : 
 			return [self.sliceEndpointTable[pc],  self.sliceWaypointTable[pc]]
 		else :
-			return [self.sliceEndpointTable[pc], None]
+			return [self.sliceEndpointTable[pc], []]
 
 	def getOriginalPacketClass(self, pc) :
 		if pc in self.endpointTable : 
