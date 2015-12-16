@@ -15,7 +15,7 @@ class GenesisSynthesiser(object) :
 
 		# Network Forwarding Function
 		#self.Fwd = Function('Fwd', IntSort(), IntSort(), IntSort(), BoolSort())
-		self.Reach = Function('Reach', IntSort(), IntSort(), IntSort(), BoolSort())
+		#self.Reach = Function('Reach', IntSort(), IntSort(), IntSort(), BoolSort())
 
 		self.R = Function('R', IntSort(), IntSort(), IntSort())
 		self.L = Function('L', IntSort(), IntSort(), IntSort(), IntSort())
@@ -100,6 +100,8 @@ class GenesisSynthesiser(object) :
 			return self.fwdvars[sw1][sw2][pc]
 
 	def Reach(self, sw, pc, plen) :
+		if plen == 0 :
+			return False
 		return self.reachvars[sw][pc][plen]
 
 	def enforcePolicies(self): 
@@ -160,10 +162,10 @@ class GenesisSynthesiser(object) :
 		if self.synthesisSuccessFlag and self.OptimisticSynthesisFlag: 
 			for pc in self.OptimisticPaths : 
 				self.pdb.addPath(pc, self.OptimisticPaths[pc])
-			self.pdb.validatePolicies()
+			self.pdb.validatePolicies(self.topology)
 			self.pdb.printPaths(self.topology)
 		else :
-			self.pdb.validatePolicies()
+			self.pdb.validatePolicies(self.topology)
 			self.pdb.printPaths(self.topology)
 
 		self.printProfilingStats()

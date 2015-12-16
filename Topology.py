@@ -315,6 +315,17 @@ class Topology(object):
 	def printSwitchMappings(self) :
 		self.networkDatabase.printSwitchMappings() 
 
+	def validatePath(self, path) :
+		""" checks if the path is a valid path in the topology"""
+		i = 0
+		while i < len(path) - 1:
+			neighbours = self.getSwitchNeighbours(path[i])
+			if path[i+1] not in neighbours :
+				return False
+			i += 1
+		return True
+
+
 
 
 

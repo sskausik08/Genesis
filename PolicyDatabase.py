@@ -199,9 +199,9 @@ class PolicyDatabase(object) :
 	def isEnforced(self, pc):
 		return pc in self.enforcementStatusTable 
 
-	def validatePolicies(self) :
+	def validatePolicies(self, topology) :
 		for pc in range(self.getPacketClassRange()) :
-			validFlag = self.validateReachabilityPolicy(pc) and self.validateIsolationPolicy(pc)
+			validFlag = topology.validatePath(self.getPath(pc)) and self.validateReachabilityPolicy(pc) and self.validateIsolationPolicy(pc)
 			if not validFlag : 
 				print "Policy " + str(pc) + " not enforced correctly."
 				return False
