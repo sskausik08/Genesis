@@ -14,8 +14,8 @@ class SliceGraphSolver(object) :
 		self.topology = Topology(name="sliceGraph")
 
 		# Network Forwarding Function
-		self.Fwd = Function('Fwd', IntSort(), IntSort(), IntSort(), IntSort(), BoolSort())
-		self.Reach = Function('Reach', IntSort(), IntSort(), IntSort(), BoolSort())
+		#self.Fwd = Function('Fwd', IntSort(), IntSort(), IntSort(), IntSort(), BoolSort())
+		#self.Reach = Function('Reach', IntSort(), IntSort(), IntSort(), BoolSort())
 
 		self.R = Function('R', IntSort(), IntSort(), IntSort())
 		self.L = Function('L', IntSort(), IntSort(), IntSort(), IntSort())
@@ -45,6 +45,43 @@ class SliceGraphSolver(object) :
 		self.metisTime = 0	# Time taken to partition  the graphs.
 		self.z3SolveCount = 0	# Count of z3 solve instances. 
 
+	def initializeSATVariables(self) :
+		swCount = self.topology.getSwitchCount()
+		pcRange = self.pdb.getPacketClassRange()
+		maxPathLen = self.topology.getMaxPathLength()
+
+		self.fwdvars = [[[[0 for x in range(pcRange)] for x in range(swCount + 1)] for x in range(swCount + 1)] for x in range(swCount + 1)]
+		self.reachvars = [[[0 for x in range(maxPathLen+1)] for x in range(pcRange)] for x in range(swCount + 1)]
+
+		for sw0 in range(1,swCount+1) : 
+			for sw1 in range(1,swCount+1):
+				for sw2 in range(1,swCount+1):
+					for pc in range(pcRange) :
+						self.fwdvars[sw0][sw1][sw2][pc] = Bool(str(sw0)+"-"+str(sw1)+"-"+str(sw2)+":"+str(pc))
+
+		for sw in range(1,swCount+1):
+			for pc in range(pcRange) :
+				for plen in range(0,maxPathLen +1) :
+					self.reachvars[sw][pc][plen] = Bool(str(sw)+":"+str(pc)+":"+str(plen))
+
+	def Fwd(self, sw0, sw1, sw2, pc) :
+		neighbours = self.topology.getSwitchNeighbours(sw1)
+		if sw2 not in neighbours: 
+			return False
+		if sw0 not in neighbours and sw0 <> self.pdb.getSourceSwitch(pc) :
+			return False
+		else : 
+			return self.fwdvars[sw0][sw1][sw2][pc]
+
+	def Reach(self, sw, pc, plen) :
+		if plen == 0 : 
+			src = self.pdb.getSourceSwitch(pc)
+			if sw == src : 
+				return True
+			else : 
+				return self.Fwd(src,src,sw,pc)
+		return self.reachvars[sw][pc][plen]
+
 	def addSliceNode(self, sw, edges) : 
 		""" Edges is a list of slice edgeKeys """
 		
@@ -59,12 +96,14 @@ class SliceGraphSolver(object) :
 			self.sliceNodes.append(swID)
 
 	def enforcePolicies(self): 
+		self.initializeSATVariables()
+
 		start_t = time.time()
 
 		self.topology.printSwitchMappings()
 		# Add Unreachable Constraints 
 		st = time.time()
-		self.addUnreachableHopConstraints() # Takes 2 seconds for a 78-node fat tree topology. 
+		 
 		print "Unreachable Hop Constraints take ", time.time() - st
 
 		st = time.time()
@@ -81,7 +120,7 @@ class SliceGraphSolver(object) :
 		print "Time taken to solve the policies with Optimistic flag is " + str(end_t - start_t)
 	
 
-	def addReachabilityPolicy(self, predicate, src, dst, waypoints=None) :
+	def addReachabilityPolicy(self, src, dst, waypoints=None) :
 		""" src = next hop switch of source host(s) 
 			dst = next hop switch of destination host(s)
 			W = Waypoint Set (list of nodes) """
@@ -96,7 +135,7 @@ class SliceGraphSolver(object) :
 				W.append(self.topology.getSwID(str(w)))
 
 		# Add policy to PDB : 
-		pc = self.pdb.addReachabilityPolicy(predicate, srcSw, dstSw, W)
+		pc = self.pdb.addReachabilityPolicy(TrueNP(), srcSw, dstSw, W)
 		return pc
 
 	def addTrafficIsolationPolicy(self, policy1, policy2) : 
@@ -136,27 +175,27 @@ class SliceGraphSolver(object) :
 
 		return policiesSat
 
-	def addUnreachableHopConstraints(self) :
-		swCount = self.topology.getSwitchCount()
-		for sw in range(1,swCount+1) :
-			# \forall n such that n \notin neighbours or n \not\eq sw . F(sw,n,pc,1) = False
-			# Cannot reach nodes which are not neighbours in step 1. 
-			# This constraint is needed because there is no restriction from the above constraints 
-			# regarding the values of non-neighbours.
-			neighbours = self.topology.getSwitchNeighbours(sw)
-			for s in range(1,swCount + 1) :
-				if s == sw or s in neighbours : 
-					continue
-				else :
-					for n in neighbours : 
-						self.z3Solver.add(ForAll(self.pc, self.Fwd(n,sw,s,self.pc) == False))
-						self.z3Solver.add(ForAll(self.pc, self.Fwd(s,sw,n,self.pc) == False))
-					for s1 in range(1, swCount+1) :
-						if s1 == sw or s1 in neighbours : 
-							continue
-						else :
-							self.z3Solver.add(ForAll(self.pc, self.Fwd(s1,sw,s,self.pc) == False))
-							self.z3Solver.add(ForAll(self.pc, self.Fwd(s,sw,s1,self.pc) == False))
+	# def addUnreachableHopConstraints(self) :
+	# 	swCount = self.topology.getSwitchCount()
+	# 	for sw in range(1,swCount+1) :
+	# 		# \forall n such that n \notin neighbours or n \not\eq sw . F(sw,n,pc,1) = False
+	# 		# Cannot reach nodes which are not neighbours in step 1. 
+	# 		# This constraint is needed because there is no restriction from the above constraints 
+	# 		# regarding the values of non-neighbours.
+	# 		neighbours = self.topology.getSwitchNeighbours(sw)
+	# 		for s in range(1,swCount + 1) :
+	# 			if s == sw or s in neighbours : 
+	# 				continue
+	# 			else :
+	# 				for n in neighbours : 
+	# 					self.z3Solver.add(ForAll(self.pc, self.Fwd(n,sw,s,self.pc) == False))
+	# 					self.z3Solver.add(ForAll(self.pc, self.Fwd(s,sw,n,self.pc) == False))
+	# 				for s1 in range(1, swCount+1) :
+	# 					if s1 == sw or s1 in neighbours : 
+	# 						continue
+	# 					else :
+	# 						self.z3Solver.add(ForAll(self.pc, self.Fwd(s1,sw,s,self.pc) == False))
+	# 						self.z3Solver.add(ForAll(self.pc, self.Fwd(s,sw,s1,self.pc) == False))
 
 
 	def addTopologyConstraints(self, pcStart, pcEnd=0) :
@@ -227,17 +266,6 @@ class SliceGraphSolver(object) :
 		maxPathLen = self.topology.getMaxPathLength()
 		
 		neighbours = self.topology.getSwitchNeighbours(s)
-		# # Base case connecting Fwd and Reach
-		# 
-		# for n in neighbours :
-		# 	# If Fwd rule exists means we can reach in path length 1.
-		# 	self.z3Solver.add(Implies(self.Fwd(s,s,n,pc), self.Reach(n,pc,1)))
-		
-		# for i in swList:
-		# 	if i == s : continue
-		# 	self.z3Solver.add(Implies(self.Reach(i,pc,1), self.Fwd(s,i,pc)))
-
-		# Add assertions to ensure f(s,*) leads to a valid neighbour. 
 
 		# Ensuring one rule from the start.
 		sourceAssert = False
@@ -348,10 +376,8 @@ class SliceGraphSolver(object) :
 		def getPathHelper(prev, curr, pc) :
 			path = [curr]
 			swCount = self.topology.getSwitchCount()
-			
-			for sw in range(1, swCount + 1) :
-				if sw == curr : 
-					continue
+			neighbours = self.topology.getSwitchNeighbours(curr)
+			for sw in neighbours :
 				if is_true(self.fwdmodel.evaluate(self.Fwd(prev,curr,sw,pc))) :
 					path.extend(getPathHelper(curr,sw,pc))
 					return path
@@ -361,17 +387,20 @@ class SliceGraphSolver(object) :
 		src = self.pdb.getSourceSwitch(pc) 
 		return getPathHelper(src, src, pc)
 
-	
+	def push(self) :
+		self.z3Solver.push()
+
+	def pop(self) :
+		self.z3Solver.pop()  
+
 s = SliceGraphSolver()
 s.addSliceNode(1, ["a", "b", "c", "d"])
 s.addSliceNode(2, ["a", "b"])
 s.addSliceNode(3, ["c", "d"])
-pc1 = s.addReachabilityPolicy(TrueNP(), 1, 3, [2])
-pc2 = s.addReachabilityPolicy(TrueNP(), 1, 3)
+pc1 = s.addReachabilityPolicy(1, 3, [2])
+pc2 = s.addReachabilityPolicy(1, 3)
 s.addTrafficIsolationPolicy(pc1, pc2)
 s.enforcePolicies()
-
-
 
 
 
