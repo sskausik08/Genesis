@@ -64,6 +64,8 @@ class Topology(object):
 		self.sliceGraph = nx.Graph()
 		self.maxPathLength = 10
 
+		self.labels = dict()
+
 		self.useTopologySlicingFlag = False
 
 	def getName(self) :
@@ -202,6 +204,9 @@ class Topology(object):
 	def useTopologySlicing(self) :
 		self.useTopologySlicingFlag = True
 
+	def resetTopologySlicing(self) :
+		self.useTopologySlicingFlag = False
+
 	def createSliceGraph(self):
 		""" Creates the slice graph of the topology. Each slice is represented 
 		by a single node and slices are connected by a single edge if there exists 
@@ -220,7 +225,7 @@ class Topology(object):
 		# self.setSlice(10,3)
 		# self.setSlice(11,3)
 		print nx.minimum_edge_cut(self.graph)
-		(edgecuts, partitions) = metis.part_graph(graph=self.graph, nparts=10, contig=True)
+		(edgecuts, partitions) = metis.part_graph(graph=self.graph, nparts=5, contig=True)
 		i = 0	
 		for node in self.graph.nodes():
 			sw = int(node)
@@ -292,6 +297,7 @@ class Topology(object):
 			for n in neighbours : 
 				if n in swList2 :
 					sliceEdges.append([sw,n])
+		print "SliceEdges", slice1, slice2, sliceEdges
 		return sliceEdges
 
 	def getSliceGraph(self) :
@@ -302,13 +308,14 @@ class Topology(object):
 		for slice1 in self.slices : 
 			sliceEdgeKeys = []
 			for slice2 in self.slices : 
+				if slice1 == slice2 : continue
 				sliceEdges = self.getSliceEdges(slice1, slice2)
 				for edge in sliceEdges : 
 					if edge[0] < edge[1] :
 						sliceEdgeKeys.append(str(edge[0]) + "-" + str(edge[1]))
 					else : 
 						sliceEdgeKeys.append(str(edge[1]) + "-" + str(edge[0]))
-			sliceGraph.append([slice, sliceEdgeKeys])
+			sliceGraph.append([slice1, sliceEdgeKeys])
 
 		return sliceGraph
 
@@ -319,20 +326,32 @@ class Topology(object):
 		""" checks if the path is a valid path in the topology"""
 		i = 0
 		while i < len(path) - 1:
-			neighbours = self.getSwitchNeighbours(path[i])
+			neighbours = self.neighbours[path[i]]
 			if path[i+1] not in neighbours :
+				print "pathi", self.getSwName(path[i]), self.getSwName(path[i+1])
 				return False
 			i += 1
 		return True
 
+	def findPathCount(self, src, dst) :
+		srcSw = self.getSwID(src)
+		dstSw = self.getSwID(dst)
+
+		return len(list(nx.all_simple_paths(self.graph, source=srcSw, target=dstSw, cutoff=self.getMaxPathLength())))
+
+	def assignLabels(self) :
+		""" Currently for fattrees """
+		swCount = self.getSwitchCount()
+		for sw in range(1, swCount+1) :
+			swName = self.getSwName(sw)
+			self.labels[sw] = swName[0]
+
+		print self.labels
+
+	def getLabel(self, sw) :
+		return self.labels[sw]
 
 
 
-
-
-
-
-
-t = Topology("a")
 
 

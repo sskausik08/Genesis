@@ -204,6 +204,9 @@ class PolicyDatabase(object) :
 			validFlag = topology.validatePath(self.getPath(pc)) and self.validateReachabilityPolicy(pc) and self.validateIsolationPolicy(pc)
 			if not validFlag : 
 				print "Policy " + str(pc) + " not enforced correctly."
+				print "Topology Validation", topology.validatePath(self.getPath(pc))
+				print "Reachability Validation", self.validateReachabilityPolicy(pc)
+				print "Isolation Validation", self.validateIsolationPolicy(pc)
 				return False
 		return True
 
