@@ -11,7 +11,7 @@ from Tactic import *
 
 
 class GenesisSynthesiser(object) :
-	def __init__(self, topo, Optimistic=True, TopoSlicing=True, pclist=None) :
+	def __init__(self, topo, Optimistic=True, TopoSlicing=False, pclist=None, useTactic=False, noOptimizations=False) :
 		self.topology = topo
 
 		# Network Forwarding Function
@@ -63,6 +63,7 @@ class GenesisSynthesiser(object) :
 		self.LINK_RECOVERY_COUNT = 4
 
 		# Optimistic Synthesis Flags 
+		self.noOptimizationsFlag = noOptimizations
 		self.OptimisticSynthesisFlag = Optimistic
 		self.recoveryFlag = False
 		self.topologySlicingFlag = TopoSlicing
@@ -82,8 +83,12 @@ class GenesisSynthesiser(object) :
 		self.z3SolveCount = 0	# Count of z3 solve instances. 
 
 		# Tactic variables 
-		self.useTacticFlag = True
+		self.useTacticFlag = useTactic
 		self.tactics = dict()
+
+		# SMT Variables
+		self.smtlib2file = open("genesis-z3-smt", 'w')
+
 
 	def initializeSATVariables(self) :
 		swCount = self.topology.getSwitchCount()
@@ -102,6 +107,12 @@ class GenesisSynthesiser(object) :
 			for pc in range(pcRange) :
 				for plen in range(1,maxPathLen +1) :
 					self.reachvars[sw][pc][plen] = Bool(str(sw)+":"+str(pc)+":"+str(plen))
+
+		if self.useTacticFlag : 
+			self.rhovars = [[0 for x in range(pcRange)] for x in range(swCount + 1)]
+			for sw in range(swCount + 1):
+				for pc in range(pcRange) :
+					self.rhovars[sw][pc] = Int(str(sw)+"::"+str(pc))
 
 
 	def Fwd(self, sw1, sw2, pc) :
@@ -169,7 +180,8 @@ class GenesisSynthesiser(object) :
 
 		start_t = time.time()
 		# Enforce Tactics 
-		self.useTactic()
+		if self.useTacticFlag : 
+			self.useTactic()
 
 		# Generate the assertions.
 		self.pdb.createRelationalClasses()
@@ -203,6 +215,9 @@ class GenesisSynthesiser(object) :
 
 				self.synthesisSuccessFlag = self.synthesisSuccessFlag & rcGraphSat
 			self.enforceMulticastPolicies()		
+		elif self.noOptimizationsFlag : 
+			self.synthesisSuccessFlag = self.enforceUnicastPoliciesNoOptimizations()
+			self.enforceMulticastPolicies()		
 		else : 
 			self.synthesisSuccessFlag = self.enforceUnicastPolicies()
 			self.enforceMulticastPolicies()		
@@ -214,43 +229,14 @@ class GenesisSynthesiser(object) :
 			for pc in self.OptimisticPaths : 
 				self.pdb.addPath(pc, self.OptimisticPaths[pc])
 			self.pdb.validatePolicies(self.topology)
-			self.pdb.printPaths(self.topology)
+			#self.pdb.printPaths(self.topology)
 		else :
 			self.pdb.validatePolicies(self.topology)
-			self.pdb.printPaths(self.topology)
+			#self.pdb.printPaths(self.topology)
 
 		self.printProfilingStats()
 
-		print self.fwdmodel[self.rho]
-		print self.fwdmodel["delta"]
-
-
-	def addPolicies(self) :
-		self.count = 399
-		pc = dict()
-		
-		for i in range(self.count) : 
-			s = random.randint(0,8)
-			d = random.randint(9,17)
-			pc[i] = self.addReachabilityPolicy(TrueNP(),"e"+str(s), "e"+str(d))
-
-
-		# self.addReachabilityPolicy(str(100), 15, str(100), 16)
-		# self.addTrafficIsolationPolicy([str(100), str(100)] , [str(0), str(0)])
-		# self.addTrafficIsolationPolicy([str(100), str(100)] , [str(10), str(10)])
-		# self.addTrafficIsolationPolicy([str(100), str(100)] , [str(1), str(1)])
-		# self.addTrafficIsolationPolicy([str(100), str(100)] , [str(11), str(11)])
-
-		# for i in range(self.count - 3) :
-		# 	self.addTrafficIsolationPolicy([str(i), str(i)] , [str(i+3), str(i+3)])
-		
-		# for i in range(self.count - 4) :
-		# 	self.addTrafficIsolationPolicy([str(i), str(i)] , [str(i+4), str(i+4)])
-
-		# for i in range(self.count - 10):
-		# 	self.addTrafficIsolationPolicy([str(i), str(i)] , [str(i+7), str(i+7)])
-		
-
+	
 	def addReachabilityPolicy(self, predicate, src, dst, waypoints=None, pathlen=None) :
 		""" src = next hop switch of source host(s) 
 			dst = next hop switch of destination host(s)
@@ -371,6 +357,47 @@ class GenesisSynthesiser(object) :
 
 
 				self.z3Solver.pop()
+
+	def enforceUnicastPoliciesNoOptimizations(self) :
+		""" Enforcement of Policies stored in the PDB. """
+
+
+		# switchTableConstraints = self.pdb.getSwitchTableConstraints()
+		# self.addSwitchTableConstraints(switchTableConstraints)  # Adding switch table constraints.
+
+		linkCapacityConstraints = self.pdb.getLinkCapacityConstraints()
+		self.addLinkConstraints(range(self.pdb.getPacketClassRange()), linkCapacityConstraints)
+
+		
+		# Synthesize all together.
+		for pc in range(self.pdb.getPacketClassRange()) :
+			if not self.pdb.isMulticast(pc) : 
+				policy = self.pdb.getReachabilityPolicy(pc)
+				self.addReachabilityConstraints(srcIP=policy[0][0], srcSw=policy[0][2], dstIP=policy[0][1], dstSw=policy[0][3],pc=pc, W=policy[1], pathlen=policy[2]) 
+
+		# Add traffic constraints. 
+		for pno in range(self.pdb.getIsolationPolicyCount()) :
+			pcs = self.pdb.getIsolationPolicy(pno)
+			pc1 = pcs[0]
+			pc2 = pcs[1]
+			self.addTrafficIsolationConstraints(pc1, pc2)
+		
+		self.smtlib2file.write(toSMT2Benchmark(self.z3Solver, logic="QF_LIA"))
+		
+		# Apply synthesis
+		solvetime = time.time()
+		modelsat = self.z3Solver.check()
+		self.z3solveTime += time.time() - solvetime
+		if modelsat == z3.sat : 
+			print "Solver return SAT"
+			self.fwdmodel = self.z3Solver.model()
+			for pc in range(self.pdb.getPacketClassRange()) :
+				self.pdb.addPath(pc, self.getPathFromModel(pc))		
+		else :
+			print "Input Policies not realisable"
+		
+
+
 
 	def enforceGraphPolicies(self, rcGraph, differentPathConstraints=None, recovery=True) :
 		""" Synthesis of the Relational Class Graph given some path constraints (isolation and inequality). 
@@ -1134,11 +1161,16 @@ class GenesisSynthesiser(object) :
 					beforeHopAssertions.append(And(self.Fwd(isw, i, pc) == True, self.Reach(isw, pc, pathlen - 1) == True))
 					constime += time.time() - ct
 					
-				
-				#path2Assert = And(path2Assert, Implies(self.Reach(i,pc,pathlen), beforeHopAssert))
-				at = time.time()
-				self.z3Solver.add(Implies(self.Reach(i,pc,pathlen), Or(*beforeHopAssertions)))
-				addtime += time.time() - at
+				if self.useTacticFlag and pc in self.tactics : 
+					# Tactic exists. Modify the constraint to incorporate sink state. 
+					sink = self.tactics[pc].getSinkState()
+					at = time.time()
+					self.z3Solver.add(Implies(self.Reach(i,pc,pathlen), Or(*beforeHopAssertions)))
+					addtime += time.time() - at
+				else : 
+					at = time.time()
+					self.z3Solver.add(Implies(self.Reach(i,pc,pathlen), Or(*beforeHopAssertions)))
+					addtime += time.time() - at
 
 
 		print "constime", constime
@@ -2098,6 +2130,7 @@ class GenesisSynthesiser(object) :
 
 		return deltaAssert
 
+
 	def addrhoConstraints(self, t, pc):
 		""" t is the tactic """
 
@@ -2121,6 +2154,9 @@ class GenesisSynthesiser(object) :
 		st = time.time()
 
 		for i in swList :
+			# Add non-sink constraints.
+			# self.z3Solver.add(Not(self.rho(i,pc) == sink)) 
+
 			ineighbours = self.topology.getSwitchNeighbours(i) 
 
 			for isw in ineighbours : 
@@ -2129,7 +2165,7 @@ class GenesisSynthesiser(object) :
 				self.z3Solver.add(tacticAssert)
 					
 			
-		print "Path3 " + str(time.time() - st)
+		print "Tactic constraints time is " + str(time.time() - st)
 
 		# Add source constraint.
 		sourceAsserts = []
@@ -2139,7 +2175,15 @@ class GenesisSynthesiser(object) :
 		self.z3Solver.add(Or(*sourceAsserts))
 
 
-
+def toSMT2Benchmark(f, status="unknown", name="benchmark", logic=""):
+	v = (Ast * 0)()
+	if isinstance(f, Solver):
+		a = f.assertions()
+		if len(a) == 0:
+			f = BoolVal(True)
+		else:
+			f = And(*a)
+		return Z3_benchmark_to_smtlib_string(f.ctx_ref(), name, logic, status, "", 0, v, f.as_ast())
 
 
 
