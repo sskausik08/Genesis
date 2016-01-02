@@ -8,6 +8,8 @@ import metis
 import networkx as nx
 from SliceGraphSolver import SliceGraphSolver
 from Tactic import *
+import re
+from subprocess import *
 
 
 class GenesisSynthesiser(object) :
@@ -16,7 +18,7 @@ class GenesisSynthesiser(object) :
 
 		# Network Forwarding Function
 		#self.Fwd = Function('Fwd', IntSort(), IntSort(), IntSort(), BoolSort())
-		#self.Reach = Function('Reach', IntSort(), IntSort(), IntSort(), BoolSort())
+		# self.Reach = Function('Reach', IntSort(), IntSort(), IntSort(), BoolSort())
 
 		# Packet Classes to be synthesized.
 		self.stackfwdvars = dict()
@@ -86,8 +88,14 @@ class GenesisSynthesiser(object) :
 		self.useTacticFlag = useTactic
 		self.tactics = dict()
 
+		# Constraint Stores
+		self.backwardReachPropagationConstraints = dict()
+
 		# SMT Variables
-		self.smtlib2file = open("genesis-z3-smt", 'w')
+		#self.smtlib2file = open("genesis-z3-smt", 'w')
+
+		# Initialize SMT LIB2 file. 
+		#self.smtlib2file.write("; Genesis Generated SMT-LIB2 \n(set-info :status unknown)\n(set-logic QF_LIA)\n")
 
 
 	def initializeSATVariables(self) :
@@ -102,17 +110,16 @@ class GenesisSynthesiser(object) :
 			for sw2 in range(1,swCount+1):
 				for pc in range(pcRange) :
 					self.fwdvars[sw1][sw2][pc] = Bool(str(sw1)+"-"+str(sw2)+":"+str(pc))
+					#self.smtlib2file.write("(declare-fun |" + str(str(sw1)+"-"+str(sw2)+":"+str(pc)) + "| () Bool)\n")
+
 
 		for sw in range(1,swCount+1):
 			for pc in range(pcRange) :
 				for plen in range(1,maxPathLen +1) :
 					self.reachvars[sw][pc][plen] = Bool(str(sw)+":"+str(pc)+":"+str(plen))
+					#self.smtlib2file.write("(declare-fun |" + str(str(sw)+":"+str(pc)+"*"+str(plen)) + "| () Bool)\n")
 
-		if self.useTacticFlag : 
-			self.rhovars = [[0 for x in range(pcRange)] for x in range(swCount + 1)]
-			for sw in range(swCount + 1):
-				for pc in range(pcRange) :
-					self.rhovars[sw][pc] = Int(str(sw)+"::"+str(pc))
+		
 
 
 	def Fwd(self, sw1, sw2, pc) :
@@ -129,6 +136,21 @@ class GenesisSynthesiser(object) :
 			else : 
 				return self.fwdvars[sw1][sw2][pc]
 
+	def FwdStr(self, sw1, sw2, pc):
+		if self.pdb.getOriginalPacketClass(pc) <> pc : 
+			neighbours = self.topology.getSwitchNeighbours(sw2)
+			if sw1 not in neighbours : 
+				return "false"
+			else : 
+				return "|" + str(str(sw1)+"-"+str(sw2)+":"+str(pc)) + "|"
+		else : 
+			neighbours = self.topology.getSwitchNeighbours(sw2)
+			if sw1 not in neighbours : 
+				return "false"
+			else : 
+				return "|" + str(str(sw1)+"-"+str(sw2)+":"+str(pc)) + "|"
+
+
 	def Reach(self, sw, pc, plen) :
 		if self.pdb.getOriginalPacketClass(pc) <> pc : 
 			if plen == 0 :
@@ -144,6 +166,22 @@ class GenesisSynthesiser(object) :
 				else : 
 					return False
 			return self.reachvars[sw][pc][plen]
+
+	def ReachStr(self, sw, pc, plen) :
+		if self.pdb.getOriginalPacketClass(pc) <> pc : 
+			if plen == 0 :
+				if sw == self.pdb.getSourceSwitch(pc) : 
+					return "true"
+				else : 
+					return "false"
+			return "|" + str(str(sw)+":"+str(pc)+"*"+str(plen)) + "|"
+		else : 
+			if plen == 0 :
+				if sw == self.pdb.getSourceSwitch(pc) : 
+					return "true"
+				else : 
+					return "false"
+			return "|" + str(str(sw)+":"+str(pc)+"*"+str(plen)) + "|"
 
 	def pushSATVariables(self, pclist):
 		swCount = self.topology.getSwitchCount()
@@ -229,10 +267,10 @@ class GenesisSynthesiser(object) :
 			for pc in self.OptimisticPaths : 
 				self.pdb.addPath(pc, self.OptimisticPaths[pc])
 			self.pdb.validatePolicies(self.topology)
-			#self.pdb.printPaths(self.topology)
+			self.pdb.printPaths(self.topology)
 		else :
 			self.pdb.validatePolicies(self.topology)
-			#self.pdb.printPaths(self.topology)
+			self.pdb.printPaths(self.topology)
 
 		self.printProfilingStats()
 
@@ -315,7 +353,6 @@ class GenesisSynthesiser(object) :
 				print "Input Policies not realisable"
 		else : 			
 			for relClass in relClasses :
-				
 				# Independent Synthesis of relClass.
 				self.z3Solver.push()
 				reachtime = time.time()
@@ -381,9 +418,11 @@ class GenesisSynthesiser(object) :
 			pc1 = pcs[0]
 			pc2 = pcs[1]
 			self.addTrafficIsolationConstraints(pc1, pc2)
-		
-		self.smtlib2file.write(toSMT2Benchmark(self.z3Solver, logic="QF_LIA"))
-		
+
+
+		#self.smtlib2file.write("(check-sat)\n")
+		#self.smtlib2file.write("(get-model)\n")
+
 		# Apply synthesis
 		solvetime = time.time()
 		modelsat = self.z3Solver.check()
@@ -395,7 +434,6 @@ class GenesisSynthesiser(object) :
 				self.pdb.addPath(pc, self.getPathFromModel(pc))		
 		else :
 			print "Input Policies not realisable"
-		
 
 
 
@@ -905,20 +943,41 @@ class GenesisSynthesiser(object) :
 
 					# Add assertions to ensure f(sw,*) leads to a valid neighbour. 
 					topoAssert = False
-					unreachedAssert = True
+					unreachedAssertions = []
+					
+					unreachedAssertionsStr = ""
+					topoAssertStr = ""
 
 					for n in neighbours : 
 						#neighbourAssert = self.F(sw,n,pc,1) == True
-						neighbourAssert = self.Fwd(sw,n,pc) == True
-						unreachedAssert = And(unreachedAssert, self.Fwd(sw,n,pc) == False)
+						neighbourAssertions = [self.Fwd(sw,n,pc) == True]
+						unreachedAssertions.append(self.Fwd(sw,n,pc) == False)
+
+						neighbourAssertionsStr = self.FwdStr(sw,n,pc)
+						unreachedAssertionsStr += " (not " + self.FwdStr(sw,n,pc) + ") "
+
 						for n1 in neighbours :
 							if n == n1 : 
 								continue
 							else :
-								neighbourAssert = And(neighbourAssert, self.Fwd(sw,n1,pc) == False)
+								neighbourAssertions.append(self.Fwd(sw,n1,pc) == False)
+
+								neighbourAssertionsStr += " (not " + self.FwdStr(sw,n1,pc) + ") "
+						
+						neighbourAssert = And(*neighbourAssertions)
 						topoAssert = Or(topoAssert, neighbourAssert)
 
+						neighbourAssertStr = " (and " + neighbourAssertionsStr + ") "
+						topoAssertStr += neighbourAssertStr
+
+					unreachedAssert = And(*unreachedAssertions)
 					topoAssert = Or(topoAssert, unreachedAssert) # Either one forwarding rule or no forwarding rules.
+
+					unreachedAssertStr = " (and " + unreachedAssertionsStr + ") "
+					topoAssertStr = " (or " + topoAssertStr + " " + unreachedAssertStr +  ") "
+					#self.smtlib2file.write("; Forwarding Rule Constraint for switch " + str(sw) + "\n")
+					#self.smtlib2file.write("( assert " + topoAssertStr + ")\n")
+
 					self.z3numberofadds += 1
 					addtime = time.time() # Profiling z3 add.
 					self.z3Solver.add(topoAssert)
@@ -1028,7 +1087,20 @@ class GenesisSynthesiser(object) :
 			pathlen = self.fatTreePathLengthOptimizations(W)
 		
 		# Add Reachability in atmost pathlen steps constraint. 
-		reachAssert = self.Reach(dstSw,pc,pathlen) == True
+		#reachAssert = self.Reach(dstSw,pc,pathlen) == True
+
+		reachAssertions = []
+		reachAssertionsStr = ""
+		for plen in range(1,pathlen+1) :
+			reachAssertions.append(self.Reach(dstSw,pc,plen))
+
+			reachAssertionsStr += self.ReachStr(dstSw,pc,plen) + " "
+
+		reachAssert = Or(*reachAssertions)
+
+		#self.smtlib2file.write("; Destination Reachability \n")
+		#self.smtlib2file.write("(assert (or " + reachAssertionsStr + " ))\n")
+
 		self.z3numberofadds += 1
 		addtime = time.time() # Profiling z3 add.
 		self.z3Solver.add(reachAssert)
@@ -1040,8 +1112,14 @@ class GenesisSynthesiser(object) :
 		neighbours = self.topology.getSwitchNeighbours(dstSw)
 		
 		destAssert = True
+		destAssertStr = ""
 		for n in neighbours :
 			destAssert = And(destAssert, self.Fwd(dstSw,n,pc) == False)
+
+			destAssertStr += " (not " + self.FwdStr(dstSw,n,pc) + " )"
+
+		destAssertStr = "(and " + destAssertStr + ")"
+		#self.smtlib2file.write("(assert " + destAssertStr + ")\n")
 
 		self.z3numberofadds += 1
 		addtime = time.time() # Profiling z3 add.
@@ -1051,11 +1129,24 @@ class GenesisSynthesiser(object) :
 		if not W == None : 
 			# Add the Waypoint Constraints. 
 			for w in W :
-				reachAssert = self.Reach(w,pc,pathlen) == True
+				#self.smtlib2file.write("; Waypoint " + str(w) + " Reachability \n")			
+					
+				reachAssertions = []
+				reachAssertionsStr = ""
+				for plen in range(1,pathlen+1) :
+					reachAssertions.append(self.Reach(w,pc,plen))
+
+					reachAssertionsStr += self.ReachStr(w,pc,plen) + " "
+				
+				reachAssert = Or(*reachAssertions)
+
 				self.z3numberofadds += 1
 				addtime = time.time() # Profiling z3 add.
 				self.z3Solver.add(reachAssert)
 				self.z3addTime += time.time() - addtime
+
+				#self.smtlib2file.write("(assert (or " + reachAssertionsStr + " ))\n")
+				
 
 		st = time.time()
 		# Add Path Constraints for this flow to find the forwarding model for this flow.
@@ -1087,64 +1178,24 @@ class GenesisSynthesiser(object) :
 			swList = self.topology.getTopologySlice(self.topology.getSliceNumber(s))
 		else : 
 			swList = range(1,swCount + 1)
-		
-		# Base case connecting Fwd and Reach
+
 		neighbours = self.topology.getSwitchNeighbours(s)
-		for n in neighbours :
-			# If Fwd rule exists means we can reach in path length 1.
-			self.z3numberofadds += 1
-			addtime = time.time() # Profiling z3 add.
-			self.z3Solver.add(Implies(self.Fwd(s,n,pc), self.Reach(n,pc,1)))
-			self.z3addTime += time.time() - addtime
 		
-		for i in swList:
-			if i == s : continue
-			self.z3numberofadds += 1
-			addtime = time.time() # Profiling z3 add.
-			self.z3Solver.add(Implies(self.Reach(i,pc,1), self.Fwd(s,i,pc)))
-			self.z3addTime += time.time() - addtime
-
-		# # Add assertions to ensure f(s,*) leads to a valid neighbour. 
-		# neighbourAssert = False
-		# for n in neighbours :
-		# 	neighbourAssert = Or(neighbourAssert, And(self.Fwd(s,n,pc) == True, self.Reach(n, pc, 1)))
-
-		args = []
+		srcAssertions = []
+		srcAssertionsStr = ""
 		for n in neighbours : 
-			args.append(And(self.Fwd(s,n,pc) == True, self.Reach(n, pc, 1)))
-		self.z3Solver.add(Or(*args))
+			srcAssertions.append(And(self.Fwd(s,n,pc) == True, self.Reach(n, pc, 1)))
 
-		# self.z3numberofadds += 1
-		# addtime = time.time() # Profiling z3 add.
-		# self.z3Solver.add(neighbourAssert)
-		# self.z3addTime += time.time() - addtime
+			srcAssertionsStr += " (and " + self.FwdStr(s,n,pc) + " " + self.ReachStr(n, pc, 1) + " )"
 
-		# Existence of a rule implies we can reach node. 
-		for i in swList :
-			if i == s : 
-				continue
+		self.z3numberofadds += 1
+		addtime = time.time() # Profiling z3 add.
+		self.z3Solver.add(Or(*srcAssertions))
+		self.z3addTime += time.time() - addtime
 
-			ineighbours = self.topology.getSwitchNeighbours(i)
-			for isw in ineighbours :
-				ruleAssert = Implies(self.Fwd(i,isw,pc), self.Reach(i,pc,maxPathLen))
-				self.z3numberofadds += 1
-				addtime = time.time() # Profiling z3 add.
-				self.z3Solver.add(ruleAssert)
-				self.z3addTime += time.time() - addtime
+		#self.smtlib2file.write(";Source forwarding assertions \n")
+		#self.smtlib2file.write("(assert (or" + srcAssertionsStr + "))\n")
 
-		st = time.time()
-		for i in swList :
-			if i == s : 
-				continue
-
-			for pathlen in range(2,maxPathLen+1) :	
-				reachedAssert = (Implies (self.Reach(i,pc,pathlen-1), self.Reach(i,pc,pathlen)))
-				self.z3numberofadds += 1
-				addtime = time.time() # Profiling z3 add.
-				self.z3Solver.add(reachedAssert)
-				self.z3addTime += time.time() - addtime
-	
-		print "Path1 " + str(time.time() - st)
 		st = time.time()
 		constime = 0
 		addtime = 0
@@ -1152,25 +1203,39 @@ class GenesisSynthesiser(object) :
 			if i == s : 
 				continue
 
-			ineighbours = self.topology.getSwitchNeighbours(i) 
+			#self.smtlib2file.write("; Backward Reachability Propagation for switch " + str(i) + "\n")
 
+			ineighbours = self.topology.getSwitchNeighbours(i) 
 			for pathlen in range(1,maxPathLen+1) :
-				beforeHopAssertions = []
-				for isw in ineighbours : 
-					ct = time.time()
-					beforeHopAssertions.append(And(self.Fwd(isw, i, pc) == True, self.Reach(isw, pc, pathlen - 1) == True))
-					constime += time.time() - ct
-					
-				if self.useTacticFlag and pc in self.tactics : 
-					# Tactic exists. Modify the constraint to incorporate sink state. 
-					sink = self.tactics[pc].getSinkState()
-					at = time.time()
-					self.z3Solver.add(Implies(self.Reach(i,pc,pathlen), Or(*beforeHopAssertions)))
-					addtime += time.time() - at
+				constraintKey = str(i) + ":" + str(pc) + "*" + str(pathlen)
+				if constraintKey in self.backwardReachPropagationConstraints : 
+					# Reuse constraint object if already created.
+					backwardReachConstraint = self.backwardReachPropagationConstraints[constraintKey]
 				else : 
-					at = time.time()
-					self.z3Solver.add(Implies(self.Reach(i,pc,pathlen), Or(*beforeHopAssertions)))
-					addtime += time.time() - at
+					# Create constraint.
+					beforeHopAssertions = []
+
+					#beforeHopAssertionsStr = ""
+					for isw in ineighbours : 
+						ct = time.time()
+						beforeHopAssertions.append(And(self.Fwd(isw, i, pc) == True, self.Reach(isw, pc, pathlen - 1) == True))
+						constime += time.time() - ct
+
+						#beforeHopAssertionsStr += "(and " + self.FwdStr(isw, i, pc) + " " + self.ReachStr(isw, pc, pathlen - 1) + ") "
+
+					backwardReachConstraint = Implies(self.Reach(i,pc,pathlen), Or(*beforeHopAssertions))
+					
+				at = time.time()	
+				self.z3Solver.add(backwardReachConstraint)
+				addtime += time.time() - at
+
+				#beforeHopAssertStr = "(=> " + self.ReachStr(i,pc,pathlen) + " (or " + beforeHopAssertionsStr + " ))"
+				#self.smtlib2file.write("(assert " + beforeHopAssertStr + " )\n")
+
+				# Store constraint for reuse. 
+				constraintKey = str(i) + ":" + str(pc) + "*" + str(pathlen)
+				if constraintKey not in self.backwardReachPropagationConstraints :
+					self.backwardReachPropagationConstraints[constraintKey] = backwardReachConstraint
 
 
 		print "constime", constime
@@ -1178,31 +1243,21 @@ class GenesisSynthesiser(object) :
 		print "Path3 " + str(time.time() - st)
 		st = time.time()
 
-		for i in swList :
-			if i == s : 
-				continue
-
-			# if Fwd rule exists, node should be reachable.
-			ineighbours = self.topology.getSwitchNeighbours(i)
-
-			for isw in ineighbours :
-				self.z3numberofadds += 1
-				addtime = time.time() # Profiling z3 add.
-				self.z3Solver.add(Implies(self.Fwd(i,isw,pc), self.Reach(i,pc,maxPathLen)))
-				self.z3addTime += time.time() - addtime
-
 
 	def addTrafficIsolationConstraints(self, pc1, pc2) : 
 		""" Adding constraints for Isolation Policy enforcement of traffic for packet classes (end-points) ep1 and ep2. """
 
 		swCount = self.topology.getSwitchCount()
 		for sw in range(1, swCount + 1) :
+			#self.smtlib2file.write("; Traffic Isolation Constraints for switch " + str(sw) + "\n")
 			for n in self.topology.getSwitchNeighbours(sw) :
 				isolateAssert = Not( And (self.Fwd(sw,n,pc1) == True, self.Fwd(sw,n,pc2) == True))
 				self.z3numberofadds += 1
 				addtime = time.time() # Profiling z3 add.
 				self.z3Solver.add(isolateAssert)	
 				self.z3addTime += time.time() - addtime
+
+				#self.smtlib2file.write("(assert (not (and " + self.FwdStr(sw,n,pc1) + " " + self.FwdStr(sw,n,pc2) + ")))\n")
 
 	def addSliceTrafficIsolationConstraints(self, slice, pc1, pc2) : 
 		""" Adding constraints for Isolation Policy enforcement of traffic for packet classes (end-points) ep1 and ep2. """
@@ -2122,12 +2177,14 @@ class GenesisSynthesiser(object) :
 		self.tactics[pc] = tactic
 		
 	def delta(self, state, label) :
+		st = time.time()
 		delta = self.currentTactic.getDelta()
 		sink = self.currentTactic.getSinkState()
 		deltaAssert = sink
 		for transition in delta :
 			deltaAssert = If(And(state == transition[0], label == transition[1]), transition[2], deltaAssert)
 
+		print "delta time", time.time() - st
 		return deltaAssert
 
 
@@ -2155,7 +2212,7 @@ class GenesisSynthesiser(object) :
 
 		for i in swList :
 			# Add non-sink constraints.
-			# self.z3Solver.add(Not(self.rho(i,pc) == sink)) 
+			self.z3Solver.add(Not(self.rho(i,pc) == sink)) 
 
 			ineighbours = self.topology.getSwitchNeighbours(i) 
 
@@ -2167,13 +2224,87 @@ class GenesisSynthesiser(object) :
 			
 		print "Tactic constraints time is " + str(time.time() - st)
 
-		# Add source constraint.
-		sourceAsserts = []
-		print t.getFinalStates()
-		for f in t.getFinalStates() :
-			sourceAsserts.append(self.rho(src, pc) == f)
-		self.z3Solver.add(Or(*sourceAsserts))
+		# # Add source constraint.
+		# sourceAsserts = []
+		# print t.getFinalStates()
+		# for f in t.getFinalStates() :
+		# 	sourceAsserts.append(self.rho(src, pc) == f)
+		# self.z3Solver.add(Or(*sourceAsserts))
 
+	# SMT Lib2 Functions
+	# def parseModel(self, modelfile) :
+	# 	modelfile = open(modelfile)
+	# 	model = modelfile.read()
+	# 	words = model.split()
+
+	# 	# first word must be sat/unsat.
+	# 	if words[0] == "sat" :
+	# 		print "Solver return SAT"
+
+	# 		# Parse the model.
+	# 		i = 0
+	# 		for i in range(len(words)) : 
+	# 			if words[i] == "(define-fun" : 
+	# 				# i + 1 : Variable, i + 4 : Value
+	# 				varname = words[i + 1]
+	# 				var = self.parseVariable(str(varname))
+
+	# 				if var <> None : 
+	# 					# Reach/Fwd model
+	# 					if words[i+4].count("true") > 0 :
+	# 						var = True
+	# 						print varname, "true"
+	# 					elif words[i+4].count("false") > 0 :
+	# 						var = False
+	# 					else :
+	# 						# Should not be here. End.
+	# 						print "Invalid model value. Exit now."
+	# 						exit(0)
+
+	# 		# Model values set. Get Paths now.
+	# 		# for pc in range(self.pdb.getPacketClassRange()) :
+	# 		# 	self.pdb.addPath(pc, self.getPathFromParsedModel(pc))	
+
+	# 	elif words[0] == "unsat" :
+	# 		print "Solver return Unsat"
+
+	# def parseVariable(self, variable) :
+	# 	""" Parse the variable name and return reference """
+	# 	if variable.count("-") > 0 : 
+	# 		# Fwd Variable
+	# 		variable = variable.replace("|", " ")
+	# 		variable = variable.replace("-", " ")
+	# 		variable = variable.replace(":", " ")
+	# 		fields = variable.split()
+	# 		return self.Fwd(int(fields[0]), int(fields[1]), int(fields[2]))
+
+	# 	elif variable.count("*") > 0 :
+	# 		# Reach Variable
+	# 		variable = variable.replace("|", " ")
+	# 		variable = variable.replace("*", " ")
+	# 		variable = variable.replace(":", " ")
+	# 		fields = variable.split()
+	# 		return self.Reach(int(fields[0]), int(fields[1]), int(fields[2]))
+	# 	else : 
+	# 		return None
+
+	# def getPathFromParsedModel(self, pc) :
+	# 	def getPathHelper(s, pc) :
+	# 		path = [s]
+	# 		neighbours = self.topology.getSwitchNeighbours(s)
+	# 		for sw in neighbours:
+	# 			if sw == s : 
+	# 				continue
+	# 			if self.Fwd(s,sw,pc) == True:
+	# 				path.extend(getPathHelper(sw,pc))
+	# 				return path
+	# 			else : 
+	# 				print type(self.Fwd(s,sw,pc))
+			
+	# 		return path
+
+	# 	return getPathHelper(self.pdb.getSourceSwitch(pc), pc)
+			
 
 def toSMT2Benchmark(f, status="unknown", name="benchmark", logic=""):
 	v = (Ast * 0)()
