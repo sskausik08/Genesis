@@ -334,9 +334,6 @@ class PolicyDatabase(object) :
 
 		self.relClassGraphs.append(G)
 
-		edges = nx.minimum_edge_cut(G)
-		print edges, "Edge"
-
 		return G
 
 	def getRelationalClassGraphs(self) :

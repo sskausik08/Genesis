@@ -54,11 +54,12 @@ class GenesisSynthesiser(object) :
 
 		# Optimistic Synthesis Constants. 
 		self.CUT_THRESHOLD = 10
-		self.BASE_GRAPH_SIZE_THRESHOLD = 10
-		self.CURR_GRAPH_SIZE_THRESHOLD = 3
+		self.BASE_GRAPH_SIZE_THRESHOLD = 50
+		self.CURR_GRAPH_SIZE_THRESHOLD = 50
+		self.MIN_GRAPH_THRESHOLD = 3
 
 		# Different Solution Recovery Variables. 
-		self.DIFF_SOL_RETRY_COUNT = 4
+		self.DIFF_SOL_RETRY_COUNT = 10
 		self.ResetOldSolutionsFlag = False
 
 		# Link Capacity Recovery Variables
@@ -223,7 +224,7 @@ class GenesisSynthesiser(object) :
 
 		# Generate the assertions.
 		self.pdb.createRelationalClasses()
-		assert self.pdb.relationalClassCreationFlag == True 
+		assert self.pdb.relationalClassCreationFlag 
 
 		st = time.time()
 		if(not self.OptimisticSynthesisFlag) or self.addGlobalTopoFlag :
@@ -267,10 +268,10 @@ class GenesisSynthesiser(object) :
 			for pc in self.OptimisticPaths : 
 				self.pdb.addPath(pc, self.OptimisticPaths[pc])
 			self.pdb.validatePolicies(self.topology)
-			self.pdb.printPaths(self.topology)
+			#self.pdb.printPaths(self.topology)
 		else :
 			self.pdb.validatePolicies(self.topology)
-			self.pdb.printPaths(self.topology)
+			#self.pdb.printPaths(self.topology)
 
 		self.printProfilingStats()
 
@@ -575,112 +576,166 @@ class GenesisSynthesiser(object) :
 				(graphSat, synPaths) = self.enforceGraphPolicies(rcGraph,differentPathConstraints)
 			return (graphSat, synPaths)
 
+		
 		# Optimistic Synthesis of rcGraph.
-		(edgecuts, partitions) = metis.part_graph(graph=rcGraph, nparts=2, contig=True) # Note : Metis overhead is minimal.
+		# Find mimimum cut of rcGraph
+		st = time.time()
+		edgecuts = nx.minimum_edge_cut(rcGraph)
+		et = time.time() - st
+		print "MinCut time", et
+		rcCopy = rcGraph.copy()
+		rcCopy.remove_edges_from(edgecuts)
+		smallest_cc = min(nx.connected_components(rcCopy), key=len)
+		
+		# If smallest_cc > 3, then a good minimum cut exists, otherwise, the minimum cut would simply return a set of 1 or 2 vertices.
+		if len(smallest_cc) < self.MIN_GRAPH_THRESHOLD :
+			# Use METIS equipartitioning.
+			(edgecuts, partitions) = metis.part_graph(graph=rcGraph, nparts=2, contig=True) # Note : Metis overhead is minimal.
 
-		# If the min-cut between the two partitions is greater than a threshold, dont partition. 
-		no_attempts = 10
+			# If the min-cut between the two partitions is greater than a threshold, dont partition. 
+			no_attempts = 10
 
-		random.seed(time.time())
-		while edgecuts > self.CUT_THRESHOLD and no_attempts > 0:
-			# try to partition into 4 and combining them with a random seed.
-			print "Attempting repartitions"
-			(edgecuts, partitions) = metis.part_graph(graph=rcGraph, nparts=4, contig=True) # Note : Metis overhead is minimal.
+			random.seed(time.time())
+			while edgecuts > self.CUT_THRESHOLD and no_attempts > 0:
+				# try to partition into 4 and combining them with a random seed.
+				print "Attempting repartitions"
+				(edgecuts, partitions) = metis.part_graph(graph=rcGraph, nparts=4, contig=True) # Note : Metis overhead is minimal.
 
-			# Combine partitions and check if edgecut is less than threshold.
-			ind = 0
-			for ind in range(len(partitions)) :
-				if partitions[ind] == 1 and no_attempts % 2 == 0: partitions[ind] = 0
-				if partitions[ind] > 1 and no_attempts % 2 == 0: partitions[ind] = 1
+				# Combine partitions and check if edgecut is less than threshold.
+				ind = 0
+				for ind in range(len(partitions)) :
+					if partitions[ind] == 1 and no_attempts % 2 == 0: partitions[ind] = 0
+					if partitions[ind] > 1 and no_attempts % 2 == 0: partitions[ind] = 1
 
-				if partitions[ind] % 2 == 0 and no_attempts % 2 == 1: partitions[ind] = 0
-				if partitions[ind] % 2 == 1 and no_attempts % 2 == 1: partitions[ind] = 1
-				ind += 1
+					if partitions[ind] % 2 == 0 and no_attempts % 2 == 1: partitions[ind] = 0
+					if partitions[ind] % 2 == 1 and no_attempts % 2 == 1: partitions[ind] = 1
+					ind += 1
 
-			ind = 0
-			# Recompute edgecuts.
-			pclist1 = []
-			pclist2 = []
+				ind = 0
+				# Recompute edgecuts.
+				pclist1 = []
+				pclist2 = []
+				for node in rcGraph.nodes():
+					pc = int(node)
+					if partitions[ind] == 1 : 
+						# Partition 1. 
+						pclist1.append(pc)
+					if partitions[ind] == 2 : 
+						# Partition 2. 
+						pclist2.append(pc)
+
+				edgecuts = 0
+				for pc1 in pclist1 : 
+					ipcs = self.pdb.getIsolatedPolicies(pc1)
+					for ipc in ipcs :
+						if ipc in pclist2 :
+							# cut-edge.
+							edgecuts += 1	
+
+				no_attempts -= 1
+
+			if no_attempts < 1 and edgecuts > self.CUT_THRESHOLD: 
+				# Could not find a min-edge cut below CUT threshold. 
+				(graphSat, synPaths) = self.enforceGraphPolicies(rcGraph,differentPathConstraints)
+				return (graphSat, synPaths)
+
+			# Graph Partitioned in two. Apply Optimistic Synthesis on both of them. 
+			# Propagate the first graph solutions as constraints to second. 
+
+			# Create the Graphs.
+			rcGraph1 = nx.Graph()
+			rcGraph2 = nx.Graph()
+			
+			OptimisticSolCount1 = 0
+			OptimisticSolCount2 = 0
+
+			rc1empty = True
+			rc2empty = True
+			i = 0
+
 			for node in rcGraph.nodes():
 				pc = int(node)
-				if partitions[ind] == 1 : 
-					# Partition 1. 
-					pclist1.append(pc)
-				if partitions[ind] == 2 : 
-					# Partition 2. 
-					pclist2.append(pc)
+				solCount = 0
+				
+				# Find Optimistic paths which are isolated to pc. 
+				isolatedPcs = self.pdb.getIsolatedPolicies(pc)
+				for ipc in isolatedPcs :
+					if ipc in self.OptimisticPaths : 
+						solCount += 1
 
-			edgecuts = 0
-			for pc1 in pclist1 : 
-				ipcs = self.pdb.getIsolatedPolicies(pc1)
-				for ipc in ipcs :
-					if ipc in pclist2 :
-						# cut-edge.
-						edgecuts += 1	
+				if partitions[i] == 0 :
+					rcGraph1.add_node(int(rcGraph.node[pc]['switch']), switch=str(rcGraph.node[pc]['switch'])) 
+					rc1empty = False
+					OptimisticSolCount1 += solCount
 
-			no_attempts -= 1
+				elif partitions[i] == 1 :
+					rcGraph2.add_node(int(rcGraph.node[pc]['switch']), switch=str(rcGraph.node[pc]['switch'])) 
+					rc2empty = False
+					OptimisticSolCount2 += solCount
+				i += 1
 
-		if no_attempts < 1 and edgecuts > self.CUT_THRESHOLD: 
-			# Could not find a min-edge cut below CUT threshold. 
-			(graphSat, synPaths) = self.enforceGraphPolicies(rcGraph,differentPathConstraints)
-			return (graphSat, synPaths)
+			if rc1empty == True or rc2empty == True: 
+				print "Cannot be partitioned"
+				# Cannot partition the graph further. Apply synthesis. 
+				(graphSat, synPaths) = self.enforceGraphPolicies(rcGraph,differentPathConstraints)
+				return (graphSat, synPaths)
 
-		# Graph Partitioned in two. Apply Optimistic Synthesis on both of them. 
-		# Propagate the first graph solutions as constraints to second. 
-
-		# Create the Graphs.
-		rcGraph1 = nx.Graph()
-		rcGraph2 = nx.Graph()
-		
-		OptimisticSolCount1 = 0
-		OptimisticSolCount2 = 0
-
-		rc1empty = True
-		rc2empty = True
-		i = 0
-
-		for node in rcGraph.nodes():
-			pc = int(node)
-			solCount = 0
+			for edge in rcGraph.edges() :
+				if edge[0] in rcGraph1.nodes() and edge[1] in rcGraph1.nodes() :
+					# Internal edge. Add to rcGraph1.
+					rcGraph1.add_edge(*edge)
+				elif edge[0] in rcGraph2.nodes() and edge[1] in rcGraph2.nodes() :
+					# Internal edge. Add to rcGraph1.
+					rcGraph2.add_edge(*edge)
 			
-			# Find Optimistic paths which are isolated to pc. 
-			isolatedPcs = self.pdb.getIsolatedPolicies(pc)
-			for ipc in isolatedPcs :
-				if ipc in self.OptimisticPaths : 
-					solCount += 1
+			# Decide on the order of RCgraph1 and RCgraph2. We must synthesize the graph which has more constraints 
+			# and then the one with less constraints. 
+			if OptimisticSolCount1 < OptimisticSolCount2 : 
+				# Swap the order of graphs.
+				rcGraph1, rcGraph2 = rcGraph2, rcGraph1
 
-			if partitions[i] == 0 :
-				rcGraph1.add_node(int(rcGraph.node[pc]['switch']), switch=str(rcGraph.node[pc]['switch'])) 
-				rc1empty = False
-				OptimisticSolCount1 += solCount
 
-			elif partitions[i] == 1 :
-				rcGraph2.add_node(int(rcGraph.node[pc]['switch']), switch=str(rcGraph.node[pc]['switch'])) 
-				rc2empty = False
-				OptimisticSolCount2 += solCount
-			i += 1
+				print "Swapping the order."
+		else :
+			print "Using min cut"
+			# Use mincut itself. 
+			graphs = list(nx.connected_component_subgraphs(rcCopy)) 	
+			if len(graphs) <> 2 :
+				print "Cannot be partitioned"
+				# Cannot partition the graph further. Apply synthesis. 
+				(graphSat, synPaths) = self.enforceGraphPolicies(rcGraph,differentPathConstraints)
+				return (graphSat, synPaths)
 
-		if rc1empty == True or rc2empty == True: 
-			print "Cannot be partitioned"
-			# Cannot partition the graph further. Apply synthesis. 
-			(graphSat, synPaths) = self.enforceGraphPolicies(rcGraph,differentPathConstraints)
-			return (graphSat, synPaths)
+			rcGraph1 = graphs[0]
+			rcGraph2 = graphs[1]
 
-		for edge in rcGraph.edges() :
-			if edge[0] in rcGraph1.nodes() and edge[1] in rcGraph1.nodes() :
-				# Internal edge. Add to rcGraph1.
-				rcGraph1.add_edge(*edge)
-			elif edge[0] in rcGraph2.nodes() and edge[1] in rcGraph2.nodes() :
-				# Internal edge. Add to rcGraph1.
-				rcGraph2.add_edge(*edge)
-		
-		# Decide on the order of RCgraph1 and RCgraph2. We must synthesize the graph which has more constraints 
-		# and then the one with less constraints. 
-		if OptimisticSolCount1 < OptimisticSolCount2 : 
-			# Swap the order of graphs.
-			rcGraph1, rcGraph2 = rcGraph2, rcGraph1
-			print "Swapping the order."
-	
+			OptimisticSolCount1 = 0
+			OptimisticSolCount2 = 0
+
+			for node in rcGraph1.nodes():
+				pc = int(node)
+				
+				# Find Optimistic paths which are isolated to pc. 
+				isolatedPcs = self.pdb.getIsolatedPolicies(pc)
+				for ipc in isolatedPcs :
+					if ipc in self.OptimisticPaths : 
+						OptimisticSolCount1 += 1
+
+			for node in rcGraph2.nodes():
+				pc = int(node)
+				
+				# Find Optimistic paths which are isolated to pc. 
+				isolatedPcs = self.pdb.getIsolatedPolicies(pc)
+				for ipc in isolatedPcs :
+					if ipc in self.OptimisticPaths : 
+						OptimisticSolCount2 += 1
+
+			# Decide on the order of RCgraph1 and RCgraph2. We must synthesize the graph which has more constraints 
+			# and then the one with less constraints. 
+			if OptimisticSolCount1 < OptimisticSolCount2 : 
+				# Swap the order of graphs.
+				rcGraph1, rcGraph2 = rcGraph2, rcGraph1
+
 
 		(rcGraph1Sat, synPaths1) = self.enforceGraphPoliciesOptimistic(rcGraph1, differentPathConstraints)
 
@@ -950,7 +1005,7 @@ class GenesisSynthesiser(object) :
 
 					for n in neighbours : 
 						#neighbourAssert = self.F(sw,n,pc,1) == True
-						neighbourAssertions = [self.Fwd(sw,n,pc) == True]
+						neighbourAssertions = [self.Fwd(sw,n,pc)]
 						unreachedAssertions.append(self.Fwd(sw,n,pc) == False)
 
 						neighbourAssertionsStr = self.FwdStr(sw,n,pc)
@@ -1058,7 +1113,7 @@ class GenesisSynthesiser(object) :
 
 					for n in neighbours : 
 						#neighbourAssert = self.F(sw,n,pc,1) == True
-						neighbourAssert = self.Fwd(sw,n,pc) == True
+						neighbourAssert = self.Fwd(sw,n,pc)
 						unreachedAssert = And(unreachedAssert, self.Fwd(sw,n,pc) == False)
 						for n1 in neighbours :
 							if n == n1 : 
@@ -1184,7 +1239,7 @@ class GenesisSynthesiser(object) :
 		srcAssertions = []
 		srcAssertionsStr = ""
 		for n in neighbours : 
-			srcAssertions.append(And(self.Fwd(s,n,pc) == True, self.Reach(n, pc, 1)))
+			srcAssertions.append(And(self.Fwd(s,n,pc), self.Reach(n, pc, 1)))
 
 			srcAssertionsStr += " (and " + self.FwdStr(s,n,pc) + " " + self.ReachStr(n, pc, 1) + " )"
 
@@ -1218,10 +1273,8 @@ class GenesisSynthesiser(object) :
 					#beforeHopAssertionsStr = ""
 					for isw in ineighbours : 
 						ct = time.time()
-						beforeHopAssertions.append(And(self.Fwd(isw, i, pc) == True, self.Reach(isw, pc, pathlen - 1) == True))
+						beforeHopAssertions.append(And(self.Fwd(isw, i, pc), self.Reach(isw, pc, pathlen - 1)))
 						constime += time.time() - ct
-
-						#beforeHopAssertionsStr += "(and " + self.FwdStr(isw, i, pc) + " " + self.ReachStr(isw, pc, pathlen - 1) + ") "
 
 					backwardReachConstraint = Implies(self.Reach(i,pc,pathlen), Or(*beforeHopAssertions))
 					
@@ -1243,7 +1296,6 @@ class GenesisSynthesiser(object) :
 		print "Path3 " + str(time.time() - st)
 		st = time.time()
 
-
 	def addTrafficIsolationConstraints(self, pc1, pc2) : 
 		""" Adding constraints for Isolation Policy enforcement of traffic for packet classes (end-points) ep1 and ep2. """
 
@@ -1251,7 +1303,7 @@ class GenesisSynthesiser(object) :
 		for sw in range(1, swCount + 1) :
 			#self.smtlib2file.write("; Traffic Isolation Constraints for switch " + str(sw) + "\n")
 			for n in self.topology.getSwitchNeighbours(sw) :
-				isolateAssert = Not( And (self.Fwd(sw,n,pc1) == True, self.Fwd(sw,n,pc2) == True))
+				isolateAssert = Not( And (self.Fwd(sw,n,pc1), self.Fwd(sw,n,pc2)))
 				self.z3numberofadds += 1
 				addtime = time.time() # Profiling z3 add.
 				self.z3Solver.add(isolateAssert)	
@@ -1265,7 +1317,7 @@ class GenesisSynthesiser(object) :
 		swList = self.topology.getTopologySlice(slice)
 		for sw in swList :
 			for n in self.topology.getSwitchNeighbours(sw) :
-				isolateAssert = Not( And (self.Fwd(sw,n,pc1) == True, self.Fwd(sw,n,pc2) == True))
+				isolateAssert = Not( And (self.Fwd(sw,n,pc1), self.Fwd(sw,n,pc2)))
 				self.z3numberofadds += 1
 				addtime = time.time() # Profiling z3 add.
 				self.z3Solver.add(isolateAssert)
@@ -1294,7 +1346,7 @@ class GenesisSynthesiser(object) :
 		i = 0
 		diffPathAssert = True
 		for i in range(len(path) - 1) :
-			diffPathAssert = And(diffPathAssert, self.Fwd(path[i], path[i+1], pc) == True)
+			diffPathAssert = And(diffPathAssert, self.Fwd(path[i], path[i+1], pc))
 
 		self.z3numberofadds += 1
 		addtime = time.time() # Profiling z3 add.
@@ -1310,7 +1362,7 @@ class GenesisSynthesiser(object) :
 			pc = pathConstraint[0]
 			path = pathConstraint[1]
 			for i in range(len(path) - 1) :
-				diffPathAssert = And(diffPathAssert, self.Fwd(path[i], path[i+1], pc) == True)
+				diffPathAssert = And(diffPathAssert, self.Fwd(path[i], path[i+1], pc))
 
 		self.z3numberofadds += 1
 		addtime = time.time() # Profiling z3 add.
@@ -1327,7 +1379,7 @@ class GenesisSynthesiser(object) :
 			path = pathConstraint[1]
 			for i in range(len(path) - 1) :
 				if self.topology.getSliceNumber(path[i]) == slice and self.topology.getSliceNumber(path[i+1]) == slice :
-					diffPathAssert = And(diffPathAssert, self.Fwd(path[i], path[i+1], pc) == True)
+					diffPathAssert = And(diffPathAssert, self.Fwd(path[i], path[i+1], pc))
 
 		self.z3numberofadds += 1
 		addtime = time.time() # Profiling z3 add.
@@ -1432,7 +1484,7 @@ class GenesisSynthesiser(object) :
 			# Default argument. Do normal Multicast.
 			pathlen = self.topology.getMaxPathLength()
 			for dstSw in dstSwList : 
-				reachAssert = self.F(srcSw,dstSw,pc,pathlen) == True
+				reachAssert = self.F(srcSw,dstSw,pc,pathlen)
 				self.z3numberofadds += 1
 				addtime = time.time() # Profiling z3 add.
 				self.z3Solver.add(reachAssert)
@@ -1440,7 +1492,7 @@ class GenesisSynthesiser(object) :
 		else :
 			# Add Reachability in "exactly" pathlen steps constraint. 
 			for dstSw in dstSwList : 
-				reachAssert = self.F(srcSw,dstSw,pc,pathlen) == True
+				reachAssert = self.F(srcSw,dstSw,pc,pathlen)
 				reachAssert = And(reachAssert, self.F(srcSw,dstSw,pc,pathlen - 1) == False)
 				self.z3numberofadds += 1
 				addtime = time.time() # Profiling z3 add.
@@ -1473,7 +1525,7 @@ class GenesisSynthesiser(object) :
 				unreachedAssert = True
 
 				for n in neighbours : 
-					neighbourAssert = self.F(n,dst,pc,1) == True
+					neighbourAssert = self.F(n,dst,pc,1)
 					unreachedAssert = And(unreachedAssert, self.F(n,dst,pc,1) == False)
 					for n1 in neighbours :
 						if n == n1 : 
@@ -1505,7 +1557,7 @@ class GenesisSynthesiser(object) :
 			for n in ineighbours :
 				self.z3numberofadds += 1
 				addtime = time.time() # Profiling z3 add.
-				self.z3Solver.add(Implies(self.F(i,n,pc,1) == True, rankfn(n) > rankfn(i)))
+				self.z3Solver.add(Implies(self.F(i,n,pc,1), rankfn(n) > rankfn(i)))
 				self.z3addTime += time.time() - addtime
 
 	def addBoundConstraints(self, pcRange) :
@@ -1529,7 +1581,7 @@ class GenesisSynthesiser(object) :
 					if not i == dst : 
 						self.z3numberofadds += 1
 						addtime = time.time() # Profiling z3 add.
-						self.z3Solver.add(Implies(self.F(src, i, pc, maxPathLen) == True, self.R(i, pc) == 1))
+						self.z3Solver.add(Implies(self.F(src, i, pc, maxPathLen), self.R(i, pc) == 1))
 						self.z3addTime += time.time() - addtime
 						self.z3numberofadds += 1
 						addtime = time.time() # Profiling z3 add.
@@ -1545,7 +1597,7 @@ class GenesisSynthesiser(object) :
 					if not i == dst :
 						self.z3numberofadds += 1
 						addtime = time.time() # Profiling z3 add.
-						self.z3Solver.add(Implies(self.F(src, i, pc, maxPathLen) == True, self.R(i, pc) == self.R(i, pc-1) + 1))
+						self.z3Solver.add(Implies(self.F(src, i, pc, maxPathLen), self.R(i, pc) == self.R(i, pc-1) + 1))
 						self.z3addTime += time.time() - addtime
 						self.z3numberofadds += 1
 						addtime = time.time() # Profiling z3 add.
@@ -1586,7 +1638,7 @@ class GenesisSynthesiser(object) :
 				if i == 0 :
 					self.z3numberofadds += 1
 					addtime = time.time() # Profiling z3 add.
-					self.z3Solver.add(Implies(self.Fwd(sw1, sw2, pc) == True, self.L(sw1, sw2, pc) == 1))
+					self.z3Solver.add(Implies(self.Fwd(sw1, sw2, pc), self.L(sw1, sw2, pc) == 1))
 					self.z3addTime += time.time() - addtime
 					self.z3numberofadds += 1
 					addtime = time.time() # Profiling z3 add.
@@ -1596,7 +1648,7 @@ class GenesisSynthesiser(object) :
 					prevpc = pclist[i - 1]
 					self.z3numberofadds += 1
 					addtime = time.time() # Profiling z3 add.
-					self.z3Solver.add(Implies(self.Fwd(sw1, sw2, pc) == True, self.L(sw1, sw2, pc) == self.L(sw1, sw2, prevpc) + 1))
+					self.z3Solver.add(Implies(self.Fwd(sw1, sw2, pc), self.L(sw1, sw2, pc) == self.L(sw1, sw2, prevpc) + 1))
 					self.z3addTime += time.time() - addtime
 					self.z3numberofadds += 1
 					addtime = time.time() # Profiling z3 add.
@@ -1789,7 +1841,7 @@ class GenesisSynthesiser(object) :
 			rcGraph = rcGraphs[slice]
 			(rcGraphSat, synPaths) = self.enforceSliceGraphPolicies(slice, rcGraph, differentPathConstraints)
 
-			if rcGraphSat == True :
+			if rcGraphSat :
 				for pc in synPaths : 
 					originalpc = self.pdb.getOriginalPacketClass(pc)
 					self.addSlicePath(slicePaths[originalpc], synPaths[pc], sliceGraphPaths[originalpc])
@@ -2295,7 +2347,7 @@ class GenesisSynthesiser(object) :
 	# 		for sw in neighbours:
 	# 			if sw == s : 
 	# 				continue
-	# 			if self.Fwd(s,sw,pc) == True:
+	# 			if self.Fwd(s,sw,pc):
 	# 				path.extend(getPathHelper(sw,pc))
 	# 				return path
 	# 			else : 

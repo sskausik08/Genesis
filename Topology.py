@@ -224,7 +224,6 @@ class Topology(object):
 		# self.setSlice(9,2)
 		# self.setSlice(10,3)
 		# self.setSlice(11,3)
-		print nx.minimum_edge_cut(self.graph)
 		(edgecuts, partitions) = metis.part_graph(graph=self.graph, nparts=5, contig=True)
 		i = 0	
 		for node in self.graph.nodes():
