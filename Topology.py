@@ -127,29 +127,34 @@ class Topology(object):
 		self.visited = dict() # Stores if swID has been visited
 		self.dfSwList = [] # Stores the swIDs in order of DFS. 
 		self.dfEdges = dict() # Stores the directed edges according to Schmidt's Algorithm.
+		self.backEdges = dict()
 		self.chainEdges = dict() # Store if an edge is part of a chain.
 		self.bridges = []
 		# Initialise variables.
 		for sw in range(1, swCount + 1):
 			self.visited[sw] = False
 			self.dfEdges[sw] = []
+			self.backEdges[sw] = []
 
-		def dfs(sw) :
+		def dfs(sw, parent) :
 			self.dfSwList.append(sw) 
 			self.visited[sw] = True
+			if parent <> None : 
+				self.dfEdges[sw].append(parent)
+
 			for n in self.neighbours[sw] :
 				# Is node visited and not parent. 
 				if self.visited[n] == True: 
 					pos1 = self.dfSwList.index(sw)
 					pos2 = self.dfSwList.index(n)
-					if not pos1 - pos2 == 1 and pos1 > pos2: 
+					if n <> parent and pos2 < pos1: 
 						# Back Edge. Add directed edge n -> sw
-						self.dfEdges[n].append(sw)				
+						self.backEdges[n].append(sw)			
 				else :  
 					# Node not visited. Apply DFS on child.
-					dfs(n)
+					dfs(n, sw)
 
-		dfs(1)
+		dfs(1, None)
 		# Mark all vertices as unself.visited.
 		for sw in range(1, swCount + 1):
 			self.visited[sw] = False
@@ -158,27 +163,30 @@ class Topology(object):
 		#Traverse in order of DFS Tree
 		for sw in self.dfSwList :
 			self.visited[sw] = True
-			for n in self.dfEdges[sw] : 
+			for n in self.backEdges[sw] : 
 				key = str(sw)+"-"+str(n)
+
 				# Back Edge. From Chain.
 				chain = [sw, n]
 
-				# Traverse back edge and back till we reach a self.visited vertex
-				self.visited[n] == True
+				
+				if self.visited[n] == False : 
+					# Traverse back edge and back till we reach a self.visited vertex
+					self.visited[n] = True
 
-				pos = self.dfSwList.index(n) - 1
-				# traverse back to root.
-				while pos > -1 : 
-					swChain = self.dfSwList[pos]			
-					if self.visited[swChain] == False :
-						chain.append(swChain)
-						self.visited[swChain] = True
-					elif self.visited[swChain] == True:
-						# Last element of chain. 
-						chain.append(swChain)
-						break 
-					pos -= 1
+					parent = self.dfEdges[n][0]
+					# traverse back to root.
+					while True : 			
+						if self.visited[parent] == False :
+							chain.append(parent)
+							self.visited[parent] = True
+							parent = self.dfEdges[parent][0]
+						elif self.visited[parent] == True:
+							# Last element of chain. 
+							chain.append(parent)
+							break 
 
+				print chain
 				chains.append(chain)
 
 		# Find all edges not in any chain. Those edges are bridges.
@@ -190,6 +198,7 @@ class Topology(object):
 				else :
 					edge = str(chain[i]) + "-" + str(chain[i+1]) 
 				self.chainEdges[edge] = True
+				print edge
 				i += 1
 
 		for sw in range(1, swCount + 1):
@@ -200,6 +209,26 @@ class Topology(object):
 					if not edge in self.chainEdges :
 						# Edge not in chain. It is a bridge
 						self.bridges.append([sw,n])
+
+		# Allot slices.
+		slice = 0
+		self.bridgeSlices = dict()
+		for chain in chains:
+			noSliceFlag = True
+			chainSlice = None
+			for sw in chain :
+				if sw in self.bridgeSlices :
+					chainSlice = self.bridgeSlices[sw]
+					noSliceFlag = False
+			if noSliceFlag == False : 
+				# Chain part of existing slice.
+				for sw in chain :
+					self.bridgeSlices[sw] = chainSlice
+			else :
+				# Allocate new slice
+				for sw in chain :
+					self.bridgeSlices[sw] = slice
+				slice += 1
 
 	def useTopologySlicing(self) :
 		self.useTopologySlicingFlag = True
