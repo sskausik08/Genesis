@@ -13,7 +13,7 @@ from subprocess import *
 
 
 class GenesisSynthesiser(object) :
-	def __init__(self, topo, Optimistic=True, TopoSlicing=False, pclist=None, useTactic=False, noOptimizations=False) :
+	def __init__(self, topo, Optimistic=True, TopoSlicing=False, pclist=None, useTactic=False, noOptimizations=False, BridgeSlicing=False) :
 		self.topology = topo
 
 		# Network Forwarding Function
@@ -39,9 +39,6 @@ class GenesisSynthesiser(object) :
 		self.count = 20
 		# Policy Database. 
 		self.pdb = PolicyDatabase()
-
-		# Topology Optimizations 
-		self.fatTreeOptimizeFlag = False
 		
 		# Optimistic Synthesis Variables
 		self.OptimisticPaths = dict()  # Stores the solutions obtained during the Optimistic synthesis procedure. 
@@ -70,6 +67,7 @@ class GenesisSynthesiser(object) :
 		self.OptimisticSynthesisFlag = Optimistic
 		self.recoveryFlag = False
 		self.topologySlicingFlag = TopoSlicing
+		self.bridgeSlicingFlag = BridgeSlicing
 		self.synthesisSuccessFlag = True
 
 		# SAT Encoding Flags
@@ -210,6 +208,9 @@ class GenesisSynthesiser(object) :
 				del self.reachvars[pc]
 
 	def enforcePolicies(self): 
+		if self.bridgeSlicingFlag : 
+			self.bridgeSlicingFlag = self.topology.findTopologyBridges()
+
 		self.initializeSATVariables()
 
 		# Topology Slicing : 
@@ -268,10 +269,10 @@ class GenesisSynthesiser(object) :
 			for pc in self.OptimisticPaths : 
 				self.pdb.addPath(pc, self.OptimisticPaths[pc])
 			self.pdb.validatePolicies(self.topology)
-			#self.pdb.printPaths(self.topology)
+			self.pdb.printPaths(self.topology)
 		else :
 			self.pdb.validatePolicies(self.topology)
-			#self.pdb.printPaths(self.topology)
+			self.pdb.printPaths(self.topology)
 
 		self.printProfilingStats()
 
@@ -990,11 +991,27 @@ class GenesisSynthesiser(object) :
 		swCount = self.topology.getSwitchCount()
 		# \forall sw \forall n \in neighbours(sw) and NextHop = {n | F(sw,n,pc,1) = True}. |NextHop| \leq 1 
 		# None or only one of F(sw,n,pc,1) can be true.
-		for sw in range(1,swCount+1) :
-			for pc in range(pcStart, pcEnd) :
-				if not self.pdb.isMulticast(pc) : 
-					""" Unicast packet class """
-					neighbours = self.topology.getSwitchNeighbours(sw)
+		for pc in range(pcStart, pcEnd) :
+			if not self.pdb.isMulticast(pc) :
+				""" Unicast packet class """
+				
+				useBridgeSlicing = False
+				if self.bridgeSlicingFlag :
+					# Find if exists in a bridge slice. 
+					srcSlice = self.topology.getBridgeSliceNumber(self.pdb.getSourceSwitch(pc))
+					dstSlice = self.topology.getBridgeSliceNumber(self.pdb.getDestinationSwitch(pc))
+
+					if srcSlice == dstSlice and srcSlice <> None : 
+						# Path will exist only in this slice.
+						swList = self.topology.getBridgeSlice(srcSlice)
+						useBridgeSlicing = True
+					else :
+						swList = range(1,swCount + 1)
+				else : 
+					swList = range(1,swCount + 1)
+
+				for sw in swList :
+					neighbours = self.topology.getSwitchNeighbours(sw, useBridgeSlicing)
 
 					# Add assertions to ensure f(sw,*) leads to a valid neighbour. 
 					topoAssert = False
@@ -1136,10 +1153,6 @@ class GenesisSynthesiser(object) :
 		if pathlen == 0 :
 			# Default argument. Set to max.
 			pathlen = self.topology.getMaxPathLength()
-
-		# Specific case for a fat tree to apply path length upper bounds. 
-		if self.fatTreeOptimizeFlag :
-			pathlen = self.fatTreePathLengthOptimizations(W)
 		
 		# Add Reachability in atmost pathlen steps constraint. 
 		#reachAssert = self.Reach(dstSw,pc,pathlen) == True
@@ -1210,31 +1223,30 @@ class GenesisSynthesiser(object) :
 		print "Path Constraints time is " + str(et - st)
 		print "total function takes ", time.time() - reachtime
 		
-	def fatTreePathLengthOptimizations(self, W) :
-		""" In a fat tree, source and destination are connected to edge switches. 
-		Assumes all Waypoints are edge switches and provides a upper bound on max length of the path. """
-		IsolationDetour = 4 # To switch from a core switch to another. 
-		minPathLength = IsolationDetour + 4 # Shortest path from one-edge switch to another.  
-
-		if W == None : 
-			return minPathLength
-		else : 
-			if minPathLength + len(W) * 4 > self.topology.getMaxPathLength() :
-				return self.topology.getMaxPathLength() 
-			else :
-				return minPathLength + len(W) * 4
-
 	# Note This functions take the most time for each pc. Look for ways to improve this
 	def addPathConstraints(self, s, pc) :
 		swCount = self.topology.getSwitchCount()
 		maxPathLen = self.topology.getMaxPathLength()
 
+		useBridgeSlicing = False
 		if self.topologySlicingFlag : 
 			swList = self.topology.getTopologySlice(self.topology.getSliceNumber(s))
+		
+		elif self.bridgeSlicingFlag :
+			# Find if exists in a bridge slice. 
+			srcSlice = self.topology.getBridgeSliceNumber(s)
+			dstSlice = self.topology.getBridgeSliceNumber(self.pdb.getDestinationSwitch(pc))
+
+			if srcSlice == dstSlice and srcSlice <> None : 
+				# Path will exist only in this slice.
+				swList = self.topology.getBridgeSlice(srcSlice)
+				useBridgeSlicing = True
+			else :
+				swList = range(1,swCount + 1)
 		else : 
 			swList = range(1,swCount + 1)
 
-		neighbours = self.topology.getSwitchNeighbours(s)
+		neighbours = self.topology.getSwitchNeighbours(s, useBridgeSlicing)
 		
 		srcAssertions = []
 		srcAssertionsStr = ""
@@ -1260,7 +1272,7 @@ class GenesisSynthesiser(object) :
 
 			#self.smtlib2file.write("; Backward Reachability Propagation for switch " + str(i) + "\n")
 
-			ineighbours = self.topology.getSwitchNeighbours(i) 
+			ineighbours = self.topology.getSwitchNeighbours(i, useBridgeSlicing) 
 			for pathlen in range(1,maxPathLen+1) :
 				constraintKey = str(i) + ":" + str(pc) + "*" + str(pathlen)
 				if constraintKey in self.backwardReachPropagationConstraints : 
@@ -1298,11 +1310,44 @@ class GenesisSynthesiser(object) :
 
 	def addTrafficIsolationConstraints(self, pc1, pc2) : 
 		""" Adding constraints for Isolation Policy enforcement of traffic for packet classes (end-points) ep1 and ep2. """
-
+		
 		swCount = self.topology.getSwitchCount()
-		for sw in range(1, swCount + 1) :
+		useBridgeSlicing = False
+
+		# Find bridges for pc1 and pc2.
+		if self.bridgeSlicingFlag :
+			# Find if exists in a bridge slice. 
+			srcSlice1 = self.topology.getBridgeSliceNumber(self.pdb.getSourceSwitch(pc1))
+			dstSlice1 = self.topology.getBridgeSliceNumber(self.pdb.getDestinationSwitch(pc1))
+			srcSlice2 = self.topology.getBridgeSliceNumber(self.pdb.getSourceSwitch(pc2))
+			dstSlice2 = self.topology.getBridgeSliceNumber(self.pdb.getDestinationSwitch(pc2))
+			slice1 = None
+			slice2 = None
+			if srcSlice1 == dstSlice1 and srcSlice1 <> None :
+				slice1 = srcSlice1
+			if srcSlice2 == dstSlice2 and srcSlice2 <> None :
+				slice2 = srcSlice2
+			if slice1 <> None and slice2 <> None :
+				# Both are in bridge slices.
+				if slice1 <> slice2: 
+					# pc1 and pc2 will be isolated naturally. 
+					return
+			if slice1 <> None or slice2 <> None : 
+				# One of them is in a bridge slice. Only add traffic isolation constraints in that slice.
+				if slice1 <> None : 
+					slice = slice1
+				else :
+					slice = slice2
+				swList = self.topology.getBridgeSlice(slice)
+				useBridgeSlicing = True
+			else :
+				swList = range(1, swCount + 1) 
+		else :
+			swList = range(1, swCount + 1) 
+
+		for sw in swList:
 			#self.smtlib2file.write("; Traffic Isolation Constraints for switch " + str(sw) + "\n")
-			for n in self.topology.getSwitchNeighbours(sw) :
+			for n in self.topology.getSwitchNeighbours(sw, useBridgeSlicing) :
 				isolateAssert = Not( And (self.Fwd(sw,n,pc1), self.Fwd(sw,n,pc2)))
 				self.z3numberofadds += 1
 				addtime = time.time() # Profiling z3 add.

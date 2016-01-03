@@ -67,6 +67,7 @@ class Topology(object):
 		self.labels = dict()
 
 		self.useTopologySlicingFlag = False
+		self.useBridgeSlicing = False
 
 	def getName(self) :
 		return self.name
@@ -108,8 +109,16 @@ class Topology(object):
 	def getSwitchCount(self) :
 		return self.networkDatabase.getSwitchCount() - 1
 
-	def getSwitchNeighbours(self, swID) :
-		if self.useTopologySlicingFlag : 
+	def getSwitchNeighbours(self, swID, bridgeSlicing=False) :
+		if bridgeSlicing and self.useBridgeSlicing and swID in self.bridgeSliceMap: 
+			slice = self.bridgeSliceMap[swID]
+			neighbours = self.neighbours[swID] 
+			sliceNeighbours = []
+			for n in neighbours : 
+				if n in self.bridgeSliceMap and slice == self.bridgeSliceMap[n] :
+					sliceNeighbours.append(n)
+			return sliceNeighbours
+		elif self.useTopologySlicingFlag : 
 			# Find the neighbours in the slice. 
 			slice = self.getSliceNumber(swID)
 			neighbours = self.neighbours[swID] 
@@ -186,7 +195,6 @@ class Topology(object):
 							chain.append(parent)
 							break 
 
-				print chain
 				chains.append(chain)
 
 		# Find all edges not in any chain. Those edges are bridges.
@@ -198,7 +206,6 @@ class Topology(object):
 				else :
 					edge = str(chain[i]) + "-" + str(chain[i+1]) 
 				self.chainEdges[edge] = True
-				print edge
 				i += 1
 
 		for sw in range(1, swCount + 1):
@@ -210,25 +217,53 @@ class Topology(object):
 						# Edge not in chain. It is a bridge
 						self.bridges.append([sw,n])
 
+		if len(self.bridges) > 0 : 
+			# bridges exist, set useBridgeSlicing
+			self.useBridgeSlicing = True
+			print "Bridges exist. Use bridge Slicing."
+
 		# Allot slices.
 		slice = 0
-		self.bridgeSlices = dict()
+		self.bridgeSliceMap = dict()
 		for chain in chains:
 			noSliceFlag = True
 			chainSlice = None
 			for sw in chain :
-				if sw in self.bridgeSlices :
-					chainSlice = self.bridgeSlices[sw]
+				if sw in self.bridgeSliceMap :
+					chainSlice = self.bridgeSliceMap[sw]
 					noSliceFlag = False
 			if noSliceFlag == False : 
 				# Chain part of existing slice.
 				for sw in chain :
-					self.bridgeSlices[sw] = chainSlice
+					self.bridgeSliceMap[sw] = chainSlice
 			else :
 				# Allocate new slice
 				for sw in chain :
-					self.bridgeSlices[sw] = slice
+					self.bridgeSliceMap[sw] = slice
 				slice += 1
+
+		self.bridgeSlices = dict()
+		for sw in self.bridgeSliceMap.keys() : 
+			slice = self.bridgeSliceMap[sw]
+			if slice not in self.bridgeSlices : 
+				self.bridgeSlices[slice] = [sw]
+			else :
+				self.bridgeSlices[slice].append(sw)
+
+		return self.useBridgeSlicing
+
+	def getBridgeSlice(self, slice) :
+		if slice in self.bridgeSlices :  
+			return self.bridgeSlices[slice]
+		else :
+			return []
+
+	def getBridgeSliceNumber(self, sw):
+		""" returns the bridge slice number"""
+		if sw in self.bridgeSliceMap : 
+			return self.bridgeSliceMap[sw]
+		else :
+			return None
 
 	def useTopologySlicing(self) :
 		self.useTopologySlicingFlag = True
