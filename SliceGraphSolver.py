@@ -393,14 +393,14 @@ class SliceGraphSolver(object) :
 	def pop(self) :
 		self.z3Solver.pop()  
 
-s = SliceGraphSolver()
-s.addSliceNode(1, ["a", "b", "c", "d"])
-s.addSliceNode(2, ["a", "b"])
-s.addSliceNode(3, ["c", "d"])
-pc1 = s.addReachabilityPolicy(1, 3, [2])
-pc2 = s.addReachabilityPolicy(1, 3)
-s.addTrafficIsolationPolicy(pc1, pc2)
-s.enforcePolicies()
+# s = SliceGraphSolver()
+# s.addSliceNode(1, ["a", "b", "c", "d"])
+# s.addSliceNode(2, ["a", "b"])
+# s.addSliceNode(3, ["c", "d"])
+# pc1 = s.addReachabilityPolicy(1, 3, [2])
+# pc2 = s.addReachabilityPolicy(1, 3)
+# s.addTrafficIsolationPolicy(pc1, pc2)
+# s.enforcePolicies()
 
 
 

@@ -51,8 +51,8 @@ class GenesisSynthesiser(object) :
 
 		# Optimistic Synthesis Constants. 
 		self.CUT_THRESHOLD = 10
-		self.BASE_GRAPH_SIZE_THRESHOLD = 50
-		self.CURR_GRAPH_SIZE_THRESHOLD = 50
+		self.BASE_GRAPH_SIZE_THRESHOLD = 25
+		self.CURR_GRAPH_SIZE_THRESHOLD = 25
 		self.MIN_GRAPH_THRESHOLD = 3
 
 		# Different Solution Recovery Variables. 
@@ -117,9 +117,6 @@ class GenesisSynthesiser(object) :
 				for plen in range(1,maxPathLen +1) :
 					self.reachvars[sw][pc][plen] = Bool(str(sw)+":"+str(pc)+":"+str(plen))
 					#self.smtlib2file.write("(declare-fun |" + str(str(sw)+":"+str(pc)+"*"+str(plen)) + "| () Bool)\n")
-
-		
-
 
 	def Fwd(self, sw1, sw2, pc) :
 		if self.pdb.getOriginalPacketClass(pc) <> pc : 
@@ -242,16 +239,16 @@ class GenesisSynthesiser(object) :
 				rcGraphSat = False
 				self.CURR_GRAPH_SIZE_THRESHOLD = self.BASE_GRAPH_SIZE_THRESHOLD # reset the graph size to base value.
 				
-				while rcGraphSat == False and self.CURR_GRAPH_SIZE_THRESHOLD < self.topology.getSwitchCount() : 
+				while rcGraphSat == False and self.CURR_GRAPH_SIZE_THRESHOLD < self.pdb.getPacketClassRange() : 
 					(rcGraphSat, synPaths) = self.enforceGraphPoliciesOptimistic(rcGraph)
 					if rcGraphSat == False : 
 						# Incremental Graph recovery
 						self.CURR_GRAPH_SIZE_THRESHOLD = self.CURR_GRAPH_SIZE_THRESHOLD * 2 # Doubling the current graph size
 						print "Incrementing the solver graph size to " + str(self.CURR_GRAPH_SIZE_THRESHOLD)
 
-				if rcGraphSat == False :
-					# Apply non-Optimistic synthesis. 
-					self.enforceUnicastPolicies()
+			if rcGraphSat == False :
+				# Apply non-Optimistic synthesis. 
+				self.enforceUnicastPolicies()
 
 				self.synthesisSuccessFlag = self.synthesisSuccessFlag & rcGraphSat
 			self.enforceMulticastPolicies()		
