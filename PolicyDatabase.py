@@ -201,12 +201,16 @@ class PolicyDatabase(object) :
 
 	def validatePolicies(self, topology) :
 		for pc in range(self.getPacketClassRange()) :
-			validFlag = topology.validatePath(self.getPath(pc)) and self.validateReachabilityPolicy(pc) and self.validateIsolationPolicy(pc)
-			if not validFlag : 
-				print "Policy " + str(pc) + " not enforced correctly."
-				print "Topology Validation", topology.validatePath(self.getPath(pc))
-				print "Reachability Validation", self.validateReachabilityPolicy(pc)
-				print "Isolation Validation", self.validateIsolationPolicy(pc)
+			if pc in self.paths : 
+				validFlag = topology.validatePath(self.getPath(pc)) and self.validateReachabilityPolicy(pc) and self.validateIsolationPolicy(pc)
+				if not validFlag : 
+					print "Policy " + str(pc) + " not enforced correctly."
+					print "Topology Validation", topology.validatePath(self.getPath(pc))
+					print "Reachability Validation", self.validateReachabilityPolicy(pc)
+					print "Isolation Validation", self.validateIsolationPolicy(pc)
+					return False
+			else : 
+				print "Policy " + str(pc) + " not enforced."
 				return False
 		return True
 
@@ -399,6 +403,23 @@ class PolicyDatabase(object) :
 		self.sliceEndpointTable = dict()
 		self.sliceWaypointTable = dict()
 		self.originalPacketClasses = dict()
+
+	def writeForwardingRulesToFile(self, topology) :
+		self.fwdRulesFile = open(".genesis-forwarding-rules", 'w')
+		for pc in self.endpointTable.keys() :
+			policy = self.endpointTable[pc]
+			predicate = policy[0]
+			if pc in self.paths : 
+				path = self.getPath(pc)
+			else : 
+				continue
+			i = 0
+			while i < len(path) - 1 :
+				self.fwdRulesFile.write(predicate.getStr() + " : " + topology.getSwName(path[i]) + " > " + topology.getSwName(path[i + 1]) + "\n")
+				i += 1
+
+
+
 
 
 

@@ -12,10 +12,12 @@ class Regex(object):
 		self.isNegated = isNeg
 		print self.regex
 		if self.isNegated : 
-			self.dfa = self.regex.nfaPosition().reversal().toDFA().minimal(complete=False)
+			self.dfa = self.regex.nfaPosition().toDFA().minimal(complete=False)
 			self.dfa = ~self.dfa
+			self.dfa = self.dfa.toDFA().minimal(complete=False)
+
 		else : 
-			self.dfa = self.regex.nfaPosition().reversal().toDFA().minimal(complete=False)
+			self.dfa = self.regex.nfaPosition().toDFA().minimal(complete=False)
 
 	def preprocessDot(self, regexStr) :
 		""" Convert dot to disjunction of all elements in sigma """
@@ -64,6 +66,8 @@ class Tactic(object):
 			self.labelMappings[lb] = i
 			i += 1
 
+		self.sink = None
+
 	def getDFA(self):
 		return self.dfa
 
@@ -79,6 +83,7 @@ class Tactic(object):
 				# Check if accepting. If not, we are done.
 				if s not in self.dfa.Final :
 					# this is sink state. Since automata is minimal, we only have one sink state.
+					self.sink = s
 					return s
 
 		return -1
@@ -107,16 +112,90 @@ class Tactic(object):
 	def getInitialState(self) :
 		return self.dfa.Initial
 
+	def getPaths(self, plen):
+		""" Generate non-sink paths of plen length """
+		# Compute sink.
+		print self.getSinkState()
+
+		print self.getDelta()
+		print self.getFinalStates()
+
+		self.paths = dict()
+		for i in range(1, plen + 1):
+			self.paths[i] = []
+
+		self.neighbours = dict()
+		for lb in self.sigma :
+			self.neighbours[lb] = dict()
+			for i in range(2, plen + 1):
+				self.neighbours[lb][i] = []
+
+		def getPathsHelper(plen) :
+			print "helper", plen
+			paths = self.paths[plen - 1]
+			# Each path in paths will be of the form [<label-list>, final-state]
+			for path in paths : 
+				word = path[0]
+				lastlabel = word[len(word) - 1]
+				state = path[1]
+				transitions = self.dfa.delta[state]
+
+				for lb in transitions.keys() :
+					newword = list(word)
+					newword.append(lb)
+					newstate = transitions[lb]
+					if newstate == self.sink :
+						continue
+					if not self.topology.isLabelConnected(lastlabel, lb):
+						continue
+					# add last-label to neighbours.
+					if lastlabel not in self.neighbours[lb][plen] :
+						self.neighbours[lb][plen].append(lastlabel)
+
+					self.paths[plen].append([newword, newstate])
+
+		# Compute paths of len 1.
+		transitions = self.dfa.delta[self.dfa.Initial]
+		for lb in transitions.keys() :
+			newword = [lb]
+			newstate = transitions[lb]
+			if newstate == self.sink :
+				continue
+			self.paths[1].append([newword, newstate])
+
+		for l in range(2, plen + 1):
+			getPathsHelper(l)
+
+		print self.neighbours
+
+	def getPreviousLabels(self, label, Reach) :
+		return self.neighbours[label][Reach + 1]
 
 
 
 
 
 
-# b1 = Blacklist(".* e .* e .* e .* ", ["a","c","e"])
+
+
+
+
+		
+
+
+
+
+
+
+
+
+
+
+# b1 = Blacklist("e .* e .* e", ["a","c","e"])
 # b2 = Blacklist(".* a .* c .* a .* c .* a .*", ["a","c","e"])
 
 # t = Tactic([b1])
+# t.getPaths(10)
 # print t.getDFA().delta
 # print t.getDFA().Final
 # print t.getSinkState()

@@ -64,7 +64,8 @@ class Topology(object):
 		self.sliceGraph = nx.Graph()
 		self.maxPathLength = 10
 
-		self.labels = dict()
+		# Tactic variable.
+		self.switchLabels = dict()
 
 		self.useTopologySlicingFlag = False
 		self.useBridgeSlicing = False
@@ -404,15 +405,32 @@ class Topology(object):
 
 	def assignLabels(self) :
 		""" Currently for fattrees """
+		self.labelSet = ["a", "c", "e"]
 		swCount = self.getSwitchCount()
 		for sw in range(1, swCount+1) :
 			swName = self.getSwName(sw)
-			self.labels[sw] = swName[0]
+			self.switchLabels[sw] = swName[0]
 
-		print self.labels
+		self.labelneighbours = dict()
+		for label in self.labelSet : 
+			self.labelneighbours[label] = []
+
+		# Build Label adjacency matrix.
+		for sw in range(1, swCount+1) :
+			label = self.switchLabels[sw]
+			neighbours = self.neighbours[sw]
+			for n in neighbours :
+				nlabel = self.switchLabels[n]
+				if nlabel not in self.labelneighbours[label]:
+					self.labelneighbours[label].append(nlabel)
 
 	def getLabel(self, sw) :
-		return self.labels[sw]
+		return self.switchLabels[sw]
+
+	def isLabelConnected(self, label1, label2):
+		""" Returns true if labels are connected """
+		return label1 in self.labelneighbours[label2]
+
 
 
 

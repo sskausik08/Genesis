@@ -77,6 +77,7 @@ class GenesisSynthesiser(object) :
 		self.addGlobalTopoFlag = False
 
 		# Profiling Information.
+		self.z3constraintTime = 0 # Time taken to create the constraints.
 		self.z3addTime = 0 # Time taken to add the constraints.
 		self.z3numberofadds = 0 # Count of adds.
 		self.z3solveTime = 0 # Time taken to solve the constraints. 
@@ -110,7 +111,6 @@ class GenesisSynthesiser(object) :
 				for pc in range(pcRange) :
 					self.fwdvars[sw1][sw2][pc] = Bool(str(sw1)+"-"+str(sw2)+":"+str(pc))
 					#self.smtlib2file.write("(declare-fun |" + str(str(sw1)+"-"+str(sw2)+":"+str(pc)) + "| () Bool)\n")
-
 
 		for sw in range(1,swCount+1):
 			for pc in range(pcRange) :
@@ -216,18 +216,21 @@ class GenesisSynthesiser(object) :
 			self.initializeSliceGraphSolver()
 
 		start_t = time.time()
+		
 		# Enforce Tactics 
 		if self.useTacticFlag : 
+			st = time.time()
 			self.useTactic()
-
+			et = time.time()
+			print "Time taken to create tactic variables is ", et - st
+		
 		# Generate the assertions.
 		self.pdb.createRelationalClasses()
-		assert self.pdb.relationalClassCreationFlag 
 
 		st = time.time()
 		if(not self.OptimisticSynthesisFlag) or self.addGlobalTopoFlag :
 			self.addTopologyConstraints(0, self.pdb.getPacketClassRange())
-		#tprint "Time to add global topology constraints", time.time() - st
+		print "Time to add global topology constraints", time.time() - st
 	
 		if self.OptimisticSynthesisFlag : 
 			rcGraphs = self.pdb.getRelationalClassGraphs()
@@ -239,21 +242,24 @@ class GenesisSynthesiser(object) :
 				rcGraphSat = False
 				self.CURR_GRAPH_SIZE_THRESHOLD = self.BASE_GRAPH_SIZE_THRESHOLD # reset the graph size to base value.
 				
-				while rcGraphSat == False and self.CURR_GRAPH_SIZE_THRESHOLD < self.pdb.getPacketClassRange() : 
+				while rcGraphSat == False and self.CURR_GRAPH_SIZE_THRESHOLD < rcGraph.number_of_nodes() : 
 					(rcGraphSat, synPaths) = self.enforceGraphPoliciesOptimistic(rcGraph)
 					if rcGraphSat == False : 
 						# Incremental Graph recovery
 						self.CURR_GRAPH_SIZE_THRESHOLD = self.CURR_GRAPH_SIZE_THRESHOLD * 2 # Doubling the current graph size
 						print "Incrementing the solver graph size to " + str(self.CURR_GRAPH_SIZE_THRESHOLD)
 
-			if rcGraphSat == False :
-				# Apply non-Optimistic synthesis. 
-				self.enforceUnicastPolicies()
+				if rcGraphSat == False :
+					# Apply non-Optimistic synthesis. 
+					(rcGraphSat, synPaths) = self.enforceGraphPolicies(rcGraph=rcGraph, recovery=False)
 
 				self.synthesisSuccessFlag = self.synthesisSuccessFlag & rcGraphSat
 			self.enforceMulticastPolicies()		
 		elif self.noOptimizationsFlag : 
+			st = time.time()
 			self.synthesisSuccessFlag = self.enforceUnicastPoliciesNoOptimizations()
+			et = time.time()
+			print "No Optimizations time is", et - st
 			self.enforceMulticastPolicies()		
 		else : 
 			self.synthesisSuccessFlag = self.enforceUnicastPolicies()
@@ -267,10 +273,13 @@ class GenesisSynthesiser(object) :
 				self.pdb.addPath(pc, self.OptimisticPaths[pc])
 			self.pdb.validatePolicies(self.topology)
 			self.pdb.printPaths(self.topology)
-		else :
+		elif self.synthesisSuccessFlag and not self.OptimisticSynthesisFlag :
 			self.pdb.validatePolicies(self.topology)
 			self.pdb.printPaths(self.topology)
 
+		self.pdb.validatePolicies(self.topology)
+		self.pdb.printPaths(self.topology)
+		self.pdb.writeForwardingRulesToFile(self.topology)
 		self.printProfilingStats()
 
 	
@@ -315,7 +324,6 @@ class GenesisSynthesiser(object) :
 	def enforceUnicastPolicies(self) :
 		""" Enforcement of Policies stored in the PDB. """
 
-		
 		# Create Relational Packet Classses.
 		relClasses = self.pdb.createRelationalClasses()
 
@@ -391,7 +399,6 @@ class GenesisSynthesiser(object) :
 					for unsatCore in unsatCores :
 						print str(unsatCore)
 
-
 				self.z3Solver.pop()
 
 	def enforceUnicastPoliciesNoOptimizations(self) :
@@ -433,8 +440,6 @@ class GenesisSynthesiser(object) :
 				self.pdb.addPath(pc, self.getPathFromModel(pc))		
 		else :
 			print "Input Policies not realisable"
-
-
 
 	def enforceGraphPolicies(self, rcGraph, differentPathConstraints=None, recovery=True) :
 		""" Synthesis of the Relational Class Graph given some path constraints (isolation and inequality). 
@@ -1011,7 +1016,7 @@ class GenesisSynthesiser(object) :
 					neighbours = self.topology.getSwitchNeighbours(sw, useBridgeSlicing)
 
 					# Add assertions to ensure f(sw,*) leads to a valid neighbour. 
-					topoAssert = False
+					topoAssertions = []
 					unreachedAssertions = []
 					
 					unreachedAssertionsStr = ""
@@ -1020,7 +1025,7 @@ class GenesisSynthesiser(object) :
 					for n in neighbours : 
 						#neighbourAssert = self.F(sw,n,pc,1) == True
 						neighbourAssertions = [self.Fwd(sw,n,pc)]
-						unreachedAssertions.append(self.Fwd(sw,n,pc) == False)
+						unreachedAssertions.append(Not(self.Fwd(sw,n,pc)))
 
 						neighbourAssertionsStr = self.FwdStr(sw,n,pc)
 						unreachedAssertionsStr += " (not " + self.FwdStr(sw,n,pc) + ") "
@@ -1029,18 +1034,19 @@ class GenesisSynthesiser(object) :
 							if n == n1 : 
 								continue
 							else :
-								neighbourAssertions.append(self.Fwd(sw,n1,pc) == False)
+								neighbourAssertions.append(Not(self.Fwd(sw,n1,pc)))
 
 								neighbourAssertionsStr += " (not " + self.FwdStr(sw,n1,pc) + ") "
 						
 						neighbourAssert = And(*neighbourAssertions)
-						topoAssert = Or(topoAssert, neighbourAssert)
+						topoAssertions.append(neighbourAssert)
 
 						neighbourAssertStr = " (and " + neighbourAssertionsStr + ") "
 						topoAssertStr += neighbourAssertStr
 
 					unreachedAssert = And(*unreachedAssertions)
-					topoAssert = Or(topoAssert, unreachedAssert) # Either one forwarding rule or no forwarding rules.
+					topoAssertions.append(unreachedAssert) # Either one forwarding rule or no forwarding rules.
+					topoAssert = Or(*topoAssertions) 
 
 					unreachedAssertStr = " (and " + unreachedAssertionsStr + ") "
 					topoAssertStr = " (or " + topoAssertStr + " " + unreachedAssertStr +  ") "
@@ -1269,8 +1275,24 @@ class GenesisSynthesiser(object) :
 
 			#self.smtlib2file.write("; Backward Reachability Propagation for switch " + str(i) + "\n")
 
-			ineighbours = self.topology.getSwitchNeighbours(i, useBridgeSlicing) 
 			for pathlen in range(1,maxPathLen+1) :
+				ineighbours = self.topology.getSwitchNeighbours(i, useBridgeSlicing) 
+				if self.useTacticFlag and pc in self.tactics :
+					# Use Tactic to reduce constraints.
+					tactic = self.tactics[pc]
+					labels = tactic.getPreviousLabels(self.topology.getLabel(i), pathlen)
+					labelneighbours = []
+					for n in ineighbours : 
+						if self.topology.getLabel(n) in labels :
+							labelneighbours.append(n)
+					if len(labelneighbours) == 0 :
+						# self.Reach(i,pc,pathlen) = False
+						self.z3Solver.add(Not(self.Reach(i,pc,pathlen)))
+						continue
+					else :
+						# Modify the ineighbours
+						ineighbours = labelneighbours
+				
 				constraintKey = str(i) + ":" + str(pc) + "*" + str(pathlen)
 				if constraintKey in self.backwardReachPropagationConstraints : 
 					# Reuse constraint object if already created.
@@ -1280,13 +1302,13 @@ class GenesisSynthesiser(object) :
 					beforeHopAssertions = []
 
 					#beforeHopAssertionsStr = ""
+					ct = time.time()
 					for isw in ineighbours : 
-						ct = time.time()
 						beforeHopAssertions.append(And(self.Fwd(isw, i, pc), self.Reach(isw, pc, pathlen - 1)))
-						constime += time.time() - ct
-
+						
 					backwardReachConstraint = Implies(self.Reach(i,pc,pathlen), Or(*beforeHopAssertions))
-					
+					constime += time.time() - ct
+
 				at = time.time()	
 				self.z3Solver.add(backwardReachConstraint)
 				addtime += time.time() - at
@@ -1699,6 +1721,7 @@ class GenesisSynthesiser(object) :
 			i += 1
 
 	def getPathFromModel(self, pc) :
+		#exit(0)
 		def getPathHelper(s, pc) :
 			path = [s]
 			neighbours = self.topology.getSwitchNeighbours(s)
@@ -2255,17 +2278,23 @@ class GenesisSynthesiser(object) :
 		print "Number of z3 adds to the solver are ", self.z3numberofadds
 
 	def useTactic(self) :
-		b1 = Blacklist(".* e .* e .* e .*", ["a","c","e"])
-		b2 = Blacklist(".* a c a c a .*", ["a","c","e"])
+		b1 = Blacklist("e .* e .* e", ["a","c","e"])
+		b2 = Whitelist("e .* e",  ["a","c","e"])
 
 		self.topology.assignLabels()
 		t = Tactic([b1, b2], self.topology)
 
+		st = time.time()
+		t.getPaths(11)
+		et = time.time()
+		print et - st
 		self.addTactic(t, 0)
+		self.addTactic(t, 1)
+		self.addTactic(t, 2)
 
-		self.rho = Function('rho', IntSort(), IntSort(), IntSort())
+		# self.rho = Function('rho', IntSort(), IntSort(), IntSort())
 
-		self.addrhoConstraints(t, 0)
+		# self.addrhoConstraints(t, 0)
 
 	def addTactic(self, tactic, pc) :
 		self.tactics[pc] = tactic
