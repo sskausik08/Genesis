@@ -10,6 +10,7 @@ from SliceGraphSolver import SliceGraphSolver
 from Tactic import *
 import re
 from subprocess import *
+from collections import deque
 
 
 class GenesisSynthesiser(object) :
@@ -996,6 +997,10 @@ class GenesisSynthesiser(object) :
 		for pc in range(pcStart, pcEnd) :
 			if not self.pdb.isMulticast(pc) :
 				""" Unicast packet class """
+
+				if not self.pdb.hasWaypoints(pc) :
+					# Dont need to have topology forwarding constraints
+					continue
 				
 				useBridgeSlicing = False
 				if self.bridgeSlicingFlag :
@@ -1218,6 +1223,17 @@ class GenesisSynthesiser(object) :
 
 				#self.smtlib2file.write("(assert (or " + reachAssertionsStr + " ))\n")
 				
+		# Weird Reach Constraint.
+		dstneighbours = self.topology.getSwitchNeighbours(dstSw)
+		# Only want one switch rule from neighbours of dst to dst. (thus ensuring a single path to destination)
+		singlePathAssertions = []
+		for n in dstneighbours : 
+			ruleAssertions = [self.Fwd(n, dstSw, pc)]
+			for n1 in dstneighbours :
+				if n <> n1 : 
+					ruleAssertions.append(Not(self.Fwd(n1, dstSw, pc)))
+			singlePathAssertions.append(And(*ruleAssertions))
+		self.z3Solver.add(Or(*singlePathAssertions))
 
 		st = time.time()
 		# Add Path Constraints for this flow to find the forwarding model for this flow.
@@ -1721,7 +1737,7 @@ class GenesisSynthesiser(object) :
 			i += 1
 
 	def getPathFromModel(self, pc) :
-		#exit(0)
+		return self.getBFSModelPath(pc)
 		def getPathHelper(s, pc) :
 			path = [s]
 			neighbours = self.topology.getSwitchNeighbours(s)
@@ -1759,6 +1775,34 @@ class GenesisSynthesiser(object) :
 				return paths
 
 		return getPathHelper(self.pdb.getSourceSwitch(pc), pc)
+
+	def getBFSModelPath(self, pc):
+		src = self.pdb.getSourceSwitch(pc)
+		dst = self.pdb.getDestinationSwitch(pc)
+
+		bfstree = dict()
+		visited = dict()
+
+		swQueue = deque([src])
+		while len(swQueue) > 0 :
+			sw = swQueue.popleft()
+			visited[sw] = True
+			if sw == dst :
+				path = [dst]
+				nextsw = bfstree[sw]
+				while nextsw <> src :
+					path.append(nextsw)
+					nextsw = bfstree[nextsw]
+				path.append(nextsw)
+				# Reverse path.
+				path.reverse()
+				return path
+
+			neighbours = self.topology.getSwitchNeighbours(sw)
+			for n in neighbours : 
+				if n not in visited and is_true(self.fwdmodel.evaluate(self.Fwd(sw,n,pc))) :
+					bfstree[n] = sw
+					swQueue.append(n)
 
 	def enforceChangedPolicies(self):
 		# A model already exists. Synthesis of newly added policies. 

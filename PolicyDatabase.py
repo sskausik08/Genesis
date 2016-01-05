@@ -62,6 +62,14 @@ class PolicyDatabase(object) :
 			policy.append(0)
 		return policy
 
+	def hasWaypoints(self, pc):
+		""" Returns true or false if pc has waypoints """
+		if pc not in self.endpointTable : 
+			return False
+		elif self.waypointTable[pc] == [] :
+			return False
+		else : 
+			return True
 
 	def addPath(self, pc, path) :
 		self.paths[pc] = path
