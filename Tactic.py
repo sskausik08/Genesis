@@ -112,8 +112,8 @@ class Tactic(object):
 	def getInitialState(self) :
 		return self.dfa.Initial
 
-	def getPaths(self, plen):
-		""" Generate non-sink paths of plen length """
+	def findValidNeighbours(self, plen):
+		""" Generate non-sink paths of plen length to find valid previous neighbours """
 		# Compute sink.
 		print self.getSinkState()
 
@@ -133,16 +133,13 @@ class Tactic(object):
 		def getPathsHelper(plen) :
 			print "helper", plen
 			paths = self.paths[plen - 1]
-			# Each path in paths will be of the form [<label-list>, final-state]
+			# Each path in paths will be of the form [lastlabel, final-state]
 			for path in paths : 
-				word = path[0]
-				lastlabel = word[len(word) - 1]
+				lastlabel = path[0]
 				state = path[1]
 				transitions = self.dfa.delta[state]
 
 				for lb in transitions.keys() :
-					newword = list(word)
-					newword.append(lb)
 					newstate = transitions[lb]
 					if newstate == self.sink :
 						continue
@@ -152,16 +149,16 @@ class Tactic(object):
 					if lastlabel not in self.neighbours[lb][plen] :
 						self.neighbours[lb][plen].append(lastlabel)
 
-					self.paths[plen].append([newword, newstate])
+					self.paths[plen].append([lb, newstate])
 
 		# Compute paths of len 1.
 		transitions = self.dfa.delta[self.dfa.Initial]
 		for lb in transitions.keys() :
-			newword = [lb]
+			lastlabel = lb
 			newstate = transitions[lb]
 			if newstate == self.sink :
 				continue
-			self.paths[1].append([newword, newstate])
+			self.paths[1].append([lastlabel, newstate])
 
 		for l in range(2, plen + 1):
 			getPathsHelper(l)

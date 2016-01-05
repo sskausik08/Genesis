@@ -1738,19 +1738,6 @@ class GenesisSynthesiser(object) :
 
 	def getPathFromModel(self, pc) :
 		return self.getBFSModelPath(pc)
-		def getPathHelper(s, pc) :
-			path = [s]
-			neighbours = self.topology.getSwitchNeighbours(s)
-			for sw in neighbours:
-				if sw == s : 
-					continue
-				if is_true(self.fwdmodel.evaluate(self.Fwd(s,sw,pc))) :
-					path.extend(getPathHelper(sw,pc))
-					return path
-			
-			return path
-
-		return getPathHelper(self.pdb.getSourceSwitch(pc), pc)
 
 	def getMulticastPathFromModel(self, pc) :
 		def getPathHelper(s, pc) :
@@ -2329,7 +2316,7 @@ class GenesisSynthesiser(object) :
 		t = Tactic([b1, b2], self.topology)
 
 		st = time.time()
-		t.getPaths(11)
+		t.findValidNeighbours(11)
 		et = time.time()
 		print et - st
 		self.addTactic(t, 0)
