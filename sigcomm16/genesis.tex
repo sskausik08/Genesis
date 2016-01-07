@@ -65,7 +65,7 @@ The bare minimum need is \emph{reachability} for hosts from ingress to egress sw
 %[Isolation] 
 With the advent of multi-tenant cloud services, a desired feature cloud providers need to support is various Quality of Service guarantees. The current Service Level Agreements (SLA) provided are centered around compute, storage, or Internet traffic. The lack of a good network management system, there exists no provisions for providing SLAs in terms of network performance guarantees among the VMs. Lack of network guarantees leads to unpredictability of performance for distributed applications. Tenants may have to run VMs for a longer time, because the network turns out to be a bottleneck. This leads to increased expense for tenants. Also, multi-tenant clouds are susceptible to network attacks. For example, if two tenants share a link in the datacenter, one tenant could hog the bandwidth on the link, and the other tenant would suffer due to unequal distribution of bandwidth. To combat this, cloud operators rate-limit the VMs, but this can reduce link utilization as tenants may not be using the complete share of their bandwidth. An approach to remove interference between tenant flows is to ensure the tenant flows do not share links in the datacenter, and recent datacenter topologies like fat-trees provides multiple paths from one layer to another and thus, we can route different tenants through different paths. Thus, support for link isolation policies is a very important feature for cloud operators. 
 
-There has been a lot of work in the field of policy enforcement in networks, like bandwidth provisioning in Merlin \cite{Merlin}, and middlebox policy enforcement in SIMPLE \cite{simple}. However, the approach followed in these works are catered to the specific policies, and thus, difficult to extend it to, for example, provide isolation of paths. An ideal policy enforcement system for network operators would support complex and diverse policies, and thus an important feature is \emph{generality} of the approach, so that it can be extended to enforce custom policies required by the operator. To this end, we propose applying \emph{synthesis} to the problem of polcy enforcement by use of SMT-solvers.
+There has been a lot of work in the field of policy enforcement in networks, like bandwidth provisioning in Merlin \cite{Merlin}, and middlebox policy enforcement in SIMPLE \cite{simple}. However, the approach followed in these works are catered to the specific policies, and thus, difficult to extend it to, for example, provide isolation of paths. An ideal policy enforcement system for network operators would support complex and diverse policies, and thus an important feature is \emph{generality} of the approach, so that it can be extended to enforce custom policies required by the operator. To this end, we propose applying \emph{synthesis} to the problem of policy enforcement by use of SMT-solvers.
 %[Synthesis of Controllers]
 
 In recent years, the space of program synthesis has seen great progress, and in the context of SDNs, controller synthesis \cite{netegg}. The work on controller synthesis is towards enforcing switch-level behaviour, for example, learning switches or firewalls. However, when dealing with enterprise and datacenter networks, network operators need support for specifying end-to-end proactive policies without the need to program individual switch behaviour. Also, policies useful to operators are proactive (not dependent on the actual packets flowing), and this enables to enforce policies by synthesis of switch-table rules, and using a skeleton controller to deploy the forwarding rules to the switches. In contrast, trying to synthesize reactive policies (like a firewall), the controller needs to store the state of flows it has received and have a control module following the specifications, which is an interesting synthesis problem, but orthogonal to our problem.
@@ -73,20 +73,28 @@ In recent years, the space of program synthesis has seen great progress, and in 
  Enforcement of isolation, waypoint policies are NP-complete(see \cref{sec:np} for proofs), so to provide support for policies which are fundamentally hard to compute, we leverage recent advances in creating fast SMT solvers (like Z3) to perform synthesis by encoding the policy enforcement problem to a SMT instance, and use the SMT solver to find a solution which we translate to switch rules. To this end, we design the Genesis tool with a rich set of policy support where the network operators express the end-to-end policies using a high-level API and Genesis will synthesize the lower-level switch forwarding rules for realising these policies, abstracting out the need for operators to work on switch-level behaviours. 
 
 \section{Problem Statement}
+% Specify short-forms for policies.
 \section{Network Forwarding Model} \label{sec:fwdmodel}
-The key insights of the network forwarding model are \emph{two-fold}, abstracting the actual forwarding rules at each node, and encoding the reachability of each flow. \\ \\
-$Fwd : N \times N \times PC  \rightarrow \{True,False\}$ is the forwarding rule model. 
-$Reach : N \times PC \times L  \rightarrow \{True,False\}$ is the reachability model.
+We define the physical switch topology as an undirected graph $T=\{S, L\}$, where $S$ is the set of switches and $L$ is the set of links. We use the neighbour function $N(s) = \{s'\ | \ (s,s') \in L \}$ to denote the set of neighbour switches of L. The set of reachability policies is denoted as $R$ and each reachability policy $r \in R$ is of the form : $\{predicate$, $src$, $dst$, $W\}$. 
+
+The field $predicate$ is defined over the space of network headers and is used to identify the class of the packet. Assuming that the intersection of predicates is empty for policies in $R$, we create a mapping $\gamma : R \rightarrow PC$ to associate each reachability policy with a unique integer called packet class in the set $PC$. Switches $src, dst \in S$ denote the ingress and egress switches respectively for the packet class $pc = \gamma(r)$ and Genesis finds a path from $src$ to $dst$ for $pc$. If a waypoint policy is specified, $W$ is the set of switches the path from $src$ to $dst$ must traverse through in no particular order.
+
+We define a static integer $\mu$ to be the maximum path length for any packet class, and define the set $K = [0, \mu]$ to be the set of all permissible path lengths.
+
+The key functions of the network forwarding model are \emph{two-fold}, abstracting the actual forwarding rules at each node, and encoding the reachability of each flow. 
+\begin{mydef}
+	$Fwd : S \times S \times PC  \rightarrow \{True,False\}$ is the forwarding rule model. $Fwd(sw_1, sw_2, pc)$ is set to $True$ means that $sw_1$ will forward packets of class $pc$ to switch $sw_2$.
+\end{mydef}
+\begin{mydef}
+	$Reach : N \times PC \times K  \rightarrow \{True,False\}$ is the reachability model. $Reach(sw, pc, k)$ function is set to True if switch $sw$ is reachable in the path from source switch of packet class $pc$ in exactly $k$ steps.  
+\end{mydef}
+
 \begin{figure}[H]
 	\includegraphics[width=8cm]{topoF.png}
-	\caption{Network Forwarding Model}
+	\caption{Values of the network forwarding model. The red and blue arrows denote the paths taken by packet classes 1 and 2 respectively from source switch 1 to destination switch 2}
+	\label{fig:model}
 \end{figure}
-\subsection{Semantics} 
-The $Fwd$ function encodes the actual forwarding rules at each switch. Therefore, $Fwd(sw_1, sw_2, pc)$ is set to \verb|true| means that $sw_1$ will forward packets of class $pc$ to 
-%$F(s,d,pc,l) = True \Rightarrow$ For packet class $pc$ originating from $s$ can reach $d$ in atmost $l$ steps. \\ 
-%For a flow from $<s1 \rightarrow d1>, F(s,n,pc,l) = True$, for all nodes $n$ in the path from $s1$ to $d1$, and $l$ encodes the length of the path. For example, in Figure 2, the path from $<1 \rightarrow 3>$ through waypoints \{4,5\} is $1 \rightarrow 4 \rightarrow 2 \rightarrow 5 \rightarrow 3$. \\ \\
-%The path length of $1 \rightarrow 2$ is 2, so $F(1,2,pc, l \geq 2) = True$. \\ \\
-%For a node $n1$ in the path which is not the source, we only encode the next hop of the node in F, $F(n1, n2, pc, l=1) = True$. We do not care about values of $l \ge 1$,  as all our reachability constraints are concerned from source $s1$.  
+This is demonstrated by an example in \cref{fig:model}. There are two reachability policies, $r1 : 1 >> [5] >> 2$ with $pc=1$ and $r2 : 1 >> 2$ with $pc=2$ and $r1$ is isolated to $r2$. Using the value of $Fwd$ function, we can find out paths for each packet class, and the set of forwarding rules. 
 
 \subsection{Constraints}
 \subsubsection{Forwarding Rule Constraints} 
@@ -124,17 +132,17 @@ If a node $n_1$ is reachable in $k$, there must a node $n_2$ which is reachable 
 \subsection{Input Policies Constraints}
 \begin{itemize}
 	\item Reachability for flow $<src \rightarrow dst>$ : we need to assert the following. \\ 
-	\[
-	Reach(dst,pc,maxpathlen) = True \label{reach} \tag{C7}
-	\]
+\begin{equation}
+		Reach(dst,pc,maxpathlen) = True \label{reach}
+\end{equation}
 	\item Waypoints :  $w \in W$ for flow $<s1 \rightarrow d1>$ : we need to assert the following.
-	\[
-	 \forall w \in W.Reach(w,pc, maxpathlen) = True \label{waypoint} \tag{C8}
-	 \]
+\begin{equation}
+	 \forall w \in W.Reach(w,pc, maxpathlen) = True \label{waypoint}
+\end{equation}
 	 \item Traffic Isolation for \{$pc1,pc2$\} : We need to assert the following.\\
-	 \[
-	 \forall n_1. \neg ( \exists n_2. Fwd(n_1,n_2,pc1) \wedge Fwd(n_1,n_2,pc2)) \label{isolation} \tag{C9}
-	 \]
+	 \begin{equation}
+		 \forall n_1. \neg ( \exists n_2. Fwd(n_1,n_2,pc1) \wedge Fwd(n_1,n_2,pc2)) \label{isolation}
+	 \end{equation}
 \end{itemize}
 
 \section{Constraint Evaluation}
@@ -261,7 +269,7 @@ Thus, $\forall sw,pc. \ \phi(sw) = a \ \wedge \ \Delta(a, 2) = \emptyset \implie
 Incorporating tactics in the synthesis is sound. If the tactic imposes an restriction to the path other than the source and destination, then the procedure is incomplete. However, tactics can be used to specify restrictions which would be reasonably complete, thus speeding up the synthesis. Even though we have defined a general framework to specify tactics using regular expressions, since the synthesis constraints depend on local behaviours, not every tactic would provide a speedup. For example the tactic $\neg (.^* c a c a c .^*)$ which specifies that a path must not traverse through the core switch layer more than twice, will not provide  speedup, bacause we cannot deduce any local patterns from the associated automaton as the regular expression is trying to count the number of times the path traverses a core switch, and thus it cannot remove any label from its preceding set as count is a global pattern and our approach can only use local patterns to speedup synthesis.  
 
 \section{Network Surgery}
-
+Network surgery is the technique of performing equivalent network transformations to speed up the process of synthesis. 
 \section{Optimistic Synthesis}
 
 \section{Implementation}
@@ -429,7 +437,7 @@ The solution to policy enforcement will be such that each reachability policy $p
  \subsection{Enforcement of Waypoint Policies}
  Given a undirected graph $G={V,E}$. Let us assume there exists an polynomial-time algorithm to compute the reachability paths satisfying the policies of the following types on the graph : \\
  \begin{itemize} 
- 	\item \textbf{P1} : $v_1 >> v_2 \Rightarrow$ : There exists a path from $v_1$ to $v_2$ satisfying all input policies. A property of the path is that it does not have repeat a vertex (no forwarding loops).
+ 	\item \textbf{P1} : $v_1 >> v_2 \Rightarrow$ There exists a path from $v_1$ to $v_2$ satisfying all input policies. A property of the path is that it does not have repeat a vertex (no forwarding loops).
  	\item \textbf{P2} : $v_1 >> W >> v_2 \Rightarrow$ The path from $v_1$ to $v_2$  should pass through the vertices in the set $W$ in any order, without repeating a vertex.
  \end{itemize}
  \textbf{Reduction of Hamiltonian Cycle Problem} : Given a undirected graph $G={V,E}$, find $v \in V$ such that the degree of $v$ is the minimum in the graph (Will work for any vertex actually). If a Hamiltonian cycle is present in the graph, it will have the vertex $v$ in the cycle, and one of the edges from $v$.  \\
