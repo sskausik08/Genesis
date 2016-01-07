@@ -1,0 +1,442 @@
+\documentclass[]{sig}
+\usepackage{graphicx}
+\usepackage{mathtools}
+\usepackage{amsmath}
+\usepackage[utf8]{inputenc}
+\usepackage{cleveref}
+\usepackage{listings}
+\usepackage{array}
+\usepackage{breqn}
+\usepackage{tikz}
+\usetikzlibrary{automata,positioning}
+\newtheorem{mydef}{Definition}
+\lstset{
+	basicstyle=\itshape,
+	xleftmargin=2em,
+	literate={->}{$\rightarrow$}{2}
+	{α}{$\alpha$}{1}
+	{δ}{$\delta$}{1}
+}
+\crefname{section}{§}{§§}
+\Crefname{section}{§}{§§}
+
+\usepackage{float}
+%opening
+\title{Genesis : End-to-End Policy Enforcement by Switch Table Synthesis }
+\author{Kausik Subramanian \\
+	University of Wisconsin-Madison}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Operators in enterprise and datacenter networks deal with complex end-to-end policies for a large number of classes like reachabilities, middlebox traversals and isolation policies, and dealing with these policies separately and enforcing them at switch-level rules is cumbersome. To tackle this, we create a tool Genesis which supports a rich suite of end-to-end policies which the network operator can specify using a high-level API. Genesis converts the policy enforcement problem to a SMT instance and synthesizes switch rules using a SMT solver (Z3) which can be used by a controller to deploy to the topology.
+\end{abstract}
+
+%\section{Problem Statement}
+%\subsection{Input}
+%\begin{figure}[H]
+%	\includegraphics[width=8cm]{topo.png}
+%	\caption{Example Network Topology}
+%\end{figure}
+%\begin{itemize}
+%	\item Network topology graph (comprising of hosts, switches, links)
+%	\item End-point (for a pair of end-points) based network-wide policies. For eg.
+%	\begin{itemize}
+%		\item Reachability Policy($predicate$, $src$, $dst$) : \\ There exists a path for packets satisfying the $predicate$ from ingress switch $src$ to egress switch $dst$.
+%		\item Waypoint Policy($predicate$, $src$, $dst$, $waypoints$): There exists a path for packets satisfying the $predicate$ from ingress switch $src$ to egress switch $dst$ passing through the set of $waypoints$ in any order.
+%		\item Traffic Isolation Policy($f1,f2$) : Flows $f1, f2$ should not share a link in the path in the same direction.		
+%		\item Support for normal and equal-path multicast groups.
+%	\end{itemize}
+%\end{itemize}
+
+%\subsection{Output}
+%The flow tables in the switches satisfying input policies.
+
+\section{Introduction}
+%[Intro] 
+Network operators of enterprise and cloud datacenter networks deal with hundreds of switches and thousands of traffic classes desiring diverse end-to-end policies. However, in real-life, the process of policy enforcement by network operators is manual and ad-hoc, leading to mis-configurations which have severe performance and security impacts. With the boom in cloud services, datacenter networks deal with thousands of packet classes which are not constant, but in flux, thus, making it difficult to enforce them manually. 
+
+The bare minimum need is \emph{reachability} for hosts from ingress to egress switches in these networks. 
+%[Middlebox]
+ With the recent advent of complex packet processing middleboxes like like intrusion detection systems, firewalls, load balancers etc, a feature of use is to specify the middleboxes a particular flow would like to traverse. 
+
+%[Isolation] 
+With the advent of multi-tenant cloud services, a desired feature cloud providers need to support is various Quality of Service guarantees. The current Service Level Agreements (SLA) provided are centered around compute, storage, or Internet traffic. The lack of a good network management system, there exists no provisions for providing SLAs in terms of network performance guarantees among the VMs. Lack of network guarantees leads to unpredictability of performance for distributed applications. Tenants may have to run VMs for a longer time, because the network turns out to be a bottleneck. This leads to increased expense for tenants. Also, multi-tenant clouds are susceptible to network attacks. For example, if two tenants share a link in the datacenter, one tenant could hog the bandwidth on the link, and the other tenant would suffer due to unequal distribution of bandwidth. To combat this, cloud operators rate-limit the VMs, but this can reduce link utilization as tenants may not be using the complete share of their bandwidth. An approach to remove interference between tenant flows is to ensure the tenant flows do not share links in the datacenter, and recent datacenter topologies like fat-trees provides multiple paths from one layer to another and thus, we can route different tenants through different paths. Thus, support for link isolation policies is a very important feature for cloud operators. 
+
+There has been a lot of work in the field of policy enforcement in networks, like bandwidth provisioning in Merlin \cite{Merlin}, and middlebox policy enforcement in SIMPLE \cite{simple}. However, the approach followed in these works are catered to the specific policies, and thus, difficult to extend it to, for example, provide isolation of paths. An ideal policy enforcement system for network operators would support complex and diverse policies, and thus an important feature is \emph{generality} of the approach, so that it can be extended to enforce custom policies required by the operator. To this end, we propose applying \emph{synthesis} to the problem of polcy enforcement by use of SMT-solvers.
+%[Synthesis of Controllers]
+
+In recent years, the space of program synthesis has seen great progress, and in the context of SDNs, controller synthesis \cite{netegg}. The work on controller synthesis is towards enforcing switch-level behaviour, for example, learning switches or firewalls. However, when dealing with enterprise and datacenter networks, network operators need support for specifying end-to-end proactive policies without the need to program individual switch behaviour. Also, policies useful to operators are proactive (not dependent on the actual packets flowing), and this enables to enforce policies by synthesis of switch-table rules, and using a skeleton controller to deploy the forwarding rules to the switches. In contrast, trying to synthesize reactive policies (like a firewall), the controller needs to store the state of flows it has received and have a control module following the specifications, which is an interesting synthesis problem, but orthogonal to our problem.
+
+ Enforcement of isolation, waypoint policies are NP-complete(see \cref{sec:np} for proofs), so to provide support for policies which are fundamentally hard to compute, we leverage recent advances in creating fast SMT solvers (like Z3) to perform synthesis by encoding the policy enforcement problem to a SMT instance, and use the SMT solver to find a solution which we translate to switch rules. To this end, we design the Genesis tool with a rich set of policy support where the network operators express the end-to-end policies using a high-level API and Genesis will synthesize the lower-level switch forwarding rules for realising these policies, abstracting out the need for operators to work on switch-level behaviours. 
+
+\section{Problem Statement}
+\section{Network Forwarding Model} \label{sec:fwdmodel}
+The key insights of the network forwarding model are \emph{two-fold}, abstracting the actual forwarding rules at each node, and encoding the reachability of each flow. \\ \\
+$Fwd : N \times N \times PC  \rightarrow \{True,False\}$ is the forwarding rule model. 
+$Reach : N \times PC \times L  \rightarrow \{True,False\}$ is the reachability model.
+\begin{figure}[H]
+	\includegraphics[width=8cm]{topoF.png}
+	\caption{Network Forwarding Model}
+\end{figure}
+\subsection{Semantics} 
+The $Fwd$ function encodes the actual forwarding rules at each switch. Therefore, $Fwd(sw_1, sw_2, pc)$ is set to \verb|true| means that $sw_1$ will forward packets of class $pc$ to 
+%$F(s,d,pc,l) = True \Rightarrow$ For packet class $pc$ originating from $s$ can reach $d$ in atmost $l$ steps. \\ 
+%For a flow from $<s1 \rightarrow d1>, F(s,n,pc,l) = True$, for all nodes $n$ in the path from $s1$ to $d1$, and $l$ encodes the length of the path. For example, in Figure 2, the path from $<1 \rightarrow 3>$ through waypoints \{4,5\} is $1 \rightarrow 4 \rightarrow 2 \rightarrow 5 \rightarrow 3$. \\ \\
+%The path length of $1 \rightarrow 2$ is 2, so $F(1,2,pc, l \geq 2) = True$. \\ \\
+%For a node $n1$ in the path which is not the source, we only encode the next hop of the node in F, $F(n1, n2, pc, l=1) = True$. We do not care about values of $l \ge 1$,  as all our reachability constraints are concerned from source $s1$.  
+
+\subsection{Constraints}
+\subsubsection{Forwarding Rule Constraints} 
+Forwarding rule constraints are to ensure that the forwarding model from a node leads to a \emph{single} node which is a \emph{neighbour} or to no node at all (either packet reached here but no forwarded ). The \emph{single} node restriction is to account for \emph{unicast} and needs to be explicitly asserted as there are no restrictions on $Fwd$ to forward the packet to a single neighbour (forwarding to multiple neighbours does not model the network correctly).
+\begin{equation}
+	FwdSet(sw,pc) = \{n \ | \ Fwd(sw,n,pc) = True\}
+\end{equation}
+\begin{equation}
+		\forall sw,pc .  |FwdSet(sw,pc)| \leq 1 \label{fwdset}
+\end{equation}
+where none or only one of $Fwd(sw,n,pc)$ can be true. If none is true, it means $sw$ drops the packet (or is the destination, we will cover this later), or the packet class $pc$ does not reach $sw$ at all. If $pc$ flows through $sw$, there must one and only one rule to send it to the next node in the path.\\ 
+
+\subsubsection{Flow Source and Destination Constraints}
+For a flow $<s1 \rightarrow d1>$ with packet class $pc$, we need the source node $s1$ to necessarily forward the packet. 
+\begin{equation}
+	|FwdSet(s1,pc)| = 1 \label{src} 
+\end{equation}
+The destination $d1$ must not forward the packet to any node. 
+\begin{equation}
+	|FwdSet(d1,pc)| = 0 \label{dst} 
+\end{equation}
+These and the topology constraints are sufficient to ensure there are no cycles in the graph. 
+
+\subsubsection{Flow Path Constraints}
+%The semantics of our networking forwarding model for a flow with packet class $pc$ is concerned about path reachabilty from the source node $s1$ and next-hop reachability for two consecutive nodes in the graph. \\
+%If $Reach(n,pc,k)$ is true, $Reach(n,pc,k + 1)$ is true as well because if flow $pc$ can reach $n$ in atmost $k$ links, it can reach $n$ in atmost $k+1$ links. 
+%\[
+%\forall n,k. Reach(n,pc, k)  \implies Reach(n,pc,k+1) \label{indpath} \tag{C5}
+%\]
+
+If a node $n_1$ is reachable in $k$, there must a node $n_2$ which is reachable in  $k-1$ steps and there exists a forwarding rule $n_2 \rightarrow n_1$.
+\begin{multline}
+\forall n_1,k.  Reach(n_1,pc,k) \implies \exists n_2.  n_2 \in N(n_1) \wedge \\ Reach(n_2,pc,k-1) \wedge Fwd(n_2,n_1,pc)
+\end{multline} 
+\subsection{Input Policies Constraints}
+\begin{itemize}
+	\item Reachability for flow $<src \rightarrow dst>$ : we need to assert the following. \\ 
+	\[
+	Reach(dst,pc,maxpathlen) = True \label{reach} \tag{C7}
+	\]
+	\item Waypoints :  $w \in W$ for flow $<s1 \rightarrow d1>$ : we need to assert the following.
+	\[
+	 \forall w \in W.Reach(w,pc, maxpathlen) = True \label{waypoint} \tag{C8}
+	 \]
+	 \item Traffic Isolation for \{$pc1,pc2$\} : We need to assert the following.\\
+	 \[
+	 \forall n_1. \neg ( \exists n_2. Fwd(n_1,n_2,pc1) \wedge Fwd(n_1,n_2,pc2)) \label{isolation} \tag{C9}
+	 \]
+\end{itemize}
+
+\section{Constraint Evaluation}
+In the section, we evaluate the number of constraints required to add to the z3 Solver. Let $n$ be the number of nodes in the topology, $m$ be the number of edges in the topology, $pc$ be the number of packet classes, $t$ be the number of traffic isolation policies and $p$ be the max path length. Let $n'$ be the number of neighbours for a switch.
+
+We encode the forwarding rule constraint (\cref{fwdset}) using a SAT encoding rather than an SMT encoding for better performance. To express the constraint that the count of forwarding rules is not more than one, we can do this by adding an $or$ of clauses, where each clause is an $and$ of one rule set to true and all others set to false. An example for switch s and neighbours \{t,u\} is \newline
+\verb|(or| \\
+\hspace*{10pt}\verb|(and Fwd(s, t, pc)|  \verb|(not Fwd(s, u, pc)))| \\
+\hspace*{10pt}\verb|(and Fwd(s, u, pc)|  \verb|(not Fwd(sw, t, pc)))| \\
+\hspace*{10pt}\verb|(and (not Fwd(s, u, pc))|  \verb|(not Fwd(sw, t, pc)))|\\
+\verb|)| 
+
+Thus, the number of terms in a forwarding rule constraint for a switch and packet class is $n'*(n'+1)$. We add a single \verb|or| constraint for each switch and packet class in the network. Therefore, the count of constraints is $n * pc$.
+
+The major bulk of time is consumed by the creation of the constraints for backward propagation of reachability (\cref{bckprop}). The number of constraints added to the solver is $n * p * pc$. We are using a quantifier-free encoding for better performance, so expressing the $exists$ is done by a $or$ clause of the set of neighbours for a switch. Therefore, the size of each constraint is $n'$. 
+
+For each traffic isolation policy, we need to add constraints for each edge of the network, so that the two packet classes dont share the edge. Therefore, the number of constraints added is $e * t$ and the size of each constraint is constant. 
+
+\begin{table}[H]
+\begin{center}
+	\begin{tabular}{||m{6em} | m{7em} | m{7em} ||} 
+		\hline
+		Constraints & Number & Size \\ [0.5ex] 
+		\hline\hline
+		Forwarding Rules & $n*pc$ & $deg * (deg + 1)$ \\ [0.5ex] 
+		\hline
+		Reachability Propagations & $n*p*pc$ & $deg$ \\ [0.5ex] 
+		\hline
+		Isolation & $e * t$ & 2 \\
+		\hline
+	\end{tabular}
+\end{center}
+\caption{Number and Size of Constraints} \label{tab:title} 
+\end{table}
+
+\section{Tactics}
+If we consider reachability between two end-switches, the synthesis problem translates to choosing a path from the solution space of all paths from the source to destination such that the chosen path satisfies all policies like waypoints and isolation. Datacenter topologies have multiple paths between endpoints to provide full bisection bandwidth. This feature of datacenters ensues that the solution space of paths for a pair of endpoints is large. 
+
+For example, consider the fat-tree topology in \cref{fattree}. The number of paths under length 10 between two edge  switches in the same pod is 242 and two edge switches in different pods is 272. If we consider the synthesis of $n$ reachability policies, the problem roughly translates to finding a solution in the solution space of size $n \times 242$ which satisfies all policies. 
+\begin{figure}[H]
+	\includegraphics[width=8cm]{fattree.png}
+	\caption{Fat Tree Topology}
+	\label{fattree}
+\end{figure}
+We can leverage the network structure of specific topologies to reduce the solution space. In the case of \cref{fattree}, the 272 paths between two edge switches would contain many paths which can be avoided, like paths which traverse through edge switches other than the source/destination, or paths which would be  going from the aggregate to core and back multiple times. 
+
+Tactics are abstractions to impose a high-level restriction on the paths by leveraging the network structure. An example tactic for the fat-tree topology would be that a path connecting two edge switches must not traverse through another edge switch (unless we have a edge switch which is a waypoint). The advantage of tactics is that we would like to provide an expressive framework for operators to provide some insights on the properties of the path without drastically reducing the solution space of paths. 
+
+Let us define $Lb$ be the set of labels and $S$ be the set of switches in the topology. Let $\phi : S \rightarrow Lb$ be the labelling function and maps switches to a label in $Lb$. One example for $\phi$ in the fat-tree topology in \cref{fattree} can be that we map all switches in the same level(core, aggregate or edge) to the same level, leveraging the hierarchical structure.
+\begin{mydef}
+	A tactic $T$ is a regular expression over the alphabel $Lb$. We construct an associated automaton $A^T$ which is the automaton of the regular expression with every state accepting except the sink state (non-final state with a self-loop over all alphabets).
+\end{mydef}
+The rationale behind the associated automaton $A^T$ is that the automaton accepts prefixes of the label-path, and rejects prefixes which cannot lead to a path satisfying the regular expression of the tactic (by reaching a sink state). 
+
+We demonstrate the example of a tactic with the fat-tree topology in \cref{fattree}. Let $Lb = \{c, a, e\}$. The labelling function $\phi$ maps each core switch to $c$, each aggregate switch to $a$ and every edge switch to $e$. For a path connecting two edge switches, let us define $T_e$ as $(e .^* e) \wedge \neg (e .^* e .^* e)$. This tactic says that the path connecting the two edge switches must not traverse through a edge switch.
+
+% A path $P$ is a word over the alphabet $S$. Let $\Phi : S^* \rightarrow Lb^*$ be the path-labelling function which maps each switch in the word to its corresponding label.  
+%\[
+%P \models T \iff  \Phi(P) \in L(A) 
+%\]
+%where $L(A)$ is the language of automaton $A$. 
+%
+% Thus, any path accepted by the tactic would a substring of a word in the language of the regular expression. The intuition is to prune the search to remove paths that will not satisfy the regular expression, that is paths which lead the automaton to the sink state.
+
+\subsection{Synthesis with Tactics}
+The tactic defined in the earlier section is a general framework of specify path properties based on network structure. However, adding constraints to ensure the path satisfies the tactic is \emph{slower} than without using tactics. In our synthesis algorithm, the backward reachability propagation constraints are the most significant in terms of time taken and complexity. 
+\begin{multline}
+\forall n_1,k.  Reach(n_1,pc,k) \implies \exists n_2.  n_2 \in N(n_1) \wedge \\ Reach(n_2,pc,k-1) \wedge Fwd(n_2,n_1,pc)
+\end{multline} 
+To prune these type of constraints, the question we need to answer is this: If switch $n_1$ with label $\phi(n_1)$ exists in a word at position $k$, what labels can exist in the word at position $k - 1$ such that the word does not reach a sink state in the tactic automaton. By eliminating words which lead the automaton to the sink state, we eliminate the paths which will not satisfy the tactic. For example, the tactic $T_e$ : $(e .^* e) \wedge \neg (e .^* e .^* e)$ which specifies that the path must start and end at a edge switch, and traverse through other edge switches. For $k > 2$ and label $a$, we can observe that the label preceeding it cannot be $e$ if the automaton is not in a sink state (since label $e$ does not come up in the word except the first and the last character). Thus, while adding constraints for a switch of label $a$ and $k > 2$, we can remove neighbours which have label $e$.  
+
+Let us formalise this notion of finding local label patterns based on a tactic $T$ and associated automaton $A^T$ over the alphabet $Lb$. Let $w[k+1]$ denotes the $(k + 1)^{th}$ character of the word. The automaton $A^T$ will accept all words except those which lead it to the sink state. We use the automaton to construct a set of reachable paths for switch label $lb$ and path length $k$. 
+\begin{mydef}
+	$\Gamma(lb, k)$ is the set of reachable paths such that for each $w \in \Gamma(lb, k)$: 
+	\begin{enumerate}
+		\item $w \in Lb^{k+1}$
+		\item $w[k+1] = lb$
+		\item $w$ is a valid label-path in the topology
+	\end{enumerate}
+\end{mydef}
+The first and second requirement is to reason about the backward reachability propagation constraints \newline $Reach(sw, pc, k)$ for switches $sw \in S$ for which $\phi(sw) = lb$. The input to the automaton $A^T$ is restricted based on the topology and label-mapping, and the third requirement is to prune the words to valid label-paths of the topology. In our running example of the fat-tree topology, we can see that neighbours of core switches($c$) are only aggregate switches($a$). Therefore, in a valid label-path, after reading a $c$, we can only read the character $a$. We create a label adjacency matrix of the topology and prune the words in $\Gamma$. 
+\begin{mydef} 
+	$\Delta(lb, k)$ is the set of labels such that for each $l \in \Delta(lb, k) \iff \exists w \in \Gamma(lb, k).  w[k] = l$ 
+\end{mydef}
+where $w[k]$ denotes the $k^{th}$ character in the word. 
+
+After computing $\Delta(lb, k)$, we can modify the backward reachability propagation constraints to include neighbours whose labels are in  $\Delta(lb, k)$. 
+\begin{multline}
+\forall n_1,k.  Reach(n_1,pc,k) \implies \exists n_2.  n_2 \in N(n_1) \wedge \\ \phi(n_2) \in 
+\Delta(\phi(n_1), k) \wedge Reach(n_2,pc,k-1) \\ \wedge Fwd(n_2,n_1,pc)
+\end{multline} 
+If $\Delta(lb, k) = \emptyset$, then $Reach(sw, pc, k) = False$ for switches $sw \in S$ for which $\phi(sw) = lb$. 
+
+To find the $\Delta$s for a tactic, we use a dynamic programming approach of finding all valid label words of length $k$ accepted by the associated automaton($\forall lb. \Gamma(lb, k)$) by using the valid label words of length $k-1$ (we also store the last state the automaton is in), and make one valid transition on labels (validity is based on two factors : automaton doesn't reach the sink state, and the current label and previous label are connected in the topology). After computing the $\Gamma$s, we can compute $\Delta(lb,k)$ by examining $\Gamma(lb,k)$ to find labels at the $k^{th}$ position.
+\begin{figure}[h!]
+	\centering
+	\begin{tikzpicture}[shorten >=1pt,node distance=2cm,on grid,auto] 
+	\node[state,accepting, initial] (q_0)   {$q_0$}; 
+	\node[state, accepting] (q_1) [right=of q_0] {$q_1$}; 
+	\node[state,accepting] (q_2) [right=of q_1] {$q_2$}; 
+	\node[state] (q_3) [below=of q_1] {$q_3$}; 
+	\path[->] 
+	(q_0) edge  node {e} (q_1)
+	edge node {a,c} (q_3)
+	(q_1) edge  node  {e} (q_2)
+	edge [loop above] node {a,c} ()
+	(q_2) edge node {a,c,e} (q_3)
+	(q_3) edge [loop below] node {a,c,e} ();
+	\end{tikzpicture}
+	\caption{Associated automaton $A^T$ for tactic $T_e$}
+	\label{fig:tactice}
+\end{figure}
+
+We demonstrate the advantages of tactics with an example. Consider the tactic $T_e : (e .^* e) \wedge \neg (e .^* e .^* e)$ and its associated automaton(\cref{fig:tactice}). 
+\[
+\Gamma(a, 2) = \emptyset, \  \Gamma(e, 2) = \{eae\}, \ \Gamma(c, 2) = \{eac\} 
+\] 
+\[
+\Delta(a, 2) = \emptyset, \ \Delta(e,2) = \{a\}, \ \Delta(c,2) = \{a\}
+\]
+Thus, $\forall sw,pc. \ \phi(sw) = a \ \wedge \ \Delta(a, 2) = \emptyset \implies \\ Reach(sw,pc,2) = False$ and we do not add backward reachability propagation constraints for the term $Reach(sw,pc,2)$. 
+% If we did not have the restriction of topologically valid label-paths in $\Gamma$, then $\Gamma(a, 2) =  \{eaa, eca\}$, resulting in $\Delta(a,2) = \{a,c\}$. 
+
+Incorporating tactics in the synthesis is sound. If the tactic imposes an restriction to the path other than the source and destination, then the procedure is incomplete. However, tactics can be used to specify restrictions which would be reasonably complete, thus speeding up the synthesis. Even though we have defined a general framework to specify tactics using regular expressions, since the synthesis constraints depend on local behaviours, not every tactic would provide a speedup. For example the tactic $\neg (.^* c a c a c .^*)$ which specifies that a path must not traverse through the core switch layer more than twice, will not provide  speedup, bacause we cannot deduce any local patterns from the associated automaton as the regular expression is trying to count the number of times the path traverses a core switch, and thus it cannot remove any label from its preceding set as count is a global pattern and our approach can only use local patterns to speedup synthesis.  
+
+\section{Network Surgery}
+
+\section{Optimistic Synthesis}
+
+\section{Implementation}
+
+%\section{Multicast Policies} \label{sec:mcast}
+%Genesis supports two multicast policies, \emph{normal} and \emph{equal} multicast. Genesis will leverage the Openflow functionality to send a packet to multiple outports to create multicast group paths from source to the destinations. The normal multicast is IP-multicast from a source to a group of destinations without any restrictions. \\
+%To aid in achieving approximate synchrony in multicast groups for distributed systems \cite{mcast}, Genesis supports \emph{equal} multicast ensures that paths from the source to each destination in the multicast group to have the same path lengths to minimize the disparity of message latencies to each destination. \\
+%
+%\subsection{Path Constraints}
+%To support multicast, we needed to remove the restriction of next-hop forwarding set on our forwarding model. So, for a multicast packet class, our model can forward it to multiple nodes.  \\
+%However, this can cause the possibility of cycles in the graph. The multicast group paths creates a \emph{tree} with the source as root and the leaves are the destination. To remove cycles, we mark nodes in the graph with a rank number, which is the depth of the node in the multicast path tree. We use an \emph{uninterpreted function R} to add constraints for the rank function to ensure acyclicity of the paths.
+%\[
+%R(src, pc) = 0  \label{ranksrc} \tag{M1}
+%\]
+%To ensure the nodes further in the path have greater ranks, we add the following constraint. 
+%\[
+%\forall n_1, n_2.(Fwd(n_1,n_2,pc) \implies R(n_1,pc) < R(n_2,pc))  \label{ranknode} \tag{M2}
+%\]
+%Since the forwarding model can send packets from a node to multiple next-hop nodes, we need constraints to ensure that two paths do not lead to the same destination. Let us define $recvSet(n,pc)$ as the set of all nodes the node $n$ receives the packet.
+%\[
+% recvSet(n,pc) = \{n' | Fwd(n',n,pc) = True\}
+% \]
+%\[
+%\forall n. \ |recvSet(n,pc)| \leq 1 \label{ranknode} \tag{M3}
+%\] 
+%For \emph{equal multicast policy}, all the paths to destinations must have equal path lengths. 
+%\[
+% \forall d \in dstSet \ \exists k .(Reach(d, pc, k) \wedge \neg Reach(d, pc, k - 1) ) \label{eqmdst} \tag{EM1}
+%\]
+%However, there are some important \emph{caveats} to the multicast policy enforcement. The above constraints ensure paths to the destinations specified in the policy, but also provides various paths to nodes which are not specified in the policy (still a correct enforcement of the policy). Instead of adding constraints to the model to ensure the model only gives paths to the destinations and no more, we simply extract the paths we require from the model and ignore the extra paths. Another assumption is that we are dealing with multicast policies independently. If we change the system to incorporate inter-policy interactions with mutlicast policy, we will have to include constraints to provide a solution which does not contain paths not required by the policy.
+%
+%\section{Policy Interactions}
+%Consider our input policies, like reachability and waypoint policies. For a packet class, the enforcement of these policies do not require the system to have information of other packet classes, and we can synthesize each of these packet classes independently. Since Z3 is expontential in the number of flows fed to the model, the best approach is to synthesize these packet classes independently. \\
+%However, policy interactions complicate this approach. Policy interaction is defined as the event of two packet classes which have to be reasoned together by Genesis to ensure correctness, like traffic isolation policies. Therefore, if $pc_1$ and $pc_2$ have to satisfy a isolation policy, naive Genesis needs to add both the flow constraints to Z3 together and the synthesize the forwarding rules. \\
+%We define a \emph{Relational Class} to be the maximal set of packet classes which need to synthesized together in Z3 for correct policy enforcement. For the present case, the only policy interactions are due to isolation policies, so the construction of relational classes for the set of packet classes consider only isolation policies. \\
+%The property of an $RC$ is as follows : for each $pc_1$ in the $RC$, there exists a $pc_2$ in the $RC$ such that $pc_1$ and $pc_2$ are isolated and there does not exist a $pc_3$ not in $RC$ such that $pc_1$ and $pc_3$ are isolated. 
+%\[
+%\forall pc_1. ( pc_1 \in RC \implies \exists pc_2 \in RC.( Isolated(pc_1,pc_2))
+%\]
+%\[ \wedge \neg (\exists pc_3 \notin RC. (Isolated(pc_1,pc_3)))
+%\]
+%The algorithm for creating Relational Classes is simple, initially create a $RC$ for each packet class, and for each isolation policy, if the packet classes reside in different $RCs$, merge the two $RCs$ to create a new $RC$.
+%
+%\subsection{Advantages of Relational Classes}
+%The biggest advantage of Relational Classes is the separation of packet classes which need to be input to Z3 together, thus reducing the synthesis complexity to expotential in the largest Relational Class. This in worst case can be the complete packet class set, but we would leverage policy behaviours used in datacenters to evaluate on real-life cases of the size of the largest relational class. \\ \\
+%Another advantage of dividing the packet class space is the opportunity to do \emph{parallel} synthesis of each relational class, thus leveraging the powerful hardware available abundantly in recent times. Z3 is a single process, single threaded application which does not leverage parallelism, so we leverage relational classes for parallelism at a higher level.  \\
+%
+%\section{Network Change Synthesis}
+%There are two change events which would require reconfiguration of forwarding rules : change in policies and change in network topology. By leveraging the concept of relational classes, we can perform network change synthesis.
+%\begin{itemize}
+%	\item \textbf{Policy Change Synthesis} : This would require synthesis of only those relational classes which are being affected by the policy changes (addition of new classes and policies, modification of existing changes). The naive approach is to resynthesize the complete $RCs$, but there could be approaches to leverage the existing model to make incremental changes. 
+%	\item \textbf{Topology Change Synthesis} : This would require synthesis of only those relational classes which are being affected by the topology change (link/switch failures). 
+%\end{itemize}
+%
+%\section{Optimistic Synthesis} \label{sec:Optimistic}
+%A common thread to the clean-state synthesis model we are working on, and the network change synthesis is an efficient way of synthesizing relational classes. The naive approach of synthesizing the relational class by adding the constraints of all packet classes scales poorly ($300s$ for 100 flows in a 10-clique topology). Isolation policies may not all-to-all (all flows isolated from one other) and we can leverage these policy interactions to synthesize packet classes in a relational class independently, and validating the enforcement of isolation policies. \\
+%A \emph{relational class graph} is a graph with the packet classes as vertices of the graph, and the edges model the inter-policy interactions (for our case, isolation policies). We leverage the structure of the RC graph to perform Optimistic synthesis. The key motivation is as follows : Instead of performing the synthesis of the complete RC, split it into partitions, and solve them such that the solution obtained from the individual partitions satisfy all the input policies. 
+%\begin{figure}[H] 
+%	\includegraphics[width=8cm]{rcGraph.png}
+%	\caption{Relational Class Graph and Optimistic Partitions}
+%	\label{fig:Optimistic}
+%\end{figure}
+%Consider the RC graph in \cref{fig:Optimistic}. One of the heuristics that can be used to partition the RC graph is minimising the \emph{cut edges} between the two components (the vertices of the cut edges lie in different components). The rationale behind the heuristic is that since we intend to perform the synthesis of both the components separately, the partition should have the least number of constraints between themselves, thus providing more freedom for the separate solutions to satisfy the complete constraints. The synthesis approach is \emph{Optimistic}, because the smaller solutions may or may not be correct. To improve accuracy, we feed the solution of the first partition to the second partition as constraints (so that the second partition does not produce a  inconsistent solution). \\
+%An issue with this approach is that the solution of the first partition may not be satisfiable with the second partition, but the complete RC graph has a solution. A preliminary idea is to add the troublesome packet classes into the first partition and resynthesize. \\
+%The Optimistic synthesis procedure can be applied to the RC graph component recursively, and propagating the solutions to the other connected components, with the base case being a component of a minimum size, or the number of cut edges less than a threshold value. The advantages of Optimistic synthesis is that we can achieve linear time complexity for the number of flows.
+%
+%\subsection{Solution Recovery} \label{sec:recovery}
+%The shortcomings of the Optimistic synthesis approach is that the partial solution synthesized on a partition may not be have a complete solution for the entire graph. To achieve swift convergence to a correct solution, we devise various recovery techniques. \\
+%The solution recovery approach leverages Z3's functionality of obtaining unsatisfiable cores. We track the assertions corresponding to partial solutions to the solver (Z3 provides this functionality) and if the solver returns \texttt{unsat}, then we extract the unsatisfiable cores which are the partial solutions which cause the unsatisfiability. These solutions are propagated back to their partitions, and the solver will return a solution to these cores which are different from the unsatisfiable cores provided. \\
+%The rationale behind tracking the partial solutions is that those are the problematic constraints and can cause the solver to return  \texttt{unsat} even when they exist a solution due to incompatible partial solutions. This recovery leverages the failed partial solutions to find new partial solutions. \\
+%For boundedness, we perform the recovery a fixed number of times (not decided on this yet) and for each increasing recovery, the unsatisfiable partial solutions are accumulated, and the solver has to find a partial solution which is different from all previous falied solutions. \\
+%For example in \cref{fig:Optimistic}, the solution of PC1 will be propagated as a constraint to the partition $\{PC2,PC5, PC0\}$. If the solver returns \texttt{unsat}, for recovery and $PC1$ as the unsatisfiable core, we resynthesize partition $\{PC1, PC3$, $PC4\}$ with the additional constraint that the solution obtained for $PC1$ is different from the earlier solution of $PC1$. We repeat this a finite amount of times till we succeed or return failure for this recovery approach. 
+%
+%\subsection{Incremental Recovery}
+%The correct procedure to solve the synthesis is to add constraints for every flow to the z3 solver and check for satisfiability. Since, this is order of expotential in the number of flows in a relational graph, we try to speed up by using a Optimistic synthesis approach. The problem of fuzzy synthesis is that the partial solutions are evaluated on parts of the complete graph, thus, there is no guarantees of finding a solution. The success of finding a correct partial situation will increase with the size of the graph on which z3 finds a partial solution.
+%\\
+% 
+% Thus, another recovery approach we use with fuzzy synthesis is incrementing the size of the base graph on which z3 operates if fuzzy synthesis with solution recovery cannot provide a solution with a smaller base graph size on which z3 finds the partial solution. This recovery method doubles the graph size each failure, till we reach the size of topology, which translates to a normal synthesis approach. Thus, the fuzzy synthesis approach with solution and incremental recovery will produce a correct solution, if one exists. The best case complexity is better than expotential, while the worst case complexity is expotential. 
+%
+%\section{GPL : Genesis Policy Language} \label{sec:gpl}
+%%\subsection{Grammar}
+%%\noindent Below is the grammar of GPL (Genesis Policy Language) which can be used to specify the policies to the Genesis synthesiser to obtain the paths for each of the policies. 
+%%The non-terminal $D$ is used to generate declaration statements. Since GPL has a restricted syntax, we can infer the types from the right hand value of the declaration statement, so we adopt a Python-like syntax for variables which don't require type declarations. \\
+%%The non-terminal $REACH$ is used to specify reachability policies, which is of the form \lstinline{R -> endpoint >> endpoint}. The $>>$ is the reach operator, the first operand specifies the source and the second operand specifies the destination. The non-terminal $endpoint$ is used to specify the IP subnet/address and the next-hop switch connected to the IP subnet/address(\lstinline{endpoint -> ip:sw}). Each reachability policy creates a new packet class. \\
+%%The non-terminal $WAYPOINT$ is used to specify reachability policies with waypoints. The operand between the two $>>$ operators specify the list of waypoints the packet class must traverse to. \\
+%%The non-terminal $I$ is used to specify traffic isolation policies. The isolate operator $||$ is used to specify isolation policy between two packet classes. \\
+%
+%\subsection{Interpreter}
+%The Genesis interpreter is built using the PLY library (Python-Lex-Yacc) \cite{ply} which parses the input GPL file and add the policies to the Genesis Synthesiser (which has a Policy Database to store the policies). After successful parsing, the Genesis Synthesiser enforces the policies using the normal or fuzzy synthesis approach to find the paths to be followed by each packet class. Following is an example policy file.
+%\begin{lstlisting}
+%# GPL Reachability Policy Descriptions
+%f1 := ip.src=10.0.0.4 : 
+%e3 >> [a26] >> e17
+%f2 := tcp.port= 80 : e1 >> e12
+%f3 := tcp.port= 70 : e1 >> e10
+%f4 := ip.src=10.0.0.2 : 
+%e1 >> [c78] >> e11
+%==
+%# GPL Isolation Policies
+%f1 || f4
+%|| [f1,f2,f3]
+%\end{lstlisting}
+ 
+
+\section{Evaluation}
+\begin{figure*} 
+	\includegraphics[width=20cm]{GenesisTopo.png}
+	\caption{Time taken to synthesize two isolated flows with increasing fat-tree topology sizes}
+	\label{fig:topo}
+\end{figure*}
+\begin{figure*} 
+	\includegraphics[width=20cm]{GenesisReach.png}
+	\caption{Performance plot to synthesis with increasing number of reachability policies in a 45-node fat-tree topology}
+	\label{fig:reach}
+\end{figure*}
+In \cref{fig:topo}, we evaluate the performance of Genesis with respect to increasing topology sizes. We use fat-tree topology, and the policy inputted is two reachability policies where the source and destination are edge switches (one policy has a single aggregate switch as a waypoint). These two policies are isolated to each other. The number of nodes is the X-axis and the Y-axis is the time taken to synthesise the paths for the two input policies. As expected, we can infer a expotential increase with number of switches in the topology. \\
+In \cref{fig:reach}, we evaluate the performance of Genesis with respect to increasing number of reachability policies in a 45-node fat-tree topology. The reachability policies have both source and destination as edge switches (without a waypoint) and no isolation between them. The number of policies is the X-axis and the Y-axis is the time taken to synthesise the paths for the two input policies. Though, this problem can be solved simply by DFS, this experiment is more to rationalise the fact the z3 will not have linear complexity for such a case.
+
+\section{Related Work}
+\cite{decentralize} tries to synthesize local forwarding rules for a single switch based on a reactive forwarding policy. One of the important considerations for correctness of forwarding rules is that the controller sees all relevant events and rules are not added prematurely. The abstraction for expressing forwarding policies are for individual switches, on the other hand, we try to enforce network-wide policies, so each switch will have different forwarding policy such that the entire network enforces the flow policies. Also, the policies we deal with are proactive, so we need not worry about the controller seeing the relevant events (which is a requirement in synthesizing rules for reactive policies). For all practical purposes, we needn't worry about switch-controller interactions or premature rule installations. \newline
+NetEgg \cite{netegg} synthesizes the forwarding policy of a switch using examples of how the switch should function when it receives packets. This deals with the forwarding policy of individual elements, can cannot be used directly to synthesize network-wide policies. \newline
+\cite{oneswitch} tries to tackle a similar problem to ours of flow policy enforcement. However their end-point policies are only concerned with reachability (two hosts can talk through specific ingress and egress points). Their rule placement algorithm takes the path of the flow in the network as an input (the routing policy) and place rules on this path to enforce the endpoint policy and taking in consideration switch table constraints. We are trying to tackle the problem without the routing policy as input, as we enforce flow policies which would require different routing policies (like traffic isolation), so we cannot determine the path of the flow beforehand. Our solution can support enforcement of policies which require different routing policies. \cite{distfirewall} builts on the \cite{oneswitch} abstraction to optimize the specific case of distributed firewall policy enforcement using ILP.  \newline
+\cite{netgen} NetGen solves the problem of network updates using synthesis. Given a specification which mentions the packet classes, the old path and the new path, NetGen solves the network change problem using a SMT solver. One salient aspect is the use of uninterpreted functions to reduce the number of constraints. 
+
+\section{Conclusion}
+
+ \begin{thebibliography}{1}
+ 	
+ 	\bibitem{decentralize} O. Padon et. al
+ 	Shoham, Sharon {\em Decentralizing SDN Policies} 2015 
+ 	
+ 	\bibitem{netegg} Y. Yuan et. al {\em NetEgg: Programming Network Policies by Examples} 2014
+ 	
+ 	\bibitem{oneswitch} N. Kang et. al {\em Optimizing the "One Big Switch" Abstraction in Software-Defined Networks} 2013
+ 	
+ 	\bibitem{distfirewall} S Zhang et. al {\em An Adaptable Rule Placement for Software-Defined Networks} 2014
+ 	
+ 	\bibitem{netgen} S Saha et. al {\em NetGen: Synthesizing Data-plane Configurations for Network Policies} 2015
+ 	
+ 	\bibitem{z3} L De Moura et. al {\em Z3: An Efficient SMT Solver} 2008
+ 	
+ 	\bibitem{mcast} D. Ports et. al {\em Designing Distributed Systems Using Approximate Synchrony in Data Center Networks} 2015
+ 	
+ 	\bibitem{ply} PLY : {\em http://www.dabeaz.com/ply/}
+ 	
+ 	\bibitem{simple} Zafar Ayyub Qazi et. al {\em SIMPLE-fying middlebox policy enforcement using SDN} 2013
+ 	
+ 	\bibitem{metis} G Karypis et. al {\em A Fast and Highly Quality Multilevel Scheme for Partitioning Irregular Graphs} 1999 
+ 	
+ 	
+ \end{thebibliography}
+ \appendix
+ \section{Proofs of NP-hardness} \label{sec:np}
+ \subsection{Enforcement of Isolation Policies}
+ Given a undirected graph $G=\{V,E\}$ which represents the switch topology denoted in \cref{fig:swtopo} and undirected graph $P =\{R,I\}$ which represents the policy graph. Every vertex $p \in P$ is a reachability policy : $S >> D$ and each edge $i \in I$ which connects vertices $p1$ and $p2$ mean that the paths of $p1$ and $p2$ are isolated from each other. 
+ \begin{figure}[H] 
+ 	\includegraphics[width=8cm]{color_topo.png}
+ 	\caption{The switch topology $G$. All circles represent switches and all reachability policies are $S$ to $D$}
+ 	\label{fig:swtopo}
+ \end{figure}
+The solution to policy enforcement will be such that each reachability policy $p \in P$ from $S >> D$ will traverse through one of the colored switches $\{red$, $blue$, $green\}$. Color the vertices of $P$ with the switch the path traverses through. If two vertices are connected by an edge in $P$, those flows would be isolated, and thus, will not have the same color. Thus, the problem reduces to finding a 3-graph coloring for $P$, which is NP-complete. Thus, the enforcement of isolation policies is NP-complete. 
+ 
+ In genral, k-coloring (for k > 2) is NP-complete, the policy enforcement problem in a switch topology with k paths from source to destination reduce to a k-coloring problem, and thus is NP-complete. 
+ 
+ \subsection{Enforcement of Waypoint Policies}
+ Given a undirected graph $G={V,E}$. Let us assume there exists an polynomial-time algorithm to compute the reachability paths satisfying the policies of the following types on the graph : \\
+ \begin{itemize} 
+ 	\item \textbf{P1} : $v_1 >> v_2 \Rightarrow$ : There exists a path from $v_1$ to $v_2$ satisfying all input policies. A property of the path is that it does not have repeat a vertex (no forwarding loops).
+ 	\item \textbf{P2} : $v_1 >> W >> v_2 \Rightarrow$ The path from $v_1$ to $v_2$  should pass through the vertices in the set $W$ in any order, without repeating a vertex.
+ \end{itemize}
+ \textbf{Reduction of Hamiltonian Cycle Problem} : Given a undirected graph $G={V,E}$, find $v \in V$ such that the degree of $v$ is the minimum in the graph (Will work for any vertex actually). If a Hamiltonian cycle is present in the graph, it will have the vertex $v$ in the cycle, and one of the edges from $v$.  \\
+ Lets take a $n \in Neighbours(v)$. Let the input policies to our algorithm be : 
+ \begin{itemize}
+ 	\item \textbf{P4} : $v >> W >> n$ where $W = V - \{v,n\} $ 
+ \end{itemize}
+P4 cimputes a simple path from $v$ to $n$ which passes through all the other vertices in the graph which is the Hamiltonian path problem. Since computing the Hamiltonian path is NP-hard, the problem of path computation for the waypoint policies as specified is NP-hard. 
+ 
+\end{document}
