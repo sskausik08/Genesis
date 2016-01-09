@@ -220,10 +220,10 @@ class GenesisSynthesiser(object) :
 
 		# Enforce Tactics 
 		if self.useTacticFlag : 
-			st = time.time()
+			#st = time.time()
 			self.useTactic()
-			et = time.time()
-			print "Time taken to create tactic variables is ", et - st
+			#et = time.time()
+			#print "Time taken to create tactic variables is ", et - st
 		
 		# Generate the assertions.
 		self.pdb.createRelationalClasses()
@@ -2317,22 +2317,17 @@ class GenesisSynthesiser(object) :
 	def useTactic(self) :
 		b1 = Blacklist("e .* e .* e", ["a","c","e"])
 		b2 = Whitelist("e .* e",  ["a","c","e"])
-		b3 = Blacklist("e a c a c a c .* e", ["a", "c", "e"])
+		#b3 = Blacklist("e a c a c a c .* e", ["a", "c", "e"])
 
 		self.topology.assignLabels()
-		t = Tactic([b2], self.topology)
+		t = Tactic([b1, b2], self.topology)
 
 		st = time.time()
 		t.findValidNeighbours(11)
 		et = time.time()
-		print et - st
-		self.addTactic(t, 0)
-		self.addTactic(t, 1)
-		self.addTactic(t, 2)
+		for pc in range(self.pdb.getPacketClassRange()) :
+			self.addTactic(t, pc)
 
-		# self.rho = Function('rho', IntSort(), IntSort(), IntSort())
-
-		# self.addrhoConstraints(t, 0)
 
 	def addTactic(self, tactic, pc) :
 		self.tactics[pc] = tactic

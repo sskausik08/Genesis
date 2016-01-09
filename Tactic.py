@@ -10,7 +10,6 @@ class Regex(object):
 		self.sigma = sigma
 		self.regex = str2regexp(s=self.preprocessDot(regexStr), sigma=self.sigma)
 		self.isNegated = isNeg
-		print self.regex
 		if self.isNegated : 
 			self.dfa = self.regex.nfaPosition().toDFA().minimal(complete=False)
 			self.dfa = ~self.dfa
@@ -72,6 +71,9 @@ class Tactic(object):
 		return self.dfa
 
 	def getSinkState(self) :
+		return self.sink
+
+	def computeSinkState(self) :
 		for s in range(self.numStates) :
 			isSink = True
 			transitions = self.dfa.delta[s]
@@ -115,10 +117,7 @@ class Tactic(object):
 	def findValidNeighbours(self, plen):
 		""" Generate non-sink paths of plen length to find valid previous neighbours """
 		# Compute sink.
-		print self.getSinkState()
-
-		print self.getDelta()
-		print self.getFinalStates()
+		self.computeSinkState()
 
 		self.paths = dict()
 		for i in range(1, plen + 1):
@@ -131,7 +130,6 @@ class Tactic(object):
 				self.neighbours[lb][i] = []
 
 		def getPathsHelper(plen) :
-			print "helper", plen
 			paths = self.paths[plen - 1]
 			# Each path in paths will be of the form [lastlabel, final-state]
 			for path in paths : 
@@ -163,7 +161,6 @@ class Tactic(object):
 		for l in range(2, plen + 1):
 			getPathsHelper(l)
 
-		print self.neighbours
 
 	def getPreviousLabels(self, label, Reach) :
 		return self.neighbours[label][Reach + 1]
