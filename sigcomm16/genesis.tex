@@ -195,17 +195,13 @@ Let us define $Lb$ be the set of labels and $S$ be the set of switches in the to
 \begin{mydef}
 	A tactic $T$ is a regular expression over the alphabel $Lb$. We construct an associated automaton $A^T$ which is the automaton of the regular expression with every state accepting except the sink state (non-final state with a self-loop over all alphabets).
 \end{mydef}
-The rationale behind the associated automaton $A^T$ is that the automaton accepts prefixes of the label-path, and rejects prefixes which cannot lead to a path satisfying the regular expression of the tactic (by reaching a sink state). 
+A path $P$ is a word over the alphabet $S$. Let $\Phi : S^* \rightarrow Lb^*$ be the path-labelling function which maps each switch in the word to its corresponding label.  
+\begin{equation}
+	P \models T \iff  \Phi(P) \in L(A^T) 
+\end{equation}
+where $L(A^T)$ is the language of automaton $A^T$. The rationale behind the associated automaton $A^T$ is that the automaton accepts prefixes of the label-path, and rejects prefixes which cannot lead to a path satisfying the regular expression of the tactic (by reaching a sink state). 
 
 We demonstrate the example of a tactic with the fat-tree topology in \cref{fattree}. Let $Lb = \{c, a, e\}$. The labelling function $\phi$ maps each core switch to $c$, each aggregate switch to $a$ and every edge switch to $e$. For a path connecting two edge switches, let us define $T_e$ as $(e .^* e) \wedge \neg (e .^* e .^* e)$. This tactic says that the path connecting the two edge switches must not traverse through a edge switch.
-
-% A path $P$ is a word over the alphabet $S$. Let $\Phi : S^* \rightarrow Lb^*$ be the path-labelling function which maps each switch in the word to its corresponding label.  
-%\[
-%P \models T \iff  \Phi(P) \in L(A) 
-%\]
-%where $L(A)$ is the language of automaton $A$. 
-%
-% Thus, any path accepted by the tactic would a substring of a word in the language of the regular expression. The intuition is to prune the search to remove paths that will not satisfy the regular expression, that is paths which lead the automaton to the sink state.
 
 \subsection{Synthesis with Tactics}
 The tactic defined in the earlier section is a general framework of specify path properties based on network structure. However, adding constraints to ensure the path satisfies the tactic is \emph{slower} than without using tactics. In our synthesis algorithm, the backward reachability propagation constraints are the most significant in terms of time taken and complexity. 
@@ -269,7 +265,18 @@ Thus, $\forall sw,pc. \ \phi(sw) = a \ \wedge \ \Delta(a, 2) = \emptyset \implie
 Incorporating tactics in the synthesis is sound. If the tactic imposes an restriction to the path other than the source and destination, then the procedure is incomplete. However, tactics can be used to specify restrictions which would be reasonably complete, thus speeding up the synthesis. Even though we have defined a general framework to specify tactics using regular expressions, since the synthesis constraints depend on local behaviours, not every tactic would provide a speedup. For example the tactic $\neg (.^* c a c a c .^*)$ which specifies that a path must not traverse through the core switch layer more than twice, will not provide  speedup, bacause we cannot deduce any local patterns from the associated automaton as the regular expression is trying to count the number of times the path traverses a core switch, and thus it cannot remove any label from its preceding set as count is a global pattern and our approach can only use local patterns to speedup synthesis.  
 
 \section{Network Surgery}
-Network surgery is the technique of performing equivalent network transformations to speed up the process of synthesis. 
+Network surgery is the technique of performing equivalent network transformations to eliminate redudant constraints required for synthesis of switch rules. One of the properties of the path found by the synthesis solver is that it is simple (i.e no loops). Using this property, we can create slices of the topology where a packet class' path will reside completely, thus not requiring to add constraints for switches in other slices of the topology. 
+
+To create the topology slices, we use Schmidt's linear-time algorithm\cite{schmidt} to find bridges in the graph. A bridge is an edge in the topology, which when removed, partitions the graph into two disconnected components. <write-about-slices>. 
+
+Consider a reachability policy where the source and destination switches belong to the same topology slice. Since, the bridge edge is the only edge connected vertices of this slice with the rest of the graph, the path for the reachability policy will be contained in the topology slice and not cross the bridge (otherwise the path would have to traverse through the bridge twice back and forth which is not permitted). 
+
+Formally, let us define the slices of the topology as $S_1, S_2, ..., S_n \subset S$. We define the slice neighbour function for the slices as $N_{S_i}(s) = \{v | v \in S_i \wedge (s,v) \in L\}$. If there is a reachability policy $(r, pc)$ with $src,dst \in S_i$, we can replace the switch domain $S$ by $S_i$ and the neighbour function $N$ by $N_{S_i}$ in the constraint formation for reachability. For example, the backward reachability propagation constraints for a policy in slice $S_i$ can be modified to : 
+\begin{multline}
+\forall n_1,k.  n_1 \in S_i \wedge Reach(n_1,pc,k) \implies \exists n_2. n_2 \in N_{S_i}(n_1) \\ \wedge  Reach(n_2,pc,k-1) \wedge Fwd(n_2,n_1,pc)
+\end{multline}
+For packet classes isolated with packet class $pc$, only links in $S_i$ are needed to be isolated, as the path will be confined to topology slice $S_i$. 
+
 \section{Optimistic Synthesis}
 
 \section{Implementation}
@@ -395,32 +402,8 @@ NetEgg \cite{netegg} synthesizes the forwarding policy of a switch using example
 \cite{netgen} NetGen solves the problem of network updates using synthesis. Given a specification which mentions the packet classes, the old path and the new path, NetGen solves the network change problem using a SMT solver. One salient aspect is the use of uninterpreted functions to reduce the number of constraints. 
 
 \section{Conclusion}
-
- \begin{thebibliography}{1}
- 	
- 	\bibitem{decentralize} O. Padon et. al
- 	Shoham, Sharon {\em Decentralizing SDN Policies} 2015 
- 	
- 	\bibitem{netegg} Y. Yuan et. al {\em NetEgg: Programming Network Policies by Examples} 2014
- 	
- 	\bibitem{oneswitch} N. Kang et. al {\em Optimizing the "One Big Switch" Abstraction in Software-Defined Networks} 2013
- 	
- 	\bibitem{distfirewall} S Zhang et. al {\em An Adaptable Rule Placement for Software-Defined Networks} 2014
- 	
- 	\bibitem{netgen} S Saha et. al {\em NetGen: Synthesizing Data-plane Configurations for Network Policies} 2015
- 	
- 	\bibitem{z3} L De Moura et. al {\em Z3: An Efficient SMT Solver} 2008
- 	
- 	\bibitem{mcast} D. Ports et. al {\em Designing Distributed Systems Using Approximate Synchrony in Data Center Networks} 2015
- 	
- 	\bibitem{ply} PLY : {\em http://www.dabeaz.com/ply/}
- 	
- 	\bibitem{simple} Zafar Ayyub Qazi et. al {\em SIMPLE-fying middlebox policy enforcement using SDN} 2013
- 	
- 	\bibitem{metis} G Karypis et. al {\em A Fast and Highly Quality Multilevel Scheme for Partitioning Irregular Graphs} 1999 
- 	
- 	
- \end{thebibliography}
+\bibliography{references}{}
+\bibliographystyle{acm}
  \appendix
  \section{Proofs of NP-hardness} \label{sec:np}
  \subsection{Enforcement of Isolation Policies}
