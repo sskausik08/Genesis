@@ -22,60 +22,57 @@ gplparser.parseTopo()
 swCount = topology.getSwitchCount()
 edgeSwitches = (topology.getSwitchCount() * 2/ 5) - 1  
 
+groups = count / isolatePercentage
+groupsize = isolatePercentage
+srcCount = dict()
+dstCount = dict()
+for i in range(edgeSwitches + 1) :
+	srcCount[i] = 0
+	dstCount[i] = 0
+endpoints = dict()
+for i in range(groups) :
+	for j in range(groupsize) :
+		while True:		
+			s = random.randint(0,edgeSwitches)
+			d = random.randint(0,edgeSwitches)
+			if s <> d :
+				if s > d : 
+					key = str(d) + "-" + str(s)
+				else :
+					key = str(s) + "-" + str(d)
+				if key not in endpoints : 
+					if srcCount[s] < 4 and dstCount[d] < 4 :
+						endpoints[key] = True
+						srcCount[s] += 1
+						dstCount[d] += 1
+						break			
 
-# groups = count
-# groupsize = isolatePercentage
-# srcCount = dict()
-# dstCount = dict()
-# for i in range(edgeSwitches + 1) :
-# 	srcCount[i] = 0
-# 	dstCount[i] = 0
-# endpoints = dict()
-# for i in range(groups) :
-# 	for j in range(groupsize) :
-# 		while True:		
-# 			s = random.randint(0,edgeSwitches)
-# 			d = random.randint(0,edgeSwitches)
-# 			if s <> d :
-# 				if s > d : 
-# 					key = str(d) + "-" + str(s)
-# 				else :
-# 					key = str(s) + "-" + str(d)
-# 				if key not in endpoints : 
-# 					if srcCount[s] < 4 and dstCount[d] < 4 :
-# 						endpoints[key] = True
-# 						srcCount[s] += 1
-# 						dstCount[d] += 1
-# 						break			
+		gplfile.write("p" + str(i) + "_" + str(j) + " := tcp.port = " + str(i) + " : e" + str(s)  + " >> e" + str(d) + "\n")
 
-# 		gplfile.write("p" + str(i) + "_" + str(j) + " := tcp.port = " + str(i) + " : e" + str(s)  + " >> e" + str(d) + "\n")
+gplfile.write("== \n")	
+sets = dict()
+for i in range(groups) :
+	set = "[ "
+	for j in range(groupsize) :
+		set += "p" + str(i) + "_" + str(j)
+		if j <> groupsize - 1: 
+			set += ", "
+	set += " ]"
+	sets[i] = set
 
-# gplfile.write("== \n")	
-# sets = dict()
-# for i in range(groups) :
-# 	set = "[ "
-# 	for j in range(groupsize) :
-# 		set += "p" + str(i) + "_" + str(j)
-# 		if j <> groupsize - 1: 
-# 			set += ", "
-# 	set += " ]"
-# 	sets[i] = set
-
-# for i in range(groups) :
-# 	for j in range(i) :
-# 		if i <> j : 
-# 			gplfile.write(sets[i] + " || " + sets[j] + "\n")
-
+for i in range(groups) :
+	for j in range(i) :
+		if i <> j : 
+			gplfile.write(sets[i] + " || " + sets[j] + "\n")
 
 
 
-
-for i in range(count) : 
-	while True:
-		s = random.randint(0,edgeSwitches)
-		d = random.randint(0,edgeSwitches)
-		if s <> d :
-			break
+# for i in range(count) : 
+# 	while True:
+# 		s = random.randint(0,edgeSwitches)
+# 		d = random.randint(0,edgeSwitches)
+# 		if s <> d :
+# 			break
 
 	
 # 	while True:
@@ -92,7 +89,7 @@ for i in range(count) :
 	# 	gplfile.write("p" + str(i) + " := tcp.port = " + str(i) + " : " + topology.getSwName(s) + " >> [" + topology.getSwName(waypoint) + "] >> "  + topology.getSwName(d) + "\n")
 	# else :
 	#Reach	
-	gplfile.write("p" + str(i) + " := tcp.port = " + str(i) + " : e" + str(s)  + " >> e" + str(d) + "\n")
+	#gplfile.write("p" + str(i) + " := tcp.port = " + str(i) + " : e" + str(s)  + " >> e" + str(d) + "\n")
 	#Waypoint
 	#gplfile.write("p" + str(i) + " := tcp.port = " + str(i) + " : e" + str(s)  + " >> [ a" + str(a1) + ", a" + str(a2) + ", a" + str(a3) +  ", a" + str(a4) + " ] >> e" + str(d) + "\n")
 
