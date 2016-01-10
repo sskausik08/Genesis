@@ -1,23 +1,23 @@
-p0_0 := tcp.port = 0 : e16 >> e5
-p1_0 := tcp.port = 1 : e8 >> e14
-p2_0 := tcp.port = 2 : e2 >> e0
-p3_0 := tcp.port = 3 : e1 >> e15
-p4_0 := tcp.port = 4 : e10 >> e6
-p5_0 := tcp.port = 5 : e6 >> e17
-p6_0 := tcp.port = 6 : e12 >> e0
-p7_0 := tcp.port = 7 : e9 >> e16
-p8_0 := tcp.port = 8 : e9 >> e8
-p9_0 := tcp.port = 9 : e7 >> e13
-p10_0 := tcp.port = 10 : e12 >> e2
-p11_0 := tcp.port = 11 : e4 >> e0
-p12_0 := tcp.port = 12 : e6 >> e16
-p13_0 := tcp.port = 13 : e15 >> e4
-p14_0 := tcp.port = 14 : e6 >> e9
-p15_0 := tcp.port = 15 : e5 >> e17
-p16_0 := tcp.port = 16 : e5 >> e6
-p17_0 := tcp.port = 17 : e14 >> e13
-p18_0 := tcp.port = 18 : e12 >> e9
-p19_0 := tcp.port = 19 : e7 >> e17
+p0_0 := tcp.port = 0 : e9 >> e22
+p1_0 := tcp.port = 1 : e8 >> e18
+p2_0 := tcp.port = 2 : e15 >> e4
+p3_0 := tcp.port = 3 : e19 >> e5
+p4_0 := tcp.port = 4 : e9 >> e6
+p5_0 := tcp.port = 5 : e25 >> e13
+p6_0 := tcp.port = 6 : e1 >> e0
+p7_0 := tcp.port = 7 : e16 >> e31
+p8_0 := tcp.port = 8 : e13 >> e10
+p9_0 := tcp.port = 9 : e13 >> e22
+p10_0 := tcp.port = 10 : e14 >> e7
+p11_0 := tcp.port = 11 : e12 >> e10
+p12_0 := tcp.port = 12 : e19 >> e28
+p13_0 := tcp.port = 13 : e5 >> e30
+p14_0 := tcp.port = 14 : e2 >> e10
+p15_0 := tcp.port = 15 : e8 >> e23
+p16_0 := tcp.port = 16 : e21 >> e11
+p17_0 := tcp.port = 17 : e1 >> e11
+p18_0 := tcp.port = 18 : e20 >> e6
+p19_0 := tcp.port = 19 : e5 >> e23
 == 
 [ p1_0 ] || [ p0_0 ]
 [ p2_0 ] || [ p0_0 ]
