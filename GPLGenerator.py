@@ -2,6 +2,7 @@ from Topology import Topology
 from GPLInterpreter import GPLInterpreter
 import sys
 import random
+import math
 
 # python GPLGenerator.py <topology-file> <number-of-reachability> <percentage-of-isolation policies> <gpl-filename>
 # python GPLGenerator.py ./topologies/fattree-6.topo 50 10 fat6-50-10.gpl
@@ -19,7 +20,7 @@ gplparser.parseTopo()
 
 
 swCount = topology.getSwitchCount()
-edgeSwitches = 31
+edgeSwitches = (topology.getSwitchCount() * 2/ 5) - 1  
 
 
 # groups = count
