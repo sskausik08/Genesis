@@ -186,6 +186,9 @@ class PolicyDatabase(object) :
 			if pc in relClass :
 				return relClass
 
+	def getRelationalClasses(self) :
+		return self.relClasses
+
 	def getUnenforcedRelationalClasses(self):
 		unenforcedRCs = []
 		for relClass in self.relClasses :

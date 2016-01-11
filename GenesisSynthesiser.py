@@ -14,7 +14,7 @@ from collections import deque
 
 
 class GenesisSynthesiser(object) :
-	def __init__(self, topo, Optimistic=True, TopoSlicing=False, pclist=None, useTactic=False, noOptimizations=False, BridgeSlicing=False) :
+	def __init__(self, topo, Optimistic=True, TopoSlicing=False, pclist=None, useTactic=False, noOptimizations=False, BridgeSlicing=False, weakIsolation=False) :
 		self.topology = topo
 
 		# Network Forwarding Function
@@ -70,6 +70,7 @@ class GenesisSynthesiser(object) :
 		self.topologySlicingFlag = TopoSlicing
 		self.bridgeSlicingFlag = BridgeSlicing
 		self.synthesisSuccessFlag = True
+		self.weakIsolationFlag = weakIsolation
 
 		# SAT Encoding Flags
 		self.UseQuantifiersflag = True
@@ -326,7 +327,7 @@ class GenesisSynthesiser(object) :
 		""" Enforcement of Policies stored in the PDB. """
 
 		# Create Relational Packet Classses.
-		relClasses = self.pdb.createRelationalClasses()
+		relClasses = self.pdb.getRelationalClasses()
 
 		# switchTableConstraints = self.pdb.getSwitchTableConstraints()
 		# self.addSwitchTableConstraints(switchTableConstraints)  # Adding switch table constraints.
@@ -366,18 +367,20 @@ class GenesisSynthesiser(object) :
 				# Independent Synthesis of relClass.
 				self.z3Solver.push()
 				#reachtime = time.time()
+
+				filein = open("tenant-spec")
+				fields = filein.read().split()
+				tenantSize = int(fields[0])
+
 				for pc in relClass :
-					if not self.pdb.isMulticast(pc) :  
+					if not self.pdb.isMulticast(pc) and pc > tenantSize - 1:  
 						policy = self.pdb.getReachabilityPolicy(pc)
 						self.addReachabilityConstraints(srcIP=policy[0][0], srcSw=policy[0][2], dstIP=policy[0][1], dstSw=policy[0][3],pc=pc, W=policy[1], pathlen=policy[2]) 
 
-					if not self.addGlobalTopoFlag : 
-						#st = time.time()
-						# Add Topology Constraints
-						self.addTopologyConstraints(pc)
-
-
-				#print "Time taken to add reach constraints is", time.time() - reachtime	
+						if not self.addGlobalTopoFlag : 
+							#st = time.time()
+							# Add Topology Constraints
+							self.addTopologyConstraints(pc)
 
 				#isolationtime = time.time()
 				# Add traffic constraints. 
@@ -385,17 +388,38 @@ class GenesisSynthesiser(object) :
 					pc = self.pdb.getIsolationPolicy(pno)
 					pc1 = pc[0]
 					pc2 = pc[1]
-					if pc1 in relClass and pc2 in relClass : 
+					if pc1 in relClass and pc2 in relClass and pc1 > tenantSize - 1 and pc2 > tenantSize - 1: 
 						self.addTrafficIsolationConstraints(pc1, pc2)
 				
 				#print "Time taken to add isolation constraints is", time.time() - isolationtime
 
 				# Each relational class can be synthesised independently.
-				st = time.time()
 				solvetime = time.time()
 				modelsat = self.z3Solver.check()
 				self.z3solveTime += time.time() - solvetime
 				#tprint "Time taken to solve constraints is " + str(time.time() - st)
+
+				start_t = time.time()
+				for pc in range(tenantSize) :
+					policy = self.pdb.getReachabilityPolicy(pc)
+					self.addReachabilityConstraints(srcIP=policy[0][0], srcSw=policy[0][2], dstIP=policy[0][1], dstSw=policy[0][3],pc=pc, W=policy[1], pathlen=policy[2]) 
+
+					if not self.addGlobalTopoFlag : 
+						#st = time.time()
+						# Add Topology Constraints
+						self.addTopologyConstraints(pc)
+
+				for pno in range(self.pdb.getIsolationPolicyCount()) :
+					pc = self.pdb.getIsolationPolicy(pno)
+					pc1 = pc[0]
+					pc2 = pc[1]
+					if pc1 in relClass and pc2 in relClass and not (pc1 > tenantSize - 1 and pc2 > tenantSize - 1): 
+						self.addTrafficIsolationConstraints(pc1, pc2)				
+
+				modelsat = self.z3Solver.check()
+				end_t = time.time()
+				print "Time taken to add one tenant is", end_t - start_t
+
 				if modelsat == z3.sat : 
 					#print "Solver return SAT"
 					self.fwdmodel = self.z3Solver.model()
@@ -1389,6 +1413,14 @@ class GenesisSynthesiser(object) :
 		for sw in swList:
 			#self.smtlib2file.write("; Traffic Isolation Constraints for switch " + str(sw) + "\n")
 			for n in self.topology.getSwitchNeighbours(sw, useBridgeSlicing) :
+				if self.weakIsolationFlag : 
+					# Add constraints only for core, aggregate switch links. Using for evaluation
+					# TODO : Policy interpreter.
+					sw1 = self.topology.getSwName(sw)
+					sw2 = self.topology.getSwName(n)
+					if sw1[0] == "e" or sw2[0] == "e" :
+						continue
+
 				isolateAssert = Not( And (self.Fwd(sw,n,pc1), self.Fwd(sw,n,pc2)))
 				self.z3numberofadds += 1
 				#addtime = time.time() # Profiling z3 add.
@@ -1796,6 +1828,8 @@ class GenesisSynthesiser(object) :
 				if n not in visited and is_true(self.fwdmodel.evaluate(self.Fwd(sw,n,pc))) :
 					bfstree[n] = sw
 					swQueue.append(n)
+
+		return []
 
 	def enforceChangedPolicies(self):
 		# A model already exists. Synthesis of newly added policies. 
