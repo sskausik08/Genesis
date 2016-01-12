@@ -110,72 +110,66 @@ $Reach(s.pc,0)$ is taken to be $True$. We need a path to destination, thus desti
 \begin{equation} \label{eq:dst}
 	\exists k. Reach(dst, pc, k)
 \end{equation}
+Also, since the destination is supposed to be the last switch in the path, we need to ensure that the destination does not have forwarding rules further : 
+\begin{equation}
+	\forall n \in N(dst). Fwd(dst, n, pc) = False
+\end{equation}
 For the solver to find a path, we need inductive constraints propagating reachability backward from destination to source. If a node $n_1$ is reachable in $k$, there must a node $n_2$ which is reachable in  $k-1$ steps and there exists a forwarding rule $n_2 \rightarrow n_1$.
-\begin{multline}
+\begin{multline} \label{eq:bckprop}
 \forall n_1,k.  Reach(n_1,pc,k) \implies \exists n_2.  n_2 \in N(n_1) \wedge \\ Reach(n_2,pc,k-1) \wedge Fwd(n_2,n_1,pc)
 \end{multline} 
 The backward propagation is responsible for ensuring there is a valid path from source to destination by using the unit clauses in \cref{eq:dst}, and finding a path from destination back to a switch $sw$ which is a neighbour of $src$. thus $Reach(sw,pc,1)$ would be true from \cref{eq:src} and the reachability policy would be satisfied. 
 
-The above mentioned constraints are sufficient to ensure there is a path from $src$ to $dst$ for packet class $pc$ in terms of the forwarding function $Fwd$. However, since there is no restriction on number of $Fwd$ values that can be true at a switch, we can get multiple forwarding rules at switches, and also multiple paths to the destination. For a reachability policy, we merely require to find a path from $src$ to $dst$, so we can just extract a path from the model by performing a breadth-first search on the model-graph from source to destination. A directed edge exists in the model-graph : $n_1 \rightarrow n_2$ if there is forwarding rule indicated by the model $Fwd(n_1,n_2, pc) = True$.
- %< Write about additional constraints in isolation section>
+The above mentioned constraints are sufficient to ensure there is a path from $src$ to $dst$ for packet class $pc$ in terms of the forwarding function $Fwd$. However, since there is no restriction on number of $Fwd$ values that can be true at a switch, we can get multiple forwarding rules at switches, and also multiple paths to the destination. Also, there can exist forwarding loops as well. Howvever, for a reachability policy, we merely require to find a path from $src$ to $dst$, so we can just extract a path from the model by performing a breadth-first search on the model-graph from source to destination. A directed edge exists in the model-graph : $n_1 \rightarrow n_2$ if there is forwarding rule indicated by the model $Fwd(n_1,n_2, pc) = True$. Thus, we extract the relevant rules of the shortest path from source to destination from the model, and the additional rules obtained in the solution (extra paths, forwarding loops) are ignored.  
 \subsubsection{Waypoint Constraints} 
 For a reachability policy with waypoints $s >> W >> d$ and packet class $pc$, we add all the constraints specified in \cref{sec:reach} to ensure the existence of a path from source to destination. To satisfy waypoint policies, we need to add constraints so that all $w \in W$ is reachable. 
-\begin{equation}
+\begin{equation} \label{eq:waypoints}
 	\forall w \in W. \exists k. Reach(w, pc, k)
 \end{equation}
+However, just ensuring reachability of waypoints is not sufficient. Since, we do not have any restrictions on the count of forwarding rules for a packet class at a switch, it is possible that waypoints are reachable from the source through separate paths, and do not lie in the path from source to destination. Thus, to ensure that all waypoints are reachable in the path from source to destination, we need to add constraints on the count of forwarding rules at each switch. 
 
-
-Forwarding rule constraints are to ensure that the forwarding model from a node leads to a \emph{single} node which is a \emph{neighbour} or to no node at all (either packet reached here but no forwarded ). The \emph{single} node restriction is to account for \emph{unicast} and needs to be explicitly asserted as there are no restrictions on $Fwd$ to forward the packet to a single neighbour (forwarding to multiple neighbours does not model the network correctly).
+Forwarding rule constraints are to ensure that the forwarding function $Fwd$ at a switch forwards to a \emph{single} node which is a \emph{neighbour} or to no node at all (Switches which are not reached in the path and the destination will not have any forwarding rules). We define the forwarding set $FwdSet$ as follows:
 \begin{equation}
 	FwdSet(sw,pc) = \{n \ | \ Fwd(sw,n,pc) = True\}
 \end{equation}
+The $|A|$ function is used to the denote the size of set $A$. The constraint on the forwarding set are that the size of each set must not exceed 1 (0 or 1). The forwarding set constraint is as follows : 
 \begin{equation}
-		\forall sw,pc .  |FwdSet(sw,pc)| \leq 1 \label{fwdset}
+		\forall sw,pc . \ |FwdSet(sw,pc)| \leq 1 \label{eq:fwdset}
 \end{equation}
-where none or only one of $Fwd(sw,n,pc)$ can be true. If none is true, it means $sw$ drops the packet (or is the destination, we will cover this later), or the packet class $pc$ does not reach $sw$ at all. If $pc$ flows through $sw$, there must one and only one rule to send it to the next node in the path.\\ 
+The forwarding set constraints ensure that the forwarding rules exist only on the path from source to destination, and no other rules exist in the solution. If a switch has a forwarding rule elsewhere, then it would not have a rule for the path, and the destination will not be reachable. These restrictions will also ensure there are no forwarding loops in the path. 
+Since, there is only one path in the model from source and destination, and \cref{eq:waypoints} ensures that waypoints are reachable, therefore, the path from source to destination must traverse through all the waypoints. Since \cref{eq:waypoints} imposes no order on waypoint traversal, the solution will traverse the waypoints in no particular order. 
 
-\subsubsection{Flow Source and Destination Constraints}
-For a flow $<s1 \rightarrow d1>$ with packet class $pc$, we need the source node $s1$ to necessarily forward the packet. 
+\subsection{Isolation Constraints}
+For a traffic isolation policy $pc_1 || \ pc_2$ means that the paths do not share an link in the same direction in their paths, therefore, at every switch, the forwarding rules for $pc_1$ and $pc_2$ must not forward it to the same switch.  
 \begin{equation}
-	|FwdSet(s1,pc)| = 1 \label{src} 
+	\forall n_1. \neg ( \exists n_2. Fwd(n_1,n_2,pc_1) \wedge Fwd(n_1,n_2,pc_2)) \label{eq:isolation}
 \end{equation}
-The destination $d1$ must not forward the packet to any node. 
-\begin{equation}
-	|FwdSet(d1,pc)| = 0 \label{dst} 
-\end{equation}
-These and the topology constraints are sufficient to ensure there are no cycles in the graph. 
+These constraints are sufficient to ensure that the packet classes $pc_1$ and $pc_2$ would be isolated. 
 
-\subsection{Input Policies Constraints}
-\begin{itemize}
-	\item Reachability for flow $<src \rightarrow dst>$ : we need to assert the following. \\ 
-\begin{equation}
-		Reach(dst,pc,maxpathlen) = True \label{reach}
-\end{equation}
-	\item Waypoints :  $w \in W$ for flow $<s1 \rightarrow d1>$ : we need to assert the following.
-\begin{equation}
-	 \forall w \in W.Reach(w,pc, maxpathlen) = True \label{waypoint}
-\end{equation}
-	 \item Traffic Isolation for \{$pc1,pc2$\} : We need to assert the following.\\
-	 \begin{equation}
-		 \forall n_1. \neg ( \exists n_2. Fwd(n_1,n_2,pc1) \wedge Fwd(n_1,n_2,pc2)) \label{isolation}
-	 \end{equation}
-\end{itemize}
+The isolation constraints is intuitive when coupled with the forwarding set constraints (\cref{eq:fwdset}) as the model only has forwarding rules for the path from source to destination. However, for a reachability policy, we argue that the forwarding set constraints are not required when coupled with the isolation constraints. The reasoning behind this is that the solver would simply remove the extra forwarding rules of a packet class in the model which conflict with the other packet class, as there are no constraints which require the need of these extra forwarding rules for correctness, but are just one solution model in the space of solutions. 
+
+For a security isolation policy, $pc_1$ and $pc_2$ must not share links at all. \cref{eq:isolation} constraint can be modified to enforce bidirectional isolation :
+\begin{multline}
+\forall n_1. \neg ( \exists n_2. Fwd(n_1,n_2,pc_1) \wedge \\ (Fwd(n_1,n_2,pc_2) \vee Fwd(n_2,n_1,pc_2)) \label{eq:secisolation}
+\end{multline}
+
+\subsubsection{Link Capacity Constraints}
 
 \section{Constraint Evaluation}
-In the section, we evaluate the number of constraints required to add to the z3 Solver. Let $n$ be the number of nodes in the topology, $m$ be the number of edges in the topology, $pc$ be the number of packet classes, $t$ be the number of traffic isolation policies and $p$ be the max path length. Let $n'$ be the number of neighbours for a switch.
+In the section, we evaluate the number of constraints required to add to the z3 Solver. Let $|S|$ be the number of switches in the topology, $|L|$ be the number of edges in the topology, $|PC|$ be the number of packet classes, $|I|$ be the number of traffic isolation policies and $\mu$ be the max path length. Let $deg$ be the maximum number of neighbours for a switch (degree of the topology).
 
-We encode the forwarding rule constraint (\cref{fwdset}) using a SAT encoding rather than an SMT encoding for better performance. To express the constraint that the count of forwarding rules is not more than one, we can do this by adding an $or$ of clauses, where each clause is an $and$ of one rule set to true and all others set to false. An example for switch s and neighbours \{t,u\} is \newline
+We encode the forwarding set constraint (\cref{eq:fwdset}) using a SAT encoding rather than an SMT encoding for better performance. To express the constraint that the count of forwarding rules is not more than one, we can do this by adding an $or$ of clauses, where each clause is an $and$ of one rule set to true and all others set to false. An example for switch s and neighbours \{t,u\} is \newline
 \verb|(or| \\
 \hspace*{10pt}\verb|(and Fwd(s, t, pc)|  \verb|(not Fwd(s, u, pc)))| \\
-\hspace*{10pt}\verb|(and Fwd(s, u, pc)|  \verb|(not Fwd(sw, t, pc)))| \\
-\hspace*{10pt}\verb|(and (not Fwd(s, u, pc))|  \verb|(not Fwd(sw, t, pc)))|\\
+\hspace*{10pt}\verb|(and Fwd(s, u, pc)|  \verb|(not Fwd(s, t, pc)))| \\
+\hspace*{10pt}\verb|(and (not Fwd(s, u, pc))|  \verb|(not Fwd(s, t, pc)))|\\
 \verb|)| 
 
-Thus, the number of terms in a forwarding rule constraint for a switch and packet class is $n'*(n'+1)$. We add a single \verb|or| constraint for each switch and packet class in the network. Therefore, the count of constraints is $n * pc$.
+Thus, the number of terms in a forwarding rule constraint for a switch and packet class is $deg \times (deg+1)$. We add a single \verb|or| constraint for each switch and packet class in the network. Therefore, the count of constraints is $|S| \times |PC|$.
 
-The major bulk of time is consumed by the creation of the constraints for backward propagation of reachability (\cref{bckprop}). The number of constraints added to the solver is $n * p * pc$. We are using a quantifier-free encoding for better performance, so expressing the $exists$ is done by a $or$ clause of the set of neighbours for a switch. Therefore, the size of each constraint is $n'$. 
+The major bulk of time is consumed by the creation of the constraints for backward propagation of reachability (\cref{eq:bckprop}). The number of constraints added to the solver is $|S| \times |PC| \times \mu$. We are using a quantifier-free encoding for better performance, so expressing the $exists$ is done by a $or$ clause of the set of neighbours for a switch. Therefore, the size of each constraint is $deg$. 
 
-For each traffic isolation policy, we need to add constraints for each edge of the network, so that the two packet classes dont share the edge. Therefore, the number of constraints added is $e * t$ and the size of each constraint is constant. 
+For each traffic isolation policy, we need to add constraints for each edge of the network, so that the two packet classes dont share the edge. Therefore, the number of constraints added is $|L| \times |I|$ and the size of each constraint is constant size of two terms.
 
 \begin{table}[H]
 \begin{center}
@@ -183,11 +177,11 @@ For each traffic isolation policy, we need to add constraints for each edge of t
 		\hline
 		Constraints & Number & Size \\ [0.5ex] 
 		\hline\hline
-		Forwarding Rules & $n*pc$ & $deg * (deg + 1)$ \\ [0.5ex] 
+		Forwarding Rules & $|S| \times |PC| $ & $deg \times (deg + 1)$ \\ [0.5ex] 
 		\hline
-		Reachability Propagations & $n*p*pc$ & $deg$ \\ [0.5ex] 
+		Reachability Propagations & $|S| \times |PC| \times \mu $ & $deg$ \\ [0.5ex] 
 		\hline
-		Isolation & $e * t$ & 2 \\
+		Isolation & $|L| \times |I|$ & 2 \\
 		\hline
 	\end{tabular}
 \end{center}
