@@ -71,10 +71,14 @@ There has been a lot of work in the field of policy enforcement in networks, lik
 In recent years, the space of program synthesis has seen great progress, and in the context of SDNs, controller synthesis \cite{netegg}. The work on controller synthesis is towards enforcing switch-level behaviour, for example, learning switches or firewalls. However, when dealing with enterprise and datacenter networks, network operators need support for specifying end-to-end proactive policies without the need to program individual switch behaviour. Also, policies useful to operators are proactive (not dependent on the actual packets flowing), and this enables to enforce policies by synthesis of switch-table rules, and using a skeleton controller to deploy the forwarding rules to the switches. In contrast, trying to synthesize reactive policies (like a firewall), the controller needs to store the state of flows it has received and have a control module following the specifications, which is an interesting synthesis problem, but orthogonal to our problem.
 
  Enforcement of isolation, waypoint policies are NP-complete(see \cref{sec:np} for proofs), so to provide support for policies which are fundamentally hard to compute, we leverage recent advances in creating fast SMT solvers (like Z3) to perform synthesis by encoding the policy enforcement problem to a SMT instance, and use the SMT solver to find a solution which we translate to switch rules. To this end, we design the Genesis tool with a rich set of policy support where the network operators express the end-to-end policies using a high-level API and Genesis will synthesize the lower-level switch forwarding rules for realising these policies, abstracting out the need for operators to work on switch-level behaviours. 
-
+%Write about main-contributions. 
+<Write about main contributions> 
 \section{Problem Statement}
 % Specify short-forms for policies.
-\section{Network Forwarding Model} \label{sec:fwdmodel}
+\section{Synthesis}
+Given a set of policies, we perform switch table synthesis by modeling the network forwarding model, and for each policy, adding a set of constraints to the SMT Solver Z3 \cite{z3}, such that the solution model satisfying the constraints can be used to extract the forwarding rules for the switches. One of the key points of the network forwarding model is that the reachability, waypoint and isolation constraints are completely encoded using SAT i.e using boolean variables. 
+%Write about SMT? 
+\subsection{Network Forwarding Model} \label{sec:fwdmodel}
 We define the physical switch topology as an undirected graph $T=\{S, L\}$, where $S$ is the set of switches and $L$ is the set of links. We use the neighbour function $N(s) = \{s'\ | \ (s,s') \in L \}$ to denote the set of neighbour switches of L. The set of reachability policies is denoted as $R$ and each reachability policy $r \in R$ is of the form : $\{predicate$, $src$, $dst$, $W\}$. 
 
 The field $predicate$ is defined over the space of network headers and is used to identify the class of the packet. Assuming that the intersection of predicates is empty for policies in $R$, we create a mapping $\gamma : R \rightarrow PC$ to associate each reachability policy with a unique integer called packet class in the set $PC$. Switches $src, dst \in S$ denote the ingress and egress switches respectively for the packet class $pc = \gamma(r)$ and Genesis finds a path from $src$ to $dst$ for $pc$. If a waypoint policy is specified, $W$ is the set of switches the path from $src$ to $dst$ must traverse through in no particular order.
@@ -88,7 +92,7 @@ The key functions of the network forwarding model are \emph{two-fold}, abstracti
 \begin{mydef}
 	$Reach : N \times PC \times K  \rightarrow \{True,False\}$ is the reachability model. $Reach(sw, pc, k)$ function is set to True if switch $sw$ is reachable in the path from source switch of packet class $pc$ in exactly $k$ steps.  
 \end{mydef}
-
+The $Fwd$ function can be $True$ only for switches which are neighbours in the topology. For $sw_1, sw_2$ who are not connected by a link, $\forall pc, Fwd(sw_1,sw_2,pc) = False$.
 \begin{figure}[H]
 	\includegraphics[width=8cm]{topoF.png}
 	\caption{Values of the network forwarding model. The red and blue arrows denote the paths taken by packet classes 1 and 2 respectively from source switch 1 to destination switch 2}
@@ -97,7 +101,22 @@ The key functions of the network forwarding model are \emph{two-fold}, abstracti
 This is demonstrated by an example in \cref{fig:model}. There are two reachability policies, $r1 : 1 >> [5] >> 2$ with $pc=1$ and $r2 : 1 >> 2$ with $pc=2$ and $r1$ is isolated to $r2$. Using the value of $Fwd$ function, we can find out paths for each packet class, and the set of forwarding rules. 
 
 \subsection{Constraints}
-\subsubsection{Forwarding Rule Constraints} 
+\subsubsection{Reachability Constraints}
+For a reachability policy $s >> d$ and packet class $pc$, the constraints added must ensure that the solution model contains a path from source from destination. One of the constraints required for this is that there must exist a forwarding rule at source to one of its neighbours, and these constraints act as the base case relating the $Fwd$ and $Reach$ functions. 
+\begin{equation}
+	\exists n \in N(s). Fwd(s, n, pc) \wedge Reach(n, pc, 1)
+\end{equation}
+$Reach(s.pc,0)$ is taken to be $True$. We need a path to destination, thus destination switch must be reachable for some path length : 
+\begin{equation}
+	\exists k. Reach(dst, pc, k)
+\end{equation}
+For the solver to find a path, we need inductive constraints propagating reachability backward from destination to source. If a node $n_1$ is reachable in $k$, there must a node $n_2$ which is reachable in  $k-1$ steps and there exists a forwarding rule $n_2 \rightarrow n_1$.
+\begin{multline}
+\forall n_1,k.  Reach(n_1,pc,k) \implies \exists n_2.  n_2 \in N(n_1) \wedge \\ Reach(n_2,pc,k-1) \wedge Fwd(n_2,n_1,pc)
+\end{multline} 
+The above mentioned constraints are sufficient to ensure there is a path from $src$ to $dst$ for packet class $pc$ in terms of the forwarding function $Fwd$. However, since there is no restriction on number of $Fwd$ values that can be true at a switch, we can get multiple forwarding rules at switches, and also multiple paths to the destination. For a reachability policy, we merely require to find a path from $src$ to $dst$, so we can just extract a path from the model by performing a breadth-first search on the model-graph from source to destination. A directed edge exists in the model-graph : $n_1 \rightarrow n_2$ if there is forwarding rule indicated by the model $Fwd(n_1,n_2, pc) = True$.
+ %< Write about additional constraints in isolation section>
+\subsubsection{Waypoint Constraints} 
 Forwarding rule constraints are to ensure that the forwarding model from a node leads to a \emph{single} node which is a \emph{neighbour} or to no node at all (either packet reached here but no forwarded ). The \emph{single} node restriction is to account for \emph{unicast} and needs to be explicitly asserted as there are no restrictions on $Fwd$ to forward the packet to a single neighbour (forwarding to multiple neighbours does not model the network correctly).
 \begin{equation}
 	FwdSet(sw,pc) = \{n \ | \ Fwd(sw,n,pc) = True\}
@@ -118,17 +137,6 @@ The destination $d1$ must not forward the packet to any node.
 \end{equation}
 These and the topology constraints are sufficient to ensure there are no cycles in the graph. 
 
-\subsubsection{Flow Path Constraints}
-%The semantics of our networking forwarding model for a flow with packet class $pc$ is concerned about path reachabilty from the source node $s1$ and next-hop reachability for two consecutive nodes in the graph. \\
-%If $Reach(n,pc,k)$ is true, $Reach(n,pc,k + 1)$ is true as well because if flow $pc$ can reach $n$ in atmost $k$ links, it can reach $n$ in atmost $k+1$ links. 
-%\[
-%\forall n,k. Reach(n,pc, k)  \implies Reach(n,pc,k+1) \label{indpath} \tag{C5}
-%\]
-
-If a node $n_1$ is reachable in $k$, there must a node $n_2$ which is reachable in  $k-1$ steps and there exists a forwarding rule $n_2 \rightarrow n_1$.
-\begin{multline}
-\forall n_1,k.  Reach(n_1,pc,k) \implies \exists n_2.  n_2 \in N(n_1) \wedge \\ Reach(n_2,pc,k-1) \wedge Fwd(n_2,n_1,pc)
-\end{multline} 
 \subsection{Input Policies Constraints}
 \begin{itemize}
 	\item Reachability for flow $<src \rightarrow dst>$ : we need to assert the following. \\ 
@@ -214,6 +222,7 @@ Let us formalise this notion of finding local label patterns based on a tactic $
 \begin{mydef}
 	$\Gamma(lb, k)$ is the set of reachable paths such that for each $w \in \Gamma(lb, k)$: 
 	\begin{enumerate}
+		\item $w \in L(A^T)$
 		\item $w \in Lb^{k+1}$
 		\item $w[k+1] = lb$
 		\item $w$ is a valid label-path in the topology
@@ -232,7 +241,7 @@ After computing $\Delta(lb, k)$, we can modify the backward reachability propaga
 \end{multline} 
 If $\Delta(lb, k) = \emptyset$, then $Reach(sw, pc, k) = False$ for switches $sw \in S$ for which $\phi(sw) = lb$. 
 
-To find the $\Delta$s for a tactic, we use a dynamic programming approach of finding all valid label words of length $k$ accepted by the associated automaton($\forall lb. \Gamma(lb, k)$) by using the valid label words of length $k-1$ (we also store the last state the automaton is in), and make one valid transition on labels (validity is based on two factors : automaton doesn't reach the sink state, and the current label and previous label are connected in the topology). After computing the $\Gamma$s, we can compute $\Delta(lb,k)$ by examining $\Gamma(lb,k)$ to find labels at the $k^{th}$ position.
+To find the $\Delta$s for a tactic, we use a dynamic programming approach of finding all valid label words of length $k$ accepted by the associated automaton ($\forall lb$. $\Gamma(lb, k)$) by using the valid label words of length $k-1$ (we also store the last state the automaton is in), and make one valid transition on labels (validity is based on two factors : automaton doesn't reach the sink state, and the current label and previous label are connected in the topology). After computing the $\Gamma$s, we can compute $\Delta(lb,k)$ by examining $\Gamma(lb,k)$ to find labels at the $k^{th}$ position.
 \begin{figure}[h!]
 	\centering
 	\begin{tikzpicture}[shorten >=1pt,node distance=2cm,on grid,auto] 

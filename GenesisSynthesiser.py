@@ -368,12 +368,8 @@ class GenesisSynthesiser(object) :
 				self.z3Solver.push()
 				#reachtime = time.time()
 
-				filein = open("tenant-spec")
-				fields = filein.read().split()
-				tenantSize = int(fields[0])
-
 				for pc in relClass :
-					if not self.pdb.isMulticast(pc) and pc > tenantSize - 1:  
+					if not self.pdb.isMulticast(pc):  
 						policy = self.pdb.getReachabilityPolicy(pc)
 						self.addReachabilityConstraints(srcIP=policy[0][0], srcSw=policy[0][2], dstIP=policy[0][1], dstSw=policy[0][3],pc=pc, W=policy[1], pathlen=policy[2]) 
 
@@ -388,7 +384,7 @@ class GenesisSynthesiser(object) :
 					pc = self.pdb.getIsolationPolicy(pno)
 					pc1 = pc[0]
 					pc2 = pc[1]
-					if pc1 in relClass and pc2 in relClass and pc1 > tenantSize - 1 and pc2 > tenantSize - 1: 
+					if pc1 in relClass and pc2 in relClass: 
 						self.addTrafficIsolationConstraints(pc1, pc2)
 				
 				#print "Time taken to add isolation constraints is", time.time() - isolationtime
@@ -398,27 +394,6 @@ class GenesisSynthesiser(object) :
 				modelsat = self.z3Solver.check()
 				self.z3solveTime += time.time() - solvetime
 				#tprint "Time taken to solve constraints is " + str(time.time() - st)
-
-				start_t = time.time()
-				for pc in range(tenantSize) :
-					policy = self.pdb.getReachabilityPolicy(pc)
-					self.addReachabilityConstraints(srcIP=policy[0][0], srcSw=policy[0][2], dstIP=policy[0][1], dstSw=policy[0][3],pc=pc, W=policy[1], pathlen=policy[2]) 
-
-					if not self.addGlobalTopoFlag : 
-						#st = time.time()
-						# Add Topology Constraints
-						self.addTopologyConstraints(pc)
-
-				for pno in range(self.pdb.getIsolationPolicyCount()) :
-					pc = self.pdb.getIsolationPolicy(pno)
-					pc1 = pc[0]
-					pc2 = pc[1]
-					if pc1 in relClass and pc2 in relClass and not (pc1 > tenantSize - 1 and pc2 > tenantSize - 1): 
-						self.addTrafficIsolationConstraints(pc1, pc2)				
-
-				modelsat = self.z3Solver.check()
-				end_t = time.time()
-				print "Time taken to add one tenant is", end_t - start_t
 
 				if modelsat == z3.sat : 
 					#print "Solver return SAT"
