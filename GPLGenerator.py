@@ -21,6 +21,7 @@ gplparser.parseTopo()
 
 swCount = topology.getSwitchCount()
 edgeSwitches = (topology.getSwitchCount() * 2/ 5) - 1  
+k = int(math.sqrt(topology.getSwitchCount() * 4/ 5))
 
 groups = count / isolatePercentage
 groupsize = isolatePercentage
@@ -41,7 +42,7 @@ for i in range(groups) :
 				else :
 					key = str(s) + "-" + str(d)
 				if key not in endpoints : 
-					if srcCount[s] < 4 and dstCount[d] < 4 :
+					if srcCount[s] < k/2 and dstCount[d] < k/2 :
 						endpoints[key] = True
 						srcCount[s] += 1
 						dstCount[d] += 1
