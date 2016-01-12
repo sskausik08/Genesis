@@ -101,22 +101,30 @@ The $Fwd$ function can be $True$ only for switches which are neighbours in the t
 This is demonstrated by an example in \cref{fig:model}. There are two reachability policies, $r1 : 1 >> [5] >> 2$ with $pc=1$ and $r2 : 1 >> 2$ with $pc=2$ and $r1$ is isolated to $r2$. Using the value of $Fwd$ function, we can find out paths for each packet class, and the set of forwarding rules. 
 
 \subsection{Constraints}
-\subsubsection{Reachability Constraints}
+\subsubsection{Reachability Constraints} \label{sec:reach}
 For a reachability policy $s >> d$ and packet class $pc$, the constraints added must ensure that the solution model contains a path from source from destination. One of the constraints required for this is that there must exist a forwarding rule at source to one of its neighbours, and these constraints act as the base case relating the $Fwd$ and $Reach$ functions. 
-\begin{equation}
+\begin{equation} \label{eq:src}
 	\exists n \in N(s). Fwd(s, n, pc) \wedge Reach(n, pc, 1)
 \end{equation}
 $Reach(s.pc,0)$ is taken to be $True$. We need a path to destination, thus destination switch must be reachable for some path length : 
-\begin{equation}
+\begin{equation} \label{eq:dst}
 	\exists k. Reach(dst, pc, k)
 \end{equation}
 For the solver to find a path, we need inductive constraints propagating reachability backward from destination to source. If a node $n_1$ is reachable in $k$, there must a node $n_2$ which is reachable in  $k-1$ steps and there exists a forwarding rule $n_2 \rightarrow n_1$.
 \begin{multline}
 \forall n_1,k.  Reach(n_1,pc,k) \implies \exists n_2.  n_2 \in N(n_1) \wedge \\ Reach(n_2,pc,k-1) \wedge Fwd(n_2,n_1,pc)
 \end{multline} 
+The backward propagation is responsible for ensuring there is a valid path from source to destination by using the unit clauses in \cref{eq:dst}, and finding a path from destination back to a switch $sw$ which is a neighbour of $src$. thus $Reach(sw,pc,1)$ would be true from \cref{eq:src} and the reachability policy would be satisfied. 
+
 The above mentioned constraints are sufficient to ensure there is a path from $src$ to $dst$ for packet class $pc$ in terms of the forwarding function $Fwd$. However, since there is no restriction on number of $Fwd$ values that can be true at a switch, we can get multiple forwarding rules at switches, and also multiple paths to the destination. For a reachability policy, we merely require to find a path from $src$ to $dst$, so we can just extract a path from the model by performing a breadth-first search on the model-graph from source to destination. A directed edge exists in the model-graph : $n_1 \rightarrow n_2$ if there is forwarding rule indicated by the model $Fwd(n_1,n_2, pc) = True$.
  %< Write about additional constraints in isolation section>
 \subsubsection{Waypoint Constraints} 
+For a reachability policy with waypoints $s >> W >> d$ and packet class $pc$, we add all the constraints specified in \cref{sec:reach} to ensure the existence of a path from source to destination. To satisfy waypoint policies, we need to add constraints so that all $w \in W$ is reachable. 
+\begin{equation}
+	\forall w \in W. \exists k. Reach(w, pc, k)
+\end{equation}
+
+
 Forwarding rule constraints are to ensure that the forwarding model from a node leads to a \emph{single} node which is a \emph{neighbour} or to no node at all (either packet reached here but no forwarded ). The \emph{single} node restriction is to account for \emph{unicast} and needs to be explicitly asserted as there are no restrictions on $Fwd$ to forward the packet to a single neighbour (forwarding to multiple neighbours does not model the network correctly).
 \begin{equation}
 	FwdSet(sw,pc) = \{n \ | \ Fwd(sw,n,pc) = True\}
