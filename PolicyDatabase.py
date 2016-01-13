@@ -223,7 +223,8 @@ class PolicyDatabase(object) :
 			else : 
 				print "Policy " + str(pc) + " not enforced."
 				return False
-		return True
+
+		return self.validateCapacityPolicy()
 
 	def validateIsolationPolicy(self, pc) :
 		""" Validation of packet class flow pc w.r.t all its isolation policies"""
@@ -273,6 +274,28 @@ class PolicyDatabase(object) :
 					break
 			waypointFlag = waypointFlag and foundFlag
 		return waypointFlag 
+
+	def validateCapacityPolicy(self):
+		for policy in self.linkCapacityConstraints : 
+			capacity = policy[2]
+			sw1 = policy[0]
+			sw2 = policy[1]
+			for pc in self.paths : 
+				path = self.paths[pc]
+				try :
+					pos = path.index(sw1)
+					if pos + 1 < len(path) and path[pos + 1] == sw2 : 
+						# Link used. 
+						capacity -= 1
+				except ValueError :
+					continue
+
+			if capacity < 0 : 
+				return False
+		return True
+
+
+
 
 	def isMulticast(self, pc) :
 		if pc in self.mutlicastTable :
