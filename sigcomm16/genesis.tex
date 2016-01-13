@@ -156,7 +156,29 @@ For a security isolation policy, $pc_1$ and $pc_2$ must not share links at all. 
 <Write about link and switch maintanences>
 
 \subsection{Capacity Constraints}
-<Write-about-switch and link capacity constraints>
+For a link capacity policy on the link $sw_1 \rightarrow sw_2$ with capacity $\omega$, we use the theory of integer linear arithmetic to add constraints on the link so that capacity used by the flows traversing the link does not exceed $\omega$. In terms of our model, the link capacity policy translates to constraints to ensure that the the occurences of $Fwd(sw_1, sw_2, pc) = True$ for $pc \in PC$ conforms to the capacity specified in the policy, as the forwarding rule $sw1 \rightarrow sw2$ means that the link is being used by the particular packet class.
+ 
+Let $C(sw_1,sw_2,pc)$ be the cumulative capacity function of the link used by all packet classes less than equal to $pc$. Since we use integers for denoting the packet class, and thus, we have total order of the set of packet classes. We use this to create inductive constraints to sum over the set of Boolean variables $Fwd(sw_1, sw_2,pc)$. Let $PC : [0, \lambda]$ be the set of packet classes and the $W(pc)$ is the capacity of packet class $pc$ ($W$ can be uniform or non-uniform for all packet classes). 
+The base case constraint for the capacity function is for $pc = 0$ (the minimum element of $PC$) :
+\begin{equation}
+	Fwd(sw_1, sw_2, 0) \implies C(sw_1, sw_2, 0) == W(0)
+\end{equation}
+\begin{equation}
+	\neg Fwd(sw_1, sw_2, 0) \implies C(sw_1, sw_2, 0) == 0
+\end{equation} 
+The inductive constraints for the capacity function are as follows if link is used : 
+\begin{multline}
+	\forall pc > 0. Fwd(sw_1,sw_2,pc) \implies \\ C(sw_1, sw_2, pc) ==  C(sw_1. sw_2, pc - 1) + W(pc)
+\end{multline}
+If the link is not used, the constraints are as follows : 
+\begin{multline}
+\forall pc > 0. \neg Fwd(sw_1,sw_2,pc) \implies \\ C(sw_1, sw_2, pc) ==  C(sw_1. sw_2, pc - 1)
+\end{multline}
+If $pc$ uses the link $sw_1 \rightarrow sw_2$, we add $W(pc)$ to $C(sw_1,$ $sw_2,pc-1)$, or add 0 to it if link is not being used. Thus, we define the cumulative capacity constraints using inductive constraints. To satisfy the capacity policy, the total capacity used should not exceed input $\omega$. $\lambda$ is the greatest element in the set $PC$. 
+\begin{equation}
+	C(sw_1, sw_2, \lambda) \leq \omega	
+\end{equation}  
+      
 
 \section{Constraint Evaluation}
 In the section, we evaluate the number of constraints required to add to the z3 Solver. Let $|S|$ be the number of switches in the topology, $|L|$ be the number of edges in the topology, $|PC|$ be the number of packet classes, $|I|$ be the number of traffic isolation policies and $\mu$ be the max path length. Let $deg$ be the maximum number of neighbours for a switch (degree of the topology).
