@@ -51,9 +51,9 @@ class GenesisSynthesiser(object) :
 		self.OptimisticUnsatLinkCores = []
 
 		# Optimistic Synthesis Constants. 
-		self.CUT_THRESHOLD = 10
-		self.BASE_GRAPH_SIZE_THRESHOLD = 25
-		self.CURR_GRAPH_SIZE_THRESHOLD = 25
+		self.CUT_THRESHOLD = 50
+		self.BASE_GRAPH_SIZE_THRESHOLD = 10
+		self.CURR_GRAPH_SIZE_THRESHOLD = 10
 		self.MIN_GRAPH_THRESHOLD = 3
 
 		# Different Solution Recovery Variables. 
@@ -503,7 +503,7 @@ class GenesisSynthesiser(object) :
 		# Add link capacity constraints. 
 		self.addLinkConstraints(pclist, self.OptimisticLinkCapacityConstraints)
 
-		print "Starting Z3 check for " + str(pclist)
+		#print "Starting Z3 check for " + str(pclist)
 		st = time.time()
 		solvetime = time.time()
 		modelsat = self.z3Solver.check()
@@ -511,7 +511,7 @@ class GenesisSynthesiser(object) :
 		if modelsat == z3.sat : 
 			#tprint "Time taken to solve the constraints is " + str(time.time() - st)
 			rcGraphSat = True
-			print "SAT"
+			#print "SAT"
 			self.fwdmodel = self.z3Solver.model()
 			for pc in pclist :
 				path = self.getPathFromModel(pc)
@@ -824,7 +824,7 @@ class GenesisSynthesiser(object) :
 		return newPathConstraints
 
 	def differentSolutionRecovery(self, attempt, rcGraph1, rcGraph2, differentPathConstraints) :
-		print "Recovery Attempt #" + str(attempt) + " " + str(differentPathConstraints)
+		#print "Recovery Attempt #" + str(attempt) + " " + str(differentPathConstraints)
 		if differentPathConstraints == None :
 			localDifferentPathConstraints = []
 		else : 
@@ -833,7 +833,7 @@ class GenesisSynthesiser(object) :
 		(rcGraph1Sat, synPaths1) = self.enforceGraphPoliciesOptimistic(rcGraph1, localDifferentPathConstraints)
 			
 		if rcGraph1Sat == False : 
-			print "Recovery Failed"
+			#print "Recovery Failed"
 			# Function cannot find a different solution. Stop different solution recovery. 
 			return (False, dict())
 			# Returning the empty dict because the failure of rcGraph1 is due to the absence of different solutions 
@@ -1228,17 +1228,17 @@ class GenesisSynthesiser(object) :
 
 				#self.smtlib2file.write("(assert (or " + reachAssertionsStr + " ))\n")
 				
-		# Weird Reach Constraint.
-		dstneighbours = self.topology.getSwitchNeighbours(dstSw)
-		# Only want one switch rule from neighbours of dst to dst. (thus ensuring a single path to destination)
-		singlePathAssertions = []
-		for n in dstneighbours : 
-			ruleAssertions = [self.Fwd(n, dstSw, pc)]
-			for n1 in dstneighbours :
-				if n <> n1 : 
-					ruleAssertions.append(Not(self.Fwd(n1, dstSw, pc)))
-			singlePathAssertions.append(And(*ruleAssertions))
-		self.z3Solver.add(Or(*singlePathAssertions))
+		# # Weird Reach Constraint.
+		# dstneighbours = self.topology.getSwitchNeighbours(dstSw)
+		# # Only want one switch rule from neighbours of dst to dst. (thus ensuring a single path to destination)
+		# singlePathAssertions = []
+		# for n in dstneighbours : 
+		# 	ruleAssertions = [self.Fwd(n, dstSw, pc)]
+		# 	for n1 in dstneighbours :
+		# 		if n <> n1 : 
+		# 			ruleAssertions.append(Not(self.Fwd(n1, dstSw, pc)))
+		# 	singlePathAssertions.append(And(*ruleAssertions))
+		# self.z3Solver.add(Or(*singlePathAssertions))
 
 		#st = time.time()
 		# Add Path Constraints for this flow to find the forwarding model for this flow.
