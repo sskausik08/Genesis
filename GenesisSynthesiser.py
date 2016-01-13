@@ -14,7 +14,7 @@ from collections import deque
 
 
 class GenesisSynthesiser(object) :
-	def __init__(self, topo, Optimistic=True, TopoSlicing=False, pclist=None, useTactic=False, noOptimizations=False, BridgeSlicing=False, weakIsolation=False) :
+	def __init__(self, topo, Optimistic=True, TopoSlicing=False, pclist=None, useTactic=False, noOptimizations=False, BridgeSlicing=True, weakIsolation=False) :
 		self.topology = topo
 
 		# Network Forwarding Function

@@ -221,8 +221,7 @@ class Topology(object):
 		if len(self.bridges) > 0 : 
 			# bridges exist, set useBridgeSlicing
 			self.useBridgeSlicing = True
-			print "Bridges exist. Use bridge Slicing."
-
+			
 		# Allot slices.
 		slice = 0
 		self.bridgeSliceMap = dict()
