@@ -74,7 +74,19 @@ In recent years, the space of program synthesis has seen great progress, and in 
 %Write about main-contributions. 
 <Write about main contributions> 
 \section{Problem Statement}
-% Specify short-forms for policies.
+We design a language GPL (Genesis Policy Language) for network operators to express the desired end-to-end policies which is interpreted by the synthesizer to find the forwarding rules which enforce the input policies. The syntax of GPL is specified in <figure>. GPL supports the following policies : 
+\begin{enumerate}
+	\item \textbf{Reachability} $\rightarrow$ $predicate : src >> dst$ \\
+	This policy specifies the packets satisying $predicate$ have ingress switch $src$ and egress switch $dst$, and requires rules forwarding packets satisfying $predicate$ from $src$ to $dst$. There must be forwarding loops in the network. 
+	\item \textbf{Waypoint} $\rightarrow$ $predicate : src >> W >> dst$ \\
+	The waypoint policy is a stronger reachability policy, and specifies that packet satisfying $predicate$ with ingress switch $src$ and egress switch $dst$ must pass through the set of waypoints $W$ in no particular order. The waypoint policy helps operators to specify the middleboxes the packets must traverse through without worrying about order, or having to use header tags to enforce a particular order. 
+	\item \textbf{Traffic Isolation} $\rightarrow F1 \ || \ F2$ \\
+	The traffic isolation policy ensures that the paths taken by packets $F1$ and $F2$, two reachability/waypoint policies do not traverse any link in the same direction. This policy can be used to provide fairness guarantees, since the paths of $F1$ and $F2$ don't share a link, the bandwidth rate of $F1$ will not affect the bandwidth rate of $F2$ and vice-versa. The condition of sharing a link in the same direction is due to the fact that links are full-duplex so, traffic flowing in one direction is not affected by the traffic flowing in the other direction.
+	\item \textbf{Security Isolation} $\rightarrow F1 <> F2$ 
+	 
+	
+\end{enumerate}
+
 \section{Synthesis}
 Given a set of policies, we perform switch table synthesis by modeling the network forwarding model, and for each policy, adding a set of constraints to the SMT Solver Z3 \cite{z3}, such that the solution model satisfying the constraints can be used to extract the forwarding rules for the switches. One of the key points of the network forwarding model is that the reachability, waypoint and isolation constraints are completely encoded using SAT i.e using boolean variables. 
 %Write about SMT? 
