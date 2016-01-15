@@ -34,26 +34,6 @@
 Operators in enterprise and datacenter networks deal with complex end-to-end policies for a large number of classes like reachabilities, middlebox traversals and isolation policies, and dealing with these policies separately and enforcing them at switch-level rules is cumbersome. To tackle this, we create a tool Genesis which supports a rich suite of end-to-end policies which the network operator can specify using a high-level API. Genesis converts the policy enforcement problem to a SMT instance and synthesizes switch rules using a SMT solver (Z3) which can be used by a controller to deploy to the topology.
 \end{abstract}
 
-%\section{Problem Statement}
-%\subsection{Input}
-%\begin{figure}[H]
-%	\includegraphics[width=8cm]{topo.png}
-%	\caption{Example Network Topology}
-%\end{figure}
-%\begin{itemize}
-%	\item Network topology graph (comprising of hosts, switches, links)
-%	\item End-point (for a pair of end-points) based network-wide policies. For eg.
-%	\begin{itemize}
-%		\item Reachability Policy($predicate$, $src$, $dst$) : \\ There exists a path for packets satisfying the $predicate$ from ingress switch $src$ to egress switch $dst$.
-%		\item Waypoint Policy($predicate$, $src$, $dst$, $waypoints$): There exists a path for packets satisfying the $predicate$ from ingress switch $src$ to egress switch $dst$ passing through the set of $waypoints$ in any order.
-%		\item Traffic Isolation Policy($f1,f2$) : Flows $f1, f2$ should not share a link in the path in the same direction.		
-%		\item Support for normal and equal-path multicast groups.
-%	\end{itemize}
-%\end{itemize}
-
-%\subsection{Output}
-%The flow tables in the switches satisfying input policies.
-
 \section{Introduction}
 %[Intro] 
 Network operators of enterprise and cloud datacenter networks deal with hundreds of switches and thousands of traffic classes desiring diverse end-to-end policies. However, in real-life, the process of policy enforcement by network operators is manual and ad-hoc, leading to mis-configurations which have severe performance and security impacts. With the boom in cloud services, datacenter networks deal with thousands of packet classes which are not constant, but in flux, thus, making it difficult to enforce them manually. 
@@ -73,7 +53,23 @@ In recent years, the space of program synthesis has seen great progress, and in 
  Enforcement of isolation, waypoint policies are NP-complete(see \cref{sec:np} for proofs), so to provide support for policies which are fundamentally hard to compute, we leverage recent advances in creating fast SMT solvers (like Z3) to perform synthesis by encoding the policy enforcement problem to a SMT instance, and use the SMT solver to find a solution which we translate to switch rules. To this end, we design the Genesis tool with a rich set of policy support where the network operators express the end-to-end policies using a high-level API and Genesis will synthesize the lower-level switch forwarding rules for realising these policies, abstracting out the need for operators to work on switch-level behaviours. 
 %Write about main-contributions. 
 <Write about main contributions> 
-\section{Problem Statement}
+\section{Motivation}
+We present use cases of Genesis from the perspective of a mutli-tenant cloud network operator. The basic functionalities a tenant requires from the cloud is network reachability between its machines so that they can communicate. Also, the tenant would like to specify waypoints for middlebox functionalities, for example, traffic from the tenant's $vm1$ to $vm2$ must traverse through a firewall and IDS. 
+
+Many tenants use the cloud instances for performance-sensitive tasks and quality-of-service guarantees are a desirable feature that tenants require from a cloud. Cloud providers could charge tenants a higher rate for providing tenant isolation, which would ensure that the tenant's performance is not affected by the other tenants sharing the network. Thus, we assume two kinds of tenants, regular tenants with no performance guarantees, and \emph{premium} tenants, whose performance would be isolated from other tenants. 
+
+For example, we consider a multi-tenant cloud scenario with four tenants, each tenant having two virtual machines. Out of the tenants, $T_1, T_2$ are the premium tenants with QoS guarantees, and $T_3, T_4$ are regular tenants. Tenant $T_1$ requires that the traffic between its machines passes through a firewall. This is the tenant policy provided as input to the cloud operator would manages the compute nodes and the network topology, the essential elements of a cloud. Traditionally, the operator would perform allocation of the tenant VMs on the compute nodes and install forwarding rules between the tenant VMs to enable communication. However, to perform tenant isolation, the operator will have to manually configure the rules for the premium tenants and perform different iterations to find the forwarding plane configuration which satisfies this. For small number of tenants, this process would be acceptable, but dealing with large topologies and greater number of tenants makes this cumbersome and leads to misconfigurations and violation of service-level agreements for tenants. 
+
+Instead, Genesis provides a high-level interface for operators to specify policies in a declarative manner and Genesis would provide the forwarding plane rules required to enforce the policies. For the example mentioned earlier, after the tenant virtual machines have been mapped to compute nodes, for each tenant $T_2$, $T_3$, $T_4$'s $vm_1 \rightarrow vm_2$ communication, the operator would specify a reachability policy : $src >> dst$ connecting the ingress switch $src$ connected to compute node where $vm_1$ is placed to the egress switch $dst$ connected to the compute node where $vm_2$ is placed (for the sake of simplicity, we assume $vm2 \rightarrow vm_1$ communication will use the same path as $vm_1 \rightarrow vm_2$, otherwise the operator would need to add another reachability policy for $vm_2 \rightarrow vm_1$). Since tenant $T_1$ has specified a firewall as a waypoint, the operator would have a waypoint policy to ensure $vm^1_1 \rightarrow vm^1_2$ passes through a switch in the topology implementing a firewall (Click) or connected to a firewall. 
+
+To provide tenant isolation for the premium tenants, the operator would require to add traffic isolation policies. For this setting, for tenant $T_1$, we would have three isolation policies : $T_1 || T_2$, $T_1 || T_3$ and $T_1 || T_4$. These three policies ensure that $T_1$'s traffic would not share a link with the other tenants. We would similarly require two policies for $T_2$ : $T_2 || T_3$ and $T_2 || T_4$ (Isolation policies are commutative). Since $T_3$ and $T_4$ are regular tenants, they are not offered any performance guarantees, and can share links between themselves, but not with the premium tenants.  
+
+With these policies and the topology as input to Genesis, the network operator can obtain the switch table rules enforcing these end-to-end policies (and additional rules at the ingress/egress switches to connect with tenant VMs) which would be provided to the cloud network controller to be deployed to the topology. This process eliminates the need for operators to work on individual switch-level behaviors and provides a method to specify the policies required for satisfying the tenants SLAs with ease.   
+
+To improve utilisation of the network, network operators would need to perform traffic engineering. The network operator can have policies specifying the capacity of certain links such that tenant flows using the link do not exceed the capacity of the link. Such policies can be useful to ensure the low bandwidth links are not used by more tenants such that their performance is affected. For example, link $l$ in \cref{fig:example} <TODO:DRAW FIG> is a low bandwidth link and must not have more than four tenant flows. For such policies, we can have uniform or non-uniform weights for the tenant flows (can be used as an index of pricing) and can provide bandwidth guarantees for tenants. Network operators can also have policies which specify switch constraints, like the size of the rule table, and can be used to restrict the number of flows traversing the switch (each flow would require a forwarding rule). 
+
+
+\subsection{Problem Statement}
 We design a language GPL (Genesis Policy Language) for network operators to express the desired end-to-end policies which is interpreted by the synthesizer to find the forwarding rules which enforce the input policies. The syntax of GPL is specified in <figure>. GPL supports the following policies : 
 \begin{enumerate}
 	\item \textbf{Reachability} $\rightarrow$ $predicate : src >> dst$ \\
