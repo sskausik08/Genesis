@@ -68,7 +68,7 @@ With these policies and the topology as input to Genesis, the network operator c
 
 To improve utilisation of the network, network operators would need to perform traffic engineering. The network operator can have policies specifying the capacity of certain links such that tenant flows using the link do not exceed the capacity of the link. Such policies can be useful to ensure the low bandwidth links are not used by more tenants such that their performance is affected. For example, link $l$ in \cref{fig:example} <TODO:DRAW FIG> is a low bandwidth link and must not have more than four tenant flows. For such policies, we can have uniform or non-uniform weights for the tenant flows (can be used as an index of pricing) and can provide bandwidth guarantees for tenants. Network operators can also have policies which specify switch constraints, like the size of the rule table, and can be used to restrict the number of flows traversing the switch (each flow would require a forwarding rule). 
 
-Suppose a new tenant wants to use the cloud and has some requirements of its own. In such a case, network operators would need to add policies for this tenant and for existing tenants such that their SLAs are still met. Network resource management also changes over time, and support for enforcing incremental policies can be of help for network operators, especially in clouds which are constantly in \emph{flux} with respect to tenants. 
+Suppose a new tenant wants to use the cloud. In such a case, network operators would need to add policies for this tenant meeting its SLAs and for existing tenants such that their SLAs are still met. Network resource management also changes over time, and support for enforcing incremental policies can be of help for network operators, especially in clouds which are constantly in \emph{flux} with respect to tenants. 
 
 Another use-case scenario for Genesis is performing scheduled link and switch maintenances, and ensuring that the updated network still conforms to the SLAs of the tenants and resource capacity policies. Operators can plan the maintenance and synthesize the forwarding configurations for the new network well in the advance, and perform the maintenance. While Genesis synthesizes the forwarding rules, in the case of incremental policy updates or network maintenance events, we need to consistently update the forwarding plane which has been well studied in recent research(\cite{updates}).   
 
@@ -82,20 +82,21 @@ We design a language GPL (Genesis Policy Language) for network operators to expr
 	This policy specifies the packets satisying $predicate$ have ingress switch $src$ and egress switch $dst$, and requires rules forwarding packets satisfying $predicate$ from $src$ to $dst$. There must be no forwarding loops in the network. 
 	\item \textbf{Waypoint}: $predicate : src >> W >> dst$ \\
 	The waypoint policy is a stronger reachability policy, and specifies that packet satisfying $predicate$ with ingress switch $src$ and egress switch $dst$ must pass through the set of waypoints $W$ in no particular order. The waypoint policy helps operators and tenants to specify the middleboxes the packets must traverse through without worrying about order, or having to use header tags to enforce a particular order \cite{flowtags}. 
-	\item \textbf{Traffic Isolation}:  $P1 \ || \ P2$ \\
-	The traffic isolation policy ensures that the paths taken by packets $F1$ and $F2$, two reachability/waypoint policies do not traverse any link in the same direction. This policy can be used to provide fairness guarantees, since the paths of $P1$ and $P2$ don't share a link, the bandwidth used by $P1$ will not affect the bandwidth used by $P2$ and vice-versa. The condition of sharing a link in the same direction is due to the fact that links are full-duplex so, traffic flowing in one direction is not affected by the traffic flowing in the other direction.
-	\item \textbf{Security Isolation}: $P1 <> P2$ \\
-	The security isolation policy is stronger than the traffic isolation policy, and ensures that the path found for both the policies $P1$ and $P2$ do not share a link in both directions for security.
+	\item \textbf{Traffic Isolation}:  $R1 \ || \ R2$ \\
+	The traffic isolation policy ensures that the paths taken by packets $R1$ and $R2$, two reachability/waypoint policies do not traverse any link in the same direction. This policy can be used to provide fairness guarantees, since the paths of $R1$ and $R2$ don't share a link, the bandwidth used by $R1$ will not affect the bandwidth used by $R2$ and vice-versa. The condition of sharing a link in the same direction is due to the fact that links are full-duplex so, traffic flowing in one direction is not affected by the traffic flowing in the other direction.
+	\item \textbf{Security Isolation}: $R1 <> R2$ \\
+	The security isolation policy is stronger than the traffic isolation policy, and ensures that the path of the reachabiltiy/waypoint policies $R1$ and $R2$ do not share a link in both directions for increased security.
 	\item \textbf{Link Capacity}: $sw_1 \rightarrow sw_2 : capacity$ \\
 	The link capacity policy specifies that the capacity for link $sw_1 \rightarrow sw_2$ is $capacity$, and the weights of flows traversing the link in the direction of $sw_2$ do not exceed the capacity of the link.  
 	\item \textbf{Switch Table Size}: $sw : size$ \\
-	The switch table size policy is used to specify the size of the forwarding table of the 
+	The switch table size policy is used to specify the size of the forwarding table of the switch $sw$ and ensures that the number of flows traversing through $sw$ does not exceed $size$ as each flow would require a forwarding rule at the switch.
 \end{enumerate}
 \subsection{Synthesis} \label{sec:synthesis}
 
 \subsection{Performance Challenges} \label{sec:performance}
+One of the key challenges of Genesis is the synthesis performance. There is a trade-off between the generality of the model to enforce various different objectives versus the size of the problem provided to the solver.  Since finding a solution has expotential time complexity, as the number of policies increases, the time to synthesize the rules increases expotentially. If you consider the synthesis of two different flows, if they are related by some policy (isolation, link capacity etc.), then these flows cannot be synthesized separately. Thus, a greater number of policies leads to a bigger problem instance to the solver. Even though recent research has produced fast SMT solvers, there is a need to improve the performance using different techniques specific to this problem. 
 
-
+In this paper, we propose various techniques leveraging \emph{domain-specific} knowledge to improve the synthesis performance. We propose the idea of \emph{tactics} (\cref{sec:tactic}) which are search strategies leveraging the network structure of the topologies (especially datacenter topologies) to specify properties of the path. We convert these path properties to an automaton and find local patterns in the laguage of the automaton to eliminate constraints which would give rise to paths not accepted by the automaton. Another property of datacenter topologies is that the huge interconnect of links can lead to multiple solutions to the problem, and we design a heuristical technique called \emph{optimistic} synthesis (\cref{sec:optimistic}) which leverages the nature of policy interactions to divide the problem into sub-problems to synthesize, and uses recovery techniques to converge to a correct solution faster. 
 \section{Synthesis Alogrithm}
 Given a set of policies, we perform switch table synthesis by modeling the network forwarding model, and for each policy, adding a set of constraints to the SMT Solver Z3 \cite{z3}, such that the solution model satisfying the constraints can be used to extract the forwarding rules for the switches. One of the key points of the network forwarding model is that the reachability, waypoint and isolation constraints are completely encoded using SAT i.e using boolean variables. 
 %Write about SMT? 
@@ -241,7 +242,7 @@ For each traffic isolation policy, we need to add constraints for each edge of t
 \caption{Number and Size of Constraints} \label{tab:title} 
 \end{table}
 
-\section{Tactics}
+\section{Tactics} \label{sec:tactic}
 If we consider reachability between two end-switches, the synthesis problem translates to choosing a path from the solution space of all paths from the source to destination such that the chosen path satisfies all policies like waypoints and isolation. Datacenter topologies have multiple paths between endpoints to provide full bisection bandwidth. This feature of datacenters ensues that the solution space of paths for a pair of endpoints is large. 
 
 For example, consider the fat-tree topology in \cref{fattree}. The number of paths under length 10 between two edge  switches in the same pod is 242 and two edge switches in different pods is 272. If we consider the synthesis of $n$ reachability policies, the problem roughly translates to finding a solution in the solution space of size $n \times 242$ which satisfies all policies. 
@@ -341,7 +342,7 @@ Formally, let us define the slices of the topology as $S_1, S_2, ..., S_n \subse
 \end{multline}
 For packet classes isolated with packet class $pc$, only links in $S_i$ are needed to be isolated, as the path will be confined to topology slice $S_i$. 
 
-\section{Optimistic Synthesis}
+\section{Optimistic Synthesis} \label{sec:optimistic}
 
 \section{Implementation}
 
