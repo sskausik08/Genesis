@@ -122,12 +122,39 @@ We define a static integer $\mu$ to be the synthetic limit for path length for a
 
 The key functions of the network forwarding model are \emph{two-fold}, abstracting the actual forwarding rules at each node, and encoding the reachability of each flow. 
 \begin{mydef}
+\label{def:fwd}
 	$Fwd : S \times S \times PC  \rightarrow \{True,False\}$ is the forwarding rule model. $Fwd(sw_1, sw_2, pc)$ is set to $True$ means that $sw_1$ will forward packets of class $pc$ to switch $sw_2$.
 \end{mydef}
 \begin{mydef}
+\label{def:reach}
 	$Reach : N \times PC \times K  \rightarrow \{True,False\}$ is the reachability model. $Reach(sw, pc, k)$ function is set to True if switch $sw$ is reachable in the path from source switch of packet class $pc$ in exactly $k$ steps.  
 \end{mydef}
+\loris{these definitions are not good, replace with following ones and add invariants}
+\loris{--->}
+\begin{mydef}
+\label{def:fwdnew}
+The relation $Fwd \subseteq S \times S \times PC $ captures the forwarding rule model. 
+$(sw_1, sw_2, pc)\in Fwd$ if 
+$sw_1$ forwards packets of class $pc$ to switch $sw_2$.
+We write $Fwd(sw_1, sw_2, pc)$ for $(sw_1, sw_2, pc)\in Fwd$.
+\end{mydef}
+\begin{mydef}
+\label{def:reachnew}
+The relation $Reach \subseteq N \times PC \times K$ captures the reachability model \loris{I don't think model is the right word here}. 
+$(sw, pc, k)\in Reach$ if 
+the switch $sw$ is reachable in the path from source switch of packet class $pc$ in exactly $k$ steps.  
+\end{mydef}
+\loris{<---}
+\loris{I would now state formally the invariants you are trying to accomplish.
+e.g. Given two concrete relations Fwd and Reach the set $P$ of induced
+paths is the following.
+$sw_1\ldots sw_j \in P$ iff
+...
+}
+
+
 The $Fwd$ function can be $True$ only for switches which are neighbours in the topology. For $sw_1, sw_2$ who are not connected by a link, $\forall pc, Fwd(sw_1,sw_2,pc) = False$.
+\loris{with definition as relation you can write $\neg Fwd(sw_1,sw_2,pc)$ or  $(sw_1,sw_2,pc)\not\in Fwd$}
 \begin{figure}[H]
 	\includegraphics[width=8cm]{topoF.png}
 	\caption{Values of the network forwarding model. The red and blue arrows denote the paths taken by packet classes 1 and 2 respectively from source switch 1 to destination switch 2}
@@ -223,9 +250,12 @@ If $pc$ uses the link $sw_1 \rightarrow sw_2$, we add $W(pc)$ to $C(sw_1,$ $sw_2
 \end{equation} 
 
 \section{Constraint Evaluation}
-In the section, we evaluate the number of constraints required to add to the z3 Solver. Let $|S|$ be the number of switches in the topology, $|L|$ be the number of edges in the topology, $|PC|$ be the number of packet classes, $|I|$ be the number of traffic isolation policies and $\mu$ be the max path length. Let $deg$ be the maximum number of neighbours for a switch (degree of the topology).
+In the section, we evaluate the number of constraints required to add to the z3 \loris{Z3 not z3, also put citation when you mention it for the first time} Solver. Let $|S|$ be the number of switches in the topology, $|L|$ be the number of edges in the topology, $|PC|$ be the number of packet classes, $|I|$ be the number of traffic isolation policies and $\mu$ be the max path length. Let $deg$ be the maximum number of neighbours for a switch (degree of the topology).
 
-We encode the forwarding set constraint (\cref{eq:fwdset}) using a SAT encoding rather than an SMT encoding for better performance. To express the constraint that the count of forwarding rules is not more than one, we can do this by adding an $or$ of clauses, where each clause is an $and$ of one rule set to true and all others set to false. An example for switch s and neighbours \{t,u\} is \newline
+We encode the forwarding set constraint (\cref{eq:fwdset}) using a SAT encoding rather than an SMT encoding for better performance. To express the constraint that the count of forwarding rules is not more than one, we can do this by adding an $or$ of clauses, where each clause is an $and$ of one rule set to true and all others set to false.
+\loris{why the Z3 syntax? use the same as before.
+Also, there is a verbatim environment that would simplify your life with latex. begin {verbatim}... end {verbatim} }
+An example for switch s and neighbours \{t,u\} is \newline
 \verb|(or| \\
 \hspace*{10pt}\verb|(and Fwd(s, t, pc)|  \verb|(not Fwd(s, u, pc)))| \\
 \hspace*{10pt}\verb|(and Fwd(s, u, pc)|  \verb|(not Fwd(s, t, pc)))| \\
@@ -234,6 +264,8 @@ We encode the forwarding set constraint (\cref{eq:fwdset}) using a SAT encoding 
 
 Thus, the number of terms in a forwarding rule constraint for a switch and packet class is $deg \times (deg+1)$. We add a single \verb|or| constraint for each switch and packet class in the network. Therefore, the count of constraints is $|S| \times |PC|$.
 
+\loris{this need to be measured, please run an experiment in which you measure exactly
+the cost of adding the constraints vs cost of calling solve}
 The major bulk of time is consumed by the creation of the constraints for backward propagation of reachability (\cref{eq:bckprop}). The number of constraints added to the solver is $|S| \times |PC| \times \mu$. We are using a quantifier-free encoding for better performance, so expressing the $exists$ is done by a $or$ clause of the set of neighbours for a switch. Therefore, the size of each constraint is $deg$. 
 
 For each traffic isolation policy, we need to add constraints for each edge of the network, so that the two packet classes dont share the edge. Therefore, the number of constraints added is $|L| \times |I|$ and the size of each constraint is constant size of two terms.
@@ -270,13 +302,39 @@ For example, consider the fat-tree topology in \cref{fattree}. The number of pat
 	\caption{Fat Tree Topology}
 	\label{fattree}
 \end{figure}
-Network operators can leverage the network structure of specific topologies to reduce the solution space by specifying patterns of how the path must or must not be. For example, In the case of \cref{fattree}, for a path from one edge to another, a reasonable pattern is that the path must not traverse another edge switch. This pattern will not drastically reduce the solution space of paths due to the dense interconnect between aggregate and core switches which can provide isolated paths for the different packet classes. 
+Network operators can leverage the network structure of specific topologies to reduce the solution space by specifying patterns of what structure the path must or must adhere to. For example, In the case of \cref{fattree}, for a path from one edge to another, a reasonable pattern is that the path must not traverse another edge switch. This pattern will not drastically reduce the solution space of paths due to the dense interconnect between aggregate and core switches which can provide isolated paths for the different packet classes. 
 
-Tactics are abstractions to impose a high-level restriction on the paths by leveraging the network structure. We use the power of regular expressions and finite automata to modify our synthesis algorithm to incorporate tactics. To describe high-level restrictions on the path, we use the notion of mapping set of switches to labels to have a coarse grained control in describing the path. This ensures we do not reduce the solution space of paths drastically, and not being able to find a path satisying all the policies.
+Tactics are abstractions that allow the operator to impose a high-level restriction on the paths by leveraging the network structure. We use the power of regular expressions and finite automata to incorporate tactics in our synthesis algorithm. To describe high-level restrictions on the path, we use the notion of mapping set of switches to labels to have a coarse grained control in describing the path. This ensures we do not reduce the solution space of paths drastically, and not being able to find a path satisfying all the policies.
 
- Let us define $Lb$ be the set of labels and $S$ be the set of switches in the topology. Let $\phi : S \rightarrow Lb$ be the labelling function and maps switches to a label in $Lb$. One example for $\phi$ in the fat-tree topology in \cref{fattree} can be that we map all switches in the same level(core, aggregate or edge) to the same level, leveraging the hierarchical structure. A path $p$ is a word over the alphabet $S$. Let $\Phi : S^* \rightarrow Lb^*$ be the path-labelling function which maps each switch in the word to its corresponding label. Let us consider a path $p = e1\ a2\ c3\ a4\ e2$. The label-path obtained by applying the path label function is $\Phi(p) = eacae$ (map each switch to its corresponding label).
+ Let $Lb$ be the set of labels and $S$ be the set of switches in the topology. Let $\phi : S \rightarrow Lb$ be the labelling function that maps each switch to a label in $Lb$. One example for $\phi$ in the fat-tree topology in \cref{fattree} can be that we map all switches in the same level (core, aggregate or edge) to the same label,
+therefore leveraging the hierarchical structure of the topology. A path $p$ is a word over the alphabet $S$. Let $\Phi : S^* \rightarrow Lb^*$ be the path-labelling function which maps each switch in the word to its corresponding label. Let us consider a path $p = e1\ a2\ c3\ a4\ e2$. The label-path obtained by applying the path label function is $\Phi(p) = eacae$ (map each switch to its corresponding label).
 
 \subsection{Synthesis with Tactics}
+\loris{complete here}
+In~\cite{} regular expressions are used to...
+While supporting full regular expressions is possible it causes a blow-up in the solving time as further
+constraints need to be added...
+\loris{we need a plot for the full regex thing to compare with Madhu, it would be great to repeat some of their experiments}
+ 
+\subsubsection{Restricted tactic syntax}
+We identified a restricted set of regular expressions that, not only do not require extra constraints to be added,
+but actually allow us to avoid generating some of the constraints.
+This set is defined using the following grammar:
+$$\begin{array}{rcl}
+R  &  :=  &  \neg (B .^i C .^* B) \mid \neg (B .^i B)\\
+C  &  :=  &  l_1 \mid \varepsilon\\
+C  &  :=  &  l_1 \mid l_1 l_2\\
+\end{array}$$
+where $l_i\in Lb$.
+Here we allow some regular expressions to be negated at the outer level...
+For example, $\neg (e .^i e .* e)$ says that...\loris{complete}
+Similarly, $\neg (e .^i)$ says that...\loris{complete}
+
+Notice that using this constraints we can express more complex forms such as
+$\neg (e .* e .* e)$ \loris{conjuction of all i, please add}.
+
+\subsubsection{Synthesis algorithm}
+\loris{we don't need this complex algorithm}
 In our synthesis algorithm, the backward reachability propagation constraints ensure there is a path from source to destination. By pruning these constraints, we can impose restrictions on the path. 
 \begin{multline}
 \forall n_1,k.  Reach(n_1,pc,k) \implies \exists n_2.  n_2 \in N(n_1) \wedge \\ Reach(n_2,pc,k-1) \wedge Fwd(n_2,n_1,pc)
@@ -285,8 +343,18 @@ The scope for optimizing these constraints are two-fold : (1) If switch $n_1$ wi
 
 We use regular expressions and finite automaton to prune the constraints and impose restrictions on the path. The natural way for operators to specify tactics are using \emph{blacklists}, which specify what the path should not be. To express this in a intuitive manner, we use regular expressions on the set of labels to specify blacklists. For example, to blacklist paths from a edge switch to edge switch to not go through another edge switch, we can describe the tactic as $\neg (e .^* e .^* e)$ where the label of all edge switches is $e$. Another tactic is of the form $\neg (e (.)^4 a c .* e)$ which specifies we have a path of length 4, we do not go in the direction towards the core (as to reach the edge, the path would have to then go downwards from the core). 
 
- \subsubsection{Regular Expression Structure}
-<Write about regular exp structure of tactics>
+\loris{start here}
+\loris{For that restricted set of regexes the algorithm is trivial you should write the first pass. 
+See the simplified syntax.
+
+I'll help you with the proof but essentially you have to show that
+if a path $sw_1\ldots sw_k$ satisfies the tactic regex then it is removed (i.e. all constraints necessary
+for it to be encoded have been removed).
+Other direction: if a path was in the original set of constraints and did not 
+satisfy the tactic it has not been removed (also pretty easy)
+}
+
+
 
 \subsubsection{Tactics Algorithm}
 %
@@ -301,7 +369,8 @@ We use regular expressions and finite automaton to prune the constraints and imp
 %
 %We demonstrate the example of a tactic with the fat-tree topology in \cref{fattree}. Let $Lb = \{c, a, e\}$. The labelling function $\phi$ maps each core switch to $c$, each aggregate switch to $a$ and every edge switch to $e$. For a path connecting two edge switches, let us define $T_e$ as $(e .^* e) \wedge \neg (e .^* e .^* e)$. This tactic says that the path connecting the two edge switches must not traverse through a edge switch.
 
-
+\loris{this part is now old and does not make much sense anymore
+}
 Let us formalise this notion of finding local label patterns based on a tactic $T$ and associated automaton $A^T$ over the alphabet $Lb$. Let $w[k+1]$ denotes the $(k + 1)^{th}$ character of the word. The automaton $A^T$ will accept all words except those which lead it to the sink state. We use the automaton to construct a set of reachable paths for switch label $lb$ and path length $k$ (The length of the word is $k + 1$ if the length of the path is $k$). 
 \begin{mydef}
 	$\Gamma(lb, k)$ is the set of reachable paths such that for each $w \in \Gamma(lb, k)$: 
