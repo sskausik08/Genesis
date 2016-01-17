@@ -255,9 +255,9 @@ For each traffic isolation policy, we need to add constraints for each edge of t
 \caption{Number and Size of Constraints} \label{tab:title} 
 \end{table}
 
-%- in some cases search is still hard but the network operator might have an idea of what the path patterns might or might not look like
-%- example?
-%- a good way to express this is to add extra constraints of the form ...
+%- in some cases search is still hard but the network operator might have an idea of what the path patterns might or might not look like - Done
+%- example? - Done
+%- a good way to express this is to add extra constraints of the form ... - Done
 %- we formally define a subset of regexes that...?
 %- algorithm
 %- brief comparison with netgen
@@ -272,24 +272,28 @@ For example, consider the fat-tree topology in \cref{fattree}. The number of pat
 \end{figure}
 Network operators can leverage the network structure of specific topologies to reduce the solution space by specifying patterns of how the path must or must not be. For example, In the case of \cref{fattree}, for a path from one edge to another, a reasonable pattern is that the path must not traverse another edge switch. This pattern will not drastically reduce the solution space of paths due to the dense interconnect between aggregate and core switches which can provide isolated paths for the different packet classes. 
 
-Tactics are abstractions to impose a high-level restriction on the paths by leveraging the network structure. We use the power of regular expressions and finite automata to modify our synthesis algorithm to incorporate tactics. To describe high-level restrictions on the path, we use the notion of mapping set of switches to labels to have a coarse grained control in describing the path. This ensures we do not reduce the solution space of paths drastically, and not being able to find a path satisying all the policies. Let us define $Lb$ be the set of labels and $S$ be the set of switches in the topology. Let $\phi : S \rightarrow Lb$ be the labelling function and maps switches to a label in $Lb$. One example for $\phi$ in the fat-tree topology in \cref{fattree} can be that we map all switches in the same level(core, aggregate or edge) to the same level, leveraging the hierarchical structure. 
+Tactics are abstractions to impose a high-level restriction on the paths by leveraging the network structure. We use the power of regular expressions and finite automata to modify our synthesis algorithm to incorporate tactics. To describe high-level restrictions on the path, we use the notion of mapping set of switches to labels to have a coarse grained control in describing the path. This ensures we do not reduce the solution space of paths drastically, and not being able to find a path satisying all the policies.
+
+ Let us define $Lb$ be the set of labels and $S$ be the set of switches in the topology. Let $\phi : S \rightarrow Lb$ be the labelling function and maps switches to a label in $Lb$. One example for $\phi$ in the fat-tree topology in \cref{fattree} can be that we map all switches in the same level(core, aggregate or edge) to the same level, leveraging the hierarchical structure. A path $p$ is a word over the alphabet $S$. Let $\Phi : S^* \rightarrow Lb^*$ be the path-labelling function which maps each switch in the word to its corresponding label. Let us consider a path $p = e1\ a2\ c3\ a4\ e2$. The label-path obtained by applying the path label function is $\Phi(p) = eacae$ (map each switch to its corresponding label).
 
 \subsection{Synthesis with Tactics}
 In our synthesis algorithm, the backward reachability propagation constraints ensure there is a path from source to destination. By pruning these constraints, we can impose restrictions on the path. 
 \begin{multline}
 \forall n_1,k.  Reach(n_1,pc,k) \implies \exists n_2.  n_2 \in N(n_1) \wedge \\ Reach(n_2,pc,k-1) \wedge Fwd(n_2,n_1,pc)
 \end{multline} 
-The scope for optimizing these constraints are two-fold : (1) If switch $n_1$ with label $\phi(n_1)$ is reachable in $k$ steps, what is the label of switches which can preceed $n_1$ in the path? (2) Can switch $n_1$ be reachable in $k$ steps? The first point leverages the network structure to remove paths, while the second point tries to impose a limit on the path length (This is different from the synthetic limit on the path length described in \cref{sec:fwdmodel}). Therefore, if the network operator could provide information on the two points as described, we can use it prune the backward reachability propagation constraints, and reduce the solution space of paths to consider for a packet class. 
+The scope for optimizing these constraints are two-fold : (1) If switch $n_1$ with label $\phi(n_1)$ is reachable in $k$ steps, what is the label of switches which can preceed $n_1$ in the path? (2) Can switch $n_1$ be reachable in $k$ steps? The first point leverages the network structure to remove paths, while the second point tries to impose a range on the path length (This is different from the synthetic limit on the path length described in \cref{sec:fwdmodel}). Therefore, if the network operator could provide information on the two points as described, we can use it prune the backward reachability propagation constraints, and reduce the solution space of paths to consider for a packet class. 
 
-We use regular expressions and finite automaton to prune the constraints and impose restrictions on the path. The natural way for operators to specify tactics are using \emph{blacklists}, which specify what the path should not be. To express this in a intuitive manner, we use regular expressions on labels to specify blacklists. 
+We use regular expressions and finite automaton to prune the constraints and impose restrictions on the path. The natural way for operators to specify tactics are using \emph{blacklists}, which specify what the path should not be. To express this in a intuitive manner, we use regular expressions on the set of labels to specify blacklists. For example, to blacklist paths from a edge switch to edge switch to not go through another edge switch, we can describe the tactic as $\neg (e .^* e .^* e)$ where the label of all edge switches is $e$. Another tactic is of the form $\neg (e (.)^4 a c .* e)$ which specifies we have a path of length 4, we do not go in the direction towards the core (as to reach the edge, the path would have to then go downwards from the core). 
 
-%To prune these type of constraints, the question we need to answer is this: If switch $n_1$ with label $\phi(n_1)$ exists in a word at position $k$, what labels can exist in the word at position $k - 1$ such that the word does not reach a sink state in the tactic automaton. By eliminating words which lead the automaton to the sink state, we eliminate the paths which will not satisfy the tactic. For example, the tactic $T_e$ : $(e .^* e) \wedge \neg (e .^* e .^* e)$ which specifies that the path must start and end at a edge switch, and traverse through other edge switches. For $k > 2$ and label $a$, we can observe that the label preceeding it cannot be $e$ if the automaton is not in a sink state (since label $e$ does not come up in the word except the first and the last character). Thus, while adding constraints for a switch of label $a$ and $k > 2$, we can remove neighbours which have label $e$.   
+ \subsubsection{Regular Expression Structure}
+<Write about regular exp structure of tactics>
 
+\subsubsection{Tactics Algorithm}
 %
 %\begin{mydef}
 %	A tactic $T$ is a regular expression over the alphabel $Lb$. We construct an associated automaton $A^T$ which is the automaton of the regular expression with every state accepting except the sink state (non-final state with a self-loop over all alphabets).
 %\end{mydef}
-%A path $P$ is a word over the alphabet $S$. Let $\Phi : S^* \rightarrow Lb^*$ be the path-labelling function which maps each switch in the word to its corresponding label.  
+%
 %\begin{equation}
 %	P \models T \iff  \Phi(P) \in L(A^T) 
 %\end{equation}
@@ -297,14 +301,8 @@ We use regular expressions and finite automaton to prune the constraints and imp
 %
 %We demonstrate the example of a tactic with the fat-tree topology in \cref{fattree}. Let $Lb = \{c, a, e\}$. The labelling function $\phi$ maps each core switch to $c$, each aggregate switch to $a$ and every edge switch to $e$. For a path connecting two edge switches, let us define $T_e$ as $(e .^* e) \wedge \neg (e .^* e .^* e)$. This tactic says that the path connecting the two edge switches must not traverse through a edge switch.
 
-\subsection{Synthesis with Tactics}
-The tactic defined in the earlier section is a general framework of specify path properties based on network structure. However, adding constraints to ensure the path satisfies the tactic is \emph{slower} than without using tactics. In our synthesis algorithm, the backward reachability propagation constraints are the most significant in terms of time taken and complexity. 
-\begin{multline}
-\forall n_1,k.  Reach(n_1,pc,k) \implies \exists n_2.  n_2 \in N(n_1) \wedge \\ Reach(n_2,pc,k-1) \wedge Fwd(n_2,n_1,pc)
-\end{multline} 
-To prune these type of constraints, the question we need to answer is this: If switch $n_1$ with label $\phi(n_1)$ exists in a word at position $k$, what labels can exist in the word at position $k - 1$ such that the word does not reach a sink state in the tactic automaton. By eliminating words which lead the automaton to the sink state, we eliminate the paths which will not satisfy the tactic. For example, the tactic $T_e$ : $(e .^* e) \wedge \neg (e .^* e .^* e)$ which specifies that the path must start and end at a edge switch, and traverse through other edge switches. For $k > 2$ and label $a$, we can observe that the label preceeding it cannot be $e$ if the automaton is not in a sink state (since label $e$ does not come up in the word except the first and the last character). Thus, while adding constraints for a switch of label $a$ and $k > 2$, we can remove neighbours which have label $e$.  
 
-Let us formalise this notion of finding local label patterns based on a tactic $T$ and associated automaton $A^T$ over the alphabet $Lb$. Let $w[k+1]$ denotes the $(k + 1)^{th}$ character of the word. The automaton $A^T$ will accept all words except those which lead it to the sink state. We use the automaton to construct a set of reachable paths for switch label $lb$ and path length $k$. 
+Let us formalise this notion of finding local label patterns based on a tactic $T$ and associated automaton $A^T$ over the alphabet $Lb$. Let $w[k+1]$ denotes the $(k + 1)^{th}$ character of the word. The automaton $A^T$ will accept all words except those which lead it to the sink state. We use the automaton to construct a set of reachable paths for switch label $lb$ and path length $k$ (The length of the word is $k + 1$ if the length of the path is $k$). 
 \begin{mydef}
 	$\Gamma(lb, k)$ is the set of reachable paths such that for each $w \in \Gamma(lb, k)$: 
 	\begin{enumerate}
@@ -314,18 +312,17 @@ Let us formalise this notion of finding local label patterns based on a tactic $
 		\item $w$ is a valid label-path in the topology
 	\end{enumerate}
 \end{mydef}
-The first and second requirement is to reason about the backward reachability propagation constraints \newline $Reach(sw, pc, k)$ for switches $sw \in S$ for which $\phi(sw) = lb$. The input to the automaton $A^T$ is restricted based on the topology and label-mapping, and the third requirement is to prune the words to valid label-paths of the topology. In our running example of the fat-tree topology, we can see that neighbours of core switches($c$) are only aggregate switches($a$). Therefore, in a valid label-path, after reading a $c$, we can only read the character $a$. We create a label adjacency matrix of the topology and prune the words in $\Gamma$. 
+The first three requirements is to prune the backward reachability propagation constraints \newline $Reach(sw, pc, k)$ for switches $sw \in S$ for which $\phi(sw) = lb$. The input to the automaton $A^T$ is restricted based on the topology and label-mapping, and the fourth requirement is to restrict the words to valid label-paths of the topology. In our running example of the fat-tree topology, we can see that neighbours of core switches($c$) are only aggregate switches($a$). Therefore, in a valid label-path, after reading a $c$, we can only read the character $a$. We create a label adjacency matrix of the topology and restrict the words in the $\Gamma$s. 
 \begin{mydef} 
 	$\Delta(lb, k)$ is the set of labels such that for each $l \in \Delta(lb, k) \iff \exists w \in \Gamma(lb, k).  w[k] = l$ 
 \end{mydef}
-where $w[k]$ denotes the $k^{th}$ character in the word. 
 
-After computing $\Delta(lb, k)$, we can modify the backward reachability propagation constraints to include neighbours whose labels are in  $\Delta(lb, k)$. 
+$\Delta(lb, k)$ denotes the set of valid labels which can preceed a switch with label $lb$ reached in $k$ steps satisfying the tactic, since it is constructed from the set of paths which do not send the automaton $A^T$ to a sink state. We require this set to modify the backward reachability propagation constraints to include only neighbours whose labels are in $\Delta(lb, k)$ :  
 \begin{multline}
 \forall n_1,k.  Reach(n_1,pc,k) \implies \exists n_2.  n_2 \in N(n_1) \wedge \\ \phi(n_2) \in 
 \Delta(\phi(n_1), k) \wedge Reach(n_2,pc,k-1) \\ \wedge Fwd(n_2,n_1,pc)
 \end{multline} 
-If $\Delta(lb, k) = \emptyset$, then $Reach(sw, pc, k) = False$ for switches $sw \in S$ for which $\phi(sw) = lb$. 
+If the computed $\Delta(lb, k) = \emptyset$, then $Reach(sw, pc, k) = False$ for switches $sw \in S$ for which $\phi(sw) = lb$, and thus, we need not add the backward reachability propagation constraints for these terms. 
 
 To find the $\Delta$s for a tactic, we use a dynamic programming approach of finding all valid label words of length $k$ accepted by the associated automaton ($\forall lb$. $\Gamma(lb, k)$) by using the valid label words of length $k-1$ (we also store the last state the automaton is in), and make one valid transition on labels (validity is based on two factors : automaton doesn't reach the sink state, and the current label and previous label are connected in the topology). After computing the $\Gamma$s, we can compute $\Delta(lb,k)$ by examining $\Gamma(lb,k)$ to find labels at the $k^{th}$ position.
 \begin{figure}[h!]
@@ -357,7 +354,7 @@ We demonstrate the advantages of tactics with an example. Consider the tactic $T
 Thus, $\forall sw,pc. \ \phi(sw) = a \ \wedge \ \Delta(a, 2) = \emptyset \implies \\ Reach(sw,pc,2) = False$ and we do not add backward reachability propagation constraints for the term $Reach(sw,pc,2)$. 
 % If we did not have the restriction of topologically valid label-paths in $\Gamma$, then $\Gamma(a, 2) =  \{eaa, eca\}$, resulting in $\Delta(a,2) = \{a,c\}$. 
 
-Incorporating tactics in the synthesis is sound. If the tactic imposes an restriction to the path other than the source and destination, then the procedure is incomplete. However, tactics can be used to specify restrictions which would be reasonably complete, thus speeding up the synthesis. Even though we have defined a general framework to specify tactics using regular expressions, since the synthesis constraints depend on local behaviours, not every tactic would provide a speedup. For example the tactic $\neg (.^* c a c a c .^*)$ which specifies that a path must not traverse through the core switch layer more than twice, will not provide  speedup, bacause we cannot deduce any local patterns from the associated automaton as the regular expression is trying to count the number of times the path traverses a core switch, and thus it cannot remove any label from its preceding set as count is a global pattern and our approach can only use local patterns to speedup synthesis.  
+Incorporating tactics in the synthesis is sound. If the tactic imposes an restriction to the path, then the synthesis algorithm is incomplete. However, tactics can be used to specify restrictions which would be reasonably complete, thus speeding up the synthesis. 
 
 \section{Network Surgery}
 Network surgery is the technique of performing equivalent network transformations to eliminate redudant constraints required for synthesis of switch rules. One of the properties of the path found by the synthesis solver is that it is simple (i.e no loops). Using this property, we can create slices of the topology where a packet class' path will reside completely, thus not requiring to add constraints for switches in other slices of the topology. 
