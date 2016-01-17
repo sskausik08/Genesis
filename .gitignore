@@ -61,3 +61,5 @@ target/
 #Mac Files
 .DS_Store
 
+sigcomm16/genesis.aux
+sigcomm16/genesis.pdf
