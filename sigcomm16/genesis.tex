@@ -118,7 +118,7 @@ We define the physical switch topology as an undirected graph $T=\{S, L\}$, wher
 
 The field $predicate$ is defined over the space of network headers and is used to identify the class of the packet. Assuming that the intersection of predicates is empty for policies in $R$, we create a mapping $\gamma : R \rightarrow PC$ to associate each reachability policy with a unique integer called packet class in the set $PC$. Switches $src, dst \in S$ denote the ingress and egress switches respectively for the packet class $pc = \gamma(r)$ and Genesis finds a path from $src$ to $dst$ for $pc$. If a waypoint policy is specified, $W$ is the set of switches the path from $src$ to $dst$ must traverse through in no particular order.
 
-We define a static integer $\mu$ to be the maximum path length for any packet class, and define the set $K = [0, \mu]$ to be the set of all permissible path lengths.
+We define a static integer $\mu$ to be the synthetic limit for path length for any packet class, and define the set $K = [0, \mu]$ to be the set of all permissible path lengths.
 
 The key functions of the network forwarding model are \emph{two-fold}, abstracting the actual forwarding rules at each node, and encoding the reachability of each flow. 
 \begin{mydef}
@@ -272,11 +272,20 @@ For example, consider the fat-tree topology in \cref{fattree}. The number of pat
 \end{figure}
 Network operators can leverage the network structure of specific topologies to reduce the solution space by specifying patterns of how the path must or must not be. For example, In the case of \cref{fattree}, for a path from one edge to another, a reasonable pattern is that the path must not traverse another edge switch. This pattern will not drastically reduce the solution space of paths due to the dense interconnect between aggregate and core switches which can provide isolated paths for the different packet classes. 
 
-Tactics are abstractions to impose a high-level restriction on the paths by leveraging the network structure. We use the power of regular expressions and finite automata to modify our synthesis algorithm to incorporate tactics. 
+Tactics are abstractions to impose a high-level restriction on the paths by leveraging the network structure. We use the power of regular expressions and finite automata to modify our synthesis algorithm to incorporate tactics. To describe high-level restrictions on the path, we use the notion of mapping set of switches to labels to have a coarse grained control in describing the path. This ensures we do not reduce the solution space of paths drastically, and not being able to find a path satisying all the policies. Let us define $Lb$ be the set of labels and $S$ be the set of switches in the topology. Let $\phi : S \rightarrow Lb$ be the labelling function and maps switches to a label in $Lb$. One example for $\phi$ in the fat-tree topology in \cref{fattree} can be that we map all switches in the same level(core, aggregate or edge) to the same level, leveraging the hierarchical structure. 
 
-\subsection{title} 
+\subsection{Synthesis with Tactics}
+In our synthesis algorithm, the backward reachability propagation constraints ensure there is a path from source to destination. By pruning these constraints, we can impose restrictions on the path. 
+\begin{multline}
+\forall n_1,k.  Reach(n_1,pc,k) \implies \exists n_2.  n_2 \in N(n_1) \wedge \\ Reach(n_2,pc,k-1) \wedge Fwd(n_2,n_1,pc)
+\end{multline} 
+The scope for optimizing these constraints are two-fold : (1) If switch $n_1$ with label $\phi(n_1)$ is reachable in $k$ steps, what is the label of switches which can preceed $n_1$ in the path? (2) Can switch $n_1$ be reachable in $k$ steps? The first point leverages the network structure to remove paths, while the second point tries to impose a limit on the path length (This is different from the synthetic limit on the path length described in \cref{sec:fwdmodel}). Therefore, if the network operator could provide information on the two points as described, we can use it prune the backward reachability propagation constraints, and reduce the solution space of paths to consider for a packet class. 
 
-%Let us define $Lb$ be the set of labels and $S$ be the set of switches in the topology. Let $\phi : S \rightarrow Lb$ be the labelling function and maps switches to a label in $Lb$. One example for $\phi$ in the fat-tree topology in \cref{fattree} can be that we map all switches in the same level(core, aggregate or edge) to the same level, leveraging the hierarchical structure.
+We use regular expressions and finite automaton to prune the constraints and impose restrictions on the path. The natural way for operators to specify tactics are using \emph{blacklists}, which specify what the path should not be. To express this in a intuitive manner, we use regular expressions on labels to specify blacklists. 
+
+%To prune these type of constraints, the question we need to answer is this: If switch $n_1$ with label $\phi(n_1)$ exists in a word at position $k$, what labels can exist in the word at position $k - 1$ such that the word does not reach a sink state in the tactic automaton. By eliminating words which lead the automaton to the sink state, we eliminate the paths which will not satisfy the tactic. For example, the tactic $T_e$ : $(e .^* e) \wedge \neg (e .^* e .^* e)$ which specifies that the path must start and end at a edge switch, and traverse through other edge switches. For $k > 2$ and label $a$, we can observe that the label preceeding it cannot be $e$ if the automaton is not in a sink state (since label $e$ does not come up in the word except the first and the last character). Thus, while adding constraints for a switch of label $a$ and $k > 2$, we can remove neighbours which have label $e$.   
+
+%
 %\begin{mydef}
 %	A tactic $T$ is a regular expression over the alphabel $Lb$. We construct an associated automaton $A^T$ which is the automaton of the regular expression with every state accepting except the sink state (non-final state with a self-loop over all alphabets).
 %\end{mydef}
