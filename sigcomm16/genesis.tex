@@ -20,6 +20,10 @@
 \crefname{section}{§}{§§}
 \Crefname{section}{§}{§§}
 
+\usepackage{color}
+\newcommand{\loris}[1]{\textcolor[rgb]{0.00,0.00,1.00}{L: #1}}
+\newcommand{\aditya}[1]{\textcolor[rgb]{0.00,0.00,1.00}{A:#1}}
+
 \usepackage{float}
 %opening
 \title{Genesis : End-to-End Policy Enforcement by Switch Table Synthesis }
@@ -250,11 +254,16 @@ For each traffic isolation policy, we need to add constraints for each edge of t
 \end{table}
 
 \section{Tactics} \label{sec:tactic}
+
+\loris{is this part up to date?
+I thought we were going to have the separate language we discussed
+together with the corresponding elimination of constraints?
+}
 If we consider reachability between two end-switches, the synthesis problem translates to choosing a path from the solution space of all paths from the source to destination such that the chosen path satisfies all policies like waypoints and isolation. Datacenter topologies have multiple paths between endpoints to provide full bisection bandwidth. This feature of datacenters ensues that the solution space of paths for a pair of endpoints is large. 
 
 For example, consider the fat-tree topology in \cref{fattree}. The number of paths under length 10 between two edge  switches in the same pod is 242 and two edge switches in different pods is 272. If we consider the synthesis of $n$ reachability policies, the problem roughly translates to finding a solution in the solution space of size $n \times 242$ which satisfies all policies. 
 \begin{figure}[H]
-	\includegraphics[width=8cm]{fattree.png}
+	\includegraphics[width=\columnwidth]{fattree.png}
 	\caption{Fat Tree Topology}
 	\label{fattree}
 \end{figure}
