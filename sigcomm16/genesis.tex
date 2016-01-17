@@ -321,14 +321,24 @@ We identified a restricted set of regular expressions that, not only do not requ
 but actually allow us to avoid generating some of the constraints.
 This set is defined using the following grammar:
 $$\begin{array}{rcl}
-R  &  :=  &  \neg (B .^i C .^* B) \mid \neg (B .^i B)\\
-C  &  :=  &  l_1 \mid \varepsilon\\
-C  &  :=  &  l_1 \mid l_1 l_2\\
+R  &  :=  &  \neg (l_1 .^i C .^* l_2) \\ 
+	&  \mid \neg (l_1 .^i l_2)\\
+C  &  :=  &  \varepsilon \mid l_1 \mid l_1 l_2\\
 \end{array}$$
 where $l_i\in Lb$.
 Here we allow some regular expressions to be negated at the outer level...
 For example, $\neg (e .^i e .* e)$ says that...\loris{complete}
 Similarly, $\neg (e .^i)$ says that...\loris{complete}
+Let $\pi = sw_1\ldots sw_k$ be a path and 
+let its labeling be $\phi(\pi)= a_1\ldots a_k$.
+Se say that $\pi$ satisfies a tactic $R$, $\pi\vDash R$, if the following
+holds:
+\begin{itemize}
+\item $\pi \vDash \neg R'$ iff $\pi \not\vDash R'$;
+\item $\pi \vDash  l_1 .^i l_2$ iff $k\geq i+2$, $l_1= a_1$, and $l_2= a_k$;
+\item $\pi \vDash  l_1 .^i c.^* l_2$ iff $k\geq i+3$, $l_1= a_1$, $l_2= a_k$, and $l_{i+2}=c$;
+\item $\pi \vDash  l_1 .^i c_1 c_2.^* l_2$ iff $k\geq i+4$, $l_1= a_1$, $l_2= a_k$, $l_{i+2}=c$, and $l_{i+3}=c$.
+\end{itemize}
 
 Notice that using this constraints we can express more complex forms such as
 $\neg (e .* e .* e)$ \loris{conjuction of all i, please add}.
@@ -346,7 +356,6 @@ We use regular expressions and finite automaton to prune the constraints and imp
 \loris{start here}
 \loris{For that restricted set of regexes the algorithm is trivial you should write the first pass. 
 See the simplified syntax.
-
 I'll help you with the proof but essentially you have to show that
 if a path $sw_1\ldots sw_k$ satisfies the tactic regex then it is removed (i.e. all constraints necessary
 for it to be encoded have been removed).
