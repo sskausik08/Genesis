@@ -42,16 +42,12 @@ Operators in enterprise and datacenter networks deal with complex end-to-end pol
 %[Intro] 
 Network operators of enterprise and cloud datacenter networks deal with large number of heterogeneous devices and thousands of traffic classes with increasingly complex policies. However, in real-life, the process of policy enforcement by network operators is manual and ad-hoc, leading to violations of service-level agreements and mis-configurations which have severe performance and security impacts. With the boom in cloud services, datacenter networks deal with thousands of flows which are not constant, but in flux, thus, making it difficult to enforce them in an ad-hoc manner. 
 
-Though Software-defined Networking (SDN) has allowed network operators to program networks in a more intuitive manner, existing tools are either too low-level in their functionality or tailor-made to the enforcement of certain policies, and extending these tools to provide new functionalities is tough. Thus, the development of a network management system with support for a complex and diverse set of policies is of great significance. 
+Network operators desire various different end-to-end policies to support in clouds and enterprise networks. Tenants or organisations require support for basic policies like reachability between hosts, and specifying different middlebox policies for certain flows. Operators, on top of that require support for complex policies like traffic isolation between flows to provide fairness and specifying resource constraints like link bandwidth and switch table sizes to perform traffic engineering and network resource management. 
 
-%The bare minimum need is \emph{reachability} for hosts from ingress to egress switches in these networks. 
-%%[Middlebox]
-% With the recent advent of complex packet processing middleboxes like like intrusion detection systems, firewalls, load balancers etc, a feature of use is to specify the middleboxes a particular flow would like to traverse. 
+Though Software-defined Networking (SDN) has allowed network operators to program networks in a more intuitive manner, many existing tools are too low-level in their functionality. Support for these policies simply using SDN switches or with existing languages like Frenetic and Pyretic are extremely challenging, and operators would ideally want to specify network-wide end-to-end policies in a declarative manner without programming individual switch behavior. 
 
-%[Isolation] 
-While there is support for communication and midddlebox traversals for tenants, with the advent of multi-tenant cloud services, a desired feature cloud providers need to support is various Quality of Service guarantees. The current Service Level Agreements (SLA) provided are centered around compute, storage, or external traffic bandwidth. Due to the lack of a good network management system, there exists very weak provisions for providing SLAs in terms of network performance guarantees among the tenant instances. Lack of network guarantees leads to unpredictability of performance for distributed applications. Tenants may have to run VMs for a longer time, because the datacenter network turns out to be a bottleneck for the application. This leads to decreased utilisation of resources and increased expense for tenants. Also, multi-tenant clouds are susceptible to attacks on the network. For example, if two tenants share a link in the datacenter, one tenant could hog the bandwidth on the link, and the other tenant would suffer due to unequal distribution of bandwidth. To combat this, cloud operators statically rate-limit the VMs, but this can reduce link utilization as tenants may not be using the complete share of their bandwidth. An approach to remove interference between tenant flows is to ensure the tenant flows do not share links in the datacenter, and recent datacenter topologies like fat-trees provides multiple paths from one layer to another and thus, we can route different tenants through different paths. Thus, support for link isolation policies is a very important feature for cloud operators. To manage the network resources efficiently, cloud network operators would require functionality to perform traffic engineering and providing minimum bandwidth guarantees to the tenants, thus requiring fine-grained control over the link bandwidths. 
+There has been research in the field of network-wide policy enforcement in networks, like bandwidth provisioning in Merlin \cite{Merlin}, and middlebox policy enforcement in SIMPLE \cite{simple}. However, the approach followed in these works are tailor-made to  specific policies, and thus, difficult to extend it to support other kinds of policies. To support a cornucopia of policies, an important feature is \emph{generality} of the approach of policy enforcement, so that it can be extended to enforce custom policies required by the operator. To achieve this, we use \emph{synthesis} of switch table forwarding rules to the solve the problem of policy enforcement by use of off-the-shelf SMT-solvers.
 
-There has been a lot of work in the field of policy enforcement in networks, like bandwidth provisioning in Merlin \cite{Merlin}, and middlebox policy enforcement in SIMPLE \cite{simple}. However, the approach followed in these works are catered to the specific policies, and thus, difficult to extend it to, for example, provide isolation of paths. An ideal policy enforcement system for network operators should be able to support complex and diverse policies, and thus an important feature is \emph{generality} of the approach, so that it can be extended to enforce custom policies required by the operator. To this end, we propose applying \emph{synthesis} to the problem of policy enforcement by use of SMT-solvers.
 %[Synthesis of Controllers] : not sure if needed here. 
 
 In recent years, the space of program synthesis has seen great progress, and in the context of SDNs, controller synthesis \cite{netegg}. The work on controller synthesis is towards enforcing switch-level behavior, for example, synthesizing the behavior of learning switches or firewalls. However, when dealing with enterprise and datacenter networks, network operators need support for specifying end-to-end proactive policies without the need to reason about individual switch behavior. Also, policies useful to operators are proactive (not dependent on the actual packet flow), and this enables to enforce policies by synthesis of switch-table rules, and using a skeleton controller to deploy the forwarding rules to the switches. In contrast, trying to synthesize reactive policies (like a firewall), the controller needs to store the state of flows it has received and have a control module following the specifications, which is an interesting synthesis problem, but orthogonal to our problem.
@@ -123,38 +119,25 @@ We define a static integer $\mu$ to be the synthetic limit for path length for a
 The key functions of the network forwarding model are \emph{two-fold}, abstracting the actual forwarding rules at each node, and encoding the reachability of each flow. 
 \begin{mydef}
 \label{def:fwd}
-	$Fwd : S \times S \times PC  \rightarrow \{True,False\}$ is the forwarding rule model. $Fwd(sw_1, sw_2, pc)$ is set to $True$ means that $sw_1$ will forward packets of class $pc$ to switch $sw_2$.
+The relation $Fwd \subseteq S \times S \times PC $ captures the forwarding rule behavior of the network. 
+$(sw_1, sw_2, pc)\in Fwd$ if 
+$sw_1$ forwards packets of class $pc$ to switch $sw_2$. 
 \end{mydef}
 \begin{mydef}
 \label{def:reach}
-	$Reach : N \times PC \times K  \rightarrow \{True,False\}$ is the reachability model. $Reach(sw, pc, k)$ function is set to True if switch $sw$ is reachable in the path from source switch of packet class $pc$ in exactly $k$ steps.  
+	The relation $Reach \subseteq N \times PC \times K$ captures the path reachability.   
+	$(sw, pc, k)\in Reach$ if 
+	the switch $sw$ is reachable in the path from source switch of packet class $pc$ in exactly $k$ steps.  
 \end{mydef}
-\loris{these definitions are not good, replace with following ones and add invariants}
-\loris{--->}
-\begin{mydef}
-\label{def:fwdnew}
-The relation $Fwd \subseteq S \times S \times PC $ captures the forwarding rule model. 
-$(sw_1, sw_2, pc)\in Fwd$ if 
-$sw_1$ forwards packets of class $pc$ to switch $sw_2$.
-We write $Fwd(sw_1, sw_2, pc)$ for $(sw_1, sw_2, pc)\in Fwd$.
-\end{mydef}
-\begin{mydef}
-\label{def:reachnew}
-The relation $Reach \subseteq N \times PC \times K$ captures the reachability model \loris{I don't think model is the right word here}. 
-$(sw, pc, k)\in Reach$ if 
-the switch $sw$ is reachable in the path from source switch of packet class $pc$ in exactly $k$ steps.  
-\end{mydef}
-\loris{<---}
-\loris{I would now state formally the invariants you are trying to accomplish.
-e.g. Given two concrete relations Fwd and Reach the set $P$ of induced
-paths is the following.
-$sw_1\ldots sw_j \in P$ iff
-...
-}
+For brevity, we write $Fwd(sw_1, sw_2, pc)$ for $(sw_1, sw_2, pc) $ $\in Fwd$ and similarly for the $Reach$ relation. The $Fwd$ relation can contain only connected switches in the topology. For $sw_1, sw_2$ who are not connected by a link, $\forall pc, Fwd(sw_1,sw_2,pc) \notin Fwd$. 
 
+Given two concrete relations Fwd and Reach the set $P$ of induced paths is the following : 
+$sw_0 \ldots sw_k \in P$ is the path for class $pc$ iff : 
+\begin{enumerate}
+	\item $\forall i \in [0,k]. (sw_i, pc, i) \in Reach$
+	\item $\forall i \in [0, k - 1]. (sw_i, sw_{i+1}, pc) \in Fwd$
+\end{enumerate}
 
-The $Fwd$ function can be $True$ only for switches which are neighbours in the topology. For $sw_1, sw_2$ who are not connected by a link, $\forall pc, Fwd(sw_1,sw_2,pc) = False$.
-\loris{with definition as relation you can write $\neg Fwd(sw_1,sw_2,pc)$ or  $(sw_1,sw_2,pc)\not\in Fwd$}
 \begin{figure}[H]
 	\includegraphics[width=8cm]{topoF.png}
 	\caption{Values of the network forwarding model. The red and blue arrows denote the paths taken by packet classes 1 and 2 respectively from source switch 1 to destination switch 2}
@@ -163,11 +146,11 @@ The $Fwd$ function can be $True$ only for switches which are neighbours in the t
 The network forwarding model is demonstrated by an example in \cref{fig:model}. There are two reachability policies, $r1 : 1 >> [5] >> 2$ with $pc=1$ and $r2 : 1 >> 2$ with $pc=2$ and $r1$ is isolated to $r2$. Using the value of $Fwd$ function, we can find out paths for each packet class, and the set of forwarding rules. 
 
 \subsection{Reachability Constraints} \label{sec:reach}
-For a reachability policy $s >> d$ and packet class $pc$, the constraints added must ensure that the solution model contains a path from source from destination. One of the constraints required for this is that there must exist a forwarding rule at source to one of its neighbours, and these constraints act as the base case relating the $Fwd$ and $Reach$ functions. 
+For a reachability policy $s >> d$ and packet class $pc$, the constraints added must ensure that the solution model contains a path from source from destination. One of the constraints required for this is that there must exist a forwarding rule at source to one of its neighbours, and these constraints act as the base case relating the $Fwd$ and $Reach$ relations. 
 \begin{equation} \label{eq:src}
 	\exists n \in N(s). Fwd(s, n, pc) \wedge Reach(n, pc, 1)
 \end{equation}
-$Reach(s.pc,0)$ is taken to be $True$. We need a path to destination, thus destination switch must be reachable for some path length : 
+The base case for reachability is : $(s, pc,0) \in Reach$ . We need a path to destination, thus destination switch must be reachable for some path length : 
 \begin{equation} \label{eq:dst}
 	\exists k. Reach(dst, pc, k)
 \end{equation}
@@ -181,7 +164,7 @@ For the solver to find a path, we need inductive constraints propagating reachab
 \end{multline} 
 The backward propagation is responsible for ensuring there is a topologically valid path from source to destination by using the unit clauses in \cref{eq:dst}, and finding a path from destination back to a switch $sw$ which is a neighbour of $src$. thus $Reach(sw,pc,1)$ would be true from \cref{eq:src} and the reachability policy would be satisfied. 
 
-The above mentioned constraints are sufficient to ensure there is a path from $src$ to $dst$ for packet class $pc$ in terms of the forwarding function $Fwd$. However, since there is no restriction on number of $Fwd$ values that can be true at a switch, we can get multiple forwarding rules at switches, and also multiple paths to the destination. Also, there can exist forwarding loops as well. Howvever, for a reachability policy, we merely require to find a path from $src$ to $dst$, so we can just extract a path from the model by performing a breadth-first search on the model-graph from source to destination. A directed edge exists in the model-graph : $n_1 \rightarrow n_2$ if there is forwarding rule indicated by the model $Fwd(n_1,n_2, pc) = True$. Thus, we extract the relevant rules of the shortest path from source to destination from the model, and the additional rules obtained in the solution (extra paths, forwarding loops) are ignored.  
+The above mentioned constraints are sufficient to ensure there is a path from $src$ to $dst$ for packet class $pc$ in terms of the forwarding relation $Fwd$. However, since there is no restriction on number of $Fwd$ values that can be true at a switch, we can get multiple forwarding rules at switches, and also multiple paths to the destination. Also, there can exist forwarding loops as well. Howvever, for a reachability policy, we merely require to find a path from $src$ to $dst$, so we can just extract a path from the model by performing a breadth-first search on the model-graph from source to destination. A directed edge exists in the model-graph : $n_1 \rightarrow n_2$ if there is forwarding rule indicated by the relation $(n_1,n_2, pc) \in Fwd$. Thus, we extract the relevant rules of the shortest path from source to destination from the model, and the additional rules obtained in the solution (extra paths, forwarding loops) are ignored.  
 \subsection{Waypoint Constraints} 
 For a reachability policy with waypoints $s >> W >> d$ and packet class $pc$, we add all the constraints specified in \cref{sec:reach} to ensure the existence of a path from source to destination. To satisfy waypoint policies, we need to add constraints so that all $w \in W$ is reachable. 
 \begin{equation} \label{eq:waypoints}
@@ -189,7 +172,7 @@ For a reachability policy with waypoints $s >> W >> d$ and packet class $pc$, we
 \end{equation}
 However, just ensuring reachability of waypoints is not sufficient. Since, we do not have any restrictions on the count of forwarding rules for a packet class at a switch, it is possible that waypoints are reachable from the source through separate paths, and do not lie in the path from source to destination. Thus, to ensure that all waypoints are reachable in the path from source to destination, we need to add constraints on the count of forwarding rules at each switch. 
 
-Forwarding rule constraints are to ensure that the forwarding function $Fwd$ at a switch forwards to a \emph{single} node which is a \emph{neighbour} or to no node at all (Switches which are not reached in the path and the destination will not have any forwarding rules). We define the forwarding set $FwdSet$ as follows:
+Forwarding rule constraints are to ensure that the forwarding relation $Fwd$ for a switch contains a \emph{single} switch which is a \emph{neighbour} or to no node at all (switches which are not reached in the path, and the destination will not have any forwarding rules). We define the forwarding set $FwdSet$ as follows:
 \begin{equation}
 	FwdSet(sw,pc) = \{n \ | \ Fwd(sw,n,pc)\}
 \end{equation}
@@ -197,7 +180,7 @@ The $|A|$ function is used to the denote the size of set $A$. The constraint on 
 \begin{equation}
 		\forall sw,pc . \ |FwdSet(sw,pc)| \leq 1 \label{eq:fwdset}
 \end{equation}
-The forwarding set constraints ensure that the forwarding rules exist only on the path from source to destination, and no other rules exist in the solution. If a switch has a forwarding rule elsewhere, then it would not have a rule for the path, and the destination will not be reachable. These restrictions will also ensure there are no forwarding loops in the path. 
+The forwarding set constraints ensure that the forwarding rules exist only on the path from source to destination, and no other rules exist in the solution. If a switch has a forwarding rule to  elsewhere, then it would not have a rule for the path, and the destination will not be reachable. These restrictions will also ensure there are no forwarding loops in the path. 
 Since, there is only one path in the model from source and destination, and \cref{eq:waypoints} ensures that waypoints are reachable, therefore, the path from source to destination must traverse through all the waypoints. Since \cref{eq:waypoints} imposes no order on waypoint traversal, the solution will traverse the waypoints in no particular order. 
 
 \subsection{Isolation Constraints}
@@ -207,7 +190,7 @@ For a traffic isolation policy $pc_1 || \ pc_2$ means that the paths do not shar
 \end{equation}
 These constraints are sufficient to ensure that the packet classes $pc_1$ and $pc_2$ would be isolated. 
 
-The isolation constraints is intuitive when coupled with the forwarding set constraints (\cref{eq:fwdset}) as the model only has forwarding rules for the path from source to destination. However, for a reachability policy, we argue that the forwarding set constraints are not required when coupled with the isolation constraints. The reasoning behind this is that the solver would simply remove the extra forwarding rules of a packet class in the model which conflict with the other packet class, as there are no constraints which require the need of these extra forwarding rules for correctness, but are just one solution model in the space of solutions. 
+The isolation constraints is intuitive when coupled with the forwarding set constraints (\cref{eq:fwdset}) as the model only has forwarding rules for the path from source to destination. However, for a reachability policy without waypoints, we argue that the forwarding set constraints are not required when coupled with the isolation constraints. The reasoning behind this is that the solver would simply remove the extra forwarding rules of a packet class in the model which conflict with the other packet class, as there are no constraints which require the need of these extra forwarding rules for correctness, but are one particular solution model in the space of solutions. 
 
 For a security isolation policy, $pc_1$ and $pc_2$ must not share links at all. \cref{eq:isolation} constraint can be modified to enforce bidirectional isolation :
 \begin{multline}
@@ -215,7 +198,7 @@ For a security isolation policy, $pc_1$ and $pc_2$ must not share links at all. 
 \end{multline}
 
 \subsection{Maintenance Constraints}
-For a link maintanence policy of link $sw_1 \rightarrow sw_2$, we need to ensure that for all packet classes, the variable $Fwd(sw_1, sw_2, pc)$ is $False$, otherwise there would be a forwarding rule $sw_1 \rightarrow sw_2$ for $pc$ on the link. Thus, to perform link maintenance, the constraints required are: 
+For a link maintanence policy of link $sw_1 \rightarrow sw_2$, we need to ensure that for all packet classes, the tuple $(sw_1, sw_2, pc) \notin Fwd$, otherwise there would be a forwarding rule $sw_1 \rightarrow sw_2$ for $pc$ on the link. Thus, to perform link maintenance, the constraints required are: 
 \begin{equation}
 	\forall pc. \ \neg Fwd(sw_1, sw_2, pc)
 \end{equation}
@@ -226,23 +209,23 @@ Similarly, for a switch maintanence policy of switch $sw$, we need to ensure no 
 
 \subsection{Capacity Constraints}
 %\subsubsection{Link Capacity Constraints} \label{sec:linkcap}
-For a link capacity policy on the link $sw_1 \rightarrow sw_2$ with capacity $\omega$, we use the theory of integer linear arithmetic to add constraints on the link so that capacity used by the flows traversing the link does not exceed $\omega$. In terms of our model, the link capacity policy translates to constraints to ensure that the the occurences of $Fwd(sw_1, sw_2, pc) = True$ for $pc \in PC$ conforms to the capacity specified in the policy, as the forwarding rule $sw1 \rightarrow sw2$ means that the link is being used by the particular packet class.
+For a link capacity policy on the link $sw_1 \rightarrow sw_2$ with capacity $\omega$, we use the theory of integer linear arithmetic to add constraints on the link so that capacity used by the flows traversing the link does not exceed $\omega$. In terms of our model, the link capacity policy translates to constraints to ensure that the tuples $(sw_1, sw_2, pc) \in Fwd$ for $pc \in PC$ conforms to the capacity specified in the policy, as the forwarding rule $sw1 \rightarrow sw2$ means that the link is being used by the particular packet class.
  
 Let $C(sw_1,sw_2,pc)$ be the cumulative capacity function of the link used by all packet classes less than equal to $pc$. Since we use integers for denoting the packet class, and thus, we have total order of the set of packet classes. We use this to create inductive constraints to sum over the set of Boolean variables $Fwd(sw_1, sw_2,pc)$. Let $PC : [0, \lambda]$ be the set of packet classes and the $W(pc)$ is the capacity of packet class $pc$ ($W$ can be uniform or non-uniform for all packet classes). 
 The base case constraint for the capacity function is for $pc = 0$ (the minimum element of $PC$) :
 \begin{equation}
-	Fwd(sw_1, sw_2, 0) \implies C(sw_1, sw_2, 0) == W(0)
+	Fwd(sw_1, sw_2, 0) \implies C(sw_1, sw_2, 0) = W(0)
 \end{equation}
 \begin{equation}
-	\neg Fwd(sw_1, sw_2, 0) \implies C(sw_1, sw_2, 0) == 0
+	\neg Fwd(sw_1, sw_2, 0) \implies C(sw_1, sw_2, 0) = 0
 \end{equation} 
 The inductive constraints for the capacity function are as follows if link is used : 
 \begin{multline}
-	\forall pc > 0. Fwd(sw_1,sw_2,pc) \implies \\ C(sw_1, sw_2, pc) ==  C(sw_1. sw_2, pc - 1) + W(pc)
+	\forall pc > 0. Fwd(sw_1,sw_2,pc) \implies \\ C(sw_1, sw_2, pc) =  C(sw_1. sw_2, pc - 1) + W(pc)
 \end{multline}
 If the link is not used, the constraints are as follows : 
 \begin{multline}
-\forall pc > 0. \neg Fwd(sw_1,sw_2,pc) \implies \\ C(sw_1, sw_2, pc) ==  C(sw_1. sw_2, pc - 1)
+\forall pc > 0. \neg Fwd(sw_1,sw_2,pc) \implies \\ C(sw_1, sw_2, pc) =  C(sw_1. sw_2, pc - 1)
 \end{multline}
 If $pc$ uses the link $sw_1 \rightarrow sw_2$, we add $W(pc)$ to $C(sw_1,$ $sw_2,pc-1)$, or add 0 to it if link is not being used. Thus, we define the cumulative capacity constraints using inductive constraints. To satisfy the capacity policy, the total capacity used should not exceed input $\omega$. $\lambda$ is the greatest element in the set $PC$. 
 \begin{equation}
@@ -250,7 +233,7 @@ If $pc$ uses the link $sw_1 \rightarrow sw_2$, we add $W(pc)$ to $C(sw_1,$ $sw_2
 \end{equation} 
 
 \section{Constraint Evaluation}
-In the section, we evaluate the number of constraints required to add to the z3 \loris{Z3 not z3, also put citation when you mention it for the first time} Solver. Let $|S|$ be the number of switches in the topology, $|L|$ be the number of edges in the topology, $|PC|$ be the number of packet classes, $|I|$ be the number of traffic isolation policies and $\mu$ be the max path length. Let $deg$ be the maximum number of neighbours for a switch (degree of the topology).
+In the section, we evaluate the number of constraints required to add to the Z3 solver. Let $|S|$ be the number of switches in the topology, $|L|$ be the number of edges in the topology, $|PC|$ be the number of packet classes, $|I|$ be the number of traffic isolation policies and $\mu$ be the max path length. Let $deg$ be the maximum number of neighbours for a switch (degree of the topology).
 
 We encode the forwarding set constraint (\cref{eq:fwdset}) using a SAT encoding rather than an SMT encoding for better performance. To express the constraint that the count of forwarding rules is not more than one, we can do this by adding an $or$ of clauses, where each clause is an $and$ of one rule set to true and all others set to false.
 \loris{why the Z3 syntax? use the same as before.
