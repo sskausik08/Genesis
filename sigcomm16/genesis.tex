@@ -4,6 +4,8 @@
 \usepackage{amsmath}
 \usepackage[utf8]{inputenc}
 \usepackage{cleveref}
+\usepackage{algpseudocode}
+\usepackage[]{algorithm2e}
 \usepackage{listings}
 \usepackage{array}
 \usepackage{breqn}
@@ -74,7 +76,7 @@ Since, tenants do not have a view of the actual physical topology, the policy re
 \subsection{Synthesis} \label{sec:synthesis}
 Program synthesis is defined as the task of discovering an executable program from user intent expressed in the form of some constraints. There are three key dimensions of synthesis : the kind of constraints that it accepts as expression of user intent, the space of programs over which it searches, and the search technique it employs. In this case, synthesis translates to : given a set of policies which describe user intent, the search space is the space of all forwarding plane configurations and the search technique involved is SAT/SMT solving. 
 
-Correct policy enforcement is challenging due to different objectives for each of the policies - ensuring isolation between flows may lead to overshooting capacity and vice-versa, and is a common cause of mis-confgurations in networks. By using a formal reasoning technique, we are able to consider the space of all forwarding configurations and find a solution which adheres to satifsying a diverse set of policies, eliminating the room for error by the network operator. Another key reason for performing synthesis is the complexity of policy enforcement. For example, finding edge-isolated paths for flows  reduces to a graph-coloring of the policy graph which is NP-complete (see \cref{sec:isolationNP} for the proof), which means that any system solving this would need to exhaustively search the space of all forwarding plane configurations. 
+Correct policy enforcement is challenging due to different objectives for each of the policies - ensuring isolation between flows may lead to overshooting capacity and vice-versa, and is a common cause of incorrect confgurations in networks. By using a formal reasoning technique, we are able to consider the space of all forwarding configurations and find a solution which adheres to satifsying a diverse set of policies, eliminating the room for error by the network operator. Another key reason for performing synthesis is the complexity of policy enforcement. For example, finding edge-isolated paths for flows reduces to a graph-coloring of the policy graph(\cref{sec:optimistic}) which is NP-complete (see \cref{sec:isolationNP} for the proof), which means that any system solving this would need to exhaustively search the space of all forwarding plane configurations. 
 
 Many different search techniques can be used to find the forwarding rules, however a challenge is that the search objectives for each type of policy (isolation, waypoints, capacity) are diverse and difficult to reason about them in coordination. Instead, by using a SAT/SMT solving technique, we unify the search objectives for every policy into a generalised search technique. Thus, by reducing this problem to a SMT instance and leveraging fast off-the-shelf SMT solvers developed over years of research, Genesis can provide support diverse policies required by network operators which can be extended with ease to support new policies without requiring changes to the search techniques to find the solution. 
 \subsection{Performance Challenges} \label{sec:performance}
@@ -424,36 +426,58 @@ Formally, let us define the slices of the topology as $S_1, S_2, ..., S_n \subse
 For packet classes isolated with packet class $pc$, only links in $S_i$ are needed to be isolated, as the path will be confined to topology slice $S_i$. 
 
 \section{Optimistic Synthesis} \label{sec:optimistic}
+One of the key challenges to the synthesis performance is the number of packet class synthesized and the policy interactions among them(isolation, capacity etc.). Since the complexity of finding a forwarding plane configuration is roughly \emph{expotential} in the number of packet classes, the synthesis time shoots up with increasing packet classes. 
+However, one keen observation in datacenter topologies with dense interconnect between layers, we can obtain numerous configurations as solutions for the same input policies. For packet classes related by isolation policies, we can leverage the nature of policy interactions to  partition the problem into sub-problems. 
+The intuition is as follows, suppose we have two packet classes $pc_1, pc_2$ isolated from one another, we can synthesize $pc_1$ independently, and try to find a solution for $pc_1$ isolated from the path obtained for $pc_1$. We term this algorithm \emph{optimistic} synthesis, as we optimistically synthesize $pc_1$, hoping that the solution for $pc_1$ does not prevent finding a solution for $pc_2$. 
+
+We define a policy graph $P = \{R, I\}$ where every vertex $r \in R$ is a packet class for a reachability/waypoint policy. For each edge $i \in I$ which connects vertices $r1$ and $r2$ mean that the paths of $r1$ and $r2$ are isolated from each other. We assume that there are no other policies in the input specifications.  
+Given the policy graph $P$, we can synthesize each connected component independently, since packet classes in different connected components are not related by any isolation policy, and therefore are independent of each other.  
+
+We describe the optimistic synthesis algorithm in \cref{}. We use two schemes to partition the graph into two, the first one is \emph{min-cut} partitioning, which partitions the graph such that inter-partition graphs are minimised. The rationale behind the heuristic is that since we intend to perform the synthesis of both partitions separately, the partition should maximise the isolation policies within components and minimise across components. By maximising isolation policies during synthesis of the component, the partial solution is more likely to be compatible with a complete solution. However, if the min-cut partitioning produces a component smaller than some threshold (typically 3), we perform partitioning of the graph into two equal sized partitioned and minimising the cut edges between the partition. We need to ensure that we don't partition the graph smaller than a reasonable threshold, as the partial solutions obtained by synthesis of very small partitions are less likely to be part of the complete solution. 
+%\begin{algorithm}
+%	\SetKwData{swl}{swlist1}\SetKwData{round}{round}\SetKwData{Up}{up}
+%	\SetKwData{swll}{swlist2}
+%	\SetKwFunction{len}{len}\SetKwFunction{append}{append}
+%	\SetKwFunction{capacity}{capacity}\SetKwFunction{mapHosts}{mapHosts}
+%	\SetKwFunction{neighbours}{neighbours}
+%	\SetKwInOut{Input}{input}\SetKwInOut{Output}{output}
+%	\Input{Physical Topology $P$, Virtual Host List $vhosts$}
+%	\Output{Virtual-to-physical mappings of each host in $vhost$}
+%	\emph{Heuristic: Minimise the constructed network graph.}
+%	\BlankLine
+%	\emph{Initialization:}\\
+%	\swl $\leftarrow$  [] \\
+%	\swll $\leftarrow$ [] \\
+%	\round $\leftarrow$ 0 \\
+%	\For{host in P.phosts}{
+%		host$\rightarrow$switch$\rightarrow$hostlist = [host] \\
+%		\swl.\append(host$\rightarrow$switch) \\
+%	}
+%	\emph{Start the Percolation Rounds.}\\
+%	\While{MappingNotFound} {
+%		\While{ \len(\swl) $\neq$ 0} {
+%			sw = \swl.pop() \\
+%			\If{ \capacity( sw$\rightarrow$hostlist ) $\ge$ \capacity(vhosts)} {
+%				MappingNotFound = False \\
+%				\mapHosts ( sw$\rightarrow$hostlist )
+%			}
+%			nlist = \neighbours(sw) \\
+%			\For{n in nlist} {
+%				\emph{Add all the hosts in sw$\rightarrow$hostlist to n$\rightarrow$hostlist} without duplicates.\\ 
+%				If any change in n$\rightarrow$hostlist, add n to \swll
+%			}			
+%		}
+%		\swl $\leftarrow$ \swll \\
+%		\swll $\leftarrow$ [] \\
+%		\round $\leftarrow$ \round + 1
+%	}
+%	\caption{Minimum Network Diameter Host Mapping Algorithm}\label{algo_disjdecomp}
+%\end{algorithm}\DecMargin{1em}
+
 
 \section{Implementation}
 
-%\section{Multicast Policies} \label{sec:mcast}
-%Genesis supports two multicast policies, \emph{normal} and \emph{equal} multicast. Genesis will leverage the Openflow functionality to send a packet to multiple outports to create multicast group paths from source to the destinations. The normal multicast is IP-multicast from a source to a group of destinations without any restrictions. \\
-%To aid in achieving approximate synchrony in multicast groups for distributed systems \cite{mcast}, Genesis supports \emph{equal} multicast ensures that paths from the source to each destination in the multicast group to have the same path lengths to minimize the disparity of message latencies to each destination. \\
-%
-%\subsection{Path Constraints}
-%To support multicast, we needed to remove the restriction of next-hop forwarding set on our forwarding model. So, for a multicast packet class, our model can forward it to multiple nodes.  \\
-%However, this can cause the possibility of cycles in the graph. The multicast group paths creates a \emph{tree} with the source as root and the leaves are the destination. To remove cycles, we mark nodes in the graph with a rank number, which is the depth of the node in the multicast path tree. We use an \emph{uninterpreted function R} to add constraints for the rank function to ensure acyclicity of the paths.
-%\[
-%R(src, pc) = 0  \label{ranksrc} \tag{M1}
-%\]
-%To ensure the nodes further in the path have greater ranks, we add the following constraint. 
-%\[
-%\forall n_1, n_2.(Fwd(n_1,n_2,pc) \implies R(n_1,pc) < R(n_2,pc))  \label{ranknode} \tag{M2}
-%\]
-%Since the forwarding model can send packets from a node to multiple next-hop nodes, we need constraints to ensure that two paths do not lead to the same destination. Let us define $recvSet(n,pc)$ as the set of all nodes the node $n$ receives the packet.
-%\[
-% recvSet(n,pc) = \{n' | Fwd(n',n,pc) = True\}
-% \]
-%\[
-%\forall n. \ |recvSet(n,pc)| \leq 1 \label{ranknode} \tag{M3}
-%\] 
-%For \emph{equal multicast policy}, all the paths to destinations must have equal path lengths. 
-%\[
-% \forall d \in dstSet \ \exists k .(Reach(d, pc, k) \wedge \neg Reach(d, pc, k - 1) ) \label{eqmdst} \tag{EM1}
-%\]
-%However, there are some important \emph{caveats} to the multicast policy enforcement. The above constraints ensure paths to the destinations specified in the policy, but also provides various paths to nodes which are not specified in the policy (still a correct enforcement of the policy). Instead of adding constraints to the model to ensure the model only gives paths to the destinations and no more, we simply extract the paths we require from the model and ignore the extra paths. Another assumption is that we are dealing with multicast policies independently. If we change the system to incorporate inter-policy interactions with mutlicast policy, we will have to include constraints to provide a solution which does not contain paths not required by the policy.
-%
+
 %\section{Policy Interactions}
 %Consider our input policies, like reachability and waypoint policies. For a packet class, the enforcement of these policies do not require the system to have information of other packet classes, and we can synthesize each of these packet classes independently. Since Z3 is expontential in the number of flows fed to the model, the best approach is to synthesize these packet classes independently. \\
 %However, policy interactions complicate this approach. Policy interaction is defined as the event of two packet classes which have to be reasoned together by Genesis to ensure correctness, like traffic isolation policies. Therefore, if $pc_1$ and $pc_2$ have to satisfy a isolation policy, naive Genesis needs to add both the flow constraints to Z3 together and the synthesize the forwarding rules. \\
@@ -553,13 +577,13 @@ NetEgg \cite{netegg} synthesizes the forwarding policy of a switch using example
  \appendix
  \section{Proofs of NP-hardness} \label{sec:np}
  \subsection{Enforcement of Isolation Policies} \label{sec:isolationNP}
- Given a undirected graph $G=\{V,E\}$ which represents the switch topology denoted in \cref{fig:swtopo} and undirected graph $P =\{R,I\}$ which represents the policy graph. Every vertex $p \in P$ is a reachability policy : $S >> D$ and each edge $i \in I$ which connects vertices $p1$ and $p2$ mean that the paths of $p1$ and $p2$ are isolated from each other. 
+ Given a undirected graph $T=\{S,L\}$ which represents the switch topology denoted in \cref{fig:swtopo} and undirected graph $P =\{R,I\}$ which represents the policy graph. Every vertex $r \in R$ is a reachability policy : $s >> d$ and each edge $i \in I$ which connects vertices $r1$ and $r2$ mean that the paths of $r1$ and $r2$ are isolated from each other. 
  \begin{figure}[H] 
  	\includegraphics[width=8cm]{color_topo.png}
- 	\caption{The switch topology $G$. All circles represent switches and all reachability policies are $S$ to $D$}
+ 	\caption{The switch topology $T$. All circles represent switches and all reachability policies are $s$ to $d$}
  	\label{fig:swtopo}
  \end{figure}
-The solution to policy enforcement will be such that each reachability policy $p \in P$ from $S >> D$ will traverse through one of the colored switches $\{red$, $blue$, $green\}$. Color the vertices of $P$ with the switch the path traverses through. If two vertices are connected by an edge in $P$, those flows would be isolated, and thus, will not have the same color. Thus, the problem reduces to finding a 3-graph coloring for $P$, which is NP-complete. Thus, the enforcement of isolation policies is NP-complete. 
+The solution to policy enforcement will be such that each reachability policy $r \in R$ from $s >> d$ will traverse through one of the colored switches $\{red$, $blue$, $green\}$. Color the vertices $R$ with the switch the path traverses through. If two vertices are connected by an edge in $I$, those flows would be isolated, and thus, will not have the same color. Thus, the problem reduces to finding a 3-graph coloring for the graph which is NP-complete. Thus, the enforcement of isolation policies is NP-complete. 
  
  In genral, k-coloring (for k > 2) is NP-complete, the policy enforcement problem in a switch topology with k paths from source to destination reduce to a k-coloring problem, and thus is NP-complete. 
  
