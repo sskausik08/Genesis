@@ -1,4 +1,5 @@
 \documentclass[]{sig}
+\usepackage{times}
 \usepackage{graphicx}
 \usepackage{mathtools}
 \usepackage{amsmath}
@@ -51,9 +52,7 @@ Though Software-defined Networking (SDN) has allowed network operators to progra
 
 There has been research in the field of network-wide policy enforcement in networks, like bandwidth provisioning in Merlin \cite{Merlin}, and middlebox policy enforcement in SIMPLE \cite{simple}. However, the approach followed in these works are tailor-made to  specific policies, and thus, difficult to extend it to support other kinds of policies. To support a cornucopia of policies, an important feature is \emph{generality} of the approach of policy enforcement, so that it can be extended to enforce custom policies required by the operator. To achieve this, we use \emph{synthesis} of switch table forwarding rules to the solve the problem of policy enforcement by use of off-the-shelf SMT-solvers.
 
-%[Synthesis of Controllers] : not sure if needed here. 
-
- Enforcement of isolation, waypoint policies are NP-complete, so we leverage recent advances in creating fast SMT solvers (like Z3) to perform synthesis by encoding the policy enforcement problem to a SMT instance, and use the SMT solver to find a solution which we translate to switch rules. This paper presents Genesis, a network management tool where the network operators can express the network-wide policies in a high-level declarative manner and Genesis will synthesize the lower-level switch forwarding rules for realising these policies, eliminating the need for operators to work on switch-level behaviours. By using a formal reasoning technique of SAT/SMT solving, we eliminate the room of error in policy enforcement.   
+ Enforcement of isolation, waypoint policies are NP- complete, so we leverage recent advances in creating fast SMT solvers (like Z3) to perform synthesis by encoding the policy enforcement problem to a SMT instance, and use the SMT solver to find a solution which we translate to switch rules. This paper presents Genesis, a network management tool where the network operators can express the network-wide policies in a high-level declarative manner and Genesis will synthesize the lower-level switch forwarding rules for realising these policies, eliminating the need for operators to work on switch-level behaviours. By using a formal reasoning technique of SAT/SMT solving, we eliminate the room of error in policy enforcement.   
 
 While SMT solvers are fast, the scale of operations of cloud and enterprise networks are huge, and by supporting a set of diverse and complex policies with different search objectives, we require to create a model general and expressive enough to support these. This poses a challenge as to can synthesis performance be improved by leveraging knowledge specific to the problem of policy enforcement in networks? 
 
@@ -79,13 +78,13 @@ Providing support for the complex set of policies using existing SDN progtamming
 
 Program synthesis is defined as the task of discovering an executable program from user intent expressed in the form of some constraints. There are three key dimensions of synthesis : the kind of constraints that it accepts as expression of user intent, the space of programs over which it searches, and the search technique it employs. In this case, synthesis translates to : given a set of policies which describe user intent, the search space is the space of all forwarding plane configurations and the search technique involved is SAT/SMT solving. 
 
-In recent years, the space of program synthesis has seen great progress, and in the context of SDNs, controller synthesis \cite{netegg}. The work on controller synthesis is towards enforcing switch-level behavior, for example, synthesizing the behavior of learning switches or firewalls. However, when dealing with enterprise and datacenter networks, network operators need support for specifying end-to-end proactive policies without the need to reason about individual switch behavior. Also, policies useful to operators are proactive (not dependent on the actual packet flow), and this enables to enforce policies by synthesis of switch-table rules, and using a skeleton controller to deploy the forwarding rules to the switches. In contrast, trying to synthesize reactive policies (like a firewall), the controller needs to store the state of flows it has received and have a control module following the specifications, which is an interesting synthesis problem, but orthogonal to our approach.
+In recent years, the space of program synthesis has seen great progress, and in the context of SDNs, controller synthesis \cite{netegg}. The work on controller synthesis is towards enforcing switch-level behavior, for example, synthesizing the behavior of learning switches or firewalls. However, when dealing with enterprise and datacenter networks, network operators need support for specifying end-to-end proactive policies without the need to reason about individual switch behavior. Also, policies useful to operators are proactive (not dependent on the actual packet flow), and this enables to enforce policies by synthesis of switch-table rules, and using a skeleton SDN controller to deploy the forwarding rules to the switches. In contrast, trying to synthesize reactive policies (like a firewall), the controller needs to store the state of flows it has received and have a control module following the specifications, which is an interesting synthesis problem, but orthogonal to our approach.
 
-Correct policy enforcement is challenging due to different objectives for each of the policies - ensuring isolation between flows may lead to overshooting capacity and vice-versa, and is a common cause of incorrect confgurations in networks. By using a formal reasoning technique, we are able to consider the space of all forwarding configurations and find a solution which adheres to satifsying a diverse set of policies, eliminating the room for error by the network operator. Another key reason for performing synthesis is the complexity of policy enforcement. For example, finding edge-isolated paths for flows reduces to a graph-coloring of the policy graph(\cref{sec:optimistic}) which is NP-complete (see \cref{sec:isolationNP} for the proof), which means that any system solving this would need to exhaustively search the space of all forwarding plane configurations. 
+Correct policy enforcement is challenging due to different objectives for each of the policies - ensuring isolation between flows may lead to overshooting capacity and vice-versa, and is a common cause of incorrect confgurations in networks. By using a formal reasoning technique, we are able to consider the space of all forwarding configurations and find a solution which adheres to satisfying a diverse set of policies, eliminating the room for error by the network operator. Another key reason for performing synthesis is the complexity of policy enforcement. For example, finding edge-isolated paths for flows reduces to a graph-coloring of the policy graph(\cref{sec:optimistic}) which is NP-complete (see \cref{sec:isolationNP} for the proof), which means that any system solving this would need to exhaustively search the space of all forwarding plane configurations. 
 
 Many different search techniques can be used to find the forwarding rules, however a challenge is that the search objectives for each type of policy (isolation, waypoints, capacity) are diverse and difficult to reason about them in coordination. Instead, by using a SAT/SMT solving technique, we unify the search objectives for every policy into a generalised search technique. Thus, by reducing this problem to a SMT instance and leveraging fast off-the-shelf SMT solvers developed over years of research, Genesis can provide support diverse policies required by network operators which can be extended with ease to support new policies without requiring changes to the search techniques to find the solution. 
 \subsection{Performance Challenges} \label{sec:performance}
-One of the key challenges of Genesis is the synthesis performance. There is a trade-off between the generality of the model to enforce various different objectives versus the size of the problem provided to the solver.  Since finding a solution has expotential time complexity, as the number of policies increases, the time to synthesize the rules increases expotentially. If you consider the synthesis of two different flows, if they are related by some policy (isolation, link capacity etc.), then these flows cannot be synthesized separately. Thus, a greater number of policies leads to a bigger problem instance to the solver. Even though recent research has produced fast SMT solvers, there is a need to improve the performance using different techniques specific to this problem. 
+One of the key challenges of Genesis is the synthesis performance. There is a trade-off between the generality of the model to enforce various different objectives versus the size of the problem provided to the solver.  Since finding a solution has expotential time complexity, as the number of policies increases, the time to synthesize the rules increases exponentially. If you consider the synthesis of two different flows, if they are related by some policy (isolation, link capacity etc.), then these flows cannot be synthesized separately. Thus, a greater number of policies leads to a bigger problem instance to the solver. Even though recent research has produced fast SMT solvers, there is a need to improve the performance using different techniques specific to this problem. 
 
 In this paper, we propose various techniques leveraging \emph{domain-specific} knowledge to improve the synthesis performance. We propose the idea of \emph{tactics} (\cref{sec:tactic}) which are search strategies leveraging the network structure of the topologies (especially datacenter topologies) to specify properties of the path. We convert these path properties to an automaton and find local patterns in the laguage of the automaton to eliminate constraints which would give rise to paths not accepted by the automaton. Another property of datacenter topologies is that the huge interconnect of links can lead to multiple solutions to the problem, and we design a heuristical technique called \emph{optimistic} synthesis (\cref{sec:optimistic}) which leverages the nature of policy interactions to divide the problem into sub-problems to synthesize, and uses recovery techniques to converge to a correct solution faster. 
 
@@ -294,6 +293,7 @@ therefore leveraging the hierarchical structure of the topology. A path $p$ is a
 
 \subsection{Synthesis with Tactics}
 \loris{complete here}
+%We use regular expressions and finite automaton to prune the constraints and impose restrictions on the path. The natural way for operators to specify tactics are using \emph{blacklists}, which specify what the path should not be. To express this in a intuitive manner, we use regular expressions on the set of labels to specify blacklists. For example, to blacklist paths from a edge switch to edge switch to not go through another edge switch, we can describe the tactic as $\neg (e .^* e .^* e)$ where the label of all edge switches is $e$. Another tactic is of the form $\neg (e (.)^4 a c .* e)$ which specifies we have a path of length 4, we do not go in the direction towards the core (as to reach the edge, the path would have to then go downwards from the core). 
 In~\cite{} regular expressions are used to...
 While supporting full regular expressions is possible it causes a blow-up in the solving time as further
 constraints need to be added...
@@ -304,8 +304,7 @@ We identified a restricted set of regular expressions that, not only do not requ
 but actually allow us to avoid generating some of the constraints.
 This set is defined using the following grammar:
 $$\begin{array}{rcl}
-R  &  :=  &  \neg (l_1 .^i C .^* l_2) \\ 
-	&  \mid \neg (l_1 .^i l_2)\\
+R  &  :=  &  \neg (l_1 .^i C .^* l_2) \mid \neg (l_1 .^i l_2)\\ 
 C  &  :=  &  \varepsilon \mid l_1 \mid l_1 l_2\\
 \end{array}$$
 where $l_i\in Lb$.
@@ -324,17 +323,21 @@ holds:
 \end{itemize}
 
 Notice that using this constraints we can express more complex forms such as
-$\neg (e .* e .* e)$ \loris{conjuction of all i, please add}.
+$\neg (e .* e .* e)$ which can be expressed in the restricted tactic syntax as $\bigwedge \limits_{i=0}^{i=\mu-2} \neg (e .^i e .^* e)$ where $\mu$ is the synthetic limit on path length.
 
-\subsubsection{Synthesis algorithm}
-\loris{we don't need this complex algorithm}
-In our synthesis algorithm, the backward reachability propagation constraints ensure there is a path from source to destination. By pruning these constraints, we can impose restrictions on the path. 
-\begin{multline}
-\forall n_1,k.  Reach(n_1,pc,k) \implies \exists n_2.  n_2 \in N(n_1) \wedge \\ Reach(n_2,pc,k-1) \wedge Fwd(n_2,n_1,pc)
-\end{multline} 
-The scope for optimizing these constraints are two-fold : (1) If switch $n_1$ with label $\phi(n_1)$ is reachable in $k$ steps, what is the label of switches which can preceed $n_1$ in the path? (2) Can switch $n_1$ be reachable in $k$ steps? The first point leverages the network structure to remove paths, while the second point tries to impose a range on the path length (This is different from the synthetic limit on the path length described in \cref{sec:fwdmodel}). Therefore, if the network operator could provide information on the two points as described, we can use it prune the backward reachability propagation constraints, and reduce the solution space of paths to consider for a packet class. 
+\subsubsection{Tactic Synthesis Algorithm}
+In our synthesis algorithm, the backward reachability propagation constraints (\cref{eq:bckprop}) ensure there is a path from source to destination. To incorporate tactics in the path, we need to modify these constraints. For a path $\pi = sw_1 \ldots sw_k$ and labelling $\Phi(\pi) = a_1 \ldots a_k$, we describe the modifications of the constraints for each type of tactic.
 
-We use regular expressions and finite automaton to prune the constraints and impose restrictions on the path. The natural way for operators to specify tactics are using \emph{blacklists}, which specify what the path should not be. To express this in a intuitive manner, we use regular expressions on the set of labels to specify blacklists. For example, to blacklist paths from a edge switch to edge switch to not go through another edge switch, we can describe the tactic as $\neg (e .^* e .^* e)$ where the label of all edge switches is $e$. Another tactic is of the form $\neg (e (.)^4 a c .* e)$ which specifies we have a path of length 4, we do not go in the direction towards the core (as to reach the edge, the path would have to then go downwards from the core). 
+To satisfy tactics of the form $l_1  .^i c .^* l_2$ where $c \not= l_2$, the modifications are as follows:  
+\begin{multline} \label{eq:t1}
+\pi \vDash \neg (l_1 .^i c .^* l_2) \wedge c \not= l_2 \Leftrightarrow \\ \forall sw. \phi(sw) = c \implies \neg Reach(sw, pc, i + 1)
+\end{multline}
+If $l_2 = c$, then \cref{eq:t1} will not work, as $l_1 .^i l2$ satisfies the tactic, and thus for switches with label $l_2=c,Reach(sw,pc,i+1)$ can hold. The correct modifications are as follows : 
+\begin{multline} \label{eq:t1}
+ \pi \vDash \neg (l_1 .^i c .^* l_2) \wedge c \not= l_2 \Leftrightarrow \\ \forall sw. \phi(sw) = c \implies \neg Reach(sw, pc, i + 1)
+\end{multline}
+
+
 
 \loris{start here}
 \loris{For that restricted set of regexes the algorithm is trivial you should write the first pass. 
