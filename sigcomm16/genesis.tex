@@ -53,8 +53,6 @@ There has been research in the field of network-wide policy enforcement in netwo
 
 %[Synthesis of Controllers] : not sure if needed here. 
 
-%In recent years, the space of program synthesis has seen great progress, and in the context of SDNs, controller synthesis \cite{netegg}. The work on controller synthesis is towards enforcing switch-level behavior, for example, synthesizing the behavior of learning switches or firewalls. However, when dealing with enterprise and datacenter networks, network operators need support for specifying end-to-end proactive policies without the need to reason about individual switch behavior. Also, policies useful to operators are proactive (not dependent on the actual packet flow), and this enables to enforce policies by synthesis of switch-table rules, and using a skeleton controller to deploy the forwarding rules to the switches. In contrast, trying to synthesize reactive policies (like a firewall), the controller needs to store the state of flows it has received and have a control module following the specifications, which is an interesting synthesis problem, but orthogonal to our problem.
-
  Enforcement of isolation, waypoint policies are NP-complete, so we leverage recent advances in creating fast SMT solvers (like Z3) to perform synthesis by encoding the policy enforcement problem to a SMT instance, and use the SMT solver to find a solution which we translate to switch rules. This paper presents Genesis, a network management tool where the network operators can express the network-wide policies in a high-level declarative manner and Genesis will synthesize the lower-level switch forwarding rules for realising these policies, eliminating the need for operators to work on switch-level behaviours. By using a formal reasoning technique of SAT/SMT solving, we eliminate the room of error in policy enforcement.   
 
 While SMT solvers are fast, the scale of operations of cloud and enterprise networks are huge, and by supporting a set of diverse and complex policies with different search objectives, we require to create a model general and expressive enough to support these. This poses a challenge as to can synthesis performance be improved by leveraging knowledge specific to the problem of policy enforcement in networks? 
@@ -80,6 +78,8 @@ Since, tenants do not have a view of the actual physical topology, the policy re
 Providing support for the complex set of policies using existing SDN progtamming languages like Pyretic and Frenetic is challenging, because these policies are global and cannot be enforced by programming individual behaviour of switches. Existing network management systems provide support for complex policies including middlebox placement and bandwidth\cite{}, however these are tailor-made for certain policies and lack generality and extensibility, which we argue is one of the most important features in building a unified network management system with support for diverse policies. We achieve this goal by performing synthesis of switch forwarding rules to enforce end-to-end policies. 
 
 Program synthesis is defined as the task of discovering an executable program from user intent expressed in the form of some constraints. There are three key dimensions of synthesis : the kind of constraints that it accepts as expression of user intent, the space of programs over which it searches, and the search technique it employs. In this case, synthesis translates to : given a set of policies which describe user intent, the search space is the space of all forwarding plane configurations and the search technique involved is SAT/SMT solving. 
+
+In recent years, the space of program synthesis has seen great progress, and in the context of SDNs, controller synthesis \cite{netegg}. The work on controller synthesis is towards enforcing switch-level behavior, for example, synthesizing the behavior of learning switches or firewalls. However, when dealing with enterprise and datacenter networks, network operators need support for specifying end-to-end proactive policies without the need to reason about individual switch behavior. Also, policies useful to operators are proactive (not dependent on the actual packet flow), and this enables to enforce policies by synthesis of switch-table rules, and using a skeleton controller to deploy the forwarding rules to the switches. In contrast, trying to synthesize reactive policies (like a firewall), the controller needs to store the state of flows it has received and have a control module following the specifications, which is an interesting synthesis problem, but orthogonal to our approach.
 
 Correct policy enforcement is challenging due to different objectives for each of the policies - ensuring isolation between flows may lead to overshooting capacity and vice-versa, and is a common cause of incorrect confgurations in networks. By using a formal reasoning technique, we are able to consider the space of all forwarding configurations and find a solution which adheres to satifsying a diverse set of policies, eliminating the room for error by the network operator. Another key reason for performing synthesis is the complexity of policy enforcement. For example, finding edge-isolated paths for flows reduces to a graph-coloring of the policy graph(\cref{sec:optimistic}) which is NP-complete (see \cref{sec:isolationNP} for the proof), which means that any system solving this would need to exhaustively search the space of all forwarding plane configurations. 
 
@@ -446,15 +446,15 @@ We describe the optimistic synthesis algorithm in \cref{}. We use two schemes to
 	\begin{algorithmic}[1]
 		\Procedure{OptSyn(P)}{}
 		\If{$size(P) < P_{thres}$}
-		\State{SYN(P) \ \ \   // Normal synthesis}  
+		\State{Apply normal synthesis on P}  
 		\Else
-		 \State{P1, P2 = partition(P)}
-		 \State{$sol_1$ = OPTSYN(P1)}
-		 \If{$sol_1$ not valid}
-		 \State{return False} 
-		 \EndIf
-		 \State{$sol_2$ = OPTSYN(P2, $sol_1$)} 
-		 
+		 \State{Partition P into $P_1$ and $P_2$ using min-cut or equi-sized partitioning}
+		 \State{failed_solns = []}
+		 \State{attempts = 0}
+		 \While{attempts < $RA_{max}$}
+			 \State{$sol_1$ = Apply  synthesis on $P_1$ with additional constraints ensuring the model does not repeat the solution in $failed$_$solns$}any
+			 \State{Apply synthesis on $P_2$ with additional constraints ensuring that pcs in $P_2$ isolated to pcs in $P_1$ are isolated to the paths in $sol_1$.}
+		 \EndWhile
 		\EndIf
 		\EndProcedure
 	\end{algorithmic}
