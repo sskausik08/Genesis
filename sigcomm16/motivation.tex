@@ -1,29 +1,169 @@
 \section{Motivation}
-Operators of enterprise and multi-tenant clouds deal with policy requirements of different organisations and tenants, as well as require support to manage the network for providing QoS guarantees and network resource management internally, invisible to the tenants. Network operators need to be able to express complex policies in an intuitive declarative fashion, and the network management system must derive the individual switch forwarding behavior without involving the operator. 
 
-The high-level policies tenant specify in a multi-tenant cloud are listed as follows : 
+\aditya{need to start by saying we focus on multi-tenant clouds, although our system can apply elsewhere too}
+
+Operators of enterprise and multi-tenant clouds deal with policy
+requirements of different organisations and tenants, as well as
+require support to manage the network for providing QoS guarantees and
+network resource management internally, invisible to the
+tenants. Network operators need to be able to express complex policies
+in an intuitive declarative fashion, and the network management system
+must derive the individual switch forwarding behavior without
+involving the operator.
+
+The high-level policies tenants specify in a multi-tenant cloud could include:
+
 \begin{itemize}
-	\item \textbf{Reachability between instances} : Tenants have virtual instances running on the cloud and the basic requirement is to ensure network communication between the instances. 
-	\item \textbf{Middleboxes} : With the rising prominence of middleboxes performing complex packet-processing functions like firewalls, intrusion-detection systems etc., tenants must be able to express policies which specify the waypoints the traffic between two machines must traverse through. Nowadays, clouds provide different in-built middlebox services for the cloud with provisioning based on demand. 
+	\item \textbf{Reachability between instances} : Tenants have
+          virtual instances running on the cloud and the basic
+          requirement is to ensure network communication between the
+          instances.
+	\item \textbf{Middlebox traversals} : With the rising
+          prominence of middleboxes performing complex
+          packet-processing functions like firewalls,
+          intrusion-detection systems etc., tenants must be able to
+          express policies which specify the waypoints the traffic
+          between two machines must traverse through.
 \end{itemize}
-Since, tenants do not have a view of the actual physical topology, the policy requirements for tenants are at a coarser level of control. However, network operators need a more fine-grained control of network resources to perform different operations : 
+Since, cloud tenants do not have a view of the actual physical
+topology, the policy requirements for tenants are at a coarser level
+of control. However, network operators need a more fine-grained
+control of network resources, as indicated by the following policies
+they may desire to implement:
 \begin{itemize}
-	\item \textbf{Isolation}: The current Service Level Agreements (SLA) provided are centered around compute, storage, or external traffic bandwidth. Lack of network guarantees between tenant instances leads to unpredictability of performance for distributed applications. Also, multi-tenant clouds are susceptible to attacks on the network by malicious tenants which coud hog the internal network bandwidth, affecting other clients. Conventionally, this problem is mitigated by static rate-limiting, but it can lead to under-utilisation of resources. Clouds can provide QoS guarantees like tenant isolation, which would ensure that the tenant's performance is not affected by the other tenants sharing the network by isolating the path of tenant-flows from other tenants. 
-	\item \textbf{Network Resource Management} : To improve utilisation of the network, network operators would need to perform traffic engineering. The network operator can have policies specifying the capacity of certain links such that tenant flows using the link do not exceed the capacity of the link. Such policies can be useful to ensure the low bandwidth links are not used by more tenants such that their performance is affected and can be used to provide bandwidth guarantees to tenants. To tackle hardware heterogeniety, operators specify switch constraint policies, like the size of the rule table to restrict the number of flows traversing the switch. 
-	\item \textbf{Scheduled Maintenance} : Operators perform scheduled link and switch maintenances, and ensuring that the updated network still conforms to the SLAs of the tenants and resource capacity policies. The forwarding configurations for the new network well in advance, and operators can perform the scheduled maintenance. 
+	\item \textbf{Isolation}: The current Service Level Agreements
+          (SLAs) provided are centered around compute, storage, or
+          external traffic bandwidth. Lack of network guarantees
+          between tenant instances leads to unpredictability of
+          performance for distributed applications. Also, multi-tenant
+          clouds are susceptible to attacks on the network by
+          malicious tenants which could hog the internal network
+          bandwidth, affecting other clients. Conventionally, this
+          problem is mitigated by static rate-limiting, but it can
+          lead to under-utilisation of resources. Clouds can provide
+          various QoS guarantees like varying degrees of tenant
+          isolation, which would ensure that the tenant's performance
+          is not affected by the other tenants sharing the network by
+          isolating the path of tenant-flows from other tenants.
+	\item \textbf{Network Resource Management} : To improve
+          utilisation of the network, network operators would need to
+          perform traffic engineering. To this end, the network
+          operator can have policies specifying the maximum number of
+          tenant flows that can traverse a given, or any, link in her
+          network.
+          %% capacity
+          %% of certain links such that tenant flows using the link do
+          %% not exceed the capacity of the link. Such policies can be
+          %% useful to ensure the low bandwidth links are not used by
+          %% more tenants such that their performance is affected and
+          %% can be used to provide bandwidth guarantees to tenants.
+          Likewise, to tackle hardware heterogeniety, operators
+          specify switch constraint policies, like the size of the
+          rule table to restrict the number of flows traversing the
+          switch.
+	\item \textbf{Scheduled Maintenance} : Operators perform
+          scheduled link and switch maintenances, and ensuring that
+          the updated network still conforms to the SLAs of the
+          tenants and resource capacity policies. \aditya{the
+            following sentence does not make sense} The forwarding
+          configurations for the new network well in advance, and
+          operators can perform the scheduled maintenance.
 \end{itemize}
 
 \subsection{Synthesis} \label{sec:synthesis}
-Providing support for the complex set of policies using existing SDN progtamming languages like Pyretic and Frenetic is challenging, because these policies are global and cannot be enforced by programming individual behaviour of switches. Existing network management systems provide support for complex policies including middlebox placement and bandwidth\cite{}, however these are tailor-made for certain policies and lack generality and extensibility, which we argue is one of the most important features in building a unified network management system with support for diverse policies. We achieve this goal by performing synthesis of switch forwarding rules to enforce end-to-end policies. 
+Providing support for the complex set of policies using existing SDN
+programming languages like Pyretic and Frenetic is challenging,
+because these policies are global and cannot be enforced by
+programming individual behaviour of switches. Existing network
+management systems provide support for complex policies including
+middlebox placement and bandwidth\cite{}, however these are
+tailor-made for certain policies and lack generality and
+extensibility, which we argue is one of the most important features in
+building a unified network management system with support for diverse
+policies. We achieve this goal by performing {\em synthesis} of switch
+forwarding rules to enforce end-to-end policies.
 
-Program synthesis is defined as the task of discovering an executable program from user intent expressed in the form of some constraints. There are three key dimensions of synthesis : the kind of constraints that it accepts as expression of user intent, the space of programs over which it searches, and the search technique it employs. In this case, synthesis translates to : given a set of policies which describe user intent, the search space is the space of all forwarding plane configurations and the search technique involved is SAT/SMT solving. 
+Program synthesis is defined as the task of discovering an executable
+program from user intent expressed in the form of some
+constraints. There are three key dimensions to synthesis: the kind of
+constraints that it accepts as expression of user intent, the space of
+programs over which it searches, and the search technique it
+employs. In our case, synthesis translates to: given a set of policies
+which describe user intent, the search space is the space of all
+forwarding plane configurations and the search technique involved is
+SAT/SMT solving.
 
-In recent years, the space of program synthesis has seen great progress, and in the context of SDNs, controller synthesis \cite{netegg}. The work on controller synthesis is towards enforcing switch-level behavior, for example, synthesizing the behavior of learning switches or firewalls. However, when dealing with enterprise and datacenter networks, network operators need support for specifying end-to-end proactive policies without the need to reason about individual switch behavior. Also, policies useful to operators are proactive (not dependent on the actual packet flow), and this enables to enforce policies by synthesis of switch-table rules, and using a skeleton SDN controller to deploy the forwarding rules to the switches. In contrast, trying to synthesize reactive policies (like a firewall), the controller needs to store the state of flows it has received and have a control module following the specifications, which is an interesting synthesis problem, but orthogonal to our approach.
+In recent years, the space of program synthesis has seen great
+progress, and in the context of SDNs, it has been applied to
+controller synthesis \cite{netegg}. The work on controller synthesis
+is towards enforcing switch-level behavior, for example, synthesizing
+the behavior of learning switches or firewalls. However, when dealing
+with enterprise and datacenter networks, network operators need
+support for specifying end-to-end policies without the need to reason
+about individual switch behavior. Also, policies useful to operators
+are proactive (not dependent on the actual packet flow), and this
+enables enforcing policies by synthesis of switch-table rules, and
+using a skeleton SDN controller to deploy the forwarding rules to the
+switches. In contrast, in trying to synthesize reactive policies (like
+a firewall), the controller needs to store the state of flows it has
+received and have a control module following the specifications
+\aditya{huh? this doesn't make sense...}, which is an interesting
+synthesis problem, but orthogonal to our approach.
 
-Correct policy enforcement is challenging due to different objectives for each of the policies - ensuring isolation between flows may lead to overshooting capacity and vice-versa, and is a common cause of incorrect confgurations in networks. By using a formal reasoning technique, we are able to consider the space of all forwarding configurations and find a solution which adheres to satisfying a diverse set of policies, eliminating the room for error by the network operator. Another key reason for performing synthesis is the complexity of policy enforcement. For example, finding edge-isolated paths for flows reduces to a graph-coloring of the policy graph(\cref{sec:optimistic}) which is NP-complete (see \cref{sec:isolationNP} for the proof), which means that any system solving this would need to exhaustively search the space of all forwarding plane configurations. 
+Correct policy enforcement is challenging due to different objectives
+for each of the policies - ensuring isolation between flows may lead
+to overshooting capacity and vice-versa, and is a common cause of
+incorrect configurations in networks. By using a formal reasoning
+technique, we are able to consider the space of all forwarding
+configurations and find a solution which adheres to satisfying a
+diverse set of policies, eliminating the room for error by the network
+operator. Another key reason for performing synthesis is the
+complexity of policy enforcement. For example, finding edge-isolated
+paths \aditya{where is this coming from?} for flows reduces to a
+graph-coloring of the policy graph(\cref{sec:optimistic}) which is
+NP-complete (see \cref{sec:isolationNP} for the proof), which means
+that any system solving this would need to exhaustively search the
+space of all forwarding plane configurations.
 
-Many different search techniques can be used to find the forwarding rules, however a challenge is that the search objectives for each type of policy (isolation, waypoints, capacity) are diverse and difficult to reason about them in coordination. Instead, by using a SAT/SMT solving technique, we unify the search objectives for every policy into a generalised search technique. Thus, by reducing this problem to a SMT instance and leveraging fast off-the-shelf SMT solvers developed over years of research, Genesis can provide support diverse policies required by network operators which can be extended with ease to support new policies without requiring changes to the search techniques to find the solution. 
+Many different search techniques can be used to find the forwarding
+rules, however a challenge is that the search objectives for each type
+of policy (isolation, waypoints, capacity) are diverse and difficult
+to reason about taken together. Instead, by using a SAT/SMT solving
+technique, we unify the search objectives for every policy into a
+generalised search technique. Thus, by reducing this problem to a SMT
+instance and leveraging fast off-the-shelf SMT solvers developed over
+years of research, Genesis can provide support for xdiverse policies
+required by network operators which can be extended with ease to
+support new policies without requiring changes to the search
+techniques to find the solution.
+
 \subsection{Performance Challenges} \label{sec:performance}
-One of the key challenges of Genesis is the synthesis performance. There is a trade-off between the generality of the model to enforce various different objectives versus the size of the problem provided to the solver.  Since finding a solution has expotential time complexity, as the number of policies increases, the time to synthesize the rules increases exponentially. If you consider the synthesis of two different flows, if they are related by some policy (isolation, link capacity etc.), then these flows cannot be synthesized separately. Thus, a greater number of policies leads to a bigger problem instance to the solver. Even though recent research has produced fast SMT solvers, there is a need to improve the performance using different techniques specific to this problem. 
 
-In this paper, we propose various techniques leveraging \emph{domain-specific} knowledge to improve the synthesis performance. We propose the idea of \emph{tactics} (\cref{sec:tactic}) which are search strategies leveraging the network structure of the topologies (especially datacenter topologies) to specify properties of the path. We convert these path properties to an automaton and find local patterns in the laguage of the automaton to eliminate constraints which would give rise to paths not accepted by the automaton. Another property of datacenter topologies is that the huge interconnect of links can lead to multiple solutions to the problem, and we design a heuristical technique called \emph{optimistic} synthesis (\cref{sec:optimistic}) which leverages the nature of policy interactions to divide the problem into sub-problems to synthesize, and uses recovery techniques to converge to a correct solution faster. 
+One of the key challenges of Genesis is the synthesis
+performance. There is a trade-off between the generality of the model
+to enforce various different objectives versus the size of the problem
+provided to the solver.  Since finding a solution has expotential time
+complexity, as the number of policies increases, the time to
+synthesize the rules increases exponentially. Two different flows that
+are ``related'' by some policies (e.g., they require isolation from
+each other, or they must adhere to link capacity) cannot be
+synthesized separately. \aditya{the following sentence does not flow
+  from the previous} Thus, a greater number of policies leads to a
+bigger problem instance to the solver. Even though recent research has
+produced fast SMT solvers, there is a need to improve the performance
+using different techniques specific to this problem.
+
+In this paper, we propose various techniques leveraging
+\emph{domain-specific} knowledge to improve synthesis performance. We
+propose the idea of \emph{tactics} (\cref{sec:tactic}) which are
+search strategies leveraging the network structure of the topologies
+(especially datacenter topologies) to specify properties of the
+path. We convert these path properties to an automaton and find local
+patterns in the laguage of the automaton to eliminate constraints
+which would give rise to paths not accepted by the automaton. Another
+property of datacenter topologies is that the huge interconnect of
+links can lead to multiple solutions to the problem, and we design a
+heuristical technique called \emph{optimistic} synthesis
+(\cref{sec:optimistic}) which leverages the nature of policy
+interactions to divide the problem into sub-problems to synthesize,
+and uses recovery techniques to converge to a correct solution faster.
