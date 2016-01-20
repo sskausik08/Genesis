@@ -1,139 +1,165 @@
 \section{Motivation}
 
-\aditya{need to start by saying we focus on multi-tenant clouds, although our system can apply elsewhere too}
+In this section, we start by describing in greater detail the type of
+policies that network operators and users or tenants may wish to
+realize. For simplicity, we assume a multi-tenant cloud set up, where
+both the tenants and the provider wish to realize policies over their
+respective networks. However, these policies, and our framework, are
+applicable to other settings, e.g., enterprise networks with different
+departments imposing different sets of policies.
 
-Operators of enterprise and multi-tenant clouds deal with policy
-requirements of different organisations and tenants, as well as
-require support to manage the network for providing QoS guarantees and
-network resource management internally, invisible to the
-tenants. Network operators need to be able to express complex policies
-in an intuitive declarative fashion, and the network management system
-must derive the individual switch forwarding behavior without
-involving the operator.
+We use Figure XXX as a running example. \aditya{explain the figure here}.
 
-The high-level policies tenants specify in a multi-tenant cloud could include:
+% \aditya{need to start by saying we focus on multi-tenant clouds, although our system can apply elsewhere too}
+
+% Operators of enterprise and multi-tenant clouds deal with policy
+% requirements of different organisations and tenants, as well as
+% require support to manage the network for providing QoS guarantees and
+% network resource management internally, invisible to the
+% tenants. Network operators need to be able to express complex policies
+% in an intuitive declarative fashion, and the network management system
+% must derive the individual switch forwarding behavior without
+% involving the operator.
+
+The high-level policies tenants specify could include:
 
 \begin{itemize}
-	\item \textbf{Reachability between instances} : Tenants have
-          virtual instances running on the cloud and the basic
-          requirement is to ensure network communication between the
-          instances.
-	\item \textbf{Middlebox traversals} : With the rising
-          prominence of middleboxes performing complex
-          packet-processing functions like firewalls,
-          intrusion-detection systems etc., tenants must be able to
-          express policies which specify the waypoints the traffic
-          between two machines must traverse through.
+\item \textbf{Reachability}: Thus ensures network communication
+  between specific groups of a tenant's virtual cloud instances,
+  applications, or hosts. \aditya{refer here to an example in the
+    figure}
+\item \textbf{Middlebox traversals}: With the rising prominence of
+  middleboxes performing complex packet-processing functions like
+  firewalls, intrusion-detection systems etc., tenants may wish to
+  express policies which specify the waypoints (locations, or logical
+  descriptors) \aditya{can we do the latter?} the traffic between two
+  endpoints must traverse through. \aditya{refer here to an example in
+    the figure}
 \end{itemize}
+
 Since, cloud tenants do not have a view of the actual physical
 topology, the policy requirements for tenants are at a coarser level
 of control. However, network operators need a more fine-grained
-control of network resources, as indicated by the following policies
-they may desire to implement:
+control of network resources, for which they may desire to specify the
+following:
+
 \begin{itemize}
-	\item \textbf{Isolation}: The current Service Level Agreements
-          (SLAs) provided are centered around compute, storage, or
-          external traffic bandwidth. Lack of network guarantees
-          between tenant instances leads to unpredictability of
-          performance for distributed applications. Also, multi-tenant
-          clouds are susceptible to attacks on the network by
-          malicious tenants which could hog the internal network
-          bandwidth, affecting other clients. Conventionally, this
-          problem is mitigated by static rate-limiting, but it can
-          lead to under-utilisation of resources. Clouds can provide
-          various QoS guarantees like varying degrees of tenant
-          isolation, which would ensure that the tenant's performance
-          is not affected by the other tenants sharing the network by
-          isolating the path of tenant-flows from other tenants.
-	\item \textbf{Network Resource Management} : To improve
-          utilisation of the network, network operators would need to
-          perform traffic engineering. To this end, the network
-          operator can have policies specifying the maximum number of
-          tenant flows that can traverse a given, or any, link in her
-          network.
+\item \textbf{Isolation}: The current Service Level Agreements (SLAs)
+  provided to tenants are centered around compute, storage, or
+  external traffic bandwidth. Lack of guarantees on the network
+  between tenant instances leads to unpredictability of performance
+  for distributed applications. Also, multi-tenant clouds are
+  susceptible to attacks on the network by malicious tenants who could
+  hog the internal network bandwidth, or conduct side-channel
+  attacks~\cite{heyyou-ccs}. % Conventionally,
+  % this problem is mitigated by static rate-limiting, but it can lead
+  % to under-utilisation of resources.
+  Cloud provider can offer (paying) tenants various QoS guarantees
+  that enforce varying degrees of tenant isolation. In the extreme,
+  this could ensure that a tenant's performance is not affected by
+  any other tenant by strictly isolating the path of tenant's flows
+  from others' flows. \aditya{refer here to an example in
+    the figure}
+\item \textbf{Network Resource Management}: To aid traffic
+  enginerring, the network operator may specify policies constraining
+  the maximum number of tenant flows that can traverse a given link or
+  sets of links in the network. He may also wish to ensure traffic
+  from some sensitive applications does not contend for bandwidth on
+  constrained links with elastic traffic from batch applications.
           %% capacity
           %% of certain links such that tenant flows using the link do
           %% not exceed the capacity of the link. Such policies can be
           %% useful to ensure the low bandwidth links are not used by
           %% more tenants such that their performance is affected and
           %% can be used to provide bandwidth guarantees to tenants.
-          Likewise, to tackle hardware heterogeniety, operators
-          specify switch constraint policies, like the size of the
-          rule table to restrict the number of flows traversing the
-          switch.
-	\item \textbf{Scheduled Maintenance} : Operators perform
-          scheduled link and switch maintenances, and ensuring that
-          the updated network still conforms to the SLAs of the
-          tenants and resource capacity policies. \aditya{the
-            following sentence does not make sense} The forwarding
-          configurations for the new network well in advance, and
-          operators can perform the scheduled maintenance.
+  Likewise, to tackle hardware heterogeniety, operators can specify
+  switch constraint policies, like the size of the rule table to
+  restrict the number of flows traversing a particular switch or set
+  of switches.
+\item \textbf{Scheduled Maintenance}: \aditya{this whole para does not
+    parse and needs updating} Operators perform scheduled link and
+  switch maintenances, and ensuring that the updated network still
+  conforms to the SLAs of the tenants and resource capacity
+  policies. \aditya{the following sentence does not make sense} The
+  forwarding configurations for the new network well in advance, and
+  operators can perform the scheduled maintenance.
 \end{itemize}
 
-\subsection{Synthesis} \label{sec:synthesis}
-Providing support for the complex set of policies using existing SDN
-programming languages like Pyretic and Frenetic is challenging,
-because these policies are global and cannot be enforced by
-programming individual behaviour of switches. Existing network
+\subsection{Synthesis} \label{sec:synthesis} 
+
+Providing support for realizing the complex set of policies using
+existing SDN programming languages like Pyretic and Frenetic is
+challenging, because these policies are global and cannot be enforced
+by programming individual behaviour of switches. Existing network
 management systems provide support for complex policies including
-middlebox placement and bandwidth\cite{}, however these are
-tailor-made for certain policies and lack generality and
-extensibility, which we argue is one of the most important features in
-building a unified network management system with support for diverse
-policies. We achieve this goal by performing {\em synthesis} of switch
-forwarding rules to enforce end-to-end policies.
+middlebox placement and bandwidth constraints~\cite{}; however these
+are tailor-made for certain policies and lack generality and
+extensibility.
+
+We design a general network management system that realizes the above
+sets of policies by performing {\em synthesis} of switch forwarding
+rules to enforce end-to-end policies. Our work is motivated by recent
+progress in program synthesis. \aditya{say more}
 
 Program synthesis is defined as the task of discovering an executable
 program from user intent expressed in the form of some
 constraints. There are three key dimensions to synthesis: the kind of
 constraints that it accepts as expression of user intent, the space of
 programs over which it searches, and the search technique it
-employs. In our case, synthesis translates to: given a set of policies
-which describe user intent, the search space is the space of all
-forwarding plane configurations and the search technique involved is
-SAT/SMT solving.
+employs. Program synthesis has seen limited applications to networks,
+specifically to controller synthesis~\cite{netegg}, where the idea is
+to learn from examples and synthesize the behavior of individual
+switches (e.g., learning switches or firewalls); furthermore, this
+technique applies to networks operating in a reactive mode (where the
+first packet of a connection is processed by the controller to
+determine the actions to employ). Like Frenetic and Pyretic, this
+switch-centric approach is too constraining.
 
-In recent years, the space of program synthesis has seen great
-progress, and in the context of SDNs, it has been applied to
-controller synthesis \cite{netegg}. The work on controller synthesis
-is towards enforcing switch-level behavior, for example, synthesizing
-the behavior of learning switches or firewalls. However, when dealing
-with enterprise and datacenter networks, network operators need
-support for specifying end-to-end policies without the need to reason
-about individual switch behavior. Also, policies useful to operators
-are proactive (not dependent on the actual packet flow), and this
-enables enforcing policies by synthesis of switch-table rules, and
-using a skeleton SDN controller to deploy the forwarding rules to the
-switches. In contrast, in trying to synthesize reactive policies (like
-a firewall), the controller needs to store the state of flows it has
-received and have a control module following the specifications
-\aditya{huh? this doesn't make sense...}, which is an interesting
-synthesis problem, but orthogonal to our approach.
+\Name leverages synthesis at a high level as follows: given a set of
+policies which describe user intent, the search space is the space of
+all forwarding plane configurations and the search technique involved
+is SAT/SMT solving. The solution found is implemented by installing
+the necessary switch rules via a skeleton controller.
 
-Correct policy enforcement is challenging due to different objectives
-for each of the policies - ensuring isolation between flows may lead
-to overshooting capacity and vice-versa, and is a common cause of
-incorrect configurations in networks. By using a formal reasoning
-technique, we are able to consider the space of all forwarding
-configurations and find a solution which adheres to satisfying a
-diverse set of policies, eliminating the room for error by the network
-operator. Another key reason for performing synthesis is the
-complexity of policy enforcement. For example, finding edge-isolated
-paths \aditya{where is this coming from?} for flows reduces to a
+This approach is appealing for a variety of different reasons: (1)
+policies useful to operators are proactive (i.e., they are not
+dependent on the actual packet flow), and our synthesis approach
+naturally aligns with such proactive policies.
+
+%  and this enables enforcing policies by synthesis
+% of switch-table rules, and using a skeleton SDN controller to deploy
+% the forwarding rules to the switches. In contrast, in trying to
+% synthesize reactive policies (like a firewall), the controller needs
+% to store the state of flows it has received and have a control module
+% following the specifications \aditya{huh? this doesn't make sense...},
+% which is an interesting synthesis problem, but orthogonal to our
+% approach.
+
+(2) Correct policy enforcement is challenging due to different
+objectives for each of the policies - ensuring isolation between flows
+may lead to overshooting capacity and vice-versa, and is a common
+cause of incorrect configurations in networks. By using a formal
+reasoning technique, we are able to consider the space of all
+forwarding configurations and find a solution which adheres to
+satisfying a diverse set of policies, eliminating the room for error
+by the network operator. 
+
+(3) A key reason for performing synthesis is the complexity of
+policy enforcement. For example, finding edge-isolated paths
+\aditya{where is this coming from?} for flows reduces to a
 graph-coloring of the policy graph(\cref{sec:optimistic}) which is
 NP-complete (see \cref{sec:isolationNP} for the proof), which means
 that any system solving this would need to exhaustively search the
-space of all forwarding plane configurations.
-
-Many different search techniques can be used to find the forwarding
-rules, however a challenge is that the search objectives for each type
-of policy (isolation, waypoints, capacity) are diverse and difficult
-to reason about taken together. Instead, by using a SAT/SMT solving
-technique, we unify the search objectives for every policy into a
-generalised search technique. Thus, by reducing this problem to a SMT
-instance and leveraging fast off-the-shelf SMT solvers developed over
-years of research, Genesis can provide support for xdiverse policies
-required by network operators which can be extended with ease to
+space of all forwarding plane configurations. Many different search
+techniques can be used to find the forwarding rules, however a
+challenge is that the search objectives for each type of policy
+(isolation, waypoints, capacity) are diverse and difficult to reason
+about taken together. Instead, by using a SAT/SMT solving technique,
+we unify the search objectives for every policy into a generalised
+search technique. Thus, by reducing this problem to a SMT instance and
+leveraging fast off-the-shelf SMT solvers developed over years of
+research, \Name can provide support for diverse policies required by
+network operators. Cruciall, \Name can be extended with ease to
 support new policies without requiring changes to the search
 techniques to find the solution.
 

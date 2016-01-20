@@ -1,20 +1,21 @@
 \section{Introduction}
 
-Network operators of enterprise and cloud datacenter networks deal
-with thousands of flow groups traversing large number of heterogeneous
+Network operators of enterprise and cloud datacenters deal with
+thousands of flow groups traversing large number of heterogeneous
 devices. With growing diversity of applications, need for security and
 compliance, and the advent of cloud comouting, these flow groups may
-be subject to increasingly complex policies. Cloud tenants or
-enterprises require basic reachability between hosts/application, and
-middlebox traversal for certain flow groups. Operators, on top of that
-require support for policies like traffic isolation between flows to
-provide security and fairness, and satisfying resource constraints
-pertaining link bandwidths and switch table sizes to perform traffic
-engineering and network resource management.  However, configuring
-network devices to implement these diverse and complex policies is
-manual, ad-hoc and error prone today, leading to violations of
-service-level agreements and mis-configurations which have severe
-performance and security impacts.
+be subject to increasingly complex policies. For instance, cloud
+tenants or enterprises may require sophisticated middlebox traversals
+for certain flow groups, in addition to basic reachability between
+their hosts/applications. Cloud operators perators require support for
+enforcing isolation between flow groups to provide security, QoS, and
+fairness. In addition, they may need to satisfy resource constraints
+pertaining to link bandwidths and switch table sizes in order to
+perform traffic engineering and network resource management.
+Unfortunately, configuring network devices to implement these diverse
+and complex policies in aggregate is manual, ad-hoc, and error prone
+today. This can lead to violations of service-level agreements and
+mis-configurations which have severe performance and security impact.
 
 %%  However, in real-life, the
 %% process of policy enforcement by network operators is manual and
@@ -35,61 +36,70 @@ performance and security impacts.
 
 Though Software-defined Networking (SDN) has allowed network operators
 to program networks in a more intuitive manner, many of existing SDN
-tools/frameworks are too low-level in their functionality. Supporting
-the aforementioned types of policies simply using SDN-capable switches
-or with existing languages like Frenetic~\cite{frenetic} and
-Pyretic~\cite{pyretic} is extremely challenging; operators would
-ideally want to specify and realize policies network-wide without
-programming individual switch behaviors. \aditya{we need to be careful
-  not to bin all SDN languages into this switch-by-switch model}.
-There has been research in the field of network-wide policy
-enforcement in networks, like bandwidth provisioning in Merlin
-\cite{Merlin}, and middlebox policy enforcement in SIMPLE
-\cite{simple} or FlowTags~\cite{flowtags}. However, these approaches
-are tailor-made to specific policies, and thus, difficult to extend it
-to support other kinds of policies.
+tools/frameworks are too low-level or rigid for providing the needed
+functionality. Writing controller applications for the above policies
+is challenging. For many of the policies, satisfying them is
+NP-complete and requires the design of efficient custom heuristics;
+combining different policies' heuristics together is
+non-trivial. Existing languages like Frenetic~\cite{frenetic} and
+Pyretic~\cite{pyretic} are too constraining: operators would ideally
+want to specify and realize policies network-wide, whereas these
+languages focus on programming individual switch behaviors. \aditya{we
+  need to be careful not to bin all SDN languages into this
+  switch-by-switch model}.  There has been other research on
+network-wide policy enforcement, like joint bandwidth provisioning and
+waypoint routing in Merlin \cite{Merlin}, and middlebox policy
+enforcement in SIMPLE \cite{simple} or
+FlowTags~\cite{flowtags}. However, these approaches are tailor-made to
+specific sets of policies, and thus, difficult to extend to support
+other kinds of policies.
 
 In this paper, we seek a {\em general} approach, where operators can
 specify a variety of custom policies in a simple, declarative way, and
 the complexities of correctly realizing the policies in the data plane
-are hidden away from them. %% To support a cornucopia of policies, an
+are hidden away from them. Such an approach would pave the way for
+{\em intent-based networking}~\cite{}, where operators and users
+specify {\em what} they want the network to do and do not have to
+worry about {\em how} they would configure their
+networks. %% To support a cornucopia of policies, an
 %% important feature is \emph{generality} of the approach of policy
 %% enforcement, so that it can be extended to enforce custom policies
 %% required by the operator.
-By designing and implementing a system called \Name, this paper makes
-a case for using \emph{efficient synthesis} of switch table forward
-rules to realize this vision.
+This paper makes a case for using \emph{synthesis} of switch table
+forwarding rules as an effective and practical approach to realizing
+this vision.
 %% switch
 %% table forwarding rules to the solve the problem of policy enforcement
 %% by use of off-the-shelf SMT-solvers.
 
 We show that enforcement of several of the policies supported by
-\Name, specifically isolation, and middlebox traversal is
-NP-complete. Thus, \Name leverages recent advances in creating fast
-SMT solvers (e.g., Z3~\cite{z3}) to perform synthesis by encoding the
-policy enforcement problem to a SMT instance, and using the SMT solver
-to search for a solution, which is then translated into switch
-rules. %% This paper presents Genesis, a
+\Name, e.g., isolation and middlebox traversal, is NP-complete. Thus,
+our system, \Name, leverages recent advances in fast SMT solvers
+(e.g., Z3~\cite{z3}) to perform synthesis by encoding the problem of
+enforcing various policies into a SMT instance, and using the SMT
+solver to search for a solution. The solution is then translated into
+switch rules. %% This paper presents Genesis, a
 %% network management tool where the network operators can express the
 %% network-wide policies in a high-level declarative manner and Genesis
 %% will synthesize the lower-level switch forwarding rules for realising
 %% these policies, eliminating the need for operators to work on
 %% switch-level behaviours.
-By leveraging a formal reasoning technique of SAT/SMT solving, \Name
-eliminates the room for error in policy enforcement.
+By leveraging the formal reasoning foundations of SAT/SMT solving,
+\Name eliminates the room for error in the enforcement of even the
+most complex collections of policies.
 
 Unfortunately, naive application of SMT solvers results in synthesis
 speeds that don't match the scale of operations of cloud and
 enterprise networks today. \aditya{give an example as to how slow
   things can get} To overcome this challenge, \Name leverages a few
-domain-specific ideas.  Specifically, it uses a novel search strategy
-using regular expressions to prune the space of forwarding plane
-configurations by leveraging data center network
-structure. \aditya{the previous sentence is vague} knowlegde. Second,
-\Name uses heuristical synthesis routine that leverages the nature of
-policy interactions to improve synthesis performance. \aditya{quickly
-  talk about in 1-2 sentences the speedup achieved with these
-  optimizations}
+domain-specific ideas.  Specifically, it incorporates a novel search
+strategy based on using regular expressions to prune the space of
+forwarding plane configurations by leveraging data center network
+structure. \aditya{the previous sentence is vague} Second, \Name uses
+a heuristical synthesis routine that leverages the nature of policy
+interactions to improve synthesis performance. \aditya{the previous
+  sentence is vague} \aditya{quickly talk about in 1-2 sentences the
+  speedup achieved with these optimizations}
 
 %% are
 %% huge, and by supporting a set of diverse and complex policies with
