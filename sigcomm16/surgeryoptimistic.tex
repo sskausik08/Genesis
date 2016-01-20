@@ -1,0 +1,42 @@
+\section{Network Surgery}
+Network surgery is the technique of performing equivalent network transformations to eliminate redudant constraints required for synthesis of switch rules. One of the properties of the path found by the synthesis solver is that it is simple (i.e no loops). Using this property, we can create slices of the topology where a packet class' path will reside completely, thus not requiring to add constraints for switches in other slices of the topology. 
+
+To create the topology slices, we use Schmidt's linear-time algorithm\cite{schmidt} to find bridges in the graph. A bridge is an edge in the topology, which when removed, partitions the graph into two disconnected components. <write-about-slices>. 
+
+Consider a reachability policy where the source and destination switches belong to the same topology slice. Since, the bridge edge is the only edge connected vertices of this slice with the rest of the graph, the path for the reachability policy will be contained in the topology slice and not cross the bridge (otherwise the path would have to traverse through the bridge twice back and forth which is not permitted). 
+
+Formally, let us define the slices of the topology as $S_1, S_2, ..., S_n \subset S$. We define the slice neighbour function for the slices as $N_{S_i}(s) = \{v | v \in S_i \wedge (s,v) \in L\}$. If there is a reachability policy $(r, pc)$ with $src,dst \in S_i$, we can replace the switch domain $S$ by $S_i$ and the neighbour function $N$ by $N_{S_i}$ in the constraint formation for reachability. For example, the backward reachability propagation constraints for a policy in slice $S_i$ can be modified to : 
+\begin{multline}
+\forall n_1,k.  n_1 \in S_i \wedge Reach(n_1,pc,k) \implies \exists n_2. n_2 \in N_{S_i}(n_1) \\ \wedge  Reach(n_2,pc,k-1) \wedge Fwd(n_2,n_1,pc)
+\end{multline}
+For packet classes isolated with packet class $pc$, only links in $S_i$ are needed to be isolated, as the path will be confined to topology slice $S_i$. 
+
+\section{Optimistic Synthesis} \label{sec:optimistic}
+One of the key challenges to the synthesis performance is the number of packet class synthesized and the policy interactions among them(isolation, capacity etc.). Since the complexity of finding a forwarding plane configuration is roughly \emph{expotential} in the number of packet classes, the synthesis time shoots up with increasing packet classes. 
+However, one keen observation in datacenter topologies with dense interconnect between layers, we can obtain numerous configurations as solutions for the same input policies. For packet classes related by isolation policies, we can leverage the nature of policy interactions to  partition the problem into sub-problems. 
+The intuition is as follows, suppose we have two packet classes $pc_1, pc_2$ isolated from one another, we can synthesize $pc_1$ independently, and try to find a solution for $pc_1$ isolated from the path obtained for $pc_1$. We term this algorithm \emph{optimistic} synthesis, as we optimistically synthesize $pc_1$, hoping that the solution for $pc_1$ does not prevent finding a solution for $pc_2$. 
+
+We define a policy graph $P = \{R, I\}$ where every vertex $r \in R$ is a packet class for a reachability/waypoint policy. For each edge $i \in I$ which connects vertices $r1$ and $r2$ mean that the paths of $r1$ and $r2$ are isolated from each other. We assume that there are no other policies in the input specifications.  
+Given the policy graph $P$, we can synthesize each connected component independently, since packet classes in different connected components are not related by any isolation policy, and therefore are independent of each other.  
+
+We describe the optimistic synthesis algorithm in \cref{}. We use two schemes to partition the graph into two, the first one is \emph{min-cut} partitioning, which partitions the graph such that inter-partition graphs are minimised. The rationale behind the heuristic is that since we intend to perform the synthesis of both partitions separately, the partition should maximise the isolation policies within components and minimise across components. By maximising isolation policies during synthesis of the component, the partial solution is more likely to be compatible with a complete solution. However, if the min-cut partitioning produces a component smaller than some threshold (typically 3), we perform partitioning of the graph into two equal sized partitioned and minimising the cut edges between the partition. We need to ensure that we don't partition the graph smaller than a reasonable threshold, as the partial solutions obtained by synthesis of very small partitions are less likely to be part of the complete solution. 
+
+\begin{algorithm}
+	\caption{Optimistic Synthesis}
+	\label{optimisticsyn}
+	\begin{algorithmic}[1]
+		\Procedure{OptSyn(P)}{}
+		\If{$size(P) < P_{thres}$}
+		\State{Apply normal synthesis on P}  
+		\Else
+		 \State{Partition P into $P_1$ and $P_2$ using min-cut or equi-sized partitioning}
+		 \State{failed_solns = []}
+		 \State{attempts = 0}
+		 \While{attempts < $RA_{max}$}
+			 \State{$sol_1$ = Apply  synthesis on $P_1$ with additional constraints ensuring the model does not repeat the solution in $failed$_$solns$}any
+			 \State{Apply synthesis on $P_2$ with additional constraints ensuring that pcs in $P_2$ isolated to pcs in $P_1$ are isolated to the paths in $sol_1$.}
+		 \EndWhile
+		\EndIf
+		\EndProcedure
+	\end{algorithmic}
+\end{algorithm}

@@ -1,0 +1,37 @@
+\section{Constraint Evaluation}
+In the section, we evaluate the number of constraints required to add to the Z3 solver. Let $|S|$ be the number of switches in the topology, $|L|$ be the number of edges in the topology, $|PC|$ be the number of packet classes, $|I|$ be the number of traffic isolation policies and $\mu$ be the max path length. Let $deg$ be the maximum number of neighbours for a switch (degree of the topology).
+
+We encode the forwarding set constraint (\cref{eq:fwdset}) using a SAT encoding rather than an SMT encoding for better performance. To express the constraint that the count of forwarding rules is not more than one, we can do this by adding an $or$ of clauses, where each clause is an $and$ of one rule set to true and all others set to false.
+\loris{why the Z3 syntax? use the same as before.
+Also, there is a verbatim environment that would simplify your life with latex. begin {verbatim}... end {verbatim} }
+An example for switch s and neighbours \{t,u\} is \newline
+\verb|(or| \\
+\hspace*{10pt}\verb|(and Fwd(s, t, pc)|  \verb|(not Fwd(s, u, pc)))| \\
+\hspace*{10pt}\verb|(and Fwd(s, u, pc)|  \verb|(not Fwd(s, t, pc)))| \\
+\hspace*{10pt}\verb|(and (not Fwd(s, u, pc))|  \verb|(not Fwd(s, t, pc)))|\\
+\verb|)| 
+
+Thus, the number of terms in a forwarding rule constraint for a switch and packet class is $deg \times (deg+1)$. We add a single \verb|or| constraint for each switch and packet class in the network. Therefore, the count of constraints is $|S| \times |PC|$.
+
+\loris{this need to be measured, please run an experiment in which you measure exactly
+the cost of adding the constraints vs cost of calling solve}
+The major bulk of time is consumed by the creation of the constraints for backward propagation of reachability (\cref{eq:bckprop}). The number of constraints added to the solver is $|S| \times |PC| \times \mu$. We are using a quantifier-free encoding for better performance, so expressing the $exists$ is done by a $or$ clause of the set of neighbours for a switch. Therefore, the size of each constraint is $deg$. 
+
+For each traffic isolation policy, we need to add constraints for each edge of the network, so that the two packet classes dont share the edge. Therefore, the number of constraints added is $|L| \times |I|$ and the size of each constraint is constant size of two terms.
+
+\begin{table}[H]
+\begin{center}
+	\begin{tabular}{||m{6em} | m{7em} | m{7em} ||} 
+		\hline
+		Constraints & Number & Size \\ [0.5ex] 
+		\hline\hline
+		Forwarding Rules & $|S| \times |PC| $ & $deg \times (deg + 1)$ \\ [0.5ex] 
+		\hline
+		Reachability Propagations & $|S| \times |PC| \times \mu $ & $deg$ \\ [0.5ex] 
+		\hline
+		Isolation & $|L| \times |I|$ & 2 \\
+		\hline
+	\end{tabular}
+\end{center}
+\caption{Number and Size of Constraints} \label{tab:title} 
+\end{table}
