@@ -36,6 +36,7 @@ for i in range(groups) :
 		while True:		
 			s = random.randint(0,edgeSwitches)
 			d = random.randint(0,edgeSwitches)
+			a = random.randint(edgeSwitches + 1, swCount - 1)
 			if s <> d :
 				if s > d : 
 					key = str(d) + "-" + str(s)
@@ -48,8 +49,10 @@ for i in range(groups) :
 						dstCount[d] += 1
 						break			
 
-		gplfile.write("p" + str(i) + "_" + str(j) + " := tcp.port = " + str(i) + " : e" + str(s)  + " >> e" + str(d) + "\n")
+		gplfile.write("p" + str(i) + "_" + str(j) + " := tcp.port = " + str(i) + " : e" + str(s)  + " >> [" + topology.getSwName(a) + "] >> e" + str(d) + "\n")
 
+if count == 1 :
+	exit(0)
 gplfile.write("== \n")	
 sets = dict()
 for i in range(groups) :

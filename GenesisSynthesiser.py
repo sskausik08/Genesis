@@ -211,8 +211,8 @@ class GenesisSynthesiser(object) :
 			self.bridgeSlicingFlag = self.topology.findTopologyBridges()
 
 		start_t = time.time()
-		
 		self.initializeSATVariables()
+		print "Time to initializeSATVariables is", time.time() - start_t
 
 		# # Topology Slicing : 
 		# if self.topologySlicingFlag : 
@@ -996,6 +996,7 @@ class GenesisSynthesiser(object) :
 			""" Topology Constraint for one packet class"""
 			pcEnd = pcStart + 1
 
+		st = time.time()
 		swCount = self.topology.getSwitchCount()
 		# \forall sw \forall n \in neighbours(sw) and NextHop = {n | F(sw,n,pc,1) = True}. |NextHop| \leq 1 
 		# None or only one of F(sw,n,pc,1) can be true.
@@ -1070,6 +1071,7 @@ class GenesisSynthesiser(object) :
 				else :
 					""" Multicast packet class. No restrictions on forwarding set """
 					pass	
+		print "Time to add forwarding set constraints is ", time.time() - st
 
 	def addTopologyConstraints(self, pcStart, pcEnd=0) :
 		if self.UseTopoSAT == True :
@@ -1287,7 +1289,7 @@ class GenesisSynthesiser(object) :
 		#self.smtlib2file.write(";Source forwarding assertions \n")
 		#self.smtlib2file.write("(assert (or" + srcAssertionsStr + "))\n")
 
-		#st = time.time()
+		st = time.time()
 		#constime = 0
 		#addtime = 0
 		for i in swList :
@@ -1345,7 +1347,8 @@ class GenesisSynthesiser(object) :
 
 		# print "constime", constime
 		# print "addTime", addtime
-		# print "Path3 " + str(time.time() - st)
+		if pc == 0 : 
+			print "Backward Reachability Constraints " + str(time.time() - st)
 		# st = time.time()
 
 	def addTrafficIsolationConstraints(self, pc1, pc2) : 
