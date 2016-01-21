@@ -16,6 +16,7 @@
 \usetikzlibrary{automata,positioning}
 \newcommand{\name}{Genesis\xspace}
 \newcommand{\Name}{\name}
+\newcommand{\pushcode}[1][1]{\hskip\dimexpr#1\algorithmicindent\relax}
 
 \newtheorem{mydef}{Definition}
 \lstset{
@@ -46,7 +47,8 @@
 \maketitle
 
 \begin{abstract}
-Operators in enterprise and datacenter networks deal with complex end-to-end policies for a large number of classes like reachabilities, middlebox traversals and isolation policies, and dealing with these policies separately and enforcing them at switch-level rules is cumbersome. To tackle this, we create a tool Genesis which supports a rich suite of end-to-end policies which the network operator can specify using a high-level API. Genesis converts the policy enforcement problem to a SMT instance and synthesizes switch rules using a SMT solver (Z3) which can be used by a controller to deploy to the topology.
+Operators in enterprise and datacenter networks deal with diverse and complex end-to-end policies for a large number of classes like reachability, middlebox traversals and isolation policies and network resource policies. This paper presents Genesis, a network management system which allows operators policies in a declarative manner without explicitly programming the data-plane behaviour and tackles the problem of policy enforcement by synthesis of switch forwarding tables by leveraging the formal reasoning foundations of SAT/SMT solving and fast off-the-shelf SMT solvers. To improve synthesis performance, we design a novel search strategy using regular expressions and finite automata to leverage the network structure in datacenter topologies to specify properties of the path and a heuristical synthesis algorithm which leverages the nature of the policy interactions. Experiments demonstrate the performance of Genesis with different workloads on real-world topologies. Overall, the approach used by Genesis is general and instrumental to building a comprehensive network management system. 
+
 \end{abstract}
 
 \input{introduction}
