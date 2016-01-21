@@ -38,8 +38,8 @@ Though Software-defined Networking (SDN) has allowed network operators
 to program networks in a more intuitive manner, many of existing SDN
 tools/frameworks are too low-level or rigid for providing the needed
 functionality. Writing controller applications for the above policies
-is challenging. For many of the policies, satisfying them is
-NP-complete and requires the design of efficient custom heuristics;
+is challenging. For many of the policies, automatically generating the controller is an
+NP-complete problem and requires the design of efficient custom heuristics;
 combining different policies' heuristics together is
 non-trivial. Existing languages like Frenetic~\cite{frenetic} and
 Pyretic~\cite{pyretic} are too constraining: operators would ideally
@@ -72,9 +72,12 @@ this vision.
 %% table forwarding rules to the solve the problem of policy enforcement
 %% by use of off-the-shelf SMT-solvers.
 
+We present \Name, a framework for declaratively specifying and enforcing 
+complex policies.
 We show that enforcement of several of the policies supported by
 \Name, e.g., isolation and middlebox traversal, is NP-complete. Thus,
-our system, \Name, leverages recent advances in fast SMT solvers
+our system, \Name, leverages recent advances in fast Satisfiability
+Modulo Theories (SMT) solvers
 (e.g., Z3~\cite{z3}) to perform synthesis by encoding the problem of
 enforcing various policies into a SMT instance, and using the SMT
 solver to search for a solution. The solution is then translated into
@@ -88,17 +91,28 @@ By leveraging the formal reasoning foundations of SAT/SMT solving,
 \Name eliminates the room for error in the enforcement of even the
 most complex collections of policies.
 
-Unfortunately, naive application of SMT solvers results in synthesis
+Unfortunately, naively encoding the problem using SMT solvers results in synthesis
 speeds that don't match the scale of operations of cloud and
 enterprise networks today. \aditya{give an example as to how slow
-  things can get} To overcome this challenge, \Name leverages a few
-domain-specific ideas.  Specifically, it incorporates a novel search
-strategy based on using regular expressions to prune the space of
-forwarding plane configurations by leveraging data center network
-structure. \aditya{the previous sentence is vague} Second, \Name uses
+  things can get} To overcome this challenge, \Name  
+leverages domain-specific properties to simplify
+the constraints handled by the SMT solver.  
+Specifically, \Name allows the network operator to 
+write regular expressions that
+blacklist certain forwarding plane configurations
+that are not desired in a data center network
+structure. 
+\aditya{the previous sentence is vague}
+\loris{I edited}
+ Second, \Name uses
 a heuristical synthesis routine that leverages the nature of policy
 interactions to improve synthesis performance. \aditya{the previous
-  sentence is vague} \aditya{quickly talk about in 1-2 sentences the
+  sentence is vague} 
+\loris{I'm not even sure what this is. If you are talking about dropping constraints when
+we don't have waypoints this is a pretty important contribution of the paper.
+You have to explain that if some policies are not used we can further optimize the problem.
+}  
+  \aditya{quickly talk about in 1-2 sentences the
   speedup achieved with these optimizations}
 
 %% are
@@ -110,7 +124,17 @@ interactions to improve synthesis performance. \aditya{the previous
 
 We implement \Name using ... We evaluate it using .... Key highlights .... \aditya{all of these are todo}.
 
-Thus, the main contribution of this paper are: \aditya{todo}
+Thus, the main contribution of this paper are: 
+\begin{itemize}
+\item \Name, an extensible declarative language for describing complex policies that can
+		handle new forms of policies such as isolation and unordered middle-box traversal.				
+\item a modular SMT-based algorithm for enforcing \Name policies that can easily be extended
+			to novel types of policies \loris{we have some examples of these}
+\item \loris{heuristics? I think the tactic based blacklisting should be one by itself here }
+\item An implementation of \Name and its enforcing algorithm using the SMT
+		solver Z3 together with an extensive evaluation on \loris{TODO}
+\end{itemize}
+\aditya{todo}
 
 %% : We present the design and implementation of a network management
 %% system with support for a diverse set of complex end-to-end
