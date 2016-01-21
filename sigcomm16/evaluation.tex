@@ -1,3 +1,14 @@
 \section{Evaluation}
-In \cref{fig:topo}, we evaluate the performance of Genesis with respect to increasing topology sizes. We use fat-tree topology, and the policy inputted is two reachability policies where the source and destination are edge switches (one policy has a single aggregate switch as a waypoint). These two policies are isolated to each other. The number of nodes is the X-axis and the Y-axis is the time taken to synthesise the paths for the two input policies. As expected, we can infer a expotential increase with number of switches in the topology. \\
-In \cref{fig:reach}, we evaluate the performance of Genesis with respect to increasing number of reachability policies in a 45-node fat-tree topology. The reachability policies have both source and destination as edge switches (without a waypoint) and no isolation between them. The number of policies is the X-axis and the Y-axis is the time taken to synthesise the paths for the two input policies. Though, this problem can be solved simply by DFS, this experiment is more to rationalise the fact the z3 will not have linear complexity for such a case.
+We now evaluate the performance of Genesis along various dimensions:
+ (1) What is the performance of Genesis in synthesizing simple reachability and waypoint policies
+  with increasing number of policies and greater sizes of topologies and benchmarking the constraints used by the synthesis algorithm? 
+  (2) How quickly can Genesis synthesize isolation policies in datacenter topologies for varying number of policies and percentage of
+   datacenter utilization? 
+   (3) What is the performance of Genesis for solving link-capacity policies in internet topologies? 
+   (4) Identifying the benefits of tactics in terms of reduction of terms in the synthesis algorithm and actual benefits 
+   with respect to synthesis without tactics for different isolation workloads in datacenter topologies? 
+   (5) What are the potential speedups of using optimistic synthesis in Genesis for varying workloads? 
+
+
+
+
