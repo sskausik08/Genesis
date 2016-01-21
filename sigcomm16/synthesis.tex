@@ -1,24 +1,38 @@
 \section{Synthesis Alogrithm}
-Given a set of policies, we perform switch table synthesis by modeling the network forwarding model, and for each policy, adding a set of constraints to the SMT Solver Z3 \cite{z3}, such that the solution model satisfying the constraints can be used to extract the forwarding rules for the switches. One of the key points of the network forwarding model is that the reachability, waypoint and isolation constraints are completely encoded using SAT i.e using boolean variables, while link capacity and switch table policies use the theory of integer linear arithmetic.
+Given a set of policies, we perform switch table synthesis by modeling the network forwarding model, and for each policy, adding a set of constraints to the SMT Solver Z3 \cite{z3}, such that the solution model satisfying the constraints can be used to extract the forwarding rules for the switches. 
+\loris{previous sentence is too long.}
+One of the key points of the network forwarding model is that the reachability, waypoint and isolation constraints are completely encoded using SAT i.e using boolean variables, while link capacity and switch table policies use the theory of integer linear arithmetic.
+\loris{this sentence doesn't belong here. You should just say: we will use the propositional theory (SAT) and linear integer arith (LIA).
+Then later you introduce each. We should also have a paragraph somewhere (or maybe a footnote) saying that
+other theories were tried (uninterpreted functions) and were discarded due to speed.
+}
 %Write about SMT? 
 \subsection{Network Forwarding Model} \label{sec:fwdmodel}
-We define the physical switch topology as an undirected graph $T=\{S, L\}$, where $S$ is the set of switches and $L$ is the set of links. We use the neighbour function $N(s) = \{s'\ | \ (s,s') \in L \}$ to denote the set of neighbour switches of L. The set of reachability policies is denoted as $R$ and each reachability policy $r \in R$ is of the form : $\{predicate$, $src$, $dst$, $W\}$. 
-
-The field $predicate$ is defined over the space of network headers and is used to identify the class of the packet. Assuming that the intersection of predicates is empty for policies in $R$, we create a mapping $\gamma : R \rightarrow PC$ to associate each reachability policy with a unique integer called packet class in the set $PC$. Switches $src, dst \in S$ denote the ingress and egress switches respectively for the packet class $pc = \gamma(r)$ and Genesis finds a path from $src$ to $dst$ for $pc$. If a waypoint policy is specified, $W$ is the set of switches the path from $src$ to $dst$ must traverse through in no particular order.
+We define the physical switch topology as an undirected graph $T=\{S, L\}$, where $S$ is the set of switches and $L$ is the set of links. We use the neighbour function $N(s) = \{s'\ | \ (s,s') \in L \}$ to denote the set of neighbour switches of L. The set of reachability policies is denoted as $R$ and each reachability policy $r \in R$ is
+a tuple of the form $\{predicate$, $src$, $dst$, $W\}$ \loris{all tuples should be changed to round parenthesis} where
+\begin{itemize}
+\item  $predicate$ identifies the class of the packet and is drawn from a set \loris{??} of network headers;
+\item  $src,dst \in S$ are the source and destination switches;
+\item $W\subseteq S$ is the (potentially empty) set of waypoints.
+\end{itemize} 
+\loris{Modify the above list to merge with the one below, I'm quite confused with this definition. I'll take another pass at it tomorrow. 
+It's half hand weaved}
+Assuming that the intersection of predicates is empty for policies in $R$, we create a mapping $\gamma : R \rightarrow PC$ to associate each reachability policy with a unique integer called packet class in the set $PC$. Switches $src, dst \in S$ denote the ingress and egress switches respectively for the packet class $pc = \gamma(r)$ and Genesis finds a path from $src$ to $dst$ for $pc$. If a waypoint policy is specified, $W$ is the set of switches the path from $src$ to $dst$ must traverse through in no particular order.
 
 We define a static integer $\mu$ to be the synthetic limit for path length for any packet class, and define the set $K = [0, \mu]$ to be the set of all permissible path lengths.
+\loris{why do we need this? we can enforce it with the length tactic now..}
 
-The key functions of the network forwarding model are \emph{two-fold}, abstracting the actual forwarding rules at each node, and encoding the reachability of each flow. 
+The key roles of the network forwarding model are abstracting the actual forwarding rules at each node and encoding the reachability of each flow. 
 \begin{mydef}
 \label{def:fwd}
 The relation $Fwd \subseteq S \times S \times PC $ captures the forwarding rule behavior of the network. 
-$(sw_1, sw_2, pc)\in Fwd$ if 
+Concretely, $(sw_1, sw_2, pc)\in Fwd$ if 
 $sw_1$ forwards packets of class $pc$ to switch $sw_2$. 
 \end{mydef}
 \begin{mydef}
 \label{def:reach}
 	The relation $Reach \subseteq N \times PC \times K$ captures the path reachability.   
-	$(sw, pc, k)\in Reach$ if 
+	Concretely, $(sw, pc, k)\in Reach$ if 
 	the switch $sw$ is reachable in the path from source switch of packet class $pc$ in exactly $k$ steps.  
 \end{mydef}
 For brevity, we write $Fwd(sw_1, sw_2, pc)$ for $(sw_1, sw_2, pc) $ $\in Fwd$ and similarly for the $Reach$ relation. The $Fwd$ relation can contain only connected switches in the topology. For $sw_1, sw_2$ who are not connected by a link, $\forall pc$, $(sw_1,sw_2,pc) \notin Fwd$. 
@@ -30,20 +44,34 @@ $sw_0 \ldots sw_k \in P$ is the path for class $pc$ iff :
 	\item $\forall i \in [0, k - 1]. (sw_i, sw_{i+1}, pc) \in Fwd$
 \end{enumerate}
 
-\begin{figure}[H]
+\begin{figure}[!th]
 	\includegraphics[width=8cm]{topoF.png}
-	\caption{Values of the network forwarding model. The red and blue arrows denote the paths taken by packet classes 1 and 2 respectively from source switch 1 to destination switch 2}
+	\caption{Values of the network forwarding model. The red and blue arrows denote the paths taken by packet classes 1 and 2 respectively from source switch 1 to destination switch 2
+\loris{text should be bigger and remove all the =True}
+	}
 	\label{fig:model}
 \end{figure}
-The network forwarding model is demonstrated by an example in \cref{fig:model}. There are two reachability policies, $r1 : 1 >> [5] >> 2$ with $pc=1$ and $r2 : 1 >> 2$ with $pc=2$ and $r1$ is isolated to $r2$. Using the value of $Fwd$ function, we can find out paths for each packet class, and the set of forwarding rules. 
+The network forwarding model is demonstrated by the example in \cref{fig:model}. 
+There are two reachability policies, $r1 : 1 >> [5] >> 2$ with $pc=1$ and $r2 : 1 >> 2$ with $pc=2$ and $r1$ is isolated to $r2$
+\loris{The policies should be in the caption of the figure as well or in the figure itself}. 
+Using the value of $Fwd$ function, we can find out paths for each packet class, and the set of forwarding rules. 
 
-Since the problem of policy enforcement can be achieved by a forwarding plane configuration, we could technically write all the constraints using only the $Fwd$ relation. However, modelling reachability using only the $Fwd$ relation would require be large(For modelling reachability of a single switch in $k$ steps, we would require an expression containing the order of number of paths to switch times $k$). An earlier iteration of our model used \emph{uninterpreted functions} supported by Z3 and modeled reachability using recursive constraints, which however was slower with more number of constraints. 
+Since the problem of policy enforcement can be achieved by a forwarding plane configuration, we could technically write all the constraints using only the $Fwd$ relation. However, modelling reachability using only the $Fwd$ relation would be large (For modelling reachability of a single switch in $k$ steps, we would require an expression containing the order of number of paths to switch times $k$)
+\loris{not sure what you are trying to say with the previous 2 sentences, is it important at all?}.
+An earlier iteration of our model used \emph{uninterpreted functions} supported by Z3 and modeled reachability using recursive constraints, 
+which however was slower with more number of constraints. 
+\loris{you didn't tell that we model the relations with propositions in SAT. And this previous point should be a footnote to 
+that remark.}
 
 \subsection{Reachability Constraints} \label{sec:reach}
-For a reachability policy $s >> d$ and packet class $pc$, the constraints added must ensure that the solution model contains a path from source from destination. One of the constraints required for this is that there must exist a forwarding rule at source to one of its neighbours, and these constraints act as the base case relating the $Fwd$ and $Reach$ relations. 
+For a reachability policy $s >> d$ and packet class $pc$, the constraints added must ensure that the solution model contains a path 
+from source to destination. 
+One of the constraints required for this is that there must exist a forwarding rule at source to one of its neighbours, and 
+these constraints act as the base case relating the $Fwd$ and $Reach$ relations. 
 \begin{equation} \label{eq:src}
 	\exists n \in N(s). Fwd(s, n, pc) \wedge Reach(n, pc, 1)
 \end{equation}
+\loris{put a footnote that you actually unroll the exists quantifier using disjunction so we stay in propositional logic.}
 The base case for reachability is : $(s, pc,0) \in Reach$ . We need a path to destination, thus destination switch must be reachable for some path length : 
 \begin{equation} \label{eq:dst}
 	\exists k. Reach(dst, pc, k)
@@ -52,13 +80,17 @@ Also, since the destination is supposed to be the last switch in the path, we ne
 \begin{equation}
 	\forall n \in N(dst). \ \neg Fwd(dst, n, pc)
 \end{equation}
-For the solver to find a path, we need inductive constraints propagating reachability backward from destination to source. If a node $n_1$ is reachable in $k$, there must a node $n_2$ which is reachable in  $k-1$ steps and there exists a forwarding rule $n_2 \rightarrow n_1$.
+For the solver to find a path, we need implication constraints propagating reachability backward from destination to source. 
+If a node $n_1$ is reachable in $k$ steps, there must a node $n_2$ which is reachable in  $k-1$ steps and there exists a forwarding rule $n_2 \rightarrow n_1$.
 \begin{multline} \label{eq:bckprop}
 \forall n_1,k.  Reach(n_1,pc,k) \implies \exists n_2.  n_2 \in N(n_1) \wedge \\ Reach(n_2,pc,k-1) \wedge Fwd(n_2,n_1,pc)
 \end{multline} 
 The backward propagation is responsible for ensuring there is a topologically valid path from source to destination by using the unit clauses in \cref{eq:dst}, and finding a path from destination back to a switch $sw$ which is a neighbour of $src$. thus $Reach(sw,pc,1)$ would be true from \cref{eq:src} and the reachability policy would be satisfied. 
 
-The above mentioned constraints are sufficient to ensure there is a path from $src$ to $dst$ for packet class $pc$ in terms of the forwarding relation $Fwd$. However, since there is no restriction on number of $Fwd$ values that can be true at a switch, we can get multiple forwarding rules at switches, and also multiple paths to the destination. Also, there can exist forwarding loops as well. Howvever, for a reachability policy, we merely require to find a path from $src$ to $dst$, so we can just extract a path from the model by performing a breadth-first search on the model-graph from source to destination. A directed edge exists in the model-graph : $n_1 \rightarrow n_2$ if there is forwarding rule indicated by the relation $(n_1,n_2, pc) \in Fwd$. Thus, we extract the relevant rules of the shortest path from source to destination from the model, and the additional rules obtained in the solution (extra paths, forwarding loops) are ignored.  
+The above mentioned constraints are sufficient to ensure there is a path from $src$ to $dst$ for packet class $pc$ in terms of the forwarding relation $Fwd$. However, since there is no restriction on number of $Fwd$ values that can be true at a switch, we can get multiple forwarding rules at switches, and also multiple paths to the destination. Also, there can exist forwarding loops as well. However, for a reachability policy, we merely require to find a path from $src$ to $dst$, so we can just extract a path from the model by performing a breadth-first search on the model-graph from source to destination. 
+\loris{the previous point is a bit crucial, clarify a little better}
+A directed edge exists in the model-graph : $n_1 \rightarrow n_2$ if there is forwarding rule indicated by the relation $(n_1,n_2, pc) \in Fwd$. Thus, we extract the relevant rules of the shortest path from source to destination from the model, and the additional rules obtained in the solution (extra paths, forwarding loops) are ignored.  
+\loris{we should later say that this is perhaps desirable for future extensions with broadcasting.}
 \subsection{Waypoint Constraints} 
 For a reachability policy with waypoints $s >> W >> d$ and packet class $pc$, we add all the constraints specified in \cref{sec:reach} to ensure the existence of a path from source to destination. To satisfy waypoint policies, we need to add constraints so that all $w \in W$ is reachable. 
 \begin{equation} \label{eq:waypoints}
@@ -100,6 +132,7 @@ Similarly, for a switch maintanence policy of switch $sw$, we need to ensure no 
 \begin{equation}
 	\forall pc, k. \ \neg Reach(sw, pc, k)  
 \end{equation}
+\loris{this section is nonsense, we should just drop the link/node from the topology and changing the neighbouring function.}
 
 \subsection{Capacity Constraints}
 %\subsubsection{Link Capacity Constraints} \label{sec:linkcap}
@@ -125,3 +158,4 @@ If $pc$ uses the link $sw_1 \rightarrow sw_2$, we add $W(pc)$ to $C(sw_1,$ $sw_2
 \begin{equation}
 	C(sw_1, sw_2, \lambda) \leq \omega	
 \end{equation} 
+\loris{we should have use of MaxSMT in related work}
