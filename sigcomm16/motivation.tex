@@ -1,6 +1,6 @@
 \section{Motivation}
 
-In this section, we start by describing in greater detail the type of
+In this section, we describe the type of
 policies that network operators and users or tenants may wish to
 realize. For simplicity, we assume a multi-tenant cloud set up, where
 both the tenants and the provider wish to realize policies over their
@@ -33,8 +33,11 @@ The high-level policies tenants specify could include:
   firewalls, intrusion-detection systems etc., tenants may wish to
   express policies which specify the waypoints (locations, or logical
   descriptors) \aditya{can we do the latter?} the traffic between two
-  endpoints must traverse through. \aditya{refer here to an example in
+  endpoints must traverse through.	  
+  \aditya{refer here to an example in
     the figure}
+    In several cases \loris{how true is this?} the order in which these middle-boxes is traversed
+    is not relevant and the policy language should therefore support unordered waypoints.
 \end{itemize}
 
 Since, cloud tenants do not have a view of the actual physical
@@ -98,9 +101,21 @@ extensibility.
 
 We design a general network management system that realizes the above
 sets of policies by performing {\em synthesis} of switch forwarding
-rules to enforce end-to-end policies. Our work is motivated by recent
-progress in program synthesis. \aditya{say more}
+rules to enforce end-to-end policies. 
+Unlike previous efforts in this space (see~\cite{}),
+\Name is not tailored to 
+specific formalisms such as regular expressions and
+this aspect makes it modular  and easily extensible.
+%and allows to devise specific
+%techniques for each type of policies. 
+To draw an analogy with SMT solvers, 
+\Name can be seen as a constraint solver
+that allows to add different types of policies (respectively the theories in SMT) and
+that allows to design different types of optimizations based on the 
+policies needed by the user of \Name.
 
+Our work is motivated by recent
+progress in program synthesis. \aditya{say more}
 Program synthesis is defined as the task of discovering an executable
 program from user intent expressed in the form of some
 constraints. There are three key dimensions to synthesis: the kind of
@@ -121,8 +136,10 @@ all forwarding plane configurations and the search technique involved
 is SAT/SMT solving. The solution found is implemented by installing
 the necessary switch rules via a skeleton controller.
 
-This approach is appealing for a variety of different reasons: (1)
-policies useful to operators are proactive (i.e., they are not
+This approach is appealing for a variety of different reasons: 
+
+(1)
+policies useful to operators are \emph{proactive} (i.e., they are not
 dependent on the actual packet flow), and our synthesis approach
 naturally aligns with such proactive policies.
 
@@ -138,30 +155,46 @@ naturally aligns with such proactive policies.
 (2) Correct policy enforcement is challenging due to different
 objectives for each of the policies - ensuring isolation between flows
 may lead to overshooting capacity and vice-versa, and is a common
-cause of incorrect configurations in networks. By using a formal
+cause of incorrect configurations in networks. 
+Our approach removes the need for a verification step in which the operator
+has to ``check'' whether an attempt configuration meets the desired policies.
+By using a formal
 reasoning technique, we are able to consider the space of all
-forwarding configurations and find a solution which adheres to
+forwarding configurations and find a solution which 
+is \emph{correct by construction}
+adheres to
 satisfying a diverse set of policies, eliminating the room for error
 by the network operator. 
 
-(3) A key reason for performing synthesis is the complexity of
-policy enforcement. For example, finding edge-isolated paths
-\aditya{where is this coming from?} for flows reduces to a
-graph-coloring of the policy graph(\cref{sec:optimistic}) which is
-NP-complete (see \cref{sec:isolationNP} for the proof), which means
-that any system solving this would need to exhaustively search the
-space of all forwarding plane configurations. Many different search
-techniques can be used to find the forwarding rules, however a
-challenge is that the search objectives for each type of policy
-(isolation, waypoints, capacity) are diverse and difficult to reason
-about taken together. Instead, by using a SAT/SMT solving technique,
-we unify the search objectives for every policy into a generalised
-search technique. Thus, by reducing this problem to a SMT instance and
-leveraging fast off-the-shelf SMT solvers developed over years of
-research, \Name can provide support for diverse policies required by
-network operators. Cruciall, \Name can be extended with ease to
+(3) Automatically enforcing policies is a task with
+\emph{hight theoretical complexity}. 
+For example, enforcing isolation policies
+is as hard as solving
+graph-coloring (\cref{sec:optimistic}), a well-known
+NP-complete problem (see \cref{sec:isolationNP} for the proof).
+%, which means
+%that any system solving this would need to exhaustively search the
+%space of all forwarding plane configurations. 
+Many  search
+techniques can be used to find the forwarding rules when handling
+a particular class of policies, 
+but when multiple types of policies are combined (isolation, waypoints, capacity),
+devising good search techniques becomes challenging. 
+Thanks to the many engineering efforts, SMT solvers abstract away
+most of this complexity and allow us
+ to unify the search objectives for every policy into a generalised
+search technique. 
+%Thus, by reducing this problem to a SMT instance and
+%leveraging fast off-the-shelf SMT solvers developed over years of
+%research, \Name can provide support for diverse policies required by
+%network operators. 
+Crucially, \Name can be extended with ease to
 support new policies without requiring changes to the search
 techniques to find the solution.
+\loris{I would like to convey that we are in some sense a Network solver module policy,
+in the sense that we support theories (the policies) and now people can work on engineering
+the solver for different classes of policies.
+}
 
 \subsection{Performance Challenges} \label{sec:performance}
 
