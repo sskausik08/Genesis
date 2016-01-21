@@ -64,3 +64,5 @@ target/
 sigcomm16/genesis.aux
 sigcomm16/genesis.pdf
 genesis.synctex.gz
+sigcomm16/genesis.bbl
+sigcomm16/genesis.blg
