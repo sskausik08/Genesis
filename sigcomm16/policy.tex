@@ -1,17 +1,39 @@
-\section{Policy Support} \label{sec:policy}
-We design a language GPL (Genesis Policy Language) for network operators to express the desired end-to-end policies in a declarative manner which is interpreted by the Genesis synthesizer to find the forwarding rules for the network topology which enforce the input policies (\cref{fig:arch}). Genesis supports the following policies : 
-% Figure of GPL's syntax
-\begin{enumerate} 
-	\item \textbf{Reachability}: $predicate : src >> dst$ \\
-	This policy specifies the packets satisying $predicate$ have ingress switch $src$ and egress switch $dst$, and requires rules forwarding packets satisfying $predicate$ from $src$ to $dst$. There must be no forwarding loops in the network. 
-	\item \textbf{Waypoint}: $predicate : src >> W >> dst$ \\
-	The waypoint policy is a stronger reachability policy, and specifies that packet satisfying $predicate$ with ingress switch $src$ and egress switch $dst$ must pass through the set of waypoints $W$ in no particular order. The waypoint policy helps operators and tenants to specify the middleboxes the packets must traverse through without worrying about order, or having to use header tags to enforce a particular order \cite{flowtags}. 
-	\item \textbf{Traffic Isolation}:  $R1 \ || \ R2$ \\
-	The traffic isolation policy ensures that the paths taken by packets $R1$ and $R2$, two reachability/waypoint policies do not traverse any link in the same direction. This policy can be used to provide fairness guarantees, since the paths of $R1$ and $R2$ don't share a link, the bandwidth used by $R1$ will not affect the bandwidth used by $R2$ and vice-versa. The condition of sharing a link in the same direction is due to the fact that links are full-duplex so, traffic flowing in one direction is not affected by the traffic flowing in the other direction.
-	\item \textbf{Security Isolation}: $R1 <> R2$ \\
-	The security isolation policy is stronger than the traffic isolation policy, and ensures that the path of the reachabiltiy/waypoint policies $R1$ and $R2$ do not share a link in both directions for increased security.
-	\item \textbf{Link Capacity}: $sw_1 \rightarrow sw_2 : capacity$ \\
-	The link capacity policy specifies that the capacity for link $sw_1 \rightarrow sw_2$ is $capacity$, and the weights of flows traversing the link in the direction of $sw_2$ do not exceed the capacity of the link.  
-	\item \textbf{Switch Table Size}: $sw : size$ \\
-	The switch table size policy is used to specify the size of the forwarding table of the switch $sw$ and ensures that the number of flows traversing through $sw$ does not exceed $size$ as each flow would require a forwarding rule at the switch.
-\end{enumerate}
+\begin{table*}
+	\begin{center}
+		\begin{tabular}{||m{6em} | m{12em} | m{28em} ||} 
+			\hline
+			Policy &  GPL Syntax & Description \\ 
+			\hline\hline
+			Reachability & 	$predicate : src >> dst$ & Forwarding Rules for path from switch $src$ to switch $dst$ for packets matching $predicate$ \\
+			\hline
+			Waypoint & 	$predicate :\newline src >> W >> dst$ & Forwarding Rules for path from switch $src$ to switch $dst$ traversing waypoints $w \in W$ in any order for packets matching $predicate$ \\  
+			\hline
+			Traffic \newline Isolation & $R1 \ || \ R2$ & Paths of two reachability/waypoint policies $R1$ and $R2$ do not share a link in the same direction \\
+			\hline
+			Link \newline Capacity & $sw_1 \rightarrow sw_2 : capacity$  & The weights of flows traversing the link $sw_1 \rightarrow sw_2$ does not exceed $capacity$\\
+			\hline
+			Switch \newline Table Size & $sw : size$ & The number of flows traversing through $sw$ does not exceed $size$ as each flow would require a forwarding rule at $sw$ \\
+			\hline\hline
+		\end{tabular}
+	\end{center}
+	\caption{Genesis Policy Support with GPL syntax} \label{tab:policysupport} 
+\end{table*}
+
+
+%\section{Policy Support} \label{sec:policy}
+%We design a language GPL (Genesis Policy Language) for network operators to express the desired end-to-end policies in a declarative manner which is interpreted by the Genesis synthesizer to find the forwarding rules for the network topology which enforce the input policies (\cref{fig:arch}). Genesis supports the following policies : 
+%% Figure of GPL's syntax
+%\begin{enumerate} 
+%	\item \textbf{Reachability}: $predicate : src >> dst$ \\
+%	This policy specifies the packets satisying $predicate$ have ingress switch $src$ and egress switch $dst$, and requires rules forwarding packets satisfying $predicate$ from $src$ to $dst$. There must be no forwarding loops in the network. 
+%	\item \textbf{Waypoint}: $predicate : src >> W >> dst$ \\
+%	The waypoint policy is a stronger reachability policy, and specifies that packet satisfying $predicate$ with ingress switch $src$ and egress switch $dst$ must pass through the set of waypoints $W$ in no particular order. The waypoint policy helps operators and tenants to specify the middleboxes the packets must traverse through without worrying about order, or having to use header tags to enforce a particular order \cite{flowtags}. 
+%	\item \textbf{Traffic Isolation}:  $R1 \ || \ R2$ \\
+%	The traffic isolation policy ensures that the . This policy can be used to provide fairness guarantees, since the paths of $R1$ and $R2$ don't share a link, the bandwidth used by $R1$ will not affect the bandwidth used by $R2$ and vice-versa. The condition of sharing a link in the same direction is due to the fact that links are full-duplex so, traffic flowing in one direction is not affected by the traffic flowing in the other direction.
+%	\item \textbf{Security Isolation}: $R1 <> R2$ \\
+%	The security isolation policy is stronger than the traffic isolation policy, and ensures that the path of the reachabiltiy/waypoint policies $R1$ and $R2$ do not share a link in both directions for increased security.
+%	\item \textbf{}: $sw_1 \rightarrow sw_2 : capacity$ \\
+%	The link capacity policy specifies that the capacity for link $sw_1 \rightarrow sw_2$ is $capacity$, and the weights of flows traversing the link in the direction of $sw_2$ do not exceed the capacity of the link.  
+%	\item \textbf{Switch Table Size}: $sw : size$ \\
+%	The switch table size policy is used to specify the size of the forwarding table of the switch $sw$ and ensures that the number of flows traversing through $sw$ does not exceed $size$ as each flow would require a forwarding rule at the switch.
+%\end{enumerate}
