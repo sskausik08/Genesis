@@ -212,7 +212,6 @@ class GenesisSynthesiser(object) :
 
 		start_t = time.time()
 		self.initializeSATVariables()
-		print "Time to initializeSATVariables is", time.time() - start_t
 
 		# # Topology Slicing : 
 		# if self.topologySlicingFlag : 
@@ -1071,7 +1070,6 @@ class GenesisSynthesiser(object) :
 				else :
 					""" Multicast packet class. No restrictions on forwarding set """
 					pass	
-		print "Time to add forwarding set constraints is ", time.time() - st
 
 	def addTopologyConstraints(self, pcStart, pcEnd=0) :
 		if self.UseTopoSAT == True :
@@ -1346,9 +1344,7 @@ class GenesisSynthesiser(object) :
 
 
 		# print "constime", constime
-		# print "addTime", addtime
-		if pc == 0 : 
-			print "Backward Reachability Constraints " + str(time.time() - st)
+		# print "addTime", addtimw
 		# st = time.time()
 
 	def addTrafficIsolationConstraints(self, pc1, pc2) : 
