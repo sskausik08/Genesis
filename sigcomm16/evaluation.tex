@@ -15,18 +15,18 @@ We now evaluate the performance of Genesis along various dimensions:
 	\caption{Graph used to compare time taken for reach v/s waypoint policies in a 45-node fat-tree topology and emphasise due to the generality of the approach we cannot solve reachability using classic algorithms. We therefore need a more heavyweight approach that is slowish. The tactic plot is to show improvements of solving reach using a tactic}
 	\label{fig:reach-way-tactic}
 \end{figure*}
-\begin{figure*}
-	\includegraphics[height=7.5cm]{figures/reach-topo.png}
+\begin{figure}
+	\includegraphics[width=\columnwidth]{figures/reach-topo.png}
 	\caption{Graph used to compare time taken for reachability policies for varying topology sizes}
 	\label{fig:reach-topo}
-\end{figure*}
+\end{figure}
 
 \subsection{Isolation-Policies}
-\begin{figure*}
-	\includegraphics[height=7.5cm]{figures/performance-isolation-groups-log-scale.png}
+\begin{figure}
+	\includegraphics[width=\columnwidth]{figures/performance-isolation-groups-log-scale.png}
 	\caption{Graph used to compare time taken for solving isolation policies for varying workloads in a 80 node fat-tree topology}
 	\label{fig:isolation}
-\end{figure*}
+\end{figure}
 
 \subsection{Link Capacity Policies}
 
@@ -38,11 +38,11 @@ We now evaluate the performance of Genesis along various dimensions:
 	\label{fig:tactic-reduction}
 \end{figure*}
 
-\begin{figure*}
-	\includegraphics[height=7.5cm]{figures/isolation-tactics.png}
+\begin{figure}
+	\includegraphics[width=\columnwidth]{figures/isolation-tactics.png}
 	\caption{Graph used to application of tactics for a isolation workload (percentage isolation w.r.t topology 25\%) and different topology sizes. An interesting observation in the graph is that tactics need not always help in reduction of constraints (One of the tactics, not  a very natural one) leads to more time to synthesis without tactics.}
 	\label{fig:isolation-tactics}
-\end{figure*}
+\end{figure}
 
 \subsection{Optimistic Synthesis}
 \begin{figure*}
