@@ -49,7 +49,7 @@ for i in range(groups) :
 						dstCount[d] += 1
 						break			
 
-		gplfile.write("p" + str(i) + "_" + str(j) + " := tcp.port = " + str(i) + " : e" + str(s)  + " >> [" + topology.getSwName(a) + "] >> e" + str(d) + "\n")
+		gplfile.write("p" + str(i) + "_" + str(j) + " := tcp.port = " + str(i) + " : e" + str(s)  + " >> e" + str(d) + "\n")
 
 if count == 1 :
 	exit(0)
