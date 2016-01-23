@@ -1,6 +1,6 @@
 \section{Synthesis Alogrithm}
 Given a set of policies, \Name creates the network forwarding model variables which abstracts the forwarding rules and reachability. For each policy, \Name adds a set of constraints on the model to the SMT Solver Z3 \cite{z3}. After all the constraints have been added, the Z3 solver returns a assignment of values for the mode satisfying the constraints. From these values, we extract the forwarding rules for each switch.
-To provide support of the policies in \cref{tab:policysupport}, we use propositional logic (SAT) and linear integer arithmetic (LIA),
+To provide support for the policies in \cref{tab:policysupport}, we use propositional logic (SAT) and linear integer arithmetic (LIA),
 which are both supported by Z3. 
 \subsection{Network Forwarding Model} \label{sec:fwdmodel}
 We define the physical switch topology as an undirected graph $T=\{S, L\}$, where $S$ is the set of switches and $L$ is the set of links. We use the neighbour function $N(s) = \{s'\ | \ (s,s') \in L \}$ to denote the set of neighbour switches of L. The set of reachability policies is denoted as $R$ and each reachability policy $r \in R$ is
@@ -11,6 +11,7 @@ a tuple of the form $(predicate$, $src$, $dst$, $W$, $pc$) where
 \item $W\subseteq S$ is the (potentially empty) set of waypoints;
 \item $pc \in PC$ is the packet class and is a unique integer used to identify the variables associated to $r$
 \end{itemize} 
+We use the notion of packet classes to distinguish reachability/waypoint policies which produces a path from other policies which impose restrictions on these paths. We define a set of packet classes $PC : [0,\lambda]$ and maps each reachability/waypoint policy to a unique integer in $PC$. In the rest of the paper, we use the term packet class to associate it to a path synthesized for a reachability/waypoint policy. 
 %Assuming that the intersection of predicates is empty for policies in $R$, we create a mapping $\gamma : R \rightarrow PC$ to associate each reachability policy with a unique integer called packet class in the set $PC$. Switches $src, dst \in S$ denote the ingress and egress switches respectively for the packet class $pc = \gamma(r)$ and Genesis finds a path from $src$ to $dst$ for $pc$. If a waypoint policy is specified, $W$ is the set of switches the path from $src$ to $dst$ must traverse through in no particular order.
 We define a static integer $\mu$ to be the synthetic limit for path length for any packet class, and define the set $K = [0, \mu]$ to be the set of all permissible path lengths.
 \loris{why do we need this? we can enforce it with the length tactic now..} \kausik{I need for the model constraints. This is more of a synthetic limit and not to enforce any specific length properties on the path. Tactics can be used to further improve the search. if I dont have this, the model will have unbounded quantifiers. We dont want to use tactics all the time, right?}
@@ -40,10 +41,11 @@ $sw_0 \ldots sw_k \in P$ is the path for class $pc$ iff :
 
 
 \begin{figure}[!th]
-	\includegraphics[width=8cm]{topoF.png}
-	\caption{Values of the network forwarding model. The red and blue arrows denote the paths taken by packet classes 1 and 2 respectively from source switch 1 to destination switch 2
-\loris{text should be bigger and remove all the =True}
-	}
+	\centering
+	\includegraphics[width=\columnwidth]{figures/network-model-example.png}
+	\caption{Values of the $Fwd$ and $Reach$ relations of the network forwarding model
+		 for the policies specified in the figure. The blue and red arrows indicate the 
+		 paths of packet classes 0 and 1 respectively according to the model.}
 	\label{fig:model}
 \end{figure}
 %An example network forwarding model is shown in \cref{fig:model}. 
@@ -52,12 +54,13 @@ $sw_0 \ldots sw_k \in P$ is the path for class $pc$ iff :
 %Using the value of $Fwd$ relation, we can find out paths for each packet class the forwarding rules for each switch. 
 
 \loris{say somewhere that all those relations are encoded as propositions in SAT}
-One of the decisions oriented towards performance is modelling the forwarding and relations using propositions, so that we can reduce enforcement of policies like reachability, waypoints and isolation to a Boolean Satisfiability Problem (SAT) problem. Since the problem of policy enforcement can be achieved by a forwarding plane configuration, we could technically write all the constraints using only the $Fwd$ relation. However, modelling reachability using only the $Fwd$ relation would be large (For modelling reachability of a single switch in $k$ steps, we would require an expression containing the order of number of paths to switch times $k$).
-\footnote{An earlier iteration of our model used \emph{uninterpreted functions} supported by Z3 and modeled reachability using recursive constraints, 
-which was slower with a greater number of constraints.}
-\loris{not sure what you are trying to say with the previous 2 sentences, is it important at all?}. 
-\kausik{I am trying to motivate the requirement for the reachability relation to write constraint concisely}
-\loris{are you saying that constraints enumerating all the paths of some length would be bad? Who would do that?}
+One of the decisions oriented towards performance is modelling the forwarding and relations using propositions, so that we can reduce enforcement of policies like reachability, waypoints and isolation to a Boolean Satisfiability Problem (SAT) problem\footnote{An earlier iteration of our model used \emph{uninterpreted functions} supported by Z3 and modeled reachability using recursive constraints, 
+	which was slower with a greater number of constraints.}. 
+The two relations for forwarding and reachability ensures we can write the constraints in a concise and intuitive manner.
+\kausik{Removed the troublesome lines. Is there anything nnoteworthy with the modelling we can specify here?}
+%\loris{not sure what you are trying to say with the previous 2 sentences, is it important at all?}. 
+%\kausik{I am trying to motivate the requirement for the reachability relation to write constraint concisely}
+%\loris{are you saying that constraints enumerating all the paths of some length would be bad? Who would do that?}
 
 \subsection{Reachability Constraints} \label{sec:reach}
 For a reachability policy $s >> d$ and packet class $pc$, the constraints added must ensure that the solution model contains a path 
