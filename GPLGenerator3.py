@@ -27,16 +27,21 @@ groups = count / isolatePercentage
 groupsize = isolatePercentage
 srcCount = dict()
 dstCount = dict()
+tenants = dict()
 for i in range(edgeSwitches + 1) :
 	srcCount[i] = 0
 	dstCount[i] = 0
+	tenants[i] = []
 endpoints = dict()
+groupSwitches = dict()
 for i in range(groups) :
-	for j in range(groupsize) :
+	groupSwitches[i] = []
+
+for j in range(groupsize) :
+	for i in range(groups) :
 		while True:		
 			s = random.randint(0,edgeSwitches)
 			d = random.randint(0,edgeSwitches)
-			a = random.randint(edgeSwitches + 1, swCount - 1)
 			if s <> d :
 				if s > d : 
 					key = str(d) + "-" + str(s)
@@ -46,8 +51,36 @@ for i in range(groups) :
 					if srcCount[s] < k/2 and dstCount[d] < k/2 :
 						endpoints[key] = True
 						srcCount[s] += 1
+						if i not in tenants[s] :
+							tenants[s].append(i)
 						dstCount[d] += 1
-						break			
+						if i not in tenants[d] :
+							tenants[d].append(i)
+						if s not in groupSwitches[i] :
+							groupSwitches[i].append(s)
+						if d not in groupSwitches[i] :
+							groupSwitches[i].append(d)
+						break	
+					elif i in tenants[s] and i in tenants[d] :
+						break 
+					else :
+						found = False
+						key1 = None
+						for s1 in groupSwitches[i] :
+							if found == True : break
+							for d1 in groupSwitches[i] :
+								if s1 == d1 : 
+									continue
+								if s1 > d1 : 
+									key1 = str(d1) + "-" + str(s1)
+								else :
+									key1 = str(s1) + "-" + str(d1)
+								if key1 not in endpoints : 
+									endpoints[key1] = True
+									found = True
+						s = s1
+						d = d1
+						break
 
 		gplfile.write("p" + str(i) + "_" + str(j) + " := tcp.port = " + str(i) + " : e" + str(s)  + " >> e" + str(d) + "\n")
 

@@ -212,7 +212,6 @@ class GenesisSynthesiser(object) :
 
 		start_t = time.time()
 		self.initializeSATVariables()
-		print "Time to initializeSATVariables is", time.time() - start_t
 
 		# # Topology Slicing : 
 		# if self.topologySlicingFlag : 
@@ -249,7 +248,7 @@ class GenesisSynthesiser(object) :
 					if rcGraphSat == False : 
 						# Incremental Graph recovery
 						self.CURR_GRAPH_SIZE_THRESHOLD = self.CURR_GRAPH_SIZE_THRESHOLD * 2 # Doubling the current graph size
-						print "Incrementing the solver graph size to " + str(self.CURR_GRAPH_SIZE_THRESHOLD)
+						#print "Incrementing the solver graph size to " + str(self.CURR_GRAPH_SIZE_THRESHOLD)
 
 				if rcGraphSat == False :
 					# Apply non-Optimistic synthesis. 
@@ -282,7 +281,7 @@ class GenesisSynthesiser(object) :
 		self.pdb.validatePolicies(self.topology)
 		#self.pdb.printPaths(self.topology)
 		self.pdb.writeForwardingRulesToFile(self.topology)
-		#self.printProfilingStats()
+		self.printProfilingStats()
 
 	
 	def addReachabilityPolicy(self, predicate, src, dst, waypoints=None, pathlen=None) :
@@ -1071,7 +1070,6 @@ class GenesisSynthesiser(object) :
 				else :
 					""" Multicast packet class. No restrictions on forwarding set """
 					pass	
-		print "Time to add forwarding set constraints is ", time.time() - st
 
 	def addTopologyConstraints(self, pcStart, pcEnd=0) :
 		if self.UseTopoSAT == True :
@@ -1346,9 +1344,7 @@ class GenesisSynthesiser(object) :
 
 
 		# print "constime", constime
-		# print "addTime", addtime
-		if pc == 0 : 
-			print "Backward Reachability Constraints " + str(time.time() - st)
+		# print "addTime", addtimw
 		# st = time.time()
 
 	def addTrafficIsolationConstraints(self, pc1, pc2) : 
@@ -2322,9 +2318,9 @@ class GenesisSynthesiser(object) :
 
 	# Profiling Statistics : 
 	def printProfilingStats(self) :
-		print "Time taken to add constraints are ", self.z3addTime
+		#print "Time taken to add constraints are ", self.z3addTime
 		print "Time taken to solve constraints are ", self.z3solveTime
-		print "Number of z3 adds to the solver are ", self.z3numberofadds
+		# print "Number of z3 adds to the solver are ", self.z3numberofadds
 
 	def useTactic(self) :
 		b1 = Blacklist("e .* e .* e", ["a","c","e"])
