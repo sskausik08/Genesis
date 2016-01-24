@@ -91,10 +91,15 @@ If a node $n_1$ is reachable in $k$ steps, there must a node $n_2$ which is reac
 \end{multline} 
 The backward propagation is responsible for ensuring there is a topologically valid path from source to destination by using the unit clauses in \cref{eq:dst}, and finding a path from destination back to a switch $sw$ which is a neighbour of $src$. thus $Reach(sw,pc,1)$ would be true from \cref{eq:src} and the reachability policy would be satisfied. 
 
-The above mentioned constraints are sufficient to ensure there is a path from $src$ to $dst$ for packet class $pc$ in terms of the forwarding relation $Fwd$. However, since there is no restriction on number of $Fwd$ values that can be true at a switch, we can get multiple forwarding rules at switches, and also multiple paths to the destination. Also, there can exist forwarding loops as well. However, for a reachability policy, we merely require to find a path from $src$ to $dst$, so we can just extract a path from the model by performing a breadth-first search on the model-graph from source to destination. 
-\loris{the previous point is a bit crucial, clarify a little better} \kausik{TODO}
+The above mentioned constraints are sufficient to ensure there is a path from $src$ to $dst$ for packet class $pc$ in terms of the forwarding relation $Fwd$. However, since there is no restriction on number of $Fwd$ values that can be true at a switch, we can get multiple forwarding rules at switches, and also multiple paths to the destination. Also, there can exist forwarding loops as well. From the perspective of the network model, 
+this is a valid assignment as there would be atleast one path from $src$ to $dst$. 
+This serves an optimization as we are able to extract a path from the solution without 
+adding additional constraints to ensure the semantics of \emph{unicast} forwarding. 
+
+For a reachability policy, we merely require to find a path from $src$ to $dst$. Thus, we extract a valid path from the model by performing a breadth-first search on the model-graph from source to destination. 
+%\loris{the previous point is a bit crucial, clarify a little better} \kausik{TODO}
 A directed edge exists in the model-graph : $n_1 \rightarrow n_2$ if there is forwarding rule indicated by the relation $(n_1,n_2, pc) \in Fwd$. Thus, we extract the relevant rules of the shortest path from source to destination from the model, and the additional rules obtained in the solution (extra paths, forwarding loops) are ignored.  
-\loris{we should later say that this is perhaps desirable for future extensions with broadcasting.} 
+%\loris{we should later say that this is perhaps desirable for future extensions with broadcasting.}
 \subsection{Waypoint Constraints} 
 For a reachability policy with waypoints $s >> W >> d$ and packet class $pc$, we add all the constraints specified in \cref{sec:reach} to ensure the existence of a path from source to destination. To satisfy waypoint policies, we need to add constraints so that all $w \in W$ is reachable. 
 \begin{equation} \label{eq:waypoints}

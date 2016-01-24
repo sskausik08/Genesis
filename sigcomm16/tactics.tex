@@ -104,17 +104,18 @@ Incorporating tactics in the synthesis is sound and will always yield a correct 
  and speed up the synthesis, especially in datacenter topologies which are hierarchical 
  and can be used to specify interesting tactics. 
 
-\loris{For that restricted set of regexes the algorithm is trivial you should write the first pass. 
-See the simplified syntax.
-I'll help you with the proof but essentially you have to show that
-if a path $sw_1\ldots sw_k$ satisfies the tactic regex then it is removed (i.e. all constraints necessary
-for it to be encoded have been removed).
-Other direction: if a path was in the original set of constraints and did not 
-satisfy the tactic it has not been removed (also pretty easy)
-}
-\kausik{I think the tactics are quite intuitive to not need a proof of correctness. Do you think we need to explain how we came upon the restricted syntax?
-}
-\loris{No proof is fine. Some intuition would help. Give an example of one that locality can't handle.}
+\kausik{Written intuition behind tactics}
+%\loris{For that restricted set of regexes the algorithm is trivial you should write the first pass. 
+%See the simplified syntax.
+%I'll help you with the proof but essentially you have to show that
+%if a path $sw_1\ldots sw_k$ satisfies the tactic regex then it is removed (i.e. all constraints necessary
+%for it to be encoded have been removed).
+%Other direction: if a path was in the original set of constraints and did not 
+%satisfy the tactic it has not been removed (also pretty easy)
+%}
+%\kausik{I think the tactics are quite intuitive to not need a proof of correctness. Do you think we need to explain how we came upon the restricted syntax?
+%}
+%\loris{No proof is fine. Some intuition would help. Give an example of one that locality can't handle.}
 
 \subsection{Label Pruning}
 Tactics are an intuitive way to express path properties leveraging the network structure using regular expressions. However, not every permutation of the label alphabet is a valid path in the topology, for example $eaae$ as the aggregate switches are only connected to edge or core switches. Under closer inspection, for a path from an edge switch to another edge switch, we can see that aggregate switches can only occur at odd path length. We describe a label automaton and the algorithm to prune constraints using switch label adjacencies. 

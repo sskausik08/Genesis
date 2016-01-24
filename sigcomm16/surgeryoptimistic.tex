@@ -1,37 +1,38 @@
-\section{Network Surgery}
-Network surgery is the technique of performing equivalent network transformations to eliminate redudant constraints required for synthesis of switch rules. One of the properties of the path found by the synthesis solver is that it is simple (i.e no loops). Using this property, we can create slices of the topology where a packet class' path will reside completely, thus not requiring to add constraints for switches in other slices of the topology. 
+%\section{Network Surgery}
+%Network surgery is the technique of performing equivalent network transformations to eliminate redudant constraints required for synthesis of switch rules. One of the properties of the path found by the synthesis solver is that it is simple (i.e no loops). Using this property, we can create slices of the topology where a packet class' path will reside completely, thus not requiring to add constraints for switches in other slices of the topology. 
+%
+%To create the topology slices, we use Schmidt's linear-time algorithm\cite{schmidt} to find bridges in the graph. A bridge is an edge in the topology, which when removed, partitions the graph into two disconnected components. <write-about-slices>. 
+%
+%Consider a reachability policy where the source and destination switches belong to the same topology slice. Since, the bridge edge is the only edge connected vertices of this slice with the rest of the graph, the path for the reachability policy will be contained in the topology slice and not cross the bridge (otherwise the path would have to traverse through the bridge twice back and forth which is not permitted). 
+%
+%Formally, let us define the slices of the topology as $S_1$, $S_2, \ldots S_n \subset S$. We define the slice neighbour function for the slices as $N_{S_i}(s) = \{v | v \in S_i \wedge (s,v) \in L\}$. If there is a reachability policy $(r, pc)$ with $src,dst \in S_i$, we can replace the switch domain $S$ by $S_i$ and the neighbour function $N$ by $N_{S_i}$ in the constraint formation for reachability. For example, the backward reachability propagation constraints for a policy in slice $S_i$ can be modified to : 
+%\begin{multline}
+%\forall n_1,k.  n_1 \in S_i \wedge Reach(n_1,pc,k) \implies \exists n_2. n_2 \in N_{S_i}(n_1) \\ \wedge  Reach(n_2,pc,k-1) \wedge Fwd(n_2,n_1,pc)
+%\end{multline}
+%For packet classes isolated with packet class $pc$, only links in $S_i$ are needed to be isolated, as the path will be confined to topology slice $S_i$. 
 
-To create the topology slices, we use Schmidt's linear-time algorithm\cite{schmidt} to find bridges in the graph. A bridge is an edge in the topology, which when removed, partitions the graph into two disconnected components. <write-about-slices>. 
-
-Consider a reachability policy where the source and destination switches belong to the same topology slice. Since, the bridge edge is the only edge connected vertices of this slice with the rest of the graph, the path for the reachability policy will be contained in the topology slice and not cross the bridge (otherwise the path would have to traverse through the bridge twice back and forth which is not permitted). 
-
-Formally, let us define the slices of the topology as $S_1$, $S_2, \ldots S_n \subset S$. We define the slice neighbour function for the slices as $N_{S_i}(s) = \{v | v \in S_i \wedge (s,v) \in L\}$. If there is a reachability policy $(r, pc)$ with $src,dst \in S_i$, we can replace the switch domain $S$ by $S_i$ and the neighbour function $N$ by $N_{S_i}$ in the constraint formation for reachability. For example, the backward reachability propagation constraints for a policy in slice $S_i$ can be modified to : 
-\begin{multline}
-\forall n_1,k.  n_1 \in S_i \wedge Reach(n_1,pc,k) \implies \exists n_2. n_2 \in N_{S_i}(n_1) \\ \wedge  Reach(n_2,pc,k-1) \wedge Fwd(n_2,n_1,pc)
-\end{multline}
-For packet classes isolated with packet class $pc$, only links in $S_i$ are needed to be isolated, as the path will be confined to topology slice $S_i$. 
 
 \section{Optimistic Synthesis} \label{sec:optimistic}
-
-\aditya{I haven't read earlier tech sections yet. we need to make sure ``packet class'' is defined somewhere, as it is an unusual term. also, we need to figure out how we are using ``policy''.}
+%\aditya{I haven't read earlier tech sections yet. we need to make sure ``packet class'' is defined somewhere, as it is an unusual term. also, we need to figure out how we are using ``policy''.}
 
 One of the key challenges to the synthesis performance is the number
 of packet classes synthesized and the policy interactions among them
 (isolation, capacity etc.). Since the complexity of finding a
 forwarding plane configuration is roughly \emph{expotential} in the
 number of packet classes, the synthesis time shoots up with increasing
-packet classes.  However, one keen observation in datacenter
-topologies with dense interconnect between layers, we can obtain
-numerous configurations as solutions for the same input
-policies. \aditya{previous sentence does not parse} For packet classes
-related by \aditya{is ``related by'' defined?} isolation policies, we
-can leverage the nature of policy interactions to partition the
-problem into sub-problems.
+packet classes. Datacenter topologies have a dense interconnection of
+links between layers. Thus, for a set of policies, we can obtain
+numerous forwarding plane configurations as solutions.
+% \aditya{previous sentence does not parse} 
+ Thus, we propose a heuristical approach which partitions the problem 
+into components to speed up synthesis.
 
 The intuition is as follows, suppose we have two packet classes $pc_1,
-pc_2$ isolated from one another, we can synthesize $pc_1$
-independently, and try to find a solution for $pc_1$ isolated from the
-path obtained for $pc_1$ \aditya{this should be pc2?}. We term this
+pc_2$ isolated from one another, the standard synthesis algorithm adds 
+constraints for both packet classes to the solver for finding the solution.
+Instead, we could synthesize $pc_1$
+independently, and find a solution for $pc_2$ isolated from the
+path obtained for $pc_1$. We term this
 algorithm \emph{optimistic} synthesis, as we optimistically synthesize
 $pc_1$, hoping that the solution for $pc_1$ does not prevent finding a
 solution for $pc_2$. Synthesis of $pc_2$ can fail because the solution
@@ -39,42 +40,8 @@ of $pc_1$ may traverse through edges such that there is no solution
 for $pc_2$, but if they had been synthesized together, we may have
 found paths for both.
 
-%% $pc_1$ would have been different.
-
-We define a policy graph $P = \{R, I\}$ where every vertex $r \in R$
-is a packet class for a reachability/waypoint policy \aditya{again the
-  use of packet class and policy here is unconventional and needs to
-  be carefully defined early on}. An edge $i \in I$ connecting
-vertices $r1$ and $r2$ means that the paths of $r1$ and $r2$ are
-isolated from each other. We assume that there are no other policies
-in the input specifications (like link capacity) \aditya{why? also,
-  why is this focused on isolation?}. Given the policy graph $P$, we
-can synthesize each connected component independently, since packet
-classes in different connected components are not related by any
-isolation policy, and therefore are independent of each other.
-
-We describe the heuristical optimistic synthesis algorithm in
-\cref{optimisticsyn}. The crux of the algorithm is that we partition
-the policy graph into two components $P_1$ and $P_2$ \aditya{are these
-  two connected components? if so, there will be no policy interaction
-  across them, no? given that, the following statement seems
-  incorrect}, synthesize $P_1$, and for packet classes of $P_2$
-isolated to packet classes in $P_1$ \aditya{this seems incorrect: no
-  such packet classes exist?}, add constraints to ensure that the
-packet classes in $P_2$ will not share the edges of the respective
-paths obtained in $P_1$ they are isolated to. The difference from
-normal synthesis for a isolation policy is that since we don't have
-the paths for both packet classes, we add isolation constraints at all
-switches (\cref{eq:isolation}). In constrast, if we had a solution for
-one packet class, we need to ensure the other path is isolated only at
-the switches visited by the path of the solved packet
-class. \aditya{it seems from the rest of the description below that p1
-  and p2 are not two connected components; they are just subgraphs. if
-  so, the ending sentence of the previous paragraph that talks about
-  connected components is misleading because that is not actually what
-  we do}
-
 \begin{algorithm}[H]
+	\floatname{algorithm}{Pseudocode}
 	\caption{Optimistic Synthesis}
 	\label{optimisticsyn}
 	\begin{algorithmic}[1]
@@ -82,34 +49,76 @@ class. \aditya{it seems from the rest of the description below that p1
 		\If{$size(P) < P_{thres}$}
 		\State{Apply normal synthesis on P}  
 		\Else
-		 \State{Partition P into $P_1$ and $P_2$ using min-cut or \newline \hspace*{0.95cm} equi-sized partitioning}
-		 \If{interpartition edges > $E_T$} \State{Apply normal synthesis on P} \EndIf
-		 \State{failed_solns = []}
-		 \State{attempts = 0} 
-		 \While{attempts < $RA_{max}$}
-			 \State{$sol_1$ = Apply  synthesis on $P_1$ with additional \newline \hspace*{1.49cm} constraints ensuring the solver returns a \newline \hspace*{1.49cm} solution different from any solution in \newline \hspace*{1.49cm} failed_solns}
-			 \If{synthesis($P_1$) fails} \State{\Return Optimistic Synthesis Failed} \EndIf
-			 \State{Apply synthesis on $P_2$ with additional\newline \hspace*{1.49cm} constraints ensuring that pcs in $P_2$ with \newline \hspace*{1.49cm} isolation policies to pcs in $P_1$ are isolated to\newline \hspace*{1.49cm} the paths in $sol_1$.}
-			 \If{synthesis($P_2$) fails} 
-				 \State{extract Z3 unsat-cores of $P_2$ from solver}
-				 \State{failed_solns.append(unsat-cores)}
-				 \State{attempts++}
-			 \Else
-				 \State{\Return Optimistic synthesis succeeds}
-			\EndIf
-		 \EndWhile
-		 \State{\Return Optimistic synthesis Failed}
+		\State{Partition P into $P_1$ and $P_2$ using min-cut or \newline \hspace*{0.95cm} equi-sized partitioning}
+		\If{interpartition edges > $E_T$} \State{Apply normal synthesis on P} \EndIf
+		\State{failed_solns = []}
+		\State{attempts = 0} 
+		\While{attempts < $RA_{max}$}
+		\State{$sol_1$ = Apply  synthesis on $P_1$ with additional \newline \hspace*{1.49cm} constraints ensuring the solver returns a \newline \hspace*{1.49cm} solution different from any solution in \newline \hspace*{1.49cm} failed_solns}
+		\If{synthesis($P_1$) fails} \State{\Return Optimistic Synthesis Failed} \EndIf
+		\State{Apply synthesis on $P_2$ with additional\newline \hspace*{1.49cm} constraints ensuring that pcs in $P_2$ with \newline \hspace*{1.49cm} isolation policies to pcs in $P_1$ are isolated to\newline \hspace*{1.49cm} the paths in $sol_1$.}
+		\If{synthesis($P_2$) fails} 
+		\State{extract Z3 unsat-cores of $P_2$ from solver}
+		\State{failed_solns.append(unsat-cores)}
+		\State{attempts++}
+		\Else
+		\State{\Return Optimistic synthesis succeeds}
+		\EndIf
+		\EndWhile
+		\State{\Return Optimistic synthesis Failed}
 		\EndIf
 		\EndProcedure
 	\end{algorithmic}
 \end{algorithm}
+%% $pc_1$ would have been different.
 
-\aditya{I did not look at the pseducode}
+We define a policy graph $P = \{R, I\}$ where every vertex $r \in R$
+is a packet class for a reachability/waypoint policy.
+%\aditya{again the
+%  use of packet class and policy here is unconventional and needs to
+%  be carefully defined early on} 
+An edge $i \in I$ connecting
+vertices $r1$ and $r2$ means that the paths of $r1$ and $r2$ are
+isolated from each other. We assume that there are no other policies
+in the input specifications other than isolation, since isolation is a local policy 
+in the sense that correct enforcement of isolation only requires information of neighbours. 
+Resource managements policies like link capacity policies are global,
+ and thus difficult to reason about them in smaller components.
+  Given the policy graph $P$, we
+can synthesize each connected component independently, since packet
+classes in different connected components are not related by any
+isolation policy, and therefore are independent of each other.
 
+We describe the heuristical optimistic synthesis algorithm in Pseudocode 1
+for each connected component of the policy graph.
+ The crux of the algorithm is that we partition each connected component
+  into two components $P_1$ and $P_2$,
+%   \aditya{are these
+%  two connected components? if so, there will be no policy interaction
+%  across them, no? given that, the following statement seems
+%  incorrect} 
+synthesize $P_1$, and for packet classes of $P_2$
+isolated to packet classes in $P_1$, 
+%\aditya{this seems incorrect: no such packet classes exist?} 
+add constraints to ensure that the
+packet classes in $P_2$ will not share the edges of the respective
+paths obtained in $P_1$ they are isolated to. The difference from
+normal synthesis for a isolation policy is that since we don't have
+the paths for both packet classes, we add isolation constraints at all
+switches (\cref{eq:isolation}). In constrast, if we had a solution for
+one packet class, we need to ensure the other path is isolated only at
+the switches visited by the path of the solved packet
+class. 
+%\aditya{it seems from the rest of the description below that p1
+%  and p2 are not two connected components; they are just subgraphs. if
+%  so, the ending sentence of the previous paragraph that talks about
+%  connected components is misleading because that is not actually what
+%  we do}
+%\aditya{I did not look at the pseducode}
 
-We use two schemes to partition the policy graph $P$ into two: the
+We use two schemes to partition the policy graph connected component into two: the
 first one is \emph{min-cut} partitioning, which partitions the graph
-such that inter-partition graphs \aditya{edges?} are minimized. The
+such that inter-partition edge count is minimized. The
 rationale behind the heuristic is that since we intend to perform the
 synthesis of both partitions separately, the partition should maximise
 the isolation policies within components and minimize across
@@ -121,12 +130,14 @@ the graph into two equal sized partitions and minimizing the cut edges
 between the partitions. We need to ensure that we don't partition the
 graph smaller than a threshold, as the partial solutions obtained by
 synthesis of very small partitions are more likely to conflict with
-other packet classes. \aditya{do we repeat this recursively? if not, why not?}
+other packet classes. Our implementation of \Name performs
+optimistic synthesis recursively on the components till we cannot partition the
+component further. 
 
 \subsection{Solution Recovery}
 While optimistic synthesis in the best case will lead to a great
 reduction of time, we need a recovery mechanism in case we cannot find
-partial solutions.  We describe a bounded \emph{solution} recovery
+compatible partial solutions.  We describe a bounded \emph{solution} recovery
 scheme in \cref{optimisticsyn} integrated with the optimistic
 synthesis algorithm.  The Z3 solver can track assertions and if it
 fails to find a solution, it can return a set of unsatisfiable cores
@@ -138,41 +149,62 @@ of $P_1$.  Thus, if synthesis of $P_2$ fails, the unsatisfiable cores
 obtained from Z3 will be the paths of the solution of $P_1$ which are
 causing the synthesis of $P_2$ to fail and perform synthesis of $P_1$
 again, but ensuring we get \emph{different} paths from the
-unsatisfiable cores we extracted.  Basically, we are trying to do a
+unsatisfiable cores we extracted.  Basically, we perform a 
 \emph{solver-guided} enumeration of different solutions of $P_1$ to
 find a satisfying solution with $P_2$.  Solution recovery helps to
-converge to the solution faster. However, synthesizing $P$ completely
-without partitioning would be faster than performing optimistic
-synthesis (densely connected like a clique) and enumerating as it
-would fail more often \aditya{this sentence is wierd. are you trying
-  to say that synthesizing P is faster in *some* cases?}. Thus, we
-bound the number of recovery attempts to ensure that we can say that
-optimistic synthesis has failed and perform normal
-synthesis. \aditya{need to be precise. what does ``to ensure that we
-  can say...'' mean}
- 
- In our implementation of Genesis, the algorithm recursively performs
- optimistic synthesis on the components till we cannot partition the
- component further.  Optimistic synthesis is more \emph{effective}
- when there is a greater number of solutions and provides a
- significant improvement but can also result into lower performance
- when the number of solutions decreases and \aditya{is what follows
-   after this a different observation, or related to the
-   previous. confusing} it is tough to find a partial solution for
- input with higher number of isolation policies. While optimistic
- synthesis with recovery is sound, it is incomplete as we bound the
- number of enumerations. To make the algorithm complete, we double the
- partition threshold $P_{thres}$ each time optimistic synthesis fails
- and repeat. \aditya{when is this doubling done? during one of the
-   recursive invocations, or only at the beginning?} By increasing the
- components' sizes, we can converge faster to the solution \aditya{I
-   don't see this. you may not find a solution, no?}. In the extreme
- case, $P_{thres} \geq P$ and the algorithm will perform normal
- synthesis, and thus become complete. In a case when this happens
- \aditya{this is vague. what does ``this'' mean? are you saying
-   whenever doubling happens perf is degraded? if so, why do it?}, the
- performance of optimistic synthesis is degraded.
+converge to the solution faster. 
 
- \aditya{the last para was very vague. rest of the section was OK, modulo my comments}
+There are drawbacks to performing recovery. Since, recovery is a 
+form of enumeration, in cases where the graph is highly constrainted
+(clique), finding a solution can lead to increased number of enumerations,
+while synthesis without partitioning would provide a solution faster. 
+Thus, we bound the number of enumerations performed by the 
+recovery mechanism and return failure to find a solution by solution recovery
+if we don't obtain a solution. 
+
+Thus, optimistic synthesis with recovery is sound, but 
+it is incomplete as we bound the
+number of enumerations. The success of optimistic synthesis
+is directly related to the size of the components (determined by $P_{thres}$). 
+This is because, by synthesizing more packet classes together, we decrease the
+conflicts arising between partial solutions. The extreme case is when we do not 
+partition the component at all (normal synthesis), which is complete. 
+Thus, to make the synthesis complete with faster convergence, we
+perform iterations of optimistic synthesis, and each iteration we double the
+partition threshold $P_{thres}$ if the previous iteration failed. 
+% \aditya{when is this doubling done? during one of the
+%	recursive invocations, or only at the beginning?} 
+This scheme tries to balance the trade-off between completeness, which
+requires larger components, and performance, as synthesis is faster on smaller
+components due to the expotential time complexity. In the extreme case, after $O(log P)$
+iterations, $P_{thres} > P$ and the optimistic synthesis routine would not partition the graph,
+thus rendering the routine complete. 
+% \aditya{I
+%	don't see this. you may not find a solution, no?}. In the extreme
+%case, $P_{thres} \geq P$ and the algorithm will perform normal
+%synthesis, and thus become complete. In a case when this happens
+%\aditya{this is vague. what does ``this'' mean? are you saying
+%	whenever doubling happens perf is degraded? if so, why do it?}, the
+%performance of optimistic synthesis is degraded.
+%However, synthesizing $P$ completely
+%without partitioning would be faster than performing optimistic
+%synthesis (densely connected like a clique) and enumerating as it
+%would fail more often \aditya{this sentence is wierd. are you trying
+%  to say that synthesizing P is faster in *some* cases?}. Thus, we
+%bound the number of recovery attempts to ensure that we can say that
+%optimistic synthesis has failed and perform normal
+%synthesis. \aditya{need to be precise. what does ``to ensure that we
+%  can say...'' mean}
+ 
+ Optimistic synthesis is more \emph{effective}
+ when there is a greater number of solutions and provides a
+ significant improvement. In case when the problem is highly 
+ constrained and the number of solutions is low, 
+ the recovery mechanisms, and multiple iterations could 
+ lead to a degraded performance by the optimistic synthesis 
+ routine. We evaluate the performance improvement of optimistic
+ synthesis with varying isolation workloads in \cref{sec:optimisticevaluation}.
+
+ %\aditya{the last para was very vague. rest of the section was OK, modulo my comments}
  
 %
