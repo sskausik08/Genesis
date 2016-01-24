@@ -44,33 +44,38 @@ The high-level policies tenants specify could include:
     the figure}
     In several cases \loris{how true is this?} the order in which these middle-boxes is traversed
     is not relevant and the policy language should therefore support unordered waypoints.
-\end{itemize}
+\item \textbf{Isolation}: There has been a rising emergence of 
+multi-tenant clouds, which is more economical for tenants to use
+rather than managing their own private datacenters. However,
+the current Service Level Agreements (SLAs)
+provided to tenants are centered around compute, storage, or
+external traffic bandwidth. Lack of guarantees on the network
+between tenant instances leads to unpredictability of performance
+for distributed applications. Also, multi-tenant clouds are
+susceptible to attacks on the network by malicious tenants who could
+hog the internal network bandwidth, or conduct side-channel
+attacks~\cite{heyyou-ccs}. % Conventionally,
+% this problem is mitigated by static rate-limiting, but it can lead
+% to under-utilisation of resources.
+Cloud provider can offer (paying) tenants various QoS guarantees
+that enforce varying degrees of tenant isolation. In the extreme,
+this could ensure that a tenant's performance is not affected by
+any other tenant by strictly isolating the path of tenant's flows
+from others' flows. \aditya{refer here to an example in
+	the figure} The tenant could also specify isolation for certain
+ performance-sensitive flows, while the rest of the tenant-flows
+  would be without guarantees with varying degrees of pricing. 
+  Thus, support for isolation is an important feature in multi-tenant 
+  networks. 
+ \end{itemize}
 %TODO : MODIFY Synthesis of waypoints to support logical waypoints
-
 Since, cloud tenants do not have a view of the actual physical
 topology, the policy requirements for tenants are at a coarser level
-of control. However, network operators need a more fine-grained
-control of network resources, for which they may desire to specify the
-following:
-
-\begin{itemize}
-\item \textbf{Isolation}: The current Service Level Agreements (SLAs)
-  provided to tenants are centered around compute, storage, or
-  external traffic bandwidth. Lack of guarantees on the network
-  between tenant instances leads to unpredictability of performance
-  for distributed applications. Also, multi-tenant clouds are
-  susceptible to attacks on the network by malicious tenants who could
-  hog the internal network bandwidth, or conduct side-channel
-  attacks~\cite{heyyou-ccs}. % Conventionally,
-  % this problem is mitigated by static rate-limiting, but it can lead
-  % to under-utilisation of resources.
-  Cloud provider can offer (paying) tenants various QoS guarantees
-  that enforce varying degrees of tenant isolation. In the extreme,
-  this could ensure that a tenant's performance is not affected by
-  any other tenant by strictly isolating the path of tenant's flows
-  from others' flows. \aditya{refer here to an example in
-    the figure}
-\item \textbf{Network Resource Management}: To aid traffic
+of control. While support for the above policies can be used to satisfy tenant
+SLAs, network operators can benefit from a fine-grained
+control of network resources, integrated with support for tenant specifications 
+for effective management of the network. \newline
+\textbf{Network Resource Management}: To aid traffic
   enginerring, the network operator may specify policies constraining
   the maximum number of tenant flows that can traverse a given link or
   sets of links in the network. He may also wish to ensure traffic
@@ -86,15 +91,15 @@ following:
   switch constraint policies, like the size of the rule table to
   restrict the number of flows traversing a particular switch or set
   of switches.
-\item \textbf{Network Maintenance}: \aditya{this whole para does not
-    parse and needs updating} Operators on a regular basis perform link and
-  switch maintenances, and need to ensure that during maintenance, the network still
-  conforms to the SLAs of the tenants and resource capacity
-  policies.   \aditya{the following sentence does not make sense} Using Genesis, the operator
-  can specify the links and switches that will be down for maintenance, and Genesis can synthesize 
-  the rules for the updated network with all policies satisfies, which then can be pushed to 
-  the network before maintenance. 
-\end{itemize}
+%\item \textbf{Network Maintenance}: \aditya{this whole para does not
+%    parse and needs updating} Operators on a regular basis perform link and
+%  switch maintenances, and need to ensure that during maintenance, the network still
+%  conforms to the SLAs of the tenants and resource capacity
+%  policies.   \aditya{the following sentence does not make sense} Using Genesis, the operator
+%  can specify the links and switches that will be down for maintenance, and Genesis can synthesize 
+%  the rules for the updated network with all policies satisfies, which then can be pushed to 
+%  the network before maintenance. 
+%\end{itemize}
 
 \subsection{Synthesis} \label{sec:synthesis} 
 
