@@ -1,9 +1,7 @@
 \section{Related Work}
-\cite{decentralize} tries to synthesize local forwarding rules for a single switch based on a reactive forwarding policy. One of the important considerations for correctness of forwarding rules is that the controller sees all relevant events and rules are not added prematurely. The abstraction for expressing forwarding policies are for individual switches, on the other hand, we try to enforce network-wide policies, so each switch will have different forwarding policy such that the entire network enforces the flow policies. Also, the policies we deal with are proactive, so we need not worry about the controller seeing the relevant events (which is a requirement in synthesizing rules for reactive policies). For all practical purposes, we needn't worry about switch-controller interactions or premature rule installations. 
-
-NetEgg \cite{netegg} synthesizes the forwarding policy of a switch using examples of how the switch should function when it receives packets. This deals with the forwarding policy of individual elements, can cannot be used directly to synthesize network-wide policies. 
-
-\cite{oneswitch} tries to tackle a similar problem to ours of flow policy enforcement. However their end-point policies are only concerned with reachability (two hosts can talk through specific ingress and egress points). Their rule placement algorithm takes the path of the flow in the network as an input (the routing policy) and place rules on this path to enforce the endpoint policy and taking in consideration switch table constraints. We are trying to tackle the problem without the routing policy as input, as we enforce flow policies which would require different routing policies (like traffic isolation), so we cannot determine the path of the flow beforehand. Our solution can support enforcement of policies which require different routing policies. \cite{distfirewall} builts on the \cite{oneswitch} abstraction to optimize the specific case of distributed firewall policy enforcement using ILP.  
+\cite{oneswitch} tries to tackle a similar problem to ours of flow policy enforcement. However their end-point policies are only concerned with reachability (two hosts can talk through specific ingress and egress points). Their rule placement algorithm takes the path of the flow in the network as an input (the routing policy) and place rules on this path to enforce the endpoint policy and taking in consideration switch table constraints. We are trying to tackle the problem without the routing policy as input, as we enforce flow policies which would require different routing policies (like traffic isolation), so we cannot determine the path of the flow beforehand. Our solution can support enforcement of policies which require different routing policies. \cite{distfirewall} builts on the \cite{oneswitch} abstraction to optimize the specific case of distributed firewall policy enforcement using ILP.  PGA  \cite{pga} is a graph-level abstraction of 
+specifying network policies like ACLs and middlebox service chaining. However, it abstracts the underlying network as "one bigswitch" and 
+cannot be used to compose policies like tenant isolation or traffic engineering.  
 
 The closest approaches to ours are Merlin~\cite{merlin} and NetGen~\cite{netgen}.
 In Merlin data plans that adhere to policies expressed using simple regular expressions are synthesized using linear integer constraints. 
@@ -18,6 +16,18 @@ use elegant automata algorithms, they have the drawback of complicating the addi
 In particular, expressing a policy including a waypoint set $W$ of size $k$ would require a regular expression of size exponential
 in $k$ as all the possible permutations of the elements of $W$.
 Moreover, it is not clear how isolation constraints can be added to these frameworks.
+
+Program synthesis has been actively applied in software-defined networking. Padon et. al in \cite{decentralize} try to synthesize local forwarding rules for a single switch based on a reactive forwarding policy. One of the important considerations for correctness of forwarding rules is that the controller sees 
+all relevant events and rules are not added prematurely. NetEgg \cite{netegg} synthesizes the forwarding policy of a switch using examples of how the switch 
+should function when it receives packets. These work deals with synthesis of forwarding behaviour of switches, and cannot be extended to satisfy network-wide policies.  Formal methods and synthesis has 
+been used in the context of network updates \cite{updates, customconsistency} which provide network consistency during the process of updates. 
+
 % Write about PGA, NetGen, and efficient update synthesis.
 
-\loris{we should have use of MaxSMT in related work}
+While our synthesis algorithm was focused towards finding a solution for correct policy enforcement,
+ there are interesting optimization problems involved : minimizing the length of all paths, maximizing utilisation of the 
+ datacenter etc. There is current work involved in developing MaxSMT solvers ~\cite{z3maxSMT} which finds an optimal assignment
+ with respect to objective functions which can used in \Name to achieve optimal forwarding plane configurations. MaxSMT solvers
+ are much slower than SMT solvers, so leveraging these and achieving tangible performance is one of the directions of future work.
+ 
+%\loris{we should have use of MaxSMT in related work}
