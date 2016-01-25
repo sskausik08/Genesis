@@ -20,34 +20,81 @@ gplparser.parseTopo()
 
 
 swCount = topology.getSwitchCount()
+edgeSwitches = (topology.getSwitchCount() * 2/ 5) - 1  
+k = int(math.sqrt(topology.getSwitchCount() * 4/ 5))
 
-for i in range(count) :
-	while True:
-		s = random.randint(1,swCount)
-		d = random.randint(1,swCount)
-		if s <> d :
-			break
+groups = count / isolatePercentage
+groupsize = isolatePercentage
+srcCount = dict()
+dstCount = dict()
+for i in range(edgeSwitches + 1) :
+	srcCount[i] = 0
+	dstCount[i] = 0
+endpoints = dict()
+for i in range(groups) :
+	for j in range(groupsize) :
+		while True:		
+			s = random.randint(0,edgeSwitches)
+			d = random.randint(0,edgeSwitches)
+			if s <> d :
+				if s > d : 
+					key = str(d) + "-" + str(s)
+				else :
+					key = str(s) + "-" + str(d)
+				if key not in endpoints : 
+					if srcCount[s] < k/2 and dstCount[d] < k/2 :
+						endpoints[key] = True
+						srcCount[s] += 1
+						dstCount[d] += 1
+						break			
+		if (i * j) % 20 == 2 : 
+			while True:
+				a1 = random.randint(edgeSwitches + 2,swCount)
+				a2 = random.randint(edgeSwitches + 2,swCount)
+				a3 = random.randint(edgeSwitches + 2,swCount)
+				a4 = random.randint(edgeSwitches + 2,swCount)
+				if a1 <> a2 and a1 <> a3 and a2 <> a3: 
+					if a1 <> a4 and a2 <> a4 and a3 <> a4 :
+						break
 
-	gplfile.write("p" + str(i) + " := tcp.port = " + str(i) + " : " + topology.getSwName(s)  + " >> " + topology.getSwName(d) + "\n")
+			gplfile.write("p" + str(i) + "_" + str(j) + " := tcp.port = " + str(i) + " : e" + str(s)  + " >> [ " + topology.getSwName(a1) + ", " + topology.getSwName(a2) + ", " + topology.getSwName(a3) +  ", " + topology.getSwName(a4) + " ] >> e" + str(d) + "\n")
+		else : 
+			gplfile.write("p" + str(i) + "_" + str(j) + " := tcp.port = " + str(i) + " : e" + str(s)  + " >> e" + str(d) + "\n")
 
+if count == 1 :
+	exit(0)
 gplfile.write("== \n")	
+sets = dict()
+for i in range(groups) :
+	set = "[ "
+	for j in range(groupsize) :
+		set += "p" + str(i) + "_" + str(j)
+		if j <> groupsize - 1: 
+			set += ", "
+	set += " ]"
+	sets[i] = set
 
-links = []
+for i in range(groups) :
+	for j in range(i) :
+		if i <> j : 
+			gplfile.write(sets[i] + " || " + sets[j] + "\n")
 
-while len(links) < isolatePercentage :
-	s = random.randint(1, swCount)
-	neighbours = topology.getSwitchNeighbours(s)
-	d = neighbours[random.randint(0, len(neighbours) - 1)]
-	link = [s,d]
-	if link not in links :	
-		links.append(link)
+# gplfile.write("== \n")
+# isolatePercentage = int(edgeSwitches * 2 * k / 25)
+# # Assume 5% of links are constrainted by capacity.
+# links = []
 
-for link in links :
-	cap = int(count / isolatePercentage)
-	gplfile.write(topology.getSwName(link[0]) + "->" + topology.getSwName(link[1]) + ":" + str(cap) + "\n")
+# while len(links) < isolatePercentage :
+# 	s = random.randint(1, swCount)
+# 	neighbours = topology.getSwitchNeighbours(s)
+# 	d = neighbours[random.randint(0, len(neighbours) - 1)]
+# 	link = [s,d]
+# 	if link not in links :	
+# 		links.append(link)
 
-
-
+# for link in links :
+# 	cap = count / isolatePercentage + 1
+# 	gplfile.write(topology.getSwName(link[0]) + "->" + topology.getSwName(link[1]) + ":" + str(cap) + "\n")
 
 
 

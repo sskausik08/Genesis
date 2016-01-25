@@ -2325,16 +2325,18 @@ class GenesisSynthesiser(object) :
 	def useTactic(self) :
 		b1 = Blacklist("e .* e .* e", ["a","c","e"])
 		b2 = Whitelist("e .* e",  ["a","c","e"])
+		b3 = Blacklist("e . . . . . . . . . . .* e", ["a", "c", "e"])
 		#b3 = Blacklist("e a c a c a c .* e", ["a", "c", "e"])
 
 		self.topology.assignLabels()
-		t = Tactic([b1, b2], self.topology)
+		t = Tactic([b1, b2, b3], self.topology)
 
 		st = time.time()
 		t.findValidNeighbours(11)
 		et = time.time()
 		for pc in range(self.pdb.getPacketClassRange()) :
-			self.addTactic(t, pc)
+			if not self.pdb.hasWaypoints(pc) : 
+				self.addTactic(t, pc)
 
 
 	def addTactic(self, tactic, pc) :
