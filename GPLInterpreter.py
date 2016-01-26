@@ -27,7 +27,7 @@ class GPLInterpreter(object):
     tokens = (
         'NAME','NUMBER',
         'EQUALS', 'SEP', 'DOT', 'SLASH', 'DOUBLEQUOTE', 'COLON', 'ASSIGN', 'ARROW',
-        'COMMA', 'LBRACKET', 'RBRACKET', 
+        'COMMA', 'LBRACKET', 'RBRACKET', 'SEMICOLON',
         'ISOLATE', 'REACH', 'IN',
         'COMMENT', 
         'AND', 'OR', 'NOT', 'TRUE', 'FALSE'
@@ -44,6 +44,7 @@ class GPLInterpreter(object):
     t_SLASH = r'\/'
     t_COLON = r'\:'
     t_COMMA = r','
+    t_SEMICOLON = r';'
     t_LBRACKET = r'\['
     t_RBRACKET = r'\]'
    
@@ -150,7 +151,7 @@ class GPLInterpreter(object):
 
     def p_reach_waypoint(self, p):
         'reach_statement : NAME ASSIGN predicate COLON NAME REACH LBRACKET namelist RBRACKET REACH NAME'
-        # Add Reachability Policy.
+        # Add Reachability Policy
         reachPolicy = ReachAst(p[3], p[5], p[11], p[8])
         pc = self.genesisSynthesiser.addReachabilityPolicy(predicate=p[3], src=p[5], dst=p[11], waypoints=p[8])
         reachPolicy.setPacketClass(pc)
@@ -267,13 +268,26 @@ class GPLInterpreter(object):
     # def p_mcast_equal(self, p):
     #     'mcast_statement : endpoint REACH REACH LBRACKET endpoints RBRACKET IN NUMBER '     
 
-    def p_namelist(self, p) :
-        'namelist : namelist COMMA NAME'
+    def p_namelist_waypoints(self, p) :
+        'namelist : namelist SEMICOLON waypoints'
+        # p[1][len(p[1]) - 1].extend(p[3][0])
+        # for i in range(1, len(p[3])) :
+        #     p[1].append(p[3][i])
+        # p[0] = p[1]
         p[1].append(p[3])
         p[0] = p[1]
 
-    def p_namelist_name(self, p):
-        'namelist : NAME'
+    def p_namelist(self, p) :
+        'namelist : waypoints'
+        p[0] = [p[1]]
+
+    def p_waypoints(self, p) :
+        'waypoints : waypoints COMMA NAME'
+        p[1].append(p[3])
+        p[0] = p[1]
+
+    def p_waypoints_name(self, p):
+        'waypoints : NAME'
         p[0] = [p[1]]
 
     def  p_ip_subnet(self, p):

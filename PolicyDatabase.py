@@ -261,19 +261,20 @@ class PolicyDatabase(object) :
 			return False
 		if not path[len(path) - 1] == policy[3]:
 			return False
-		waypoints = self.waypointTable[pc]
-		if len(waypoints) == 0:
-			return True
+		return True
+		# waypoints = self.waypointTable[pc]
+		# if len(waypoints) == 0:
+		# 	return True
 
-		waypointFlag = True
-		for w in waypoints : 
-			foundFlag = False
-			for sw in path : 
-				if sw == w :
-					foundFlag = True
-					break
-			waypointFlag = waypointFlag and foundFlag
-		return waypointFlag 
+		# waypointFlag = True
+		# for w in waypoints : 
+		# 	foundFlag = False
+		# 	for sw in path : 
+		# 		if sw == w :
+		# 			foundFlag = True
+		# 			break
+		# 	waypointFlag = waypointFlag and foundFlag
+		# return waypointFlag 
 
 	def validateCapacityPolicy(self):
 		for policy in self.linkCapacityConstraints : 

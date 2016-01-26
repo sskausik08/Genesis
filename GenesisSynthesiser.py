@@ -279,7 +279,7 @@ class GenesisSynthesiser(object) :
 			#self.pdb.printPaths(self.topology)
 
 		self.pdb.validatePolicies(self.topology)
-		#self.pdb.printPaths(self.topology)
+		self.pdb.printPaths(self.topology)
 		self.pdb.writeForwardingRulesToFile(self.topology)
 		self.printProfilingStats()
 
@@ -296,8 +296,11 @@ class GenesisSynthesiser(object) :
 		W = None
 		if not waypoints == None :
 			W = []
-			for w in waypoints :
-				W.append(self.topology.getSwID(w))
+			for bag in waypoints :
+				logicalBag = []
+				for w in bag :
+					logicalBag.append(self.topology.getSwID(w))
+				W.append(logicalBag)
 
 		# Add policy to PDB : 
 		pc = self.pdb.addReachabilityPolicy(predicate, srcSw, dstSw, W, pathlen)
@@ -1207,26 +1210,42 @@ class GenesisSynthesiser(object) :
 		self.z3Solver.add(destAssert)
 		#self.z3addTime += time.time() - addtime
 
-		if not W == None : 
-			# Add the Waypoint Constraints. 
-			for w in W :
-				#self.smtlib2file.write("; Waypoint " + str(w) + " Reachability \n")			
+		
+		if len(W) > 0 : 
+			totalwaypointCount = 0
+			currwaypointCount = 0
+			for bags in W :
+				totalwaypointCount += len(bags)
+
+			prevbag = None
+			for bags in W : 
+				# ordered Waypoints.
+				# Add the Waypoint Constraints. 
+				currwaypointCount += len(bags)
+				for w in bags :
+					#self.smtlib2file.write("; Waypoint " + str(w) + " Reachability \n")			
+						
+					reachAssertions = []
+					reachAssertionsStr = ""
+					for plen in range(1 + currwaypointCount - len(bags), pathlen - (totalwaypointCount - currwaypointCount)) :
+						reachAssertions.append(self.Reach(w,pc,plen))
+
+						if prevbag <> None : 
+							for w2 in prevbag : 
+								orderAssertions = []
+								for plen2 in range(1, plen): 
+									orderAssertions.append(self.Reach(w2, pc, plen2))
+								orderAssert = Implies(self.Reach(w, pc, plen), Or(*orderAssertions))
+								self.z3Solver.add(orderAssert)
 					
-				reachAssertions = []
-				reachAssertionsStr = ""
-				for plen in range(1,pathlen+1) :
-					reachAssertions.append(self.Reach(w,pc,plen))
+					reachAssert = Or(*reachAssertions)
 
-					reachAssertionsStr += self.ReachStr(w,pc,plen) + " "
-				
-				reachAssert = Or(*reachAssertions)
+					self.z3numberofadds += 1
+					#addtime = time.time() # Profiling z3 add.
+					self.z3Solver.add(reachAssert)
+					#self.z3addTime += time.time() - addtime
+				prevbag = bags
 
-				self.z3numberofadds += 1
-				#addtime = time.time() # Profiling z3 add.
-				self.z3Solver.add(reachAssert)
-				#self.z3addTime += time.time() - addtime
-
-				#self.smtlib2file.write("(assert (or " + reachAssertionsStr + " ))\n")
 				
 		# # Weird Reach Constraint.
 		# dstneighbours = self.topology.getSwitchNeighbours(dstSw)
