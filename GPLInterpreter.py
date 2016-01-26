@@ -150,7 +150,7 @@ class GPLInterpreter(object):
         p[0] = reachPolicy  
 
     def p_reach_waypoint(self, p):
-        'reach_statement : NAME ASSIGN predicate COLON NAME REACH LBRACKET namelist RBRACKET REACH NAME'
+        'reach_statement : NAME ASSIGN predicate COLON NAME REACH LBRACKET waypointlist RBRACKET REACH NAME'
         # Add Reachability Policy
         reachPolicy = ReachAst(p[3], p[5], p[11], p[8])
         pc = self.genesisSynthesiser.addReachabilityPolicy(predicate=p[3], src=p[5], dst=p[11], waypoints=p[8])
@@ -159,7 +159,7 @@ class GPLInterpreter(object):
         p[0] = reachPolicy  
 
     def p_reach_waypoint_len(self, p):
-        'reach_statement : NAME ASSIGN predicate COLON NAME REACH LBRACKET namelist RBRACKET REACH NAME IN NUMBER'
+        'reach_statement : NAME ASSIGN predicate COLON NAME REACH LBRACKET waypointlist RBRACKET REACH NAME IN NUMBER'
         # Add Reachability Policy.
         reachPolicy = ReachAst(p[3], p[5], p[11], p[8])
         pc = self.genesisSynthesiser.addReachabilityPolicy(predicate=p[3], src=p[5], dst=p[11], waypoints=p[8], pathlen=p[13])
@@ -268,8 +268,8 @@ class GPLInterpreter(object):
     # def p_mcast_equal(self, p):
     #     'mcast_statement : endpoint REACH REACH LBRACKET endpoints RBRACKET IN NUMBER '     
 
-    def p_namelist_waypoints(self, p) :
-        'namelist : namelist SEMICOLON waypoints'
+    def p_waypointlist_waypoints(self, p) :
+        'waypointlist : waypointlist SEMICOLON waypoints'
         # p[1][len(p[1]) - 1].extend(p[3][0])
         # for i in range(1, len(p[3])) :
         #     p[1].append(p[3][i])
@@ -277,8 +277,8 @@ class GPLInterpreter(object):
         p[1].append(p[3])
         p[0] = p[1]
 
-    def p_namelist(self, p) :
-        'namelist : waypoints'
+    def p_waypointlist(self, p) :
+        'waypointlist : waypoints'
         p[0] = [p[1]]
 
     def p_waypoints(self, p) :
@@ -288,6 +288,15 @@ class GPLInterpreter(object):
 
     def p_waypoints_name(self, p):
         'waypoints : NAME'
+        p[0] = [p[1]]
+
+    def p_namelist(self, p) :
+        'namelist : namelist COMMA NAME'
+        p[1].append(p[3])
+        p[0] = p[1]
+
+    def p_namelist_name(self, p):
+        'namelist : NAME'
         p[0] = [p[1]]
 
     def  p_ip_subnet(self, p):
