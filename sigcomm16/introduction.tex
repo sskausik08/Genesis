@@ -1,21 +1,26 @@
 \section{Introduction}
 
-Network operators of enterprise and cloud datacenters deal with
-thousands of flow groups traversing large number of heterogeneous
-devices. With growing diversity of applications, need for security and
-compliance, and the advent of cloud comouting, these flow groups may
-be subject to increasingly complex policies. For instance, cloud
-tenants or enterprises may require sophisticated middlebox traversals
-for certain flow groups, in addition to basic reachability between
-their hosts/applications. Cloud operators perators require support for
-enforcing isolation between flow groups to provide security, QoS, and
-fairness. In addition, they may need to satisfy resource constraints
-pertaining to link bandwidths and switch table sizes in order to
-perform traffic engineering and network resource management.
+Network operators of cloud datacenters deal with thousands of flow
+groups traversing large number of heterogeneous devices. With growing
+diversity of applications, need for security and compliance, and the
+advent of cloud comouting, these flow groups may be subject to
+increasingly complex policies.
+
+Consider a tenant in such a data center. She may desire---in addition
+to basic reachability among her hosts or applications---that
+traffic attempting to reach some of her applications, or traffic from
+certain other tenants, be examined by a set of middleboxes to ensure
+access controls. Another tenant may additionally desire (a subset of)
+her flows to be isolated from others' flows for strong security or QoS
+reasons. On top of this, cloud operators may need to satisfy resource
+constraints pertaining to link bandwidths and switch table sizes in
+order to perform traffic engineering and network resource management.
+
 Unfortunately, configuring network devices to implement these diverse
 and complex policies in aggregate is manual, ad-hoc, and error prone
-today. This can lead to violations of service-level agreements and
-mis-configurations which have severe performance and security impact.
+today. This can lead to mis-configurations and violations of tenant
+service-level agreements which can have severe performance and
+security impact.
 
 %%  However, in real-life, the
 %% process of policy enforcement by network operators is manual and
@@ -34,34 +39,48 @@ mis-configurations which have severe performance and security impact.
 %% specifying resource constraints like link bandwidth and switch table
 %% sizes to perform traffic engineering and network resource management.
 
-Though Software-defined Networking (SDN) has allowed network operators
+Though Software Defined Networking (SDN) has allowed network operators
 to program networks in a more intuitive manner, many of existing SDN
-tools/frameworks are too low-level or rigid for providing the needed
-functionality. Writing controller applications for the above policies
-is challenging. For many of the policies, automatically generating the controller is an
-NP-complete problem and requires the design of efficient custom heuristics;
-combining different policies' heuristics together is
-non-trivial. Existing languages like Frenetic~\cite{frenetic} and
-Pyretic~\cite{pyretic} are too constraining: operators would ideally
-want to specify and realize policies network-wide, whereas these
-languages focus on programming individual switch behaviors. \aditya{we
-  need to be careful not to bin all SDN languages into this
-  switch-by-switch model} \kausik{Do you want to make changes here?}  There has been other research on
-network-wide policy enforcement, like joint bandwidth provisioning and
-waypoint routing in Merlin \cite{Merlin}, and middlebox policy
-enforcement in SIMPLE \cite{simple} or
-FlowTags~\cite{flowtags}. However, these approaches are tailor-made to
+tools/frameworks are too low-level for providing the needed
+functionality. Writing controller applications that generate the
+data plane to realize the above policies is challenging. %% For many
+%% of the policies, generating the data plane is an NP-complete problem
+%% and requires the design of efficient custom heuristics; combining
+%% different policies' heuristics together is non-trivial.
+For many of the policies, automatically generating the controller is
+an NP-complete problem and requires the design of efficient custom
+heuristics; combining different policies' heuristics together is
+non-trivial. \aditya{what does this previous sentence mean} \aditya{I
+  had the following earlier. Why not go with that?  For many of the
+  policies, generating the data plane is an NP-complete problem and
+  requires the design of efficient custom heuristics; combining
+  different policies' heuristics together is non-trivial.} Existing
+languages like Frenetic~\cite{frenetic} and Pyretic~\cite{pyretic} are
+too constraining: data center operators would ideally want to specify
+and realize policies network-wide, whereas these languages focus on
+programming individual switch behaviors. %% \aditya{we need to be
+careful
+%%   not to bin all SDN languages into this switch-by-switch model}
+%% \kausik{Do you want to make changes here?}
+Other research on network-wide policy enforcement, e.g.,
+Merlin~\cite{Merlin} and SIMPLE~\cite{simple}, are tailor-made to
 specific sets of policies, and thus, difficult to extend to support
-other kinds of policies.
+other kinds of policies. We review relevant work in
+Section~\ref{s:related}.
 
-In this paper, we seek a {\em general} approach, where operators can
-specify a variety of custom policies in a simple, declarative way, and
-the complexities of correctly realizing the policies in the data plane
-are hidden away from them. Such an approach would pave the way for
-{\em intent-based networking}~\cite{}, where operators and users
-specify {\em what} they want the network to do and do not have to
-worry about {\em how} they would configure their
-networks. %% To support a cornucopia of policies, an
+%%  like
+%% joint bandwidth provisioning and waypoint routing in Merlin
+%% \cite{Merlin}, and middlebox policy enforcement in SIMPLE
+%% \cite{simple} or FlowTags~\cite{flowtags}. However, these approaches
+
+In this paper, we seek a {\em general} approach that allows a variety
+of rich policies to be specified in a simple, declarative way, and the
+complexities of correctly realizing the policies in the data plane are
+hidden away from the data center operators. Such an approach would
+pave the way for {\em intent-based networking}~\cite{}, where
+operators and users specify {\em what} they want the network to do and
+operators do not have to worry about {\em how} they would configure
+their networks. %% To support a cornucopia of policies, an
 %% important feature is \emph{generality} of the approach of policy
 %% enforcement, so that it can be extended to enforce custom policies
 %% required by the operator.
@@ -72,16 +91,15 @@ this vision.
 %% table forwarding rules to the solve the problem of policy enforcement
 %% by use of off-the-shelf SMT-solvers.
 
-We present \Name, a framework for declaratively specifying and enforcing 
-complex policies.
-We show that enforcement of several of the policies supported by
-\Name, e.g., isolation and middlebox traversal, is NP-complete. Thus,
-our system, \Name, leverages recent advances in fast Satisfiability
-Modulo Theories (SMT) solvers
-(e.g., Z3~\cite{z3}) to perform synthesis by encoding the problem of
-enforcing various policies into a SMT instance, and using the SMT
-solver to search for a solution. The solution is then translated into
-switch rules. %% This paper presents Genesis, a
+We present \Name, a framework for declaratively specifying and
+enforcing complex policies.  We show that enforcement of several of
+the policies supported by \Name, e.g., isolation and middlebox
+traversal, is NP-complete. Thus, \Name, leverages recent advances in
+fast Satisfiability Modulo Theories (SMT) solvers (e.g., Z3~\cite{z3})
+to perform synthesis by encoding the problem of enforcing various
+policies into a SMT instance, and using the SMT solver to search for a
+solution. The solution is then translated into switch rules. %% This
+%% paper presents Genesis, a
 %% network management tool where the network operators can express the
 %% network-wide policies in a high-level declarative manner and Genesis
 %% will synthesize the lower-level switch forwarding rules for realising
@@ -91,40 +109,42 @@ By leveraging the formal reasoning foundations of SAT/SMT solving,
 \Name eliminates the room for error in the enforcement of even the
 most complex collections of policies.
 
-Unfortunately, naively encoding the problem using SMT solvers results in synthesis
-speeds that don't match the scale of operations of cloud and
+Unfortunately, naively encoding policies using SMT solvers results in
+synthesis speeds that don't match the scale of operations of cloud and
 enterprise networks today. \aditya{give an example as to how slow
-  things can get} For instance, for synthesizing rules for a single reachability   
-policy in a 125 switch fat-tree topology can take almost one second, thus
-needing a way to specify a search strategy for the path.
-To overcome this challenge, \Name  
-leverages domain-specific properties to simplify
-the constraints handled by the SMT solver.  
-Specifically, \Name allows the network operator to 
-write regular expressions that
-blacklist certain forwarding plane configurations 
-\kausik{Shouldn't we mention paths here instead of configurations? }
-that are not desired in a data center network
-structure. 
-\aditya{the previous sentence is vague} 
-\loris{I edited}
-By identifying a restricted syntax for specifying tactics, we can
-improve the synthesis procedure by reducing the constraints added to the solver
-without additional constraints required to ensure the solution satisfies the tactic.
+  things can get} For instance, for synthesizing rules for simple
+reachability among nodes in in a 125 switch fat-tree topology can take
+1s,\aditya{why does this happen? talking about what causes poor
+  performance so that the tactics idea later in this para makes sense}
+thus needing a way to specify a search strategy for the path.  To this
+end, \Name leverages domain-specific properties to simplify the
+constraints handled by the SMT solver.  Specifically, \Name allows the
+network operator to write regular expressions that blacklist certain
+forwarding plane configurations \kausik{Shouldn't we mention paths
+  here instead of configurations? } that are not desired in a data
+center network structure.  \aditya{the previous sentence is vague}
+\loris{I edited} By identifying a restricted syntax for specifying
+tactics, we can improve the synthesis procedure by reducing the
+constraints added to the solver without additional constraints
+required to ensure the solution satisfies the tactic. \aditya{quickly
+  talk about a highlight regarding the performance benefits of using
+  tactics}
 
- Secondly, \Name can use
-a heuristical synthesis routine termed as \emph{optimistic} synthesis, that leverages the structure of policy
-interactions to improve synthesis performance. The premise of this synthesis routine is to partition the input policies
- into effective components and synthesize these components faster than the complete problem 
- (due to the exponential time complexity). Across varying workloads, using optimistic synthesis can 
- achieve a speed-up factor of greater than 2 for 40\% of the workloads and degraded performance for only 20\% of the workloads.  
- \aditya{the previous sentence is vague} 
-\loris{I'm not even sure what this is. If you are talking about dropping constraints when
-we don't have waypoints this is a pretty important contribution of the paper.
-You have to explain that if some policies are not used we can further optimize the problem.
-}  \kausik{Loris, do you want to mention that here?}
-  \aditya{quickly talk about in 1-2 sentences the
-  speedup achieved with these optimizations}
+ Secondly, \Name can use a heuristical synthesis routine termed as
+ \emph{optimistic} synthesis, that leverages the structure of tenants'
+ isolation policy interactions to improve synthesis performance. The
+ premise of this synthesis routine is to partition the input isolation
+ policies into effective components and synthesize these components
+ faster than the complete problem (due to the exponential time
+ complexity). Across varying workloads, using optimistic synthesis can
+ achieve a speed-up factor of greater than 2 for 40\% of the workloads
+ and degraded performance for only 20\% of the workloads.  \aditya{the
+   previous sentence is vague} \loris{I'm not even sure what this
+   is. If you are talking about dropping constraints when we don't
+   have waypoints this is a pretty important contribution of the
+   paper.  You have to explain that if some policies are not used we
+   can further optimize the problem.  }  \kausik{Loris, do you want to
+   mention that here?}  \aditya{I'm confused about Loris' question}
 
 %% are
 %% huge, and by supporting a set of diverse and complex policies with
