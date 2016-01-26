@@ -137,6 +137,9 @@ elastic traffic from batch applications.
   
 \subsection{Synthesis} \label{sec:synthesis} 
 
+\input{policy}
+
+
 Providing support for realizing the complex set of policies using
 existing SDN programming languages like Pyretic and Frenetic is
 challenging, because these policies are global and cannot be enforced
@@ -151,7 +154,7 @@ sets of policies by performing {\em synthesis} of switch forwarding
 rules to enforce end-to-end policies. The system architecture of \name
 is shown in \cref{fig:architecture} and the way in which policies
 outlined in the previous section can be specified in \name is shown in
-Table XXX.
+Table~\ref{tab:policysupport} .
 
 Unlike previous efforts in the synthesis space (see~\cite{}), \Name is
 not tailored to specific formalisms such as regular expressions and
