@@ -47,14 +47,10 @@ data plane to realize the above policies is challenging. %% For many
 %% of the policies, generating the data plane is an NP-complete problem
 %% and requires the design of efficient custom heuristics; combining
 %% different policies' heuristics together is non-trivial.
-For many of the policies, automatically generating the controller is
-an NP-complete problem and requires the design of efficient custom
-heuristics; combining different policies' heuristics together is
-non-trivial. \aditya{what does this previous sentence mean} \aditya{I
-  had the following earlier. Why not go with that?  For many of the
+For many of the
   policies, generating the data plane is an NP-complete problem and
   requires the design of efficient custom heuristics; combining
-  different policies' heuristics together is non-trivial.} Existing
+  different policies' heuristics together is non-trivial. Existing
 languages like Frenetic~\cite{frenetic} and Pyretic~\cite{pyretic} are
 too constraining: data center operators would ideally want to specify
 and realize policies network-wide, whereas these languages focus on
@@ -123,7 +119,7 @@ network operator to write regular expressions that blacklist certain
 forwarding plane configurations \kausik{Shouldn't we mention paths
   here instead of configurations? } that are not desired in a data
 center network structure.  \aditya{the previous sentence is vague}
-\loris{I edited} By identifying a restricted syntax for specifying
+By identifying a restricted syntax for specifying
 tactics, we can improve the synthesis procedure by reducing the
 constraints added to the solver without additional constraints
 required to ensure the solution satisfies the tactic. \aditya{quickly
@@ -139,12 +135,7 @@ required to ensure the solution satisfies the tactic. \aditya{quickly
  complexity). Across varying workloads, using optimistic synthesis can
  achieve a speed-up factor of greater than 2 for 40\% of the workloads
  and degraded performance for only 20\% of the workloads.  \aditya{the
-   previous sentence is vague} \loris{I'm not even sure what this
-   is. If you are talking about dropping constraints when we don't
-   have waypoints this is a pretty important contribution of the
-   paper.  You have to explain that if some policies are not used we
-   can further optimize the problem.  }  \kausik{Loris, do you want to
-   mention that here?}  \aditya{I'm confused about Loris' question}
+   previous sentence is vague} 
 
 %% are
 %% huge, and by supporting a set of diverse and complex policies with
@@ -160,11 +151,10 @@ Thus, the main contribution of this paper are:
 \item \Name, an extensible declarative language for describing complex policies that can
 		handle new forms of policies such as isolation and unordered middlebox traversals.				
 \item A modular SMT-based algorithm for enforcing \Name policies that can easily be extended
-			to novel types of policies \loris{we have some examples of these} \kausik{apart from what we support?}
+			to novel types of policies.
 \item Tactics, a functionality for operators to specify blacklists on the properties of paths
  leveraging the hierarchical structure of datacenter topologies. 
  Tactics are specified using regular expressions using a restricted syntax which reduces the number of constraints.
-\loris{heuristics? I think the tactic based blacklisting should be one by itself here }
 \item An implementation of \Name and its enforcing algorithm using the SMT
 		solver Z3 together with an extensive evaluation on different policy workloads and topology 
 		sizes to quantify the performance of Genesis. 
