@@ -117,39 +117,39 @@ Incorporating tactics in the synthesis is sound and will always yield a correct 
 %}
 %\loris{No proof is fine. Some intuition would help. Give an example of one that locality can't handle.}
 
-\subsection{Label Pruning}
-Tactics are an intuitive way to express path properties leveraging the network structure using regular expressions. However, not every permutation of the label alphabet is a valid path in the topology, for example $eaae$ as the aggregate switches are only connected to edge or core switches. Under closer inspection, for a path from an edge switch to another edge switch, we can see that aggregate switches can only occur at odd path length. We describe a label automaton and the algorithm to prune constraints using switch label adjacencies. 
-
-To pruning the constraints using network labels, we construct a label automaton for the topology. The label automaton $A^L$ is an automaton which accepts all words over the alphabet $Lb$ which are a labelling of a valid path in the topology in the topology and rejects all other words. The label automaton has state for each label and transitions for those labels which are connected to that label. We construct the label automaton for the fat-tree topology(\cref{fig:fattree}) in \cref{fig:labelauto}.  
-
-\begin{figure}[h!]
-	\centering
-	\begin{tikzpicture}[shorten >=1pt,node distance=2cm,on grid,auto] 
-	\node[state,initial] (q_0)   {$q_0$}; 
-	\node[state,accepting] (q_a) [right=of q_0] {$q_a$}; 
-	\node[state, accepting] (q_e) [above=of q_a] {$q_e$};
-	\node[state,accepting] (q_c) [below=of q_a] {$q_c$}; 
-	\path[->] 
-	(q_0) edge  node {e} (q_e)
-	edge node {a} (q_a)
-	edge node {c} (q_c)
-	(q_e) edge [bend right=30]  node {a} (q_a)
-	(q_a) edge [bend right=30] node {e} (q_e)
-	edge [bend right=30] node {c} (q_c)
-	(q_c)[bend right=30] edge node {a} (q_a);
-	\end{tikzpicture}
-	\caption{Label automaton $A^L$ for fat-tree topology}
-	\label{fig:labelauto}
-\end{figure}
-For a path starting from an edge switch,  
-using a dynamic programming approach, we build sets $\Gamma(k)$ which is the set of all words starting with $e$ and of length $k$ accepted by the label automaton $A^L$ : $w \in \Gamma(k) \Leftrightarrow w \in L(A^L) \wedge |w| = k$. The algorithm computes $\Gamma(k-1)$, and then the last character of each word can be used to find the state the automaton is in(the automaton reaches the state after reading a particular label), and make a valid transition from that state to construct a word of size $k$ to compute  $\Gamma(k)$. 
-
-Let us define $\Delta(k) := Lb \setminus \{l \ | w \in \Gamma(k) \wedge w[k] = l\}$ to the set of labels which cannot be reached by a path of length $k - 1$ (the length of the label word is one more than length of the path) from an edge switch. For example, in the fat-tree topology in \cref{fig:fattree}:
-\[
-\Delta(1) = \{c, e\} \ \ \ \Delta(2) = \{a\} \ \ \ \Delta(3) = \{c,e\}
-\]
-For each $k \leq \mu$, we can add the following constraints for packet classes which have traverse from a edge-to-edge switch to prune the backward reachability propagation constraints \cref{eq:bckprop}: 
-\begin{equation}
-	\forall sw. \phi(sw) \in \Delta(k) \implies (sw, pc, k -1) \notin Reach
-\end{equation}
-The label automaton pruning is sound and complete because we are using the network structure and network labels to prune certain constraints which cannot be valid, without imposing any restrictions on the path. 
+%\subsection{Label Pruning}
+%Tactics are an intuitive way to express path properties leveraging the network structure using regular expressions. However, not every permutation of the label alphabet is a valid path in the topology, for example $eaae$ as the aggregate switches are only connected to edge or core switches. Under closer inspection, for a path from an edge switch to another edge switch, we can see that aggregate switches can only occur at odd path length. We describe a label automaton and the algorithm to prune constraints using switch label adjacencies. 
+%
+%To pruning the constraints using network labels, we construct a label automaton for the topology. The label automaton $A^L$ is an automaton which accepts all words over the alphabet $Lb$ which are a labelling of a valid path in the topology in the topology and rejects all other words. The label automaton has state for each label and transitions for those labels which are connected to that label. We construct the label automaton for the fat-tree topology(\cref{fig:fattree}) in \cref{fig:labelauto}.  
+%
+%\begin{figure}[h!]
+%	\centering
+%	\begin{tikzpicture}[shorten >=1pt,node distance=2cm,on grid,auto] 
+%	\node[state,initial] (q_0)   {$q_0$}; 
+%	\node[state,accepting] (q_a) [right=of q_0] {$q_a$}; 
+%	\node[state, accepting] (q_e) [above=of q_a] {$q_e$};
+%	\node[state,accepting] (q_c) [below=of q_a] {$q_c$}; 
+%	\path[->] 
+%	(q_0) edge  node {e} (q_e)
+%	edge node {a} (q_a)
+%	edge node {c} (q_c)
+%	(q_e) edge [bend right=30]  node {a} (q_a)
+%	(q_a) edge [bend right=30] node {e} (q_e)
+%	edge [bend right=30] node {c} (q_c)
+%	(q_c)[bend right=30] edge node {a} (q_a);
+%	\end{tikzpicture}
+%	\caption{Label automaton $A^L$ for fat-tree topology}
+%	\label{fig:labelauto}
+%\end{figure}
+%For a path starting from an edge switch,  
+%using a dynamic programming approach, we build sets $\Gamma(k)$ which is the set of all words starting with $e$ and of length $k$ accepted by the label automaton $A^L$ : $w \in \Gamma(k) \Leftrightarrow w \in L(A^L) \wedge |w| = k$. The algorithm computes $\Gamma(k-1)$, and then the last character of each word can be used to find the state the automaton is in(the automaton reaches the state after reading a particular label), and make a valid transition from that state to construct a word of size $k$ to compute  $\Gamma(k)$. 
+%
+%Let us define $\Delta(k) := Lb \setminus \{l \ | w \in \Gamma(k) \wedge w[k] = l\}$ to the set of labels which cannot be reached by a path of length $k - 1$ (the length of the label word is one more than length of the path) from an edge switch. For example, in the fat-tree topology in \cref{fig:fattree}:
+%\[
+%\Delta(1) = \{c, e\} \ \ \ \Delta(2) = \{a\} \ \ \ \Delta(3) = \{c,e\}
+%\]
+%For each $k \leq \mu$, we can add the following constraints for packet classes which have traverse from a edge-to-edge switch to prune the backward reachability propagation constraints \cref{eq:bckprop}: 
+%\begin{equation}
+%	\forall sw. \phi(sw) \in \Delta(k) \implies (sw, pc, k -1) \notin Reach
+%\end{equation}
+%The label automaton pruning is sound and complete because we are using the network structure and network labels to prune certain constraints which cannot be valid, without imposing any restrictions on the path. 

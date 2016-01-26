@@ -18,7 +18,7 @@ order to perform traffic engineering and network resource management.
 
 Unfortunately, configuring network devices to implement these diverse
 and complex policies in aggregate is manual, ad-hoc, and error prone
-today. This can lead to mis-configurations and violations of tenant
+today. This can lead to mis- configurations and violations of tenant
 service-level agreements which can have severe performance and
 security impact.
 
@@ -62,7 +62,7 @@ Other research on network-wide policy enforcement, e.g.,
 Merlin~\cite{Merlin} and SIMPLE~\cite{simple}, are tailor-made to
 specific sets of policies, and thus, difficult to extend to support
 other kinds of policies. We review relevant work in
-Section~\ref{s:related}.
+Section~\ref{sec:relatedwork}.
 
 %%  like
 %% joint bandwidth provisioning and waypoint routing in Merlin
@@ -107,18 +107,18 @@ most complex collections of policies.
 
 Unfortunately, naively encoding policies using SMT solvers results in
 synthesis speeds that don't match the scale of operations of cloud and
-enterprise networks today. \aditya{give an example as to how slow
-  things can get} For instance, for synthesizing rules for simple
-reachability among nodes in in a 125 switch fat-tree topology can take
-1s,\aditya{why does this happen? talking about what causes poor
-  performance so that the tactics idea later in this para makes sense}
-thus needing a way to specify a search strategy for the path.  To this
+enterprise networks today because the space of forwarding plane configurations
+is huge. For instance, for synthesizing rules for simple
+reachability among nodes in a 125 switch fat-tree topology can take
+1s, and thus, we require a search strategy to find the forwarding plane
+configuration.  To this
 end, \Name leverages domain-specific properties to simplify the
 constraints handled by the SMT solver.  Specifically, \Name allows the
 network operator to write regular expressions that blacklist certain
-forwarding plane configurations \kausik{Shouldn't we mention paths
-  here instead of configurations? } that are not desired in a data
-center network structure.  \aditya{the previous sentence is vague}
+forwarding plane configurations based on the paths traversed by flows  
+that are not desired in a data center network structure as
+search strategy for the solver. 
+%\aditya{the previous sentence is vague}
 By identifying a restricted syntax for specifying
 tactics, we can improve the synthesis procedure by reducing the
 constraints added to the solver without additional constraints
