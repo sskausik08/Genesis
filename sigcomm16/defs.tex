@@ -1,0 +1,40 @@
+\newcommand{\minisection}[1]{\smallskip\noindent{\bf #1.}}
+\newcommand{\secref}[1]{{Section~\ref{#1}}}
+\newcommand{\secsref}[2]{{Sections~\ref{#1} and \S\ref{#2}}}
+\newcommand{\figsref}[2]{{Figure~\ref{#1} and \ref{#2}}}
+\newcommand{\appref}[1]{{Appendix~\ref{#1}}}
+\newcommand{\thmref}[1]{{Theorem~\ref{#1}}}
+\newcommand{\lemref}[1]{{Lemma~\ref{#1}}}
+\newcommand{\corref}[1]{{Corollary~\ref{#1}}}
+
+\newcommand{\compactcaption}[1]{\vspace{-1em}\caption{#1}\vspace{-1em}}
+\newcommand{\botcompactcaption}[1]{\caption{#1}\vspace{-1em}}
+\newcommand{\topcompactcaption}[1]{\vspace{-1em}\caption{#1}\vspace{-0.5em}}
+
+\newenvironment{compactitemize}
+{
+   \begin{itemize}[leftmargin=1.5em]
+   \vspace{-1ex}
+   \setlength{\topsep}{0pt}
+   \setlength{\itemsep}{0em}
+   \setlength{\parskip}{0pt}
+   \setlength{\parsep}{0pt}
+}
+{
+   \vspace{-1ex}
+   \end{itemize}
+}
+
+\newenvironment{compactenumerate}
+{
+   \begin{enumerate}[leftmargin=1.5em]
+   \vspace{-1ex}
+   \setlength{\topsep}{0pt}
+   \setlength{\itemsep}{0em}
+   \setlength{\parskip}{0pt}
+   \setlength{\parsep}{0pt}
+}
+{
+   \vspace{-1ex}
+   \end{enumerate}
+}
