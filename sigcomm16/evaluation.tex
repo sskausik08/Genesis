@@ -9,6 +9,14 @@ We now evaluate the performance of Genesis along various dimensions:
    with respect to synthesis without tactics for different isolation workloads in datacenter topologies? 
    (5) What are the potential speedups of using optimistic synthesis in Genesis for varying workloads? 
 
+\begin{figure*}[width=2\columnwidth]
+	\centering
+	\subfloat[No Tactic]{\includegraphics[width=0.66\columnwidth]{figures/no-tactic-isolation-plot.png}}
+	\subfloat[No Edge Tactic]{\includegraphics[width=0.66\columnwidth]{figures/no-edge-tactic-isolation-plot.png}}
+	\subfloat[Valley-free Routing Tactic]{\includegraphics[width=0.66\columnwidth]{figures/eacae-isolation-plot.png}}
+	\caption{\label{fig:tactic-isolation}
+		Synthesis time (log scale) for isolation workloads over range of packet classes and different tenant-group sizes.}
+\end{figure*}
 \kausik{Needs another pass.}
 We model our experimentation on a multi-tenant datacenter setting. We 
 define a tenant-group flows as the reachability policies specified by a tenant
@@ -45,25 +53,15 @@ The synthesis time (we cap the maximum time at 5000s) for a range of
       due to increased number of isolation policies. 
       Group size = 1 denotes the extreme case where all flows are isolated to one other. 
       
-%\begin{figure*}
-%	\centering
-%	\subfloat[subcaption 1]{\includegraphics[width=0.66\columnwidth]{figures/no-tactic-isolation-plot.png}}
-%	\subfloat[subcaption 2]{\includegraphics[width=0.66\columnwidth]{figures/no-tactic-isolation-plot.png}}
-%	\subfloat[subcaption 3]{\includegraphics[width=0.66\columnwidth]{figures/no-tactic-isolation-plot.png}}
-%	\caption{\label{fig:trans_actions}
-%		Some caption text here. This is the full textwidth.}
-%\end{figure*}
-
-
-\begin{figure}[H]
-	\includegraphics[width=\columnwidth]{figures/no-tactic-isolation-plot.png}
-	\caption{Synthesis time (log scale) with no tactics for range of packet classes and different tenant-group sizes.}
-	\label{fig:no-tactic}
-\end{figure}
+%\begin{figure}[H]
+%	\includegraphics[width=\columnwidth]{figures/no-tactic-isolation-plot.png}
+%	\caption{Synthesis time (log scale) with no tactics for range of packet classes and different tenant-group sizes.}
+%	\label{fig:no-tactic}
+%\end{figure}
 
 \begin{figure}[H]
 		\includegraphics[width=\columnwidth]{figures/no-tactic-topo.png}
-		\caption{Average synthess time per packet class with datacenter packing ratio 0.25 for different fat-tree topology sizes.}
+		\caption{Average synthesis time per packet class versus fat-tree topology size for isolation workloads with datacenter packing ratio 0.25.}
 		\label{fig:no-tactic-topo}
 \end{figure}
 
@@ -79,14 +77,6 @@ The average synthesis time per class for isolation workloads
   with tenant-group size 5 in a 125-node topology in 124 seconds. 
   We can also observe that average time per flow increases expotential 
   with increasing topology, thus the synthesis problem is expotential with number of nodes as well. 
-
-\begin{figure*}
-		\centering
-		\subfloat[No Edge Tactic]{\includegraphics[width=\columnwidth]{figures/no-edge-tactic-isolation-plot.png}}
-		\subfloat[Valley-free Routing Tactic]{\includegraphics[width=\columnwidth]{figures/eacae-isolation-plot.png}}
-	\caption{\label{fig:tactic-isolation}
-				Synthesis time (log scale) for range of packet classes and different tenant-group sizes with tactics.}
-\end{figure*}
 		
 
 \subsection{Tactic Reductions}
