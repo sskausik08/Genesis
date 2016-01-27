@@ -1,17 +1,17 @@
 \section{Synthesis Alogrithm}
-Given a set of policies, \Name creates the network forwarding model variables which abstracts the forwarding rules and reachability. For each policy, \Name adds a set of constraints on the model to the SMT Solver Z3 \cite{z3}. After all the constraints have been added, the Z3 solver returns a assignment of values for the mode satisfying the constraints. From these values, we extract the forwarding rules for each switch.
+Given a set of policies, \Name creates the network forwarding model variables which abstracts the forwarding rules and reachability. For each policy, \Name adds a set of constraints on the model to the SMT Solver Z3 \cite{z3}. After all the constraints have been added, the Z3 solver returns an assignment of values for the model satisfying the constraints. From these values, we extract the forwarding rules for each switch.
 To provide support for the policies in \cref{tab:policysupport}, we use propositional logic (SAT) and linear integer arithmetic (LIA),
 which are both supported by Z3. 
 \subsection{Network Forwarding Model} \label{sec:fwdmodel}
 We define the physical switch topology as an undirected graph $T=\{S, L\}$, where $S$ is the set of switches and $L$ is the set of links. We use the neighbour function $N(s) = \{s'\ | \ (s,s') \in L \}$ to denote the set of neighbour switches of L. The set of reachability policies is denoted as $R$ and each reachability policy $r \in R$ is
-a tuple of the form $(predicate$, $src$, $dst$, $W$, $pc$) where
+a tuple of the form $(predicate$, $src$, $dst$, $(W_1, W_2 \ldots W_n$, $pc$) where
 \begin{itemize}
 \item  $predicate$ over the set of packet headers identifies the packet pertaining to $r$ ;
 \item  $src,dst \in S$ are the source and destination switches;
-\item $W\subseteq S$ is the (potentially empty) set of waypoints;
+\item $W_1, W_2 \ldots W_n \subseteq S$ are the (potentially empty) ordered sets of waypoints; 
 \item $pc \in PC$ is the packet class and is a unique integer used to identify the variables associated to $r$
 \end{itemize} 
-We use the notion of packet classes to distinguish reachability/waypoint policies which produces a path from other policies which impose restrictions on these paths. We define a set of packet classes $PC : [0,\lambda]$ and maps each reachability/waypoint policy to a unique integer in $PC$. In the rest of the paper, we use the term packet class to associate it to a path synthesized for a reachability/waypoint policy. 
+ We define a set of packet classes $PC : [0,\lambda]$ and map each reachability/waypoint policy to a unique integer in $PC$. In the rest of the paper, we use the term packet class for identifying the reachability/waypoint policy. Other policies are not mapped to packet classes as they do not produce a path, but specify restrictions on paths of packet classes. 
 %Assuming that the intersection of predicates is empty for policies in $R$, we create a mapping $\gamma : R \rightarrow PC$ to associate each reachability policy with a unique integer called packet class in the set $PC$. Switches $src, dst \in S$ denote the ingress and egress switches respectively for the packet class $pc = \gamma(r)$ and Genesis finds a path from $src$ to $dst$ for $pc$. If a waypoint policy is specified, $W$ is the set of switches the path from $src$ to $dst$ must traverse through in no particular order.
 We define a static integer $\mu$ to be the synthetic limit for path length for any packet class, and define the set $K = [0, \mu]$ to be the set of all permissible path lengths.
 \loris{why do we need this? we can enforce it with the length tactic now..} \kausik{I need for the model constraints. This is more of a synthetic limit and not to enforce any specific length properties on the path. Tactics can be used to further improve the search. if I dont have this, the model will have unbounded quantifiers. We dont want to use tactics all the time, right?}
@@ -32,8 +32,8 @@ $sw_1$ forwards packets of class $pc$ to switch $sw_2$.
 \end{mydef}
 For brevity, we write $Fwd(sw_1, sw_2, pc)$ for $(sw_1, sw_2, pc) $ $\in Fwd$ and similarly for the $Reach$ relation. The $Fwd$ relation can contain only connected switches in the topology. For $sw_1, sw_2$ who are not connected by a link, $\forall pc$, $(sw_1,sw_2,pc) \notin Fwd$. 
 
-Given two concrete relations Fwd and Reach, the set $P$ of induced paths is the following, 
-$sw_0 \ldots sw_k \in P$ is the path for class $pc$ iff : 
+Given two concrete assignments of relations Fwd and Reach, let $Paths$ be the set induced paths. 
+$sw_0 \ldots sw_k \in Paths$ is the path for class $pc$ iff : 
 \begin{enumerate}
 	\item $\forall i \in [0,k]. (sw_i, pc, i) \in Reach$
 	\item $\forall i \in [0, k - 1]. (sw_i, sw_{i+1}, pc) \in Fwd$
@@ -53,10 +53,10 @@ $sw_0 \ldots sw_k \in P$ is the path for class $pc$ iff :
 %%\loris{The policies should be in the caption of the figure as well or in the figure itself}. 
 %Using the value of $Fwd$ relation, we can find out paths for each packet class the forwarding rules for each switch. 
 
-\loris{say somewhere that all those relations are encoded as propositions in SAT}
-One of the decisions oriented towards performance is modelling the forwarding and relations using propositions, so that we can reduce enforcement of policies like reachability, waypoints and isolation to a Boolean Satisfiability Problem (SAT) problem\footnote{An earlier iteration of our model used \emph{uninterpreted functions} supported by Z3 and modeled reachability using recursive constraints, 
+%\loris{say somewhere that all those relations are encoded as propositions in SAT}
+One of the decisions oriented towards performance is modelling the forwarding and reachability relations using propositions, so that we can reduce enforcement of policies like reachability, waypoints and isolation to a Boolean Satisfiability Problem (SAT) problem\footnote{An earlier iteration of our model used \emph{uninterpreted functions} supported by Z3 and modeled reachability using recursive constraints, 
 	which was slower with a greater number of constraints.}. 
-The two relations for forwarding and reachability ensures we can write the constraints in a concise and intuitive manner.
+The two relations for forwarding and reachability ensure we can write the constraints in a concise and intuitive manner.
 \kausik{Removed the troublesome lines. Is there anything nnoteworthy with the modelling we can specify here?}
 %\loris{not sure what you are trying to say with the previous 2 sentences, is it important at all?}. 
 %\kausik{I am trying to motivate the requirement for the reachability relation to write constraint concisely}
@@ -89,7 +89,7 @@ If a node $n_1$ is reachable in $k$ steps, there must a node $n_2$ which is reac
 \begin{multline} \label{eq:bckprop}
 \forall n_1,k.  Reach(n_1,pc,k) \implies \exists n_2.  n_2 \in N(n_1) \wedge \\ Reach(n_2,pc,k-1) \wedge Fwd(n_2,n_1,pc)
 \end{multline} 
-The backward propagation is responsible for ensuring there is a topologically valid path from source to destination by using the unit clauses in \cref{eq:dst}, and finding a path from destination back to a switch $sw$ which is a neighbour of $src$. thus $Reach(sw,pc,1)$ would be true from \cref{eq:src} and the reachability policy would be satisfied. 
+The backward propagation is responsible for ensuring there is a topologically valid path from source to destination by using the unit clauses in \cref{eq:dst}, and finding a path from destination back to a switch $sw$ which is a neighbour of $src$. $Reach(sw,pc,1)$ would be true from \cref{eq:src} and the reachability policy would be satisfied. 
 
 The above mentioned constraints are sufficient to ensure there is a path from $src$ to $dst$ for packet class $pc$ in terms of the forwarding relation $Fwd$. However, since there is no restriction on number of $Fwd$ values that can be true at a switch, we can get multiple forwarding rules at switches, and also multiple paths to the destination. Also, there can exist forwarding loops as well. From the perspective of the network model, 
 this is a valid assignment as there would be atleast one path from $src$ to $dst$. 
@@ -118,6 +118,9 @@ The $|A|$ function is used to the denote the size of set $A$. The constraint on 
 The forwarding set constraints ensure that the forwarding rules exist only on the path from source to destination, and no other rules exist in the solution. If a switch has a forwarding rule to  elsewhere, then it would not have a rule for the path, and the destination will not be reachable. These restrictions will also ensure there are no forwarding loops in the path. 
 Since, there is only one path in the model from source and destination, and \cref{eq:waypoints} ensures that waypoints are reachable, therefore, the path from source to destination must traverse through all the waypoints. Since \cref{eq:waypoints} imposes no order on waypoint traversal, the solution will traverse the waypoints in no particular order. 
 
+\subsubsection{Ordered Waypoints}
+While our network model intuitively supports unordered waypoints, sometimes, operators may require support for waypoints in a particular order. Let us assume the waypoints in order are $w_1 w_2 \ldots w_n$. 
+
 \subsection{Isolation Constraints}
 For a traffic isolation policy $pc_1 || \ pc_2$ means that the paths do not share an link in the same direction in their paths, therefore, at every switch, the forwarding rules for $pc_1$ and $pc_2$ must not forward it to the same switch.  
 \begin{equation}
@@ -129,9 +132,9 @@ The isolation constraints is intuitive when coupled with the forwarding set cons
 
 \subsection{Capacity Constraints}
 %\subsubsection{Link Capacity Constraints} \label{sec:linkcap}
-For a link capacity policy on the link $sw_1 \rightarrow sw_2$ with capacity $\omega$, we use the theory of integer linear arithmetic to add constraints on the link so that capacity used by the flows traversing the link does not exceed $\omega$. In terms of our model, the link capacity policy translates to constraints to ensure that the tuples $(sw_1, sw_2, pc) \in Fwd$ for $pc \in PC$ conforms to the capacity specified in the policy, as the forwarding rule $sw1 \rightarrow sw2$ means that the link is being used by the particular packet class.
+For a link capacity policy on the link $sw_1 \rightarrow sw_2$ with capacity $\omega$, we use the theory of integer linear arithmetic to add constraints on the link so that capacity used by the flows traversing the link does not exceed $\omega$. In terms of our model, the link capacity policy translates to constraints to ensure that the tuples of the form $(sw_1, sw_2, pc) \in Fwd$ for $pc \in PC$ conform to the capacity specified in the policy, as the forwarding rule $sw1 \rightarrow sw2$ means that the link is being used by the particular packet class.
  
-Let $C(sw_1,sw_2,pc)$ be the cumulative capacity function of the link used by all packet classes less than equal to $pc$. Since we use integers for denoting the packet class, and thus, we have total order of the set of packet classes. We use this to create inductive constraints to sum over the set of Boolean variables $Fwd(sw_1, sw_2,pc)$. Let $PC : [0, \lambda]$ be the set of packet classes and the $W(pc)$ is the capacity of packet class $pc$ ($W$ can be uniform or non-uniform for all packet classes). 
+Let $C(sw_1,sw_2,pc)$ be the cumulative capacity function of the link used by all packet classes less than equal to $pc$. Since we use integers for denoting the packet class, we have total order of the set of packet classes. We use this to create inductive constraints to sum over the set of Boolean variables $Fwd(sw_1, sw_2,pc)$. Let $PC : [0, \lambda]$ be the set of packet classes and $W(pc)$ is the capacity of packet class $pc$ which denotes the bandwidth alloted to the packet class. 
 The base case constraint for the capacity function is for $pc = 0$ (the minimum element of $PC$) :
 \begin{equation}
 	Fwd(sw_1, sw_2, 0) \implies C(sw_1, sw_2, 0) = W(0)
@@ -147,8 +150,8 @@ If the link is not used, the constraints are as follows :
 \begin{multline}
 \forall pc > 0. \neg Fwd(sw_1,sw_2,pc) \implies \\ C(sw_1, sw_2, pc) =  C(sw_1. sw_2, pc - 1)
 \end{multline}
-If $pc$ uses the link $sw_1 \rightarrow sw_2$, we add $W(pc)$ to $C(sw_1,$ $sw_2,pc-1)$, or add 0 to it if link is not being used. Thus, we define the cumulative capacity constraints using inductive constraints. To satisfy the capacity policy, the total capacity used should not exceed input $\omega$. $\lambda$ is the greatest element in the set $PC$. 
+ITo satisfy the capacity policy, the total capacity used should not exceed input $\omega$. $\lambda$ is the greatest element in the set $PC$. 
 \begin{equation}
 	C(sw_1, sw_2, \lambda) \leq \omega	
 \end{equation} 
-We add similar constraints as described above for switch table size policies, but instead of tracking $Fwd(sw_1, sw_2,pc)$ for the link, we would have to track reachability of the path to switch $sw$, which is represented by the clause $\exists k$. $Reach($ $sw,pc,k)$.
+For switch table size policies, we track the number of packet classes traversing the switch, for each class traversing the switch would require a forwarding rule at the switch. We create inductive constraints similar to link capacity constraints to sum over the set of Boolean variables that denote reachability of the path to switch $sw$, which is $\exists k$. $Reach($ $sw,pc,k)$.

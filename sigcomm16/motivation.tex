@@ -1,7 +1,7 @@
 \section{Motivation}
 \begin{figure}
-	\includegraphics[height=7.5cm,right]{figures/architecture.png}
-	\caption{Rough layout of system architecture. Also will come up with an example figure here.}
+	\includegraphics[width=\columnwidth,center]{figures/architecture.png}
+	\caption{Overview of the system architecture of Genesis in a multi-tenant datacenter setting.}
 	\label{fig:architecture}
 \end{figure}
 In this section, we describe the type of policies that tenants and
@@ -11,15 +11,15 @@ network operators may wish to realize. %% For simplicity, we assume a
 %% these policies, and our framework, are applicable to other settings,
 %% e.g., enterprise networks with different departments imposing
 %% different sets of policies.
-We use Figure XXX as a running example. This figure shows several
+We use \cref{fig:architecture} as a running example. This figure shows several
 tenants who differ in the nature of policies they wish to realize. We
 note that these policies reflect and, in some cases, extend the
 policies that enterprises realize in their on-site networks today as
 well as policies that data center operators support for the different
 workloads they host~\cite{mpa-imc15}.  The policies include:
 
-\aditya{explain the figure here}.
-\kausik{Will do this now}
+%\aditya{explain the figure here}.
+%\kausik{Will do this now}
 
 \aditya{define flow, flow group, policy etc here}
 % \aditya{need to start by saying we focus on multi-tenant clouds, although our system can apply elsewhere too}
@@ -37,8 +37,9 @@ workloads they host~\cite{mpa-imc15}.  The policies include:
 \begin{itemize}
 \item \textbf{Reachability}: This enables network communication
   between specific groups of a tenant's virtual cloud instances,
-  applications, or hosts. \aditya{refer here to an example in the
-    figure}
+  applications, or hosts. For example, the yellow tenant has defined a reachability
+  policy for its VMs ($V1 >> V2$), which is translated by the operator after 
+  placement as $E2 >> E4$.
 \item \textbf{Middlebox traversals}: A tenant may wish that traffic
   between two of her endpoints, or from another tenant, must traverse
   through specific middleboxes (locations, or logical descriptors) for
@@ -50,8 +51,10 @@ workloads they host~\cite{mpa-imc15}.  The policies include:
   without dependencies in their traffic processing behavior can be
   placed in any order in a service chain~\cite{pga}. Thus the
   middlebox traversal specification outlined here generalizes the
-  notion of a service chain.  \aditya{refer here to an example in the
-    figure}
+  notion of a service chain. For example, the grey tenant in \cref{fig:architecture}
+  defines a waypoint policy $V1 >> FW; [IDS,BC] >> V2$
+   which specifies that traffic must first pass through the firewall(FW),
+  and then the set of IDS and byte counter (BC) in any order. 
 
   %% \aditya{refer here to an example in
   %%   the figure} In several cases \loris{how true is this?} the order
@@ -62,11 +65,13 @@ workloads they host~\cite{mpa-imc15}.  The policies include:
   that enforce varying degrees of isolation for their traffic. In the
   extreme, a tenant could ensure that her flow groups are not affected
   by any other tenant by strictly isolating the path of the tenant's
-  flows from others' flows. \aditya{refer here to an example in the
-    figure} A tenant could also specify isolation for a subset of her
+  flows from others' flows. In \cref{fig:architecture}, we have two tenants
+  each with one traffic class which will be isolated from one another, that is
+  they will not share any links in the topology. 
+  A tenant could also specify isolation for a subset of her
   (performance-sensitive) flows from other flows of her own deployment
   or those belonging to other tenants; the rest of the tenants' flows
-  mayy require no guarantees.
+  may require no guarantees.
 
 %%   There has been a rising emergence of 
 %% multi-tenant clouds, which is more economical for tenants to use
@@ -110,7 +115,10 @@ operator may specify policies constraining the maximum number of
 tenant flows that can traverse a given link or sets of links in the
 network. She may also wish to ensure traffic from some sensitive
 applications does not contend for bandwidth on constrained links with
-elastic traffic from batch applications.
+elastic traffic from batch applications. For example, in \cref{fig:architecture},
+there are two low-bandwidth links in the datacenter, and the operator
+specifies policies to ensure that flows traversing $A2 \rightarrow C2$ 
+and $A2 \rightarrow C4$ do not exceed the link capacity of 100.
           %% capacity
           %% of certain links such that tenant flows using the link do
           %% not exceed the capacity of the link. Such policies can be

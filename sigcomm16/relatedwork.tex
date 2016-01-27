@@ -1,4 +1,4 @@
-\section{Related Work}
+\section{Related Work} \label{sec:relatedwork}
 
 \cite{oneswitch} tries to tackle a similar problem to ours of flow policy enforcement. However their end-point policies are only concerned with reachability (two hosts can talk through specific ingress and egress points). Their rule placement algorithm takes the path of the flow in the network as an input (the routing policy) and place rules on this path to enforce the endpoint policy and taking in consideration switch table constraints. We are trying to tackle the problem without the routing policy as input, as we enforce flow policies which would require different routing policies (like traffic isolation), so we cannot determine the path of the flow beforehand. Our solution can support enforcement of policies which require different routing policies. \cite{distfirewall} builts on the \cite{oneswitch} abstraction to optimize the specific case of distributed firewall policy enforcement using ILP.  PGA  \cite{pga} is a graph-level abstraction of 
 specifying network policies like ACLs and middlebox service chaining. However, it abstracts the underlying network as "one bigswitch" and 

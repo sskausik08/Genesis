@@ -93,6 +93,11 @@ class GenesisSynthesiser(object) :
 		# Constraint Stores
 		self.backwardReachPropagationConstraints = dict()
 
+		# BFS Global Variable.
+		self.bfsLists = dict()
+		for i in range(1, self.topology.getMaxPathLength() + 1) :
+			self.bfsLists[i] = []
+
 		# SMT Variables
 		#self.smtlib2file = open("genesis-z3-smt", 'w')
 
@@ -279,7 +284,7 @@ class GenesisSynthesiser(object) :
 			#self.pdb.printPaths(self.topology)
 
 		self.pdb.validatePolicies(self.topology)
-		self.pdb.printPaths(self.topology)
+		#self.pdb.printPaths(self.topology)
 		self.pdb.writeForwardingRulesToFile(self.topology)
 		self.printProfilingStats()
 
@@ -1261,6 +1266,7 @@ class GenesisSynthesiser(object) :
 
 		#st = time.time()
 		# Add Path Constraints for this flow to find the forwarding model for this flow.
+		self.addTopologyTreeConstraints(srcSw, pc)
 		self.addPathConstraints(srcSw,pc)		
 		#et = time.time()
 		#print "Path Constraints time is " + str(et - st)
@@ -1316,6 +1322,10 @@ class GenesisSynthesiser(object) :
 			#self.smtlib2file.write("; Backward Reachability Propagation for switch " + str(i) + "\n")
 
 			for pathlen in range(1,maxPathLen+1) :
+				if i not in self.bfsLists[pathlen] : 
+					# Not at distance i in the topology tree, dont add constraints.
+					continue 
+
 				ineighbours = self.topology.getSwitchNeighbours(i, useBridgeSlicing) 
 				if self.useTacticFlag and pc in self.tactics :
 					# Use Tactic to reduce constraints.
@@ -1365,6 +1375,27 @@ class GenesisSynthesiser(object) :
 		# print "constime", constime
 		# print "addTime", addtimw
 		# st = time.time()
+
+	def addTopologyTreeConstraints(self, srcSw, pc) : 
+		swCount = self.topology.getSwitchCount()
+		maxPathLen = self.topology.getMaxPathLength()
+
+		swList = [srcSw]
+		for k in range(1, maxPathLen + 1) :
+			newSwList = []
+			for sw in swList :
+				neighbours = self.topology.getSwitchNeighbours(sw)
+				for n in neighbours :
+					if n not in newSwList : 
+						newSwList.append(n)
+
+			self.bfsLists[k] = newSwList
+			# Set switches not in newSwList to false at Reach(k)
+			for sw in range(1, swCount+1) :
+				if sw not in newSwList  :
+					self.z3Solver.add(Not(self.Reach(sw, pc, k)))
+
+			swList = newSwList
 
 	def addTrafficIsolationConstraints(self, pc1, pc2) : 
 		""" Adding constraints for Isolation Policy enforcement of traffic for packet classes (end-points) ep1 and ep2. """
