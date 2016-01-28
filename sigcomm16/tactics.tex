@@ -15,7 +15,7 @@ For example, consider the fat-tree topology in \cref{fig:fattree}. The number of
 \end{figure}
 Network operators can leverage the network structure of specific topologies to reduce the solution space by specifying patterns of what structure the path must or must adhere to. For example, In the case of \cref{fig:fattree}, for a path from one edge to another, a reasonable pattern is that the path must not traverse another edge switch. This pattern will not drastically reduce the solution space of paths due to the dense interconnect between aggregate and core switches which can provide isolated paths for the different packet classes. 
 
-Tactics and labels are abstractions that allow the operator to impose a high-level restriction on the paths by leveraging the network structure. We use the power of regular expressions and finite automata to prune constraints in our synthesis algorithm. To describe high-level restrictions on the path, we use the notion of mapping set of switches to labels to have a coarse grained control in describing the path. This ensures we do not reduce the solution space of paths drastically, and not being able to find a path satisfying all the policies.
+Tactics and labels are abstractions that allow the operator to impose a high-level restriction on the paths by leveraging the network structure. We use the power of regular expressions to prune constraints in our synthesis algorithm. To describe high-level restrictions on the path, we use the notion of mapping set of switches to labels to have a coarse grained control in describing the path. This ensures we do not reduce the solution space of paths drastically, and not being able to find a path satisfying all the policies.
 
  Let $Lb$ be the set of labels and $S$ be the set of switches in the topology. Let $\phi : S \rightarrow Lb$ be the labelling function that maps each switch to a label in $Lb$. One example for $\phi$ in the fat-tree topology in \cref{fig:fattree} can be that we map all switches in the same level (core, aggregate or edge) to the same label,
 therefore leveraging the hierarchical structure of the topology. A path $p$ is a word over the alphabet $S$. Let $\Phi : S^* \rightarrow Lb^*$ be the path-labelling function which maps each switch in the word to its corresponding label. Let us consider a path $p = e1\ a2\ c3\ a4\ e2$. The label-path obtained by applying the path label function is $\Phi(p) = eacae$ (map each switch to its corresponding label).
@@ -24,7 +24,7 @@ therefore leveraging the hierarchical structure of the topology. A path $p$ is a
 %We use regular expressions and finite automaton to prune the constraints and impose restrictions on the path. The natural way for operators to specify tactics are using \emph{blacklists}, which specify what the path should not be. To express this in a intuitive manner, we use regular expressions on the set of labels to specify blacklists. For example, to blacklist paths from a edge switch to edge switch to not go through another edge switch, we can describe the tactic as $\neg (e .^* e .^* e)$ where the label of all edge switches is $e$. Another tactic is of the form $\neg (e (.)^4 a c .* e)$ which specifies we have a path of length 4, we do not go in the direction towards the core (as to reach the edge, the path would have to then go downwards from the core). 
 In NetGen \cite{netgen}, regular expressions are used to specify the path for the packet class.
 While supporting full regular expressions is possible, it causes a blow-up in the solving time as further
-constraints need to be added to the solver to ensure that path satisfies the regular expression, and operators would not be comfortable writing policy specifications in terms of regular expressions. Instead, using the notion of switch labels, we use regular expressions to provide high-level path properties as a search strategy rather than a policy requirement. Instead of specifying how the path must look like, we can use regular expressions on switch labels to specify \emph{blacklists}, how the path must not look like at a higher-level. A tactic, for example, is to blacklist paths from a edge switch to edge switch to not go through another edge switch. 
+constraints need to be added to the solver to ensure that the path satisfies the regular expression. Also operators would not be comfortable writing policy specifications in terms of regular expressions. Instead, using the notion of switch labels, we use regular expressions to provide high-level path properties as a {\em search strategy} rather than a policy requirement. Instead of specifying how the path must look like, we can use regular expressions on switch labels to specify \emph{blacklists}, how the path must not look like at a higher-level. A tactic, for example, is to blacklist paths from a edge switch to edge switch to not go through another edge switch. 
 %\loris{we need a plot for the full regex thing to compare with Madhu, it would be great to repeat some of their experiments}
  
 \subsubsection{Restricted tactic syntax} 
@@ -33,27 +33,27 @@ For specifying tactics, we identified a restricted set of regular expressions
 but actually allow us to avoid generating some of the constraints. 
 This set is defined using the following grammar:
 $$\begin{array}{rcl}
-R  &  :=  &  \neg (l_1 .^i C .^* l_2) \\
+R  &  :=  &  \neg (l_{src} (.)^i C .^* l_{dst}) \\
 C  &  :=  &  \varepsilon \mid l_1 \mid l_1 l_2\\
 \end{array}$$
-where $l_i\in Lb$ and $l_1, l_2$ are used to specify the labels of the source switch 
-and destination switch respectively of the packet classes on which apply the tactic. 
+where $l_i\in Lb$ and $l_{src}, l_{dst}$ are used to specify the labels of the source switch 
+and destination switch respectively of the packet classes on which we apply the tactic. 
 Here, we allow some regular expressions to be negated at the outer level to specify blacklists. For example, $\neg (e .^i e .^* e)$ says that the path must not contain a edge switch at the $i+1^{th}$ step, unless it is the destination switch. 
 Similarly, $\neg (e .^i .^* e)$ says that the path connecting two edge switches should have a length $ < i + 1$. 
 
 Let $\pi = sw_0\ldots sw_k$ be a path and 
-let its labeling be $\phi(\pi)= a_0\ldots a_k$.
-Se say that $\pi$ satisfies a tactic $R$, $\pi\vDash R$, if the following
+let its labeling be $\Phi(\pi)= a_0\ldots a_k$.
+We say that $\pi$ satisfies a tactic $R$, $\pi\vDash R$, if the following
 holds:
 \begin{itemize}
 \item $\pi \vDash \neg R'$ iff $\pi \not\vDash R'$;
-\item $\pi \vDash  l_1 .^i .^* l_2$ iff $k\geq i+1$, $l_1= a_1$, and $l_2= a_k$; 
-\item $\pi \vDash  l_1 .^i c.^* l_2$ iff $k\geq i+2$, $l_1= a_0$, $l_2= a_k$, and $a_{i+1}=c$;
-\item $\pi \vDash  l_1 .^i c_1 c_2.^* l_2$ iff $k\geq i+3$, $l_1= a_0$, $l_2= a_k$, $a_{i+1}=c_1$, and $a_{i+2}=c_2$.
+\item $\pi \vDash  l_{src} .^i .^* l_{dst}$ iff $k\geq i+1$, $l_{src}= a_0$, and $l_{dst}= a_k$; 
+\item $\pi \vDash  l_{src} .^i l.^* l_{dst}$ iff $k\geq i+2$, $l_{src}= a_0$, $l_{dst}= a_k$, and $a_{i+1}=l$;
+\item $\pi \vDash  l_{src} .^i l_1 l_2.^* l_2$ iff $k\geq i+3$, $l_{src}= a_0$, $l_{dst}= a_k$, $a_{i+1}=l_1$, and $a_{i+2}=l_2$.
 \end{itemize}
 
 Notice that using this constraints we can express more complex forms such as
-$\neg (e .* e .* e)$ which can be expressed in the restricted tactic syntax 
+$\neg (e .^* e .^* e)$ which can be expressed in the restricted tactic syntax 
 as $\bigwedge \limits_{i=0}^{i=\mu-2} \neg (e .^i e .^* e)$ where $\mu$ is the synthetic limit on path length. 
 
 In \Name, operators can specify conjuctions of the tactics which adhere to the restricted syntax, and the synthesis algorithm is modified to enforce the tactics. Since tactics are path-related restrictions, operators can also apply tactics selectively to the paths for certain packet classes, and also different tactics for different classes. 
