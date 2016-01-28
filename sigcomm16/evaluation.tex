@@ -8,14 +8,23 @@
 \end{figure*}
 
 \section{Evaluation}
-In this section, we evaluate \Name using realistic multi-tenant data
-center settings. Specifically, we ask:
+In this section, we evaluate \Name using 
+\loris{really don't like the word realistic}
+realistic multi-tenant data
+center settings. 
+In our evaluation, we target enterprise-scale could data centers.
+Specifically, we ask:
 
 \begin{itemize}
 
 \item What is the performance of \Name's baseline synthesis
   algorithms? How does the performance vary with the size of the
   network, number of policies, and the nature of policies in use?
+  \loris{I usually write points like the following, but I'm not sure what's the standard
+  in systems conferences.
+We evaluate the performance using X with no optimization and consider
+different sizes of.... This experiment shows that...
+  }
 
 \item To what extent do tactic help improve \Name's synthesis
   performance? Which tactics offer the best improvement?
@@ -27,7 +36,8 @@ center settings. Specifically, we ask:
 
 \end{itemize}
 
-In our evaluation, we target enterprise-scale could data centers. In
+\loris{if you say this here don't write it in the bullet points}
+ In
 particular, the settings we study have a few thousand servers, tens of
 switches, and hierarchical fat-tree like network topologies. At the
 most basic level, our experiments are parameterized by: (a) total size
@@ -39,14 +49,14 @@ seconds. For evaluating the baseline performance, we impose a
 synthetic limit on the path length $\mu$ to be $10$, which is more than adequate 
 for a fat-tree topology with three levels. 
 In measuring this, we focus on the time the Z3 solver takes
-to solve the constraints. All experiments were conducted using a
-single (Cloudlab) machine with 32-core Intel-Xeon 2.40GHz CPU and
-128GB of RAM.
+to solve the constraints.\footnote{All experiments were conducted using a
+single (\loris{Citation?}Cloudlab) machine with 32-core Intel-Xeon 2.40GHz CPU and
+128GB of RAM.}
 
 % TODO : Write about max path length.
 
 \subsection{Baseline Performance}
-For evaluate the baseline performance of \Name without tactics, we model a multi-tenant
+To evaluate the baseline performance of \Name without tactics, we model a multi-tenant
 80-node fat-tree topology network with   
 tenant-isolation in in \cref{fig:isolation}(a). 
 For each workload, we have $n$ tenants with group size $g$ which 
