@@ -1,13 +1,50 @@
 \section{Evaluation}
-We now evaluate the performance of Genesis along various dimensions:
- (1) What is the performance of Genesis in synthesizing simple reachability and waypoint policies
-  with increasing number of policies and greater sizes of topologies and benchmarking the constraints used by the synthesis algorithm? 
-  (2) How quickly can Genesis synthesize isolation policies in datacenter topologies for varying number of policies and percentage of
-   datacenter utilization? 
-   (3) What is the performance of Genesis for solving link-capacity policies in internet topologies? 
-   (4) Identifying the benefits of tactics in terms of reduction of terms in the synthesis algorithm and actual benefits 
-   with respect to synthesis without tactics for different isolation workloads in datacenter topologies? 
-   (5) What are the potential speedups of using optimistic synthesis in Genesis for varying workloads? 
+In this section, we evaluate \Name using realistic multi-tenant data
+center settings. Specifically, we ask:
+
+\begin{itemize}
+
+\item What is the performance of \Name's baseline synthesis
+  algorithms? How does the performance vary with the size of the
+  network, number of policies, and the nature of policies in use?
+
+\item To what extent do tactic help improve \Name's synthesis
+  performance? Which tactics offer the best improvement?
+
+\item To what extent does optimistic synthesis improve \Name's
+  performance? When does it lead to degraded synthesis times?
+
+\item what else? XXX
+
+\end{itemize}
+
+In our evaluate, we target enterprise-scale could data centers. In
+particular, the settings we study have a few thousand servers, tens of
+switches, and hierarchical fat-tree like network topologies. At the
+most basic level, our experiments are parameterized by: (a) total size
+of the network which we vary between XXX and XXXX, (b) number of
+tenants (XXX to XXX), (c) number of packet classes in a tenant (XXX to
+XXX). 
+
+Our primary metric of interest is synthesis time, measured in
+seconds. In measuring this, we focus on the time the Z3 solver takes
+to solve the constraints. All experiments were conducted using a
+single (Cloudlab) machine with 32-core Intel-Xeon 2.40GHz CPU and
+128GB of RAM.
+
+
+\aditya{edited till here}
+
+% We now evaluate the performance of Genesis along various dimensions:
+
+%  (1) What is the performance of Genesis in synthesizing simple reachability and waypoint policies
+%   with increasing number of policies and greater sizes of topologies and benchmarking the constraints used by the synthesis algorithm? 
+%   (2) How quickly can Genesis synthesize isolation policies in datacenter topologies for varying number of policies and percentage of
+%    datacenter utilization? 
+%    (3) What is the performance of Genesis for solving link-capacity policies in internet topologies? 
+%    (4) Identifying the benefits of tactics in terms of reduction of terms in the synthesis algorithm and actual benefits 
+%    with respect to synthesis without tactics for different isolation workloads in datacenter topologies? 
+%    (5) What are the potential speedups of using optimistic synthesis in Genesis for varying workloads? 
 
 \begin{figure*}[width=2\columnwidth]
 	\centering
@@ -40,7 +77,6 @@ we randomly
    the edge switch). Operators can aggregate a tenant's traffic from one rack to
 another to a single reachability policy and find pathways for communication amongst the multiple
 machines in different racks. 
-All experiments were conducted using a Cloudlab machine with 32-core Intel-Xeon 2.40GHz CPU and 128Gb of RAM. 
 \subsection{Isolation Workloads}
 The synthesis time (we cap the maximum time at 5000s) for a range of
  packet classes with varying tenant-group sizes in 80 node fat-tree topology (pod size = 8) 
