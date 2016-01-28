@@ -75,14 +75,9 @@ act as the base case relating the $Fwd$ and $Reach$ relations.\footnote{
 \begin{equation} \label{eq:src}
 	\exists n \in N(s). Fwd(s, n, pc) \wedge Reach(n, pc, 1)
 \end{equation}
-The base case for reachability is : $(s, pc,0) \in Reach$ . We need a path to destination, thus destination switch must be reachable for some path length : 
+The base case for reachability is : $(s, pc,0) \in Reach$ . We need a path to $dst$, therefore it must be reachable for some path length. Since, it is the last switch in the path, there are no forwarding rules at $dst$.
 \begin{equation} \label{eq:dst}
-	\exists k. Reach(dst, pc, k)
-\end{equation}
-Also, since the destination is supposed to be the last switch in the path, we add constraints
-to ensure that the destination does not have forwarding rules further : 
-\begin{equation}
-	\forall n \in N(dst). \ \neg Fwd(dst, n, pc)
+	\exists k. Reach(dst, pc, k) \ \wedge \ \forall n \in N(dst). \ \neg Fwd(dst, n, pc)
 \end{equation}
 For the solver to find a path, we need implication constraints propagating reachability backward from destination to source. 
 If a node $n_1$ is reachable in $k$ steps, there must a node $n_2$ which is reachable in  $k-1$ steps and there exists a forwarding rule $n_2 \rightarrow n_1$.
@@ -101,10 +96,18 @@ For a reachability policy, we merely require to find a path from $src$ to $dst$.
 A directed edge exists in the model-graph : $n_1 \rightarrow n_2$ if there is forwarding rule indicated by the relation $(n_1,n_2, pc) \in Fwd$. Thus, we extract the relevant rules of the shortest path from source to destination from the model, and the additional rules obtained in the solution (extra paths, forwarding loops) are ignored.  
 %\loris{we should later say that this is perhaps desirable for future extensions with broadcasting.}
 \subsection{Waypoint Constraints} 
-For a reachability policy with waypoints $s >> W >> d$ and packet class $pc$, we add all the constraints specified in \cref{sec:reach} to ensure the existence of a path from source to destination. To satisfy waypoint policies, we need to add constraints so that all $w \in W$ is reachable. 
+For a reachability policy with ordered set of waypoints $s >> W_1;W_2 \ldots ... W_n >> d$ and packet class $pc$, we add all the constraints specified in \cref{sec:reach} to ensure the existence of a path from source to destination. To satisfy waypoint policies, we need to add constraints so that all waypoints $w$
+are reachable. 
 \begin{equation} \label{eq:waypoints}
-	\forall w \in W. \exists k. Reach(w, pc, k)
+	\forall w \in W_1, W_2 \ldots W_n. \ \exists k. Reach(w, pc, k)
 \end{equation}
+For the relative ordering among sets, we need to all the following constraints which ensure that all waypoints
+in $W_i$ are reached after all waypoints in $W_{i - 1}$ : 
+\begin{multline}
+\forall w_{i} \in W_{i}, \forall k_i. Reach(w_i, pc, k_i) \implies 
+\forall w_{i - 1} \in W_{i-1}. \\ \exists k_{i-1}. \ 
+ k_{i-1} < k_{i} \wedge Reach(w_{i-1}, pc, k_{i-1}) 
+\end{multline}
 However, just ensuring reachability of waypoints is not sufficient. Since, we do not have any restrictions on the count of forwarding rules for a packet class at a switch, it is possible that waypoints are reachable from the source through separate paths, and do not lie in the path from source to destination. Thus, to ensure that all waypoints are reachable in the path from source to destination, we need to add constraints on the count of forwarding rules at each switch. 
 
 Forwarding rule constraints are to ensure that the forwarding relation $Fwd$ for a switch contains a \emph{single} switch which is a \emph{neighbour} or to no node at all (switches which are not reached in the path, and the destination will not have any forwarding rules). We define the forwarding set $FwdSet$ as follows:
@@ -117,9 +120,6 @@ The $|A|$ function is used to the denote the size of set $A$. The constraint on 
 \end{equation}
 The forwarding set constraints ensure that the forwarding rules exist only on the path from source to destination, and no other rules exist in the solution. If a switch has a forwarding rule to  elsewhere, then it would not have a rule for the path, and the destination will not be reachable. These restrictions will also ensure there are no forwarding loops in the path. 
 Since, there is only one path in the model from source and destination, and \cref{eq:waypoints} ensures that waypoints are reachable, therefore, the path from source to destination must traverse through all the waypoints. Since \cref{eq:waypoints} imposes no order on waypoint traversal, the solution will traverse the waypoints in no particular order. 
-
-\subsubsection{Ordered Waypoints}
-While our network model intuitively supports unordered waypoints, sometimes, operators may require support for waypoints in a particular order. Let us assume the waypoints in order are $w_1 w_2 \ldots w_n$. 
 
 \subsection{Isolation Constraints}
 For a traffic isolation policy $pc_1 || \ pc_2$ means that the paths do not share an link in the same direction in their paths, therefore, at every switch, the forwarding rules for $pc_1$ and $pc_2$ must not forward it to the same switch.  

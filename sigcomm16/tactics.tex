@@ -46,10 +46,10 @@ let its labeling be $\Phi(\pi)= a_0\ldots a_k$.
 We say that $\pi$ satisfies a tactic $R$, $\pi\vDash R$, if the following
 holds:
 \begin{itemize}
-\item $\pi \vDash \neg R'$ iff $\pi \not\vDash R'$;
+\item $\pi \vDash \neg R$ iff $\pi \not\vDash R$;
 \item $\pi \vDash  l_{src} .^i .^* l_{dst}$ iff $k\geq i+1$, $l_{src}= a_0$, and $l_{dst}= a_k$; 
 \item $\pi \vDash  l_{src} .^i l.^* l_{dst}$ iff $k\geq i+2$, $l_{src}= a_0$, $l_{dst}= a_k$, and $a_{i+1}=l$;
-\item $\pi \vDash  l_{src} .^i l_1 l_2.^* l_2$ iff $k\geq i+3$, $l_{src}= a_0$, $l_{dst}= a_k$, $a_{i+1}=l_1$, and $a_{i+2}=l_2$.
+\item $\pi \vDash  l_{src} .^i l_1 l_2.^* l_{dst}$ iff $k\geq i+3$, $l_{src}= a_0$, $l_{dst}= a_k$, $a_{i+1}=l_1$, and $a_{i+2}=l_2$.
 \end{itemize}
 
 Notice that using this constraints we can express more complex forms such as
@@ -61,24 +61,24 @@ In \Name, operators can specify conjuctions of the tactics which adhere to the r
 \subsubsection{Tactic Synthesis Algorithm}
 In our synthesis algorithm, the backward reachability propagation constraints (\cref{eq:bckprop}) ensure there is a path from source to destination. To incorporate tactics in the path for packet class $pc$, we need to modify these constraints. For a path $\pi = sw_0 \ldots sw_k$ and labelling $\Phi(\pi) = a_0 \ldots a_k$, we describe the modifications of the constraints for each type of tactic.
 
-For a tactic of the form $l_1 .^i .^* l_2$ which restricts the path to a length $ < i + 1$, we need to ensure that no switch is reached at lengths $\geq i+1$ : 
+For a tactic of the form $\neg (l_{src} .^i .^* l_{dst})$ which restricts the path to a length $ < i + 1$, we remove these constraints to ensure that no switch is reached at lengths $\geq i+1$ : 
 \begin{equation}
-	\pi \vDash \neg (l_1 .^i .^* l_2) \Leftrightarrow \forall sw,k \geq i + 1. \neg Reach(sw, pc, k)
+	\pi \vDash \neg (l_{src} .^i .^* l_{dst}) \Leftrightarrow \forall sw,k \geq i + 1. \neg Reach(sw, pc, k)
 \end{equation}
-To satisfy tactics of the form $l_1  .^i c .^* l_2$ where $c \not= l_2$, the modifications are as follows :
+To satisfy tactics of the form $\neg (l_{src}  .^i l .^* l_{dst})$ where $l \not= l_{dst}$, we remove the following constraints:
 \begin{multline} \label{eq:t1}
-\pi \vDash \neg (l_1 .^i c .^* l_2) \wedge c \not= l_2 \Leftrightarrow \\ \forall sw. \phi(sw) = c \implies \neg Reach(sw, pc, i + 1)
+\pi \vDash \neg (l_{src} .^i l .^* l_{dst}) \wedge l \not= l_{dst} \Leftrightarrow \\ \forall sw. \phi(sw) = l \implies \neg Reach(sw, pc, i + 1)
 \end{multline}
-If $l_2 = c$, then \cref{eq:t1} will not work, as $l_1 .^i l_2$ satisfies the tactic, and thus for switches with label $c,Reach(sw,pc,i+1)$ can hold. The correct modifications are as follows which say that a switch with label $l_2$ cannot be succeeded by another switch (can only exist at the end of the path) : 
+If $l_{dst} = l$, then \cref{eq:t1} will not work, as $l_{src} .^i l_{dst}$ satisfies the tactic, and thus for switches with label $l,Reach(sw,pc,i+1)$ can hold. The correct modifications are as follows which say that a switch with label $l$ cannot precede a switch (can only exist at the end of the path) : 
 \begin{multline} \label{eq:t2}
- \pi \vDash \neg (l_1 .^i c .^* l_2) \wedge c = l_2 \Leftrightarrow \\ 
- \forall n_1. Reach(n_1,pc,i + 2) \implies \exists n_2.  n_2 \in N(n_1) \wedge \\ \phi(n_2) \not= c \wedge 
+ \pi \vDash \neg (l_{src} .^i l .^* l_{dst}) \wedge l = l_{dst} \Leftrightarrow \\ 
+ \forall n_1. Reach(n_1,pc,i + 2) \implies \exists n_2.  n_2 \in N(n_1) \wedge \\ \phi(n_2) \not= l \wedge 
  Reach(n_2,pc,i+1) \wedge Fwd(n_2,n_1,pc)
 \end{multline}
-To satisfy tactics of the form $l_1  .^i c_1 c_2 .^* l_2$, the modifications are as follows to ensure that switch with label $c_2$ reached after $i + 2$ steps is not preceded by a switch of label $c_1$ : 
+To satisfy tactics of the form $\neg (l_{src}  .^i l_1 l_2 .^* l_{dst})$, the modifications are as follows to ensure that switch with label $l_2$ reached after $i + 2$ steps is not preceded by a switch of label $l_1$ : 
 \begin{multline} \label{eq:t3}
-\pi \vDash \neg (l_1 .^i c_1 c_2 .^* l_2) \Leftrightarrow \\ 
-\forall n_1. \phi(n_1) = c_2 \wedge Reach(n_1,pc,i + 2) \implies \exists n_2.  n_2 \in N(n_1) \wedge \\ \phi(n_2) \not= c_1 \wedge 
+\pi \vDash \neg (l_{src} .^i l_1 l_2 .^* l_{dst}) \Leftrightarrow \\ 
+\forall n_1. \phi(n_1) = l_2 \wedge Reach(n_1,pc,i + 2) \implies \exists n_2.  n_2 \in N(n_1) \wedge \\ \phi(n_2) \not= l_1 \wedge 
 Reach(n_2,pc,i+1) \wedge Fwd(n_2,n_1,pc)
 \end{multline}
 The intuition behind the restricted tactic syntax comes from the structure of the backward reachability propagation 
@@ -86,7 +86,7 @@ constraints which construct the path for a packet class. Each constraint says th
  there must a neighbour switch in the path reachable at $k-1$ steps. We design the restricted tactic syntax based
   on this, providing restrictions on the lengths of the path using $\neg (l_1 .^i .^* l_2)$, or specifying if we cannot 
   reach certain switches at specific positions in the path using  $\neg (l_1 .^i c .^* l_2)$. or specifying local 
-  constraints on neighbours using $l_1  .^i c_1 c_2 .^* l_2$.  
+  constraints on neighbours using $\neg (l_1  .^i c_1 c_2 .^* l_2)$.  
   
   Conversely, the structure of backward reachability propagation constraints 
   prevents us from being able to specify unrestricted regular expressions. Supporting them
@@ -95,11 +95,11 @@ constraints which construct the path for a packet class. Each constraint says th
   these tactics, we need to have constraints which prevent the path reaching a core switch in $i+4$
   steps when the path traverses an aggregate, core and aggregate switch at $i+1, i+2$ and $i+3$ steps
   respectively. which cannot be specified by modifying the backward reachability propagation 
-  constraints. This is because reachability for a switch in $i + 4$ steps only depends to reachability in $i+3$.
+  constraints. This is because reachability for a switch in $i + 4$ steps only depends on reachability in $i+3$.
   Thus, to prevent adding additional constraints, we only support a restricted tactic syntax.   
 
-Incorporating tactics in the synthesis is sound and will always yield a correct path satisfying all policies
- but since tactics impose restrictions on the path, the synthesis algorithm is incomplete. 
+Incorporating tactics in the synthesis is sound and will always yield a correct path satisfying all policies.
+ However, since tactics artificially reduce the search space, the synthesis algorithm with tactics is incomplete. 
  However, tactics can be used to specify restrictions which would be reasonably complete, 
  and speed up the synthesis, especially in datacenter topologies which are hierarchical 
  and can be used to specify interesting tactics. 

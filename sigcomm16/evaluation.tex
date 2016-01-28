@@ -35,7 +35,10 @@ of the network which we vary between 45 to 180 switches, (b) number of
 tenants (1-80), (c) number of packet classes in a tenant (1-10). 
 
 Our primary metric of interest is synthesis time, measured in
-seconds. In measuring this, we focus on the time the Z3 solver takes
+seconds. For evaluating the baseline performance, we impose a
+synthetic limit on the path length $\mu$ to be $10$, which is more than adequate 
+for a fat-tree topology with three levels. 
+In measuring this, we focus on the time the Z3 solver takes
 to solve the constraints. All experiments were conducted using a
 single (Cloudlab) machine with 32-core Intel-Xeon 2.40GHz CPU and
 128GB of RAM.
@@ -81,40 +84,58 @@ we fix the tenant-group size to 5, and for each topology, we maintain
  We are able to synthesize 12 tenants with tenant-group size 5 in a 125-node topology in 124 seconds. 
   We can also observe that average time per flow increases expotential 
   with increasing topology, thus the synthesis problem is expotential with number of nodes as well. 
-\begin{figure}[H]
-	\includegraphics[width=\columnwidth]{figures/tactic-topo.eps}
+ \Cref{fig:link-capacity} shows the average synthesis time per flow for the same setting, but
+ additionally, there are 10 low-bandwidth links in the network for which the operator
+ specifies policies to capacity constraints (all packet classes have uniform capacity). 
+
+ % Write about waypoints
+ \subsection{Tactic Reductions}
+ Performance of \Name for isolation workloads using normal synthesis are not 
+ very promising, due to the large solution space of forwarding plane configurations. We 
+ demonstrate the improvements of using tactics for different tenants and group sizes on a 
+ 80-node fat-tree topology.
+ \Cref{fig:isolation}(b) shows the synthesis time for isolation workloads using the no edge tactic 
+ ($\neg(e .^* e .^* e)$). We achieve a best-case speedup of 9.5x over normal synthesis with this tactic. 
+ Using this tactic, we are able to synthesize 12 tenants with group size in under 200
+ seconds.
+ 
+ \begin{figure}[h]
+ 	\includegraphics[width=\columnwidth]{figures/tactic-topo.eps}
+ 	\caption{Average synthesis time per packet class versus fat-tree topology size for isolation workloads 
+ 		w/o different tactics with the ratio of packet classes to number of edge-aggregate links 0.25.}
+ 	\label{fig:tactic-topo}
+ \end{figure}
+ 
+ For the same isolation workloads as above, we use the tactic $\neg (e .^5 .^* e)$ $\wedge \neg (e .^* e .^* e)$
+ which ensures {\em valley-free routing}, that is paths are of the form $eacae$. 
+ The results are shown in \cref{fig:isolation}(c). 
+ While this is a highly
+ restrictive tactic, we were able to synthesize the forwarding rules for each workload in under 20 seconds, 
+ and can achieve a best-case reduction of 400x compared to synthesis with no tactics. In \cref{fig:tactic-topo},
+ we evaluate the performance of different tactics for different topology sizes. Using the no edge tactic
+ and path length $\leq 7$ tactic, we can synthesize 20 tenants of group-size 5 in 100 seconds in a 180-node
+ topology (9X speedup over synthesis without tactics). A similar setup with additional link capacity 
+ constraints for 10 links is evaluated using the "no edge" tactic, and we get a best-case 14x
+ improvement over normal synthesis, thus demonstrating the usefulness of tactics for 
+ different kinds of workloads. Tactics can provide 
+ a considerable improvement over the baseline performance as illustrated by these experiments. 
+
+\begin{figure}[h]
+	\includegraphics[width=\columnwidth]{figures/link-capacity-plot.eps}
 	\caption{Average synthesis time per packet class versus fat-tree topology size for isolation workloads 
-		w/o different tactics with the ratio of packet classes to number of edge-aggregate links 0.25.}
-	\label{fig:tactic-topo}
+		w/o different tactics with the ratio of packet classes to number of edge-aggregate links 0.25 and 10 low bandwidth links in the topology 
+		have capacity constraint policies.}
+	\label{fig:link-capacity}
 \end{figure}
 
-\subsection{Tactic Reductions}
-Performance of \Name for isolation workloads using normal synthesis are not 
-very promising, due to the large solution space of forwarding plane configurations. We 
-demonstrate the improvements of using tactics for different tenants and group sizes on a 
-80-node fat-tree topology.
-\Cref{fig:isolation}(b) shows the synthesis time for isolation workloads using the no edge tactic 
-($\neg(e .^* e .^* e)$). We achieve a best-case speedup of 9.5x over normal synthesis with this tactic. 
-Using this tactic, we are able to synthesize 12 tenants with group size in under 200
-seconds.
 
-For the same isolation workloads as above, we use the tactic $\neg (e .^5 .^* e)$ $\wedge \neg (e .^* e .^* e)$
-which ensures {\em valley-free routing}, that is paths are of the form $eacae$. 
-The results are shown in \cref{fig:isolation}(c). 
-While this is a highly
-restrictive tactic, we were able to synthesize the forwarding rules for each workload in under 20 seconds, 
-and can achieve a best-case reduction of 400x compared to synthesis with no tactics. In \cref{fig:tactic-topo},
-we evaluate the performance of different tactics for different topology sizes. Using the no edge tactic
-and path length $\leq 7$ tactic, we can synthesize 20 tenants of group-size 5 in 100 seconds in a 180-node
-topology (9X speedup over synthesis without tactics).Tactics can provide 
-a considerable improvement over the baseline performance as illustrated by these experiments. 
-
-\subsection{Optimistic Synthesis Performance}
+\subsection{Optimistic Synthesis Performance} \label{sec:optimisticeval}
 To evaluate the heuristical optimistic synthesis procedure, we perform 100 runs of normal and optimistic synthesis (with the "no edge" tactic) to isolation
  workloads with varying number of tenants and different group sizes 
 we used in the \cref{fig:isolation} experiment and computed the
  speedup $t(Optimistic)/$ $t(normal)$ and plotted its cumulative frequency
-  distribution as shown in \cref{fig:opt-cdf}. For more than 80\% of the
+  distribution as shown in \cref{fig:opt-cdf} to quantify the benefits of optimistic 
+  synthesis. For more than 80\% of the
 workloads, optimistic gets a better or comparable performance to normal synthesis, with
 achieving a speedup of 2X nearly 40\% of the workloads. For 20\% of the workloads, optimistic
 performs worse than normal, especially for group size 1 workloads.
@@ -126,7 +147,8 @@ like addition of new tenants, changes to policies or topology events like link/s
 failures. To evaluate our synthesis algorithm for incremental changes, we use 100 runs of 
 different isolation workloads of the \cref{fig:isolation} experiment and perform synthesis, and then
 add a single policy to a tenant (with isolation policies to all other tenant packet classes) and
-measure the time needed for synthesis of the updated policies. We plot a cumulative frequency 
+measure the time needed for synthesis of the updated policies. Both runs of synthesis use the
+"no edge" tactic for efficiency. We plot a cumulative frequency 
 distribution of the ratio of time taken for incremental synthesis versus the time taken for normal 
 "one-shot" synthesis in \cref{fig:incremental-cdf}. For 80 \% of the workloads, the incremental 
 synthesis takes less than 10\% of the normal synthesis time which makes \Name suitable for 

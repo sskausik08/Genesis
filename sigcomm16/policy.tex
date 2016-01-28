@@ -6,8 +6,6 @@
 			\hline\hline
 			Reachability & 	$predicate : src >> dst$ & Forwarding Rules for path from switch $src$ to switch $dst$ for packets matching $predicate$ \\
 			\hline
-			Waypoint & 	$predicate :\newline src >> W >> dst$ & Forwarding Rules for path from switch $src$ to switch $dst$ traversing waypoints $w \in W$ in any order for packets matching $predicate$ \\  
-			\hline
 			Ordered Waypoint & $predicate :\newline src >> W_1;W_2; \ldots W_n >> dst$ & Forwarding Rules for path from switch $src$ to switch $dst$ for packets matching $predicate$ such that the path traverses $w \in W_1$ in any order, then $w \in W_2$ in any order after all waypoints in $W_1$ are traversed and so on.\\  
 			\hline
 			Traffic \newline Isolation & $R1 \ || \ R2$ & Paths of two reachability/waypoint policies $R1$ and $R2$ do not share a link in the same direction \\
@@ -18,7 +16,7 @@
 			\hline\hline
 		\end{tabular}
 	\end{center}
-	\caption{Genesis Policy Support with GPL syntax} \label{tab:policysupport} 
+	\compactcaption{Genesis Policy Support with GPL syntax} \label{tab:policysupport} 
 \end{table*}
 
 

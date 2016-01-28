@@ -132,9 +132,9 @@ a 1.5x-400x speedup for different workloads.
  policies into effective components and synthesize these components
  faster than the complete problem (due to the exponential time
  complexity). Across varying workloads, using optimistic synthesis can
- achieve a speed-up factor of greater than 2 for 40\% of the workloads
- and degraded performance for only 20\% of the workloads.  \aditya{the
-   previous sentence is vague} 
+ achieve a speed-up factor of greater than 2 for 40\% of isolation workloads.  
+ %\aditya{the
+   %previous sentence is vague} 
 
 %% are
 %% huge, and by supporting a set of diverse and complex policies with
@@ -143,10 +143,9 @@ a 1.5x-400x speedup for different workloads.
 %% synthesis performance be improved by leveraging knowledge specific to
 %% the problem of policy enforcement in networks?
 
-We implement \Name using ... We evaluate it using .... Key highlights .... \aditya{all of these are todo}.\kausik{Do we need a para or will the next para suffice?}
-
+%We implement \Name using ... We evaluate it using .... Key highlights .... \aditya{all of these are todo}.\kausik{Do we need a para or will the next para suffice?}
 Thus, the main contribution of this paper are: 
-\begin{itemize}
+\begin{compactitemize}
 \item \Name, an extensible declarative language for describing complex policies that can
 		handle new forms of policies such as isolation and unordered middlebox traversals.				
 \item A modular SMT-based algorithm for enforcing \Name policies that can easily be extended
@@ -157,8 +156,8 @@ Thus, the main contribution of this paper are:
 \item An implementation of \Name and its enforcing algorithm using the SMT
 		solver Z3 together with an extensive evaluation on different policy workloads and topology 
 		sizes to quantify the performance of Genesis. 
-\end{itemize}
-\aditya{todo}
+\end{compactitemize}
+%\aditya{todo}
 
 %% : We present the design and implementation of a network management
 %% system with support for a diverse set of complex end-to-end

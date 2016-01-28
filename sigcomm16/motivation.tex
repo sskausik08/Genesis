@@ -1,7 +1,7 @@
 \section{Motivation}
 \begin{figure}
 	\includegraphics[width=\columnwidth,center]{figures/architecture.eps}
-	\caption{Overview of the system architecture of Genesis in a multi-tenant datacenter setting.}
+	\compactcaption{Overview of the system architecture of Genesis in a multi-tenant datacenter setting.}
 	\label{fig:architecture}
 \end{figure}
 In this section, we describe the type of policies that tenants and
@@ -34,7 +34,7 @@ workloads they host~\cite{mpa-imc15}.  The policies include:
 % involving the operator.
 
 
-\begin{itemize}
+\begin{compactitemize}
 \item \textbf{Reachability}: This enables network communication
   between specific groups of a tenant's virtual cloud instances,
   applications, or hosts. For example, the yellow tenant has defined a reachability
@@ -97,7 +97,7 @@ workloads they host~\cite{mpa-imc15}.  The policies include:
 %%   would be without guarantees with varying degrees of pricing. 
 %%   Thus, support for isolation is an important feature in multi-tenant 
 %%   networks. 
- \end{itemize}
+ \end{compactitemize}
 %TODO : MODIFY Synthesis of waypoints to support logical waypoints
 %% Since, cloud tenants do not have a view of the actual physical
 %% topology, the policy requirements for tenants are at a coarser level
@@ -164,7 +164,7 @@ is shown in \cref{fig:architecture} and the way in which policies
 outlined in the previous section can be specified in \name is shown in
 Table~\ref{tab:policysupport} .
 
-Unlike previous efforts in the synthesis space (see~\cite{}), \Name is
+Unlike previous efforts in the synthesis space (see~\cite{netgen, Merlin}), \Name is
 not tailored to specific formalisms such as regular expressions and
 this aspect makes it modular and easily extensible.
 %and allows to devise specific
