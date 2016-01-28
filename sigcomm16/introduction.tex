@@ -55,7 +55,7 @@ languages like Frenetic~\cite{frenetic} and Pyretic~\cite{pyretic} are
 too constraining: data center operators would ideally want to specify
 and realize policies network-wide, whereas these languages focus on
 programming individual switch behaviors. %% \aditya{we need to be
-% careful
+careful
 %%   not to bin all SDN languages into this switch-by-switch model}
 %% \kausik{Do you want to make changes here?}
 Other research on network-wide policy enforcement, e.g.,
@@ -116,14 +116,15 @@ end, \Name leverages domain-specific properties to simplify the
 constraints handled by the SMT solver.  Specifically, \Name allows the
 network operator to write regular expressions that blacklist certain
 forwarding plane configurations based on the paths traversed by flows  
-that are not desired in a data center network structure. This acts as a
+that are not desired in a data center network structure as
 search strategy for the solver. 
 %\aditya{the previous sentence is vague}
 By identifying a restricted syntax for specifying
 tactics, we can improve the synthesis procedure by reducing the
 constraints added to the solver without additional constraints
-required to ensure the solution satisfies the tactic and achieve
-a 1.5x-400x speedup for different workloads.
+required to ensure the solution satisfies the tactic. \aditya{quickly
+  talk about a highlight regarding the performance benefits of using
+  tactics}
 
  Secondly, \Name can use a heuristical synthesis routine termed as
  \emph{optimistic} synthesis, that leverages the structure of tenants'
