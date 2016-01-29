@@ -167,7 +167,8 @@ $pc_2$ which would be isolated.
 Interestingly, for a reachability policy without waypoints,  
 the constraints in \cref{eq:fwdset} are not required to enforce isolation. 
 Even though the solver could produce multiple forwarding rules which induce multiple paths, 
-the constraints in \cref{eq:isolation} are still enough guarantee isolation.
+the constraints in \cref{eq:isolation} guarantee isolation as the solver would discard
+the additional rules conflicting with another packet class.
 
 %reachability policy. Thus, the solver would remove the additional rules which conflict with
 %the other class while still ensuring a path exists from source to destination. 
@@ -204,6 +205,5 @@ Since, $\lambda$ is the greatest element in $PC$ we have:
 	C(sw_1, sw_2, \lambda) \leq \omega.
 \end{equation} 
 For \emph{switch table size} policies, we use the relation $Reach$ to track the number of packet classes that traverses the switch.
-We create inductive constraints similar to those for link capacity and use
-them  to sum over the set of Boolean variables that denote reachability of the path to switch $sw$, which is $\exists k.~Reach(sw,pc,k)$.
-\loris{this last sentence doesn't make sense, why the exists?}
+We create inductive constraints similar to those for link capacity for counting the packet classes traversing $sw$ 
+This is expressed as $\exists k. Reach(sw, pc, k)$, i.e $sw$ is reachable in some steps. 
