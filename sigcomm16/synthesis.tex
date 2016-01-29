@@ -107,7 +107,7 @@ are reachable.
 \begin{equation} \label{eq:waypoints}
 	\forall w \in W_1, W_2 \ldots W_n. \ \exists k. Reach(w, pc, k)
 \end{equation}
-For the relative ordering among sets, we need to all the following constraints which ensure that all waypoints
+For the relative ordering among sets, we need to add the following constraints which ensure that all waypoints
 in $W_i$ are reached after all waypoints in $W_{i - 1}$ : 
 \begin{multline}
 \forall w_{i} \in W_{i}, \forall k_i. Reach(w_i, pc, k_i) \implies 
@@ -123,13 +123,18 @@ We define the forwarding set $FwdSet$ as follows:
 \begin{equation}
 	FwdSet(sw,pc) = \{n \ | \ Fwd(sw,n,pc)\}
 \end{equation}
-The $|A|$ function is used to the denote the size of set $A$. The constraint on the forwarding set are that the size of each set must not exceed 1 (0 or 1). The forwarding set constraints\footnote{
+The $|A|$ function is used to the denote the size of set $A$. The constraint on the forwarding set are that the size of each set must not exceed 1. The forwarding set constraints\footnote{
 	These constraints are expressed completely in SAT.} are as follows : 
 \begin{equation}
 		\forall sw,pc . \ |FwdSet(sw,pc)| \leq 1 \label{eq:fwdset}
 \end{equation}
-The forwarding set constraints ensure that the forwarding rules exist only on the path from source to destination, and no other rules exist in the solution. If a switch has a forwarding rule to  elsewhere, then it would not have a rule for the path, and the destination will not be reachable. These restrictions will also ensure there are no forwarding loops in the path. 
-Since, there is only one path in the model from source and destination, and \cref{eq:waypoints} ensures that waypoints are reachable, therefore, the path from source to destination must traverse through all the waypoints. Since \cref{eq:waypoints} imposes no order on waypoint traversal, the solution will traverse the waypoints in no particular order. 
+
+%The forwarding set constraints ensure that the forwarding rules exist only on the path from source to destination, and no other rules exist in the solution. If a switch has a forwarding rule to  elsewhere, then it would not have a rule for the path, and the destination will not be reachable. These restrictions will also ensure there are no forwarding loops in the path. 
+Since, there cannot exist multiple rules at a switch, the model will contain a 
+single {\em unicast} path from source to destination. There would have to 
+be more than one rule at a switch for multiple paths from the source to exist. 
+\cref{eq:waypoints} ensures that waypoints are reachable, therefore
+ the path from source to destination must traverse through all the waypoints. 
 
 \subsection{Isolation Constraints}
 For a traffic isolation policy $pc_1 || \ pc_2$ means that the paths do not share an link in the same direction in their paths, therefore, at every switch, the forwarding rules for $pc_1$ and $pc_2$ must not forward it to the same switch.  
