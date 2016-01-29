@@ -244,7 +244,7 @@ by the network operator.
 For example, enforcing isolation policies
 is as hard as solving
 graph-coloring, a well-known
-NP-complete problem (see \Cref{sec:isolationNP}).
+NP-complete problem (proof has been omitted for brevity).
 %, which means
 %that any system solving this would need to exhaustively search the
 %space of all forwarding plane configurations. 
@@ -278,7 +278,7 @@ techniques.
 
 One of the key challenges of \Name is the synthesis
 performance. 
-Due to the rich policies supported by \Name,
+Due to the rich set of policies supported by \Name,
 finding a consistent set of switch forwarding rules 
 has, in the worst case, exponential time complexity in
 the number of policies.
@@ -287,11 +287,11 @@ the paths of many different flows, it is not possible to incrementally synthesiz
 the forwarding rules corresponding to each flow. NetGen~\cite{netgen}
 synthesizes incremental changes to forwarding tables for individual
 flows, however 
-it does not account for inter-flow policies like isolation.
+it does not support isolation.
 Despite the recent advances in SMT solvers, to make
 the synthesis problem feasible in practice
 there is a need to improve the performance of the solver
-using techniques that are specific to the networks.
+using techniques that are specific to policy enforcement in networks.
 We propose various techniques leveraging
 \emph{domain-specific} knowledge to improve synthesis performance. 
 
@@ -308,9 +308,9 @@ the solver.  In particular, one can eliminate constraints that cannot
 be true for any of the paths accepted by the language of the regular expression. We
 find that this can result in 1.5x-400x speedup for different workloads.
 
-Second, we propose a search strategy that takes advantage of the fact that in 
+Second, we propose a heuristic procedure that takes advantage of the fact that in 
 datacenter topologies the large
-interconnect of links can lead to multiple ways 
+interconnect of links can lead to multiple solutions 
 to enforce the provided policies.  
 We design a heuristic procedure called \emph{optimistic}
 synthesis (\Cref{sec:optimistic}) which leverages the structure of
