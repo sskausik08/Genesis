@@ -197,8 +197,8 @@ In \cref{fig:tactic-topo},
 \begin{figure}[h]
 	\includegraphics[width=\columnwidth]{figures/link-capacity-plot.eps}
 	\caption{Average synthesis time per packet class versus fat-tree topology size for isolation workloads 
-		with different tactics with the ratio of packet classes to number of edge-aggregate links 0.25 and 10 low bandwidth links in the topology 
-		have capacity constraint policies.}
+		with the ratio of packet classes to number of edge-aggregate links 0.25 and 10 low bandwidth links in the topology 
+		have capacity policies.}
 	\label{fig:link-capacity}
 \end{figure}
 
@@ -214,7 +214,7 @@ we used in the \cref{fig:isolation} experiment. We compute the
 workloads, optimistic offer a better or comparable performance to non-optimistic synthesis, 
 achieving a speedup of 2$\times$ nearly 40\% of the workloads. For 20\% of the workloads, optimistic
 performs worse than the non-optimistic approach, especially for workloads with tenant group size 1. 
-This arises due to greater recovery attempts which results in increased synthesis time. 
+This arises due to greater recovery attempts which results in increased time. 
 
 \subsection{Incremental Synthesis Performance} \label{sec:incrementaleval}
 While network management systems have support for enforcing complex policies, 
@@ -233,22 +233,21 @@ performing incremental changes. But in some cases, the new policies may trigger 
 of the previously synthesized policies, and we can see workloads where the ratio is 1 or greater. This 
 is an intrinsic challenge with the problem setup, because paths for packet classes are tightly
 coupled with isolation/capacity policies. If there exists a polynomial-time algorithm to perform
-this change, then enforcement of isolation could be done incrementally in polynomial time.
+this change, then enforcement of isolation could be done one-by-one in polynomial time.
 Thus, performing incremental synthesis is challenging because of its exponential complexity,
 and is one of the future directions
 in building a robust network management system. \newline
 To summarize the main points of the evaluation : 
 \begin{compactitemize}
-	\item For a tenant-group size of 10 in a 80 node fat-tree topology, the baseline 
+	\item For a representative tenant-group size of 10 in a 80 node fat-tree, the baseline 
 	synthesis performance for synthesizing the forwarding rules for 1 to 8 tenants with 
-	complete tenant-isolation is in the range of 0.1-2000 seconds. 
+	complete tenant-isolation is in the range of 0.1-2000s. 
 	\item Tactics provide a considerable improvement over the baseline synthesis time.
-	 Using the no edge tactic, we can synthesize the above mentioned workloads in the 
-	 range of 0.1-300 seconds, while the valley-free routing tactics reduces synthesis
-	 times to under 12 seconds for these workloads. 
-	 \item We can further improve the performance of \Name using optimistic synthesis,
-	 which provides a 2.0$\times$ speed-up over non-optimistic synthesis. We can use
-	 tactics with optimistic synthesis and tackle real-world applications effectively. 
+	We can synthesize the above workloads in the 
+	 range of 0.1-300s  using the no edge tactic, and under 12s using the valley-free routing tactic.
+	 \item \Name can effectively tackle real-world scenarios using optimistic synthesis,
+	 which provides a 2.0$\times$ speed-up over non-optimistic synthesis in 40\% of the 
+	 workloads, in addition to the tactic improvements.
 \end{compactitemize}
 
 
@@ -280,7 +279,7 @@ To summarize the main points of the evaluation :
 \end{figure}
 \begin{figure}
 	\includegraphics[width=\columnwidth]{figures/incremental-cdf.eps}
-	\caption{Cumulative frequency distribution for ratio of incremental synthesis over "one-shot" total synthesis time.}
+	\caption{Cumulative frequency distribution for ratio of incremental synthesis time over "one-shot" total synthesis time.}
 	\label{fig:incremental-cdf}
 \end{figure}
 

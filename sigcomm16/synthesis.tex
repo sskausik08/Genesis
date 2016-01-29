@@ -139,8 +139,8 @@ We define the forwarding set $FwdSet$ as follows:
 \begin{equation}
 	FwdSet(sw,pc) = \{k \ | \ Fwd(sw,k,pc)\}
 \end{equation}
-We then add constraints stating that the size of the forwarding set must not exceed 1:\footnote{
-	These constraints are expressed in SAT.}
+We then add constraints\footnote{
+	These constraints are expressed in SAT.} stating that the size of the forwarding set must not exceed 1:
 \begin{equation}
 		\forall sw,pc .\ |FwdSet(sw,pc)| \leq 1 \label{eq:fwdset}
 \end{equation}
