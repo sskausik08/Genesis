@@ -14,12 +14,31 @@ enforced iff $G$ admits 3-coloring.
 The topology $T$ is the one depicted in  \Cref{fig:swtopo}.
 The set of flows is $V$, $v \in V$ we add a reachability policy $s >> d$ on the flow $v$.
 For each edge $(v1,v2)\in E$ we add an isolation policy $v_1||v_2$.
- \begin{figure}[H] 
- 	\centering
- 	\includegraphics[width=0.5\columnwidth]{figures/color_topo.eps}
- 	\caption{The switch topology $T$. All circles represent switches and all reachability policies are $s$ to $d$}
- 	\label{fig:swtopo}
- \end{figure}
+% \begin{figure}[H] 
+% 	\centering
+% 	\includegraphics[width=0.5\columnwidth]{figures/color_topo.eps}
+% 	\caption{The switch topology $T$. All circles represent switches and all reachability policies are $s$ to $d$}
+% 	\label{fig:swtopo}
+% \end{figure}
+\begin{figure}[h!]
+	\centering
+	\begin{tikzpicture}[shorten >=0.5pt,node distance=1.5cm,on grid,auto] 
+	\node[state] (s)   {$s$}; 
+	\node[state, fill=black!10!red] (r) [right=of s] {}; 
+	\node[state, fill=white!30!blue] (b) [above=of r] {};
+	\node[state, fill=black!30!green] (g) [below=of r] {}; 
+	\node[state] (d) [right=of r] {$d$}; 	
+	\path[-] 
+	(s) edge  node {} (r)
+	edge node {} (b)
+	edge node {} (g)
+	(r) edge node {} (d)
+	(g) edge node {} (d)
+	(b) edge node {} (d);
+	\end{tikzpicture}
+	\caption{The switch topology $T$. All circles represent switches and all reachability policies are $s$ to $d$}
+	\label{fig:swtopo}
+\end{figure}
 We not prove that if the policy can enforced $G$ admits 3-coloring.
 If the policy is enforced, we have a path from $s$ to $d$ for each flow/vertex $v$.
 We can set $f(v)$ to the color of the corresponding middle-switch being crossed.

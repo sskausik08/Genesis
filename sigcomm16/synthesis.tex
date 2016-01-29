@@ -1,4 +1,4 @@
-\section{Synthesis Alogrithm}
+\section{Synthesis Algorithm}
 Given a set of policies, \Name creates a set of constraints 
 that abstracts the forwarding and reachability rules. 
 These constraints are then given to the SMT Solver Z3 \cite{z3}, which returns a model 
@@ -69,7 +69,7 @@ One of the decisions oriented towards performance is modelling the forwarding an
 The two relations for forwarding and reachability ensure we can write the constraints in a concise and intuitive manner.
 
 \subsection{Reachability Constraints} \label{sec:reach}
-We first discuss the constraints generated for reachability polices without waypoints.
+We first discuss the constraints generated for reachability policies without waypoints.
 For a reachability policy $s >> d$ and packet class $pc$, the added constraints must ensure that 
 every solution model represents a path 
 from source to destination. 
@@ -81,9 +81,9 @@ the neighbours of $s$.
 %these constraints
 %act as the base case relating the $Fwd$ and $Reach$ relations.
 \footnote{
-	We unroll the existential quantifier $\exists n \in N(s)$ using disjuction of 
+	We unroll the existential quantifier $\exists n \in N(s)$ using disjunction of 
 	clauses $\bigvee\limits_{n \in N(s)}$ and
-	the universal quantifier $\forall n \in N(dst)$ using conjuction of clauses $\bigwedge\limits_{n \in N(dst)}$
+	the universal quantifier $\forall n \in N(dst)$ using conjunction of clauses $\bigwedge\limits_{n \in N(dst)}$
 	and stay in propositional logic.} 
 \begin{equation} \label{eq:src}
 	\exists n \in N(s).~Fwd(s, n, pc) \wedge Reach(n, pc, 1)
@@ -130,7 +130,7 @@ in $W_i$ are reached after all waypoints in $W_{i - 1}$ :
  k_{i-1} < k_{i} \wedge Reach(w_{i-1}, pc, k_{i-1}).
 \end{multline}
 To ensure that all waypoints are reachable in a single path from
-$s$ to $d$, we need constraints to impose unicast forwarding. To achieve
+$s$ to $d$, we need constraints to impose {\em unicast} forwarding. To achieve
 this, the forwarding rules for $pc$ at a switch must not be greater than 1. 
 %%However, just ensuring reachability of waypoints is not sufficient. Since, we do not have any restrictions on the count of forwarding rules for a packet class at a switch, it is possible that waypoints are reachable from the source through separate paths, and do not lie in the path from source to destination. Thus, to ensure that all waypoints are reachable in the path from source to destination, we need to add constraints on the count of forwarding rules at each switch. 
 %Forwarding rule constraints are to ensure that the forwarding relation $Fwd$ for a switch contains a \emph{single} switch which is a \emph{neighbour} or to no node at all (switches which are not reached in the path, and the destination will not have any forwarding rules). 
@@ -184,13 +184,11 @@ as the forwarding rule $sw_1 \rightarrow sw_2$ means that the link is being used
  
 Let $C(sw_1,sw_2,pc)$ be the cumulative capacity function of the link used by all packet classes less than equal to $pc$. Since we use integers for denoting the packet class, we have a total order of the set of packet classes. We use this to create inductive constraints to sum over the set of Boolean variables $Fwd(sw_1, sw_2,pc)$. Let $PC : [0, \lambda]$ be the set of packet classes and $W(pc)$ 
 denote the capacity of packet class $pc$--i.e., the bandwidth allotted to the packet class. 
-The base case constraint for the capacity function is for $pc = 0$ (the minimum element of $PC$) :
-\begin{equation}
+The base case constraint for the capacity function is for $pc = 0$ :
+\begin{multline}
+\neg Fwd(sw_1, sw_2, 0) \implies C(sw_1, sw_2, 0) = 0 \\
 	Fwd(sw_1, sw_2, 0) \implies C(sw_1, sw_2, 0) = W(0)
-\end{equation}
-\begin{equation}
-	\neg Fwd(sw_1, sw_2, 0) \implies C(sw_1, sw_2, 0) = 0.
-\end{equation} 
+\end{multline} 
 If link is used, the inductive constraints for the capacity function are as follows:
 \begin{multline}
 	\forall pc > 0.~Fwd(sw_1,sw_2,pc) \implies \\ C(sw_1, sw_2, pc) =  C(sw_1. sw_2, pc - 1) + W(pc).

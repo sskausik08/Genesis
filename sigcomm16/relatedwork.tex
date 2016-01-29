@@ -1,6 +1,6 @@
 \section{Related \& Future Work} \label{sec:relatedwork}
 
-\cite{oneswitch} tackles a similar problem to ours of flow policy
+Kang et. al~\cite{oneswitch} tackle a similar problem of flow policy
 enforcement. However their end-point policies deal with simple
 reachability. Their rule placement algorithm takes the path of the
 flow in the network  (the routing policy) as an input.%  and place rules
@@ -12,12 +12,12 @@ policies which would require different routing policies (like traffic
 isolation), so we cannot determine the path of the flow
 beforehand. % Our solution can support enforcement of policies which
 % require different routing policies.
-\cite{distfirewall} builts on the
+\cite{distfirewall} builds on the
 \cite{oneswitch} abstraction to optimize the specific case of
 distributed firewall policy enforcement using ILP.  PGA \cite{pga} is
 a graph-level abstraction of specifying network policies like ACLs and
 middlebox service chaining. However, it abstracts the underlying
-network as "one bigswitch" and cannot be used to compose policies like
+network as "one big switch" and cannot be used to compose policies like
 tenant isolation or traffic engineering.
 
 \noindent {\bf Policy languages:}
@@ -66,8 +66,8 @@ independently and without affecting the other already synthesized
 paths.  This is not the case when supporting isolation policies: if an
 old path needs to be moved to satisfy a new policy (e.g., because a
 link is under maintenance), re-synthesizing such a path can require
-re-synthesizing other paths.  \loris{we can have a small example of
-  this in appendix.}
+re-synthesizing other paths. 
+% \loris{we can have a small example of  this in appendix.}
 
 \noindent
 {\bf Synthesis for SDN:}

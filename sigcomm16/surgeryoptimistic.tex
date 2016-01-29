@@ -18,14 +18,14 @@
 One of the key challenges to the synthesis performance is the number
 of packet classes synthesized and the policy interactions among them
 (isolation, capacity, etc.). Since the complexity of finding a
-forwarding plane configuration is roughly \emph{expotential} in the
+forwarding plane configuration is roughly \emph{exponential} in the
 number of packet classes, the synthesis time shoots up with increasing
 packet classes. 
 We notice that since datacenter topologies have a dense interconnection of
 links between layers there can be
 numerous different forwarding plane configurations as solutions.
 % \aditya{previous sentence does not parse} 
-We propose a heuristical approach which partitions the problem 
+We propose a heuristic approach which partitions the problem 
 into smaller components to speed up synthesis.
 
 The intuition is as follows, suppose we have two packet classes $pc_1,
@@ -134,7 +134,7 @@ We use two schemes to partition the policy graph connected component into two: t
 first one is \emph{min-cut} partitioning, which partitions the graph
 such that inter-partition edge count is minimized. The
 rationale behind the heuristic is that since we intend to perform the
-synthesis of both partitions separately, the partition should maximise
+synthesis of both partitions separately, the partition should maximize
 the isolation policies within components and minimize across
 components. By maximizing isolation policies during synthesis of the
 component, the partial solution is more likely to be compatible with a
@@ -158,7 +158,7 @@ fails to find a solution, it can return a set of unsatisfiable cores
 which are the assertions due to which the solver could not find a
 solution\footnote{Z3 does not return the minimum set of unsatisfiable
   cores.}.  This helps us track failed partial solutions so that we 
-don't resynthesize them ag
+don't resynthesize them again. 
 %  in the synthesis of $P_2$
 %by tracking the constraints added to ensure isolation with the paths
 %of $P_1$.  
@@ -172,7 +172,7 @@ unsatisfiable cores we extracted.  Basically, we perform a
 find a satisfying solution for $P_2$ for faster convergence.
 
 There are drawbacks to performing recovery. Since, recovery is a 
-form of enumeration, in cases where the graph is highly constrainted
+form of enumeration, in cases where the graph is highly constrained
 (clique), finding a solution can lead to increased number of enumerations,
 while synthesis without partitioning would provide a solution faster. 
 Thus, we bound the number of enumerations performed by the 
