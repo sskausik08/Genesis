@@ -146,21 +146,40 @@ and $A2 \rightarrow C4$ do not exceed the link capacity of 100.
 %  the network before maintenance. 
 %\end{itemize}
 
-  \noindent Our goal is to design a system that allows these policies to be
-  specified in a simple, declarative manner, and abstracts away 
-  data plane enforcement and the intricacies thereof.
+The above set of policies may evolve over time as operators attempt to
+meet new objectives, or tenants impose new kinds of
+requirements. Today, realizing these policies requires painstaking,
+often manual configuration in network devices. This is incredibly
+tedious---the configuration files can run into 1000s of lines, and
+intricate dependencies may have to be configured across
+devices~\cite{benson:complexity:nsdi2009}. This process is also highly 
+error prone.
+
+Providing support for realizing these policies using existing SDN
+programming languages like Pyretic and Frenetic is challenging,
+because these policies are global and cannot be enforced by
+programming individual behaviour of switches. Existing SDN-based
+network management systems~\cite{simple,merlin,oneswitch} are tailored
+to support specific policies such as middlebox placement, bandwidth
+and resource constraints. As such they lack generality and
+extensibility.
+
+Our goal is to design a system that allows these, and a variety of
+hitherto unseen, policies to be specified in a simple, declarative
+manner, and abstracts away data plane enforcement and the intricacies
+thereof.
   
 \subsection{Synthesis} \label{sec:synthesis} 
 
 \input{policy}
-Providing support for realizing the complex set of policies using
-existing SDN programming languages like Pyretic and Frenetic is
-challenging, because these policies are global and cannot be enforced
-by programming individual behaviour of switches. Existing network
-management systems are tailored to support complex policies including
-middlebox placement, bandwidth and resource constraints~\cite{simple,merlin,oneswitch},
-but lack generality and
-extensibility.
+% Providing support for realizing the complex set of policies using
+% existing SDN programming languages like Pyretic and Frenetic is
+% challenging, because these policies are global and cannot be enforced
+% by programming individual behaviour of switches. Existing network
+% management systems are tailored to support complex policies including
+% middlebox placement, bandwidth and resource constraints~\cite{simple,merlin,oneswitch},
+% but lack generality and
+% extensibility.
 
 We design \name, a general network management system that 
 by performs {\em synthesis} of switch forwarding
