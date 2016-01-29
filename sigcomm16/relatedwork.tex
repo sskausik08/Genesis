@@ -1,22 +1,20 @@
 \section{Related \& Future Work} \label{sec:relatedwork}
-
-Kang et. al~\cite{oneswitch} tackle a similar problem of flow policy
+\textbf{One Big Switch}: Kang et. al~\cite{oneswitch} tackle a 
+similar problem of flow policy
 enforcement. However their end-point policies deal with simple
 reachability. Their rule placement algorithm takes the path of the
-flow in the network  (the routing policy) as an input.%  and place rules
+flow in the network  (called the routing policy) as an input,%  and place rules
 % on this path to enforce the endpoint policy and taking in
 % consideration switch table constraints
-\Name tackles the
-problem without using the routing policy as input, as we enforce flow
-policies which would require different routing policies (like traffic
-isolation), so we cannot determine the path of the flow
+\Name supports policies like traffic isolation, 
+for which it cannot determine the path of the flow
 beforehand. % Our solution can support enforcement of policies which
 % require different routing policies.
-\cite{distfirewall} builds on the
-\cite{oneswitch} abstraction to optimize the specific case of
-distributed firewall policy enforcement using ILP.  PGA \cite{pga} is
-a graph-level abstraction of specifying network policies like ACLs and
-middlebox service chaining. However, it abstracts the underlying
+Zhang et. al \cite{distfirewall} build on the
+\cite{oneswitch} abstraction to optimize for the specific case of
+distributed firewall policy enforcement using ILP.  PGA \cite{pga} provides
+a graph-level abstraction for specifying network policies like ACLs and
+middlebox service chaining. However, PGA abstracts the underlying
 network as "one big switch" and cannot be used to compose policies like
 tenant isolation or traffic engineering.
 
@@ -28,16 +26,19 @@ intersecting the topology with the regular expressions appearing in
 the policies and then encoding reachability in the intersected graph
 using mixed integer linear programming (ILP).
 %Unlike \Name, 
-Merlin can support traffic engineering and load distribution.
+Merlin can support traffic engineering and load distribution. 
+However, in its current iteration, 
 Merlin's language does not support isolation policies, but we believe
-that it could be extended to support them.  We cannot evaluate the
-performance impact of this extension, however.  A more prominent
+that it could be extended to support them.  
+%We cannot evaluate the
+%performance impact of this extension, however.  
+A more prominent
 difference arises with unordered waypoint policies: expressing a
 policy including a waypoint set $W$ of size $k$ requires a regular
 expression of size exponential in $k$ as all the possible permutations
-of the elements of $W$. This fact clearly impacts the performance of
+of the elements of $W$ must be considered. This fact clearly impacts the performance of
 the Merlin's compiler that would have to generate a mixed ILP with a
-large number of variables.  In \Name this is not the case as waypoint
+large number of variables.  In \Name this is not the case as waypoints
 can be encoded with polynomially many constraints.  While this does
 not affect the theoretical complexity, our compiler does not incur
 an a-priori exponential blow-up and it rather relies on the power
@@ -53,13 +54,13 @@ that leverages the topology structure to simplify the search.
 
 In NetGen network updates that adhere to policies expressed using
 regular expressions are synthesized using SMT solvers.  Given a
-specification which mentions the packet classes, the old path and the
-new path, NetGen solves the network change problem using a SMT solver.
+specification which mentions the packet classes, the old path, and the
+new path, NetGen solves the network change problem using an SMT solver.
 Due to the use of regular expressions NetGen also suffers the
 limitations we just discussed for Merlin.  Interestingly, NetGen uses
 a specific encoding of regular expressions based on uninterpreted
 functions that helps reduce the number of constraints. While this
-encoding is fast when updating a single path, we do see a way to
+encoding is fast when updating a single path, we do not see a way to
 extend it to our global synthesis setting.  A crucial aspect of NetGen
 is that in its problem formulation each path can be synthesized
 independently and without affecting the other already synthesized
@@ -78,8 +79,9 @@ re-synthesizing other paths.
 % when it receives packets. These works deal with synthesis of
 % forwarding behaviour of switches, and cannot be extended to satisfy
 % network-wide policies.
-Synthesis has been used to generate network
-updates \cite{updates, customconsistency}, which is orthogonal to \Name.
+Synthesis has been also used to generate network
+updates \cite{updates, customconsistency}. But this problem is orthogonal to 
+policy enforcement in \Name.
 
 % Write about PGA, NetGen, and efficient update synthesis.
 
@@ -88,13 +90,14 @@ updates \cite{updates, customconsistency}, which is orthogonal to \Name.
 \Name focuses on correct policy enforcement, but there are other
 interesting optimization problems worth considering: e.g., minimizing
 the length of all paths, maximizing utilisation of the datacenter
-etc. MaxSMT solvers~\cite{z3maxSMT} can encode these problems.  In
-MaxSMT, formulas can be labeled as hard and soft constraints and a
+etc. MaxSMT solvers~\cite{z3maxSMT} could be used to encode these problems.  
+Formulas can be labeled as hard and soft constraints in MaxSMT. A
 satisfying assignment is one that makes all the hard constraints true
-and as many of soft constraints as possible true.  Moreover, soft
-constraints can be assigned weights.  We believe that by specifying
-optimization objectives via the soft constraints many of the problems
-we mentioned can be encoded.  The ability of MaxSMT solvers such as Z3
+and as many of the soft constraints as possible true.  Soft
+constraints can also be assigned weights.  We believe that by specifying
+optimization objectives using the soft constraints many of the problems
+we mentioned such as minimizing the lengths of paths 
+could be encoded.  The ability of MaxSMT solvers such as Z3
 to support several different kind of objective functions (e.g., Pareto
 optimality and ordered objectives) could be used to turn \Name into a
 full-blown language able to support complex traffic engineering
