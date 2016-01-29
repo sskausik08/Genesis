@@ -35,7 +35,7 @@ Instead, we could synthesize $pc_1$
 independently and, after that, find a solution for $pc_2$ 
 that is isolated from the
 path obtained for $pc_1$. We term this
-algorithm \emph{optimistic} synthesis, as we optimistically synthesize
+procedure \emph{optimistic} synthesis, as we optimistically synthesize
 $pc_1$, hoping that the solution for $pc_1$ does not prevent finding a
 solution for $pc_2$. Synthesis of $pc_2$ can fail because the solution
 of $pc_1$ may be such that there is no way to place an isolated path for
@@ -81,20 +81,21 @@ denote isolation constraints between packet classes.
 %  use of packet class and policy here is unconventional and needs to
 %  be carefully defined early on} 
 An edge $(r_1,r_2) \in I$  means that the paths of $r1$ and $r2$ are
-isolated from each other. We assume that there are no other policies
-in the input specifications other than isolation, since isolation is a local policy 
-in the sense that correct enforcement of isolation only requires information of neighbours
-\loris{don't know what this last sentence means}. 
-Resource managements policies like link capacity policies are global,
- and thus difficult to reason about them in smaller components.
+isolated from each other. We assume that there are no capacity policies
+in the input specifications. 
+%since isolation is a local policy 
+%in the sense that correct enforcement of isolation only requires information of neighbours
+%\loris{don't know what this last sentence means}. 
+%Resource managements policies like link capacity policies are global,
+% and thus difficult to reason about them in smaller components.
   Given the policy graph $P$, we
 can synthesize each connected component independently, since packet
 classes in different connected components are not related by any
 isolation policy, and therefore are independent of each other.
 
-We describe the heuristical optimistic synthesis algorithm in Pseudocode 1,
+We describe the heuristic optimistic synthesis procedure in Pseudocode 1,
 which takes as input a connected component of the policy graph.
- The crux of the algorithm is that we partition each connected component $P$
+ The crux of the procedure is that we partition each connected component $P$
   into two smaller components $P_1$ and $P_2$
   and do the following:
 %   \aditya{are these
@@ -107,15 +108,16 @@ isolated to packet classes in $P_1$,
 %\aditya{this seems incorrect: no such packet classes exist?} 
 add the solution $S_1$ as a constraint to ensure that the
 packet classes in $P_2$ will not share the edges of the respective
-paths obtained in $P_1$. The difference from
-normal synthesis for a isolation policy is that since we don't have
-the paths for both packet classes, we add isolation constraints at all
-switches (\cref{eq:isolation})
-\loris{don't know what previous and next sentence means. Please rewrite clearly}. 
-In contrast, if we had a solution for
-one packet class, we need to ensure the other path is isolated only at
-the switches visited by the path of the solved packet
-class. 
+paths obtained in $P_1$. 
+%The difference from
+%normal synthesis for a isolation policy is that since we don't have
+%the paths for both packet classes, we add isolation constraints at all
+%switches (\cref{eq:isolation})
+%\loris{don't know what previous and next sentence means. Please rewrite clearly}. 
+%In contrast, if we had a solution for
+%one packet class, we need to ensure the other path is isolated only at
+%the switches visited by the path of the solved packet
+%class. 
 %\aditya{it seems from the rest of the description below that p1
 %  and p2 are not two connected components; they are just subgraphs. if
 %  so, the ending sentence of the previous paragraph that talks about
@@ -145,14 +147,13 @@ component further.
 While in the best case optimistic synthesis  will lead to a great
 increase in performance, we need a recovery mechanism in case we cannot find
 compatible partial solutions.  We describe a bounded \emph{solution} recovery
-scheme in \cref{optimisticsyn} \loris{what line in the figure?} integrated with the optimistic
-synthesis algorithm.  The Z3 solver can track assertions and if it
+scheme in \cref{optimisticsyn}(lines 18-20) integrated with the optimistic
+synthesis procedure.  The Z3 solver can track assertions and if it
 fails to find a solution, it can return a set of unsatisfiable cores
 which are the assertions due to which the solver could not find a
 solution\footnote{Z3 does not return the minimum set of unsatisfiable
-  cores.}.  We use this functionality of Z3 
-to add constraints that make us to avoid to choose in the future
-paths that are similar to those that caused failures.
+  cores.}.  This helps us track failed partial solutions so that we 
+don't resynthesize them in the future. 
 %  in the synthesis of $P_2$
 %by tracking the constraints added to ensure isolation with the paths
 %of $P_1$.  
