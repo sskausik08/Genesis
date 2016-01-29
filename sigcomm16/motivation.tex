@@ -42,11 +42,15 @@ workloads~\cite{mpa-imc15}.  The policies include:
   placement as $E2 >> E4$.
 \item \textbf{Middlebox traversals}. A tenant may wish that traffic
   between two of her endpoints, or from another tenant, must traverse
-   specific middleboxes (locations, or logical descriptors) for
-  security, access control, or performance reasons. This can be
-  specified via an ordered sequence of sets of middleboxes for a flow
-  group \loris{flow group is not defined, group of flows or set of flows?} to traverse, where the middleboxes in a set can be traversed
-  in any order, but all middleboxes in the set must be traversed.  The
+   specific middleboxes %(locations, or logical descriptors) 
+   for
+  security, access control, or performance reasons. For specific
+  flows, tenants can
+  specify an ordered sequence of sets of middleboxes
+  %\loris{flow group is not defined, group of flows or set of flows?} 
+  to traverse. The flows must traverse these sets in order,
+  while in a set, all middleboxes must be traversed
+  and order is irrelevant.  The
   unordered set abstraction leverages the fact that middleboxes
   without dependencies in their traffic processing behavior can be
   placed in any order in a service chain~\cite{pga}. Thus the
@@ -106,13 +110,13 @@ workloads~\cite{mpa-imc15}.  The policies include:
 %% control of network resources, integrated with support for tenant specifications 
 %% for effective management of the network. \newline
 
-\loris{is there a reason why this is not in the itemize?}
+\loris{is there a reason why this is not in the itemize?} 
+\kausik{This is not a tenant policy, but an operator feature, so separate from itemize.}
 \textbf{Network Resource Management}. While support for the above
 policies can be used to satisfy tenant SLAs, network operators can
-benefit from a fine-grained control of network resources, integrated
-with support for tenant specifications for effective management of the
-network
-\loris{the previous sentence is too long}. For instance, to aid traffic enginerring, the network
+benefit from a fine-grained control of network resources. Support for
+resource management integrated with tenant specifications is useful.
+For instance, to aid traffic enginerring, the network
 operator may specify policies constraining the maximum number of
 tenant flows that can traverse a given link or sets of links in the
 network. She may also wish to ensure that traffic from some sensitive
@@ -148,14 +152,12 @@ and $A2 \rightarrow C4$ do not exceed the link capacity of 100.
 \subsection{Synthesis} \label{sec:synthesis} 
 
 \input{policy}
-
-
 Providing support for realizing the complex set of policies using
 existing SDN programming languages like Pyretic and Frenetic is
 challenging, because these policies are global and cannot be enforced
 by programming individual behaviour of switches. Existing network
 management systems provide support for complex policies including
-middlebox placement and bandwidth constraints~\cite{} \loris{missing citation}. 
+middlebox placement, bandwidth and resource constraints~\cite{simple,merlin,oneswitch}.
 However these tools
 are tailored to specific policies and lack generality and
 extensibility.
@@ -272,9 +274,11 @@ finding a consistent set of switch forwarding rules
 has, in the worst case, exponential time complexity in
 the number of policies.
 Moreover, since policies such as isolation affect
-the paths pf many different flows, it is not possible to incrementally synthesize
-the forwarding rules corresponding to each flow. 
-\loris{maybe quick mention that this is the case for other tools: netgen}
+the paths of many different flows, it is not possible to incrementally synthesize
+the forwarding rules corresponding to each flow. NetGen~\cite{netgen}
+synthesizes incremental changes to forwarding tables for individual
+flows, but however 
+it does not account for inter-flow policies like isolation.
 Despite the recent advances in SMT solvers, to make
 the synthesis problem feasible in practice
 there is a need to improve the performance of the solver
@@ -310,5 +314,5 @@ heuristic, whenever the SMT solver fails to find a solution we extract
 the unsatisfiability core produced by the SMT solver and 
 add it to our set of constraints to quickly converge to a correct solution.
 Informally, the unsatisfiability core can be viewed
-as a set of constraints that describes why there wasn't a feasible solution~\cite{}.\loris{missing citation}
+as a set of constraints that describes why there wasn't a feasible solution~\cite{unsatcores}.
 
