@@ -105,8 +105,8 @@ For a tactic of the form $\neg (l_{src} .^i .^* l_{dst})$ which restricts the pa
 \begin{equation}
 	\pi \vDash \neg (l_{src} .^i .^* l_{dst}) \Leftrightarrow \forall sw,k \geq i + 1. (sw,pc,k) \notin Reach
 \end{equation}
-Thus, we can remove the reachability constraints for 
-all the tuples $(sw,pc,k) \notin Reach$
+Thus, we can remove the reachability constraints  of \Cref{eq:bckprop} 
+for all the tuples $(sw,pc,k) \notin Reach$
 as they cannot contribute to any path satisfying the tactic.  
 
 Similarly, we can remove constraints for tactics
@@ -118,15 +118,17 @@ Concretely, we can say that a switch with label $l$ cannot be reached in $i+1$
 steps, except if $l = l_{dst}$. In that case,
 only the destination switch with label $l$ can be reached in $i+1$ steps as 
 the path with labelling $l_{src}.^i l_{dst}$ satisfies the tactic. If $l \not= l_{dst}$, then
-all switches with label $l$ cannot be reached in $i+1$. \newline
+all switches with label $l$ cannot be reached in $i+1$. For all tuples
+$(sw, pc, i+1) \notin Reach$, we can remove the reachability constraints of \Cref{eq:bckprop} for these tuples.
+\newline
 For tactics of the form $\neg (l_{src}  .^i l_1 l_2 .^* l_{dst})$ : 
 \begin{multline} \label{eq:t3}
 \pi \vDash \neg (l_{src} .^i l_1 l_2 .^* l_{dst}) \Leftrightarrow \\ 
-\forall n_1, n_2.~\phi(n_1) = l_1~\wedge~ \phi(n_2 = l_2) ~\wedge~ n_2 \not=dst  \implies \\ 
+\forall n_1, n_2.~\phi(n_1) = l_1~\wedge~ \phi(n_2) = l_2 ~\wedge~ n_2 \not=dst  \implies \\ 
 \neg (Reach(n_1, pc, i + 1) \wedge Fwd(n_1, n_2, pc))
 \end{multline}
-Concretely, this tactic ensures that a switch with label $l_1$ at $i+1$ in the path
-will not forward the packet to a switch with label $l_2$ (unless it is the destination). 
+This tactic ensures that a switch with label $l_1$ at $i+1$ in the path
+will not forward the packet to a switch with label $l_2$ (unless $n_2$ is the destination). 
 To enforce this, we modify the \Cref{eq:bckprop} and remove all $l_1\rightarrow l_2$
 edges at position $i+1$ in the path.  
 
