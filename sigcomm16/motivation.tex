@@ -300,13 +300,13 @@ which are search strategies that leverage the tiered network structure
 of datacenter topologies.
 %, to specify properties of the paths for the reachability
 %policies.  
-Tactics allow network operators to specify a
-high-level description on the set of paths allowed for reachability
-policies.  Tactics are expressed as simplified forms of
-regular expressions, which can be used to simplify the set of constraints provided to
-the solver.  In particular, one can eliminate constraints that cannot
-be true for any of the paths accepted by the language of the regular expression. We
-find that this can result in 1.5x-400x speedup for different workloads.
+Tactics allow network operators to provide a high-level description on
+the set of paths allowed for reachability policies.  Tactics are
+expressed as simplified forms of regular expressions, which can be
+used to simplify the set of constraints provided to the solver.  In
+particular, one can eliminate constraints that cannot be true for any
+of the paths accepted by the language of the regular expression. We
+find that this can result in 1.5x-400x speedup in various settings.
 
 Second, we propose a heuristic procedure that takes advantage of the fact that in 
 datacenter topologies the large
