@@ -78,37 +78,53 @@ The two relations for forwarding and reachability ensure we can write the constr
 %\loris{are you saying that constraints enumerating all the paths of some length would be bad? Who would do that?}
 
 \subsection{Reachability Constraints} \label{sec:reach}
-For a reachability policy $s >> d$ and packet class $pc$, the constraints added must ensure that the solution model contains a path 
+We first discuss the constraints generated for reachability polices without waypoints.
+For a reachability policy $s >> d$ and packet class $pc$, the added constraints must ensure that 
+every solution model represents a path 
 from source to destination. 
-One of the constraints required for this is that there must exist a forwarding rule at source to one of its neighbours, and 
-these constraints
-act as the base case relating the $Fwd$ and $Reach$ relations.\footnote{
+The base constraint states that $(s, pc,0) \in Reach$ meaning
+that $s$ can be reached in $0$ steps. 
+The next constraint states that there must be a forwarding rule from $s$ to one of
+the neighbours of $s$.
+%and 
+%these constraints
+%act as the base case relating the $Fwd$ and $Reach$ relations.
+\footnote{
 	We unroll the existential quantifier $\exists n \in N(s)$ using disjuction of 
 	clauses $\bigvee\limits_{n \in N(s)}$ and
 	the universal quantifier $\forall n \in N(dst)$ using conjuction of clauses $\bigwedge\limits_{n \in N(dst)}$
 	and stay in propositional logic.} 
 \begin{equation} \label{eq:src}
-	\exists n \in N(s). Fwd(s, n, pc) \wedge Reach(n, pc, 1)
+	\exists n \in N(s).~Fwd(s, n, pc) \wedge Reach(n, pc, 1)
 \end{equation}
-The base case for reachability is : $(s, pc,0) \in Reach$ . We need a path to $dst$, therefore it must be reachable for some path length. Since, it is the last switch in the path, there are no forwarding rules at $dst$.
+Next, we add the following constraints to state that $d$ can be reached in some number of steps and,
+since $d$ is the last switch in the path, there are no forwarding rules from it.
 \begin{equation} \label{eq:dst}
-	\exists k. Reach(dst, pc, k) \ \wedge \ \forall n \in N(dst). \ \neg Fwd(dst, n, pc)
+	\exists k.~Reach(d, pc, k) \ \wedge \ \forall n \in N(d). \ \neg Fwd(d, n, pc)
 \end{equation}
-For the solver to find a path, we need implication constraints propagating reachability backward from destination to source. 
+Finally, we add implication constraints that propagate reachability backward from destination to source. 
 If a node $n_1$ is reachable in $k$ steps, there must a node $n_2$ which is reachable in  $k-1$ steps and there exists a forwarding rule $n_2 \rightarrow n_1$.
 \begin{multline} \label{eq:bckprop}
-\forall n_1,k.  Reach(n_1,pc,k) \implies \exists n_2.  n_2 \in N(n_1) \wedge \\ Reach(n_2,pc,k-1) \wedge Fwd(n_2,n_1,pc)
+\forall n_1,k.~ Reach(n_1,pc,k) \implies \exists n_2.  n_2 \in N(n_1) \wedge \\ Reach(n_2,pc,k-1) \wedge Fwd(n_2,n_1,pc)
 \end{multline} 
-The backward propagation is responsible for ensuring there is a topologically valid path from source to destination by using the unit clauses in \cref{eq:dst}, and finding a path from destination back to a switch $sw$ which is a neighbour of $src$. $Reach(sw,pc,1)$ would be true from \cref{eq:src} and the reachability policy would be satisfied. 
+When combined together, these constraints %can only be satisfied if there is a valid path from $s$ to $d$.
+% to destination by using the unit clauses in \cref{eq:dst}, and finding a path from destination back to a switch $sw$ which is a neighbour of $src$. $Reach(sw,pc,1)$ would be true from \cref{eq:src} and the reachability policy would be satisfied. 
+are sufficient to ensure there is a path from $s$ to $d$ for packet class $pc$.
+% in terms of the forwarding relation $Fwd$. 
+However, since there is no restriction on number of $Fwd$ values that can be true at a switch, we can get multiple forwarding rules at switches, and 
+also multiple paths to the destination. 
+These can also create forwarding loops. 
+Concretely, this is not a problem: as long as there is  at least one path from $s$ to $d$ we can recover it from the solution of the constraints. 
+Moreover, this representation is quite efficient, as forcing all paths to be unique would
+require to add further constraints.
+% we are able to extract a path from the solution without 
+%adding additional constraints to ensure the semantics of \emph{unicast} forwarding. 
 
-The above mentioned constraints are sufficient to ensure there is a path from $src$ to $dst$ for packet class $pc$ in terms of the forwarding relation $Fwd$. However, since there is no restriction on number of $Fwd$ values that can be true at a switch, we can get multiple forwarding rules at switches, and also multiple paths to the destination. Also, there can exist forwarding loops as well. From the perspective of the network model, 
-this is a valid assignment as there would be atleast one path from $src$ to $dst$. 
-This serves an optimization as we are able to extract a path from the solution without 
-adding additional constraints to ensure the semantics of \emph{unicast} forwarding. 
-
-For a reachability policy, we merely require to find a path from $src$ to $dst$. Thus, we extract a valid path from the model by performing a breadth-first search on the model-graph from source to destination. 
+To extract a concrete $s$-to-$d$ path we 
+perform a breadth-first search on the reachability graph induced by the solution to the constraints. 
 %\loris{the previous point is a bit crucial, clarify a little better} \kausik{TODO}
-A directed edge exists in the model-graph : $n_1 \rightarrow n_2$ if there is forwarding rule indicated by the relation $(n_1,n_2, pc) \in Fwd$. Thus, we extract the relevant rules of the shortest path from source to destination from the model, and the additional rules obtained in the solution (extra paths, forwarding loops) are ignored.  
+A directed edge $n_1 \rightarrow n_2$ appears in the reachability-graph if there is forwarding rule indicated by the relation $(n_1,n_2, pc) \in Fwd$. 
+We extract the rules relevant to the shortest path from source to destination from the model, and the additional rules obtained in the solution (extra paths, forwarding loops) are ignored.  
 %\loris{we should later say that this is perhaps desirable for future extensions with broadcasting.}
 \subsection{Waypoint Constraints} 
 For a reachability policy with ordered set of waypoints $s >> W_1;W_2 \ldots ... W_n >> d$ and packet class $pc$, we add all the constraints specified in \cref{sec:reach} to ensure the existence of a path from source to destination. To satisfy waypoint policies, we need to add constraints so that all waypoints $w$
