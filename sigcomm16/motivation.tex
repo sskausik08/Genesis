@@ -14,7 +14,7 @@ Genesis. %% For simplicity, we assume a
 We use \cref{fig:architecture} as a running example. This figure shows several
 tenants who differ in the nature of policies they wish to realize. 
 Notice that these policies reflect and, in some cases, extend the
-policies that today's enterprises realize in their on-site networks as
+policies that today's enterprises realize in their on-site networks, as
 well as the policies that data center operators support for the different hosted
 workloads~\cite{mpa-imc15}.  The policies include:
 
@@ -38,26 +38,26 @@ workloads~\cite{mpa-imc15}.  The policies include:
 \item \textbf{Reachability}. This enables network communication
   between specific groups of a tenant's virtual cloud instances,
   applications, or hosts. For example, the yellow tenant has defined a reachability
-  policy for its VMs ($V1 >> V2$), which is translated by the operator after 
-  placement as $E2 >> E4$.
+  policy for its VMs ($V1 >> V2$, which is translated  after 
+  placement as $E2 >> E4$).
 \item \textbf{Middlebox traversals}. A tenant may wish that traffic
   between two of her endpoints, or from another tenant, must traverse
    specific middleboxes %(locations, or logical descriptors) 
    for
   security, access control, or performance reasons. For specific
-  flows, tenants can
-  specify an ordered sequence of sets of middleboxes
+  flows, tenants can provide
+  an ordered sequence of sets of middleboxes
   %\loris{flow group is not defined, group of flows or set of flows?} 
   to traverse. The flows must traverse these sets in order,
   while in a set, all middleboxes must be traversed
   and order is irrelevant.  The
   unordered set abstraction leverages the fact that middleboxes
   without dependencies in their traffic processing behavior can be
-  placed in any order in a service chain~\cite{pga}. Thus the
+  placed in any order relative to each other~\cite{pga}. Thus the
   middlebox traversal specification outlined here generalizes the
   notion of a service chain. For example, the grey tenant in \cref{fig:architecture}
   defines a waypoint policy $V1 >> FW; [IDS,BC] >> V2$
-   which specifies that traffic must first pass through the firewall(FW),
+   which specifies that traffic must first pass through the firewall (FW),
   and then through the IDS and the byte counter (BC) in any order. 
 
   %% \aditya{refer here to an example in
@@ -67,7 +67,7 @@ workloads~\cite{mpa-imc15}.  The policies include:
 
 \item \textbf{Isolation}. Tenants may require various QoS guarantees
   that enforce varying degrees of isolation for their traffic. In the
-  extreme, a tenant could ensure that her flow groups are not affected
+  extreme, a tenant could require that her flow groups are not affected
   by any other tenant by strictly isolating the path of the tenant's
   flows from others' flows. In \cref{fig:architecture}, we have two tenants
   each with one traffic class which will be isolated from one another, i.e.,
@@ -172,13 +172,13 @@ Table~\ref{tab:policysupport} .
 
 Unlike previous efforts in the synthesis space (see~\cite{netgen,merlin}), \Name is
 not tailored to specific formalisms such as regular expressions and
-this aspect makes it modular and easily extensible.
+this aspect makes it {\em modular} and {\em easy to extend}.
 %and allows to devise specific
 %techniques for each type of policies. 
 To draw an analogy with SMT solvers, \Name can be seen as a constraint
 solver that allows the addition of different types of policies
 (respectively, the theories in SMT) and that allows the design of
-different types of optimizations based on the properties desired by cloud
+different types of optimizations based on the properties desired by data center
   operators using \Name. 
   
 Our work is motivated by recent advances in program synthesis, i.e.,
@@ -277,7 +277,7 @@ Moreover, since policies such as isolation affect
 the paths of many different flows, it is not possible to incrementally synthesize
 the forwarding rules corresponding to each flow. NetGen~\cite{netgen}
 synthesizes incremental changes to forwarding tables for individual
-flows, but however 
+flows, however 
 it does not account for inter-flow policies like isolation.
 Despite the recent advances in SMT solvers, to make
 the synthesis problem feasible in practice
@@ -286,15 +286,14 @@ using techniques that are specific to the network domain.
 We propose various techniques leveraging
 \emph{domain-specific} knowledge to improve synthesis performance. 
 
-First, we
-propose the idea of \emph{tactics} (\cref{sec:tactic}), which are
-search strategies that leverage the network structure of datacenter
-topologies.
+First, we propose the idea of \emph{tactics} (\cref{sec:tactic}),
+which are search strategies that leverage the tiered network structure
+of datacenter topologies.
 %, to specify properties of the paths for the reachability
 %policies.  
 Tactics allow network operators to specify a
 high-level description on the set of paths allowed for reachability
-policies.  Tactics are expressed simplified forms of
+policies.  Tactics are expressed as simplified forms of
 regular expressions, which, after being converted into a finite
 automata, can be used to simplify the set of constraints provided to
 the solver.  In particular, one can eliminate constraints that cannot
