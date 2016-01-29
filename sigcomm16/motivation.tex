@@ -116,7 +116,7 @@ workloads~\cite{mpa-imc15}.  The policies include:
 policies can be used to satisfy tenant SLAs, network operators can
 benefit from a fine-grained control of network resources. Support for
 resource management integrated with tenant specifications is useful.
-For instance, to aid traffic enginerring, the network
+For instance, to aid traffic engineering, the network
 operator may specify policies constraining the maximum number of
 tenant flows that can traverse a given link or sets of links in the
 network. She may also wish to ensure that traffic from some sensitive
@@ -131,7 +131,7 @@ and $A2 \rightarrow C4$ do not exceed the link capacity of 100.
           %% useful to ensure the low bandwidth links are not used by
           %% more tenants such that their performance is affected and
           %% can be used to provide bandwidth guarantees to tenants.
-  Likewise, to tackle hardware heterogeniety operators can specify
+  Likewise, to tackle hardware heterogeneity operators can specify
   switch constraint policies, like the size of the rule table, to
   restrict the number of flows traversing a particular switch or set
   of switches.
@@ -156,7 +156,7 @@ and $A2 \rightarrow C4$ do not exceed the link capacity of 100.
 Providing support for realizing the complex set of policies using
 existing SDN programming languages like Pyretic and Frenetic is
 challenging, because these policies are global and cannot be enforced
-by programming individual behaviour of switches. Existing network
+by programming individual behavior of switches. Existing network
 management systems are tailored to support complex policies including
 middlebox placement, bandwidth and resource constraints~\cite{simple,merlin,oneswitch},
 but lack generality and
@@ -291,10 +291,9 @@ of datacenter topologies.
 Tactics allow network operators to specify a
 high-level description on the set of paths allowed for reachability
 policies.  Tactics are expressed as simplified forms of
-regular expressions, which, after being converted into a finite
-automata, can be used to simplify the set of constraints provided to
+regular expressions, which can be used to simplify the set of constraints provided to
 the solver.  In particular, one can eliminate constraints that cannot
-be true for any of the paths accepted by the automaton language. We
+be true for any of the paths accepted by the language of the regular expression. We
 find that this can result in 1.5x-400x speedup for different workloads.
 
 Second, we propose a search strategy that takes advantage of the fact that in 
