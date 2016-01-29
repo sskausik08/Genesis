@@ -18,6 +18,7 @@
 \newcommand{\name}{Genesis\xspace}
 \newcommand{\Name}{\name}
 \newcommand{\pushcode}[1][1]{\hskip\dimexpr#1\algorithmicindent\relax}
+\newcolumntype{P}[1]{>{\centering\arraybackslash}p{#1}}
 
 \usepackage{caption}
 \usepackage{enumitem}
@@ -83,13 +84,14 @@ Operators in multi-tenant enterprise and cloud networks require support for dive
 \input{relatedwork}
 \input{conclusion}
 
-\bibliographystyle{abbrv}
-\begin{small}
-	\bibliography{references}
-\end{small}
+
 
 %\bibliography{references}{}
 %\bibliographystyle{acm}
 \input{appendix}
 \input{constrainteval}
+\bibliographystyle{abbrv}
+\begin{small}
+	\bibliography{references}
+\end{small}
 \end{document}
