@@ -92,40 +92,43 @@ Since tactics are path-related restrictions, operators can also apply tactics se
 
 \subsubsection{Tactic Synthesis Algorithm}
 In our synthesis algorithm, the backward reachability propagation constraints (\Cref{eq:bckprop}) 
-constructs the path from destination to source. We use tactics to prune these constraints, such that
+construct the path from destination to source. We use tactics to prune these constraints, so that
 the path synthesized satisfies the tactic regular expression.  
 We describe the tactic synthesis algorithm
-for a path $\pi = sw_0 \ldots sw_k$ and labelling $\Phi(\pi) = a_0 \ldots a_k$. In the first
-two cases, we remove some of the reachability prop. constraints (and adding unit negation clauses), 
-while we modify these constraints for the next two cases:
+for a path $\pi = sw_0 \ldots sw_k$ and labelling $\Phi(\pi) = a_0 \ldots a_k$. 
+%In the first
+%two cases, we remove some of the reachability constraints by adding negated unit clauses, 
+%while we modify these constraints for the next two cases.
 %To incorporate tactics in the path for packet class $pc$, we need to modify these constraints. For a path $\pi = sw_0 \ldots sw_k$ and labelling $\Phi(\pi) = a_0 \ldots a_k$, we describe the modifications of the constraints for each type of tactic.
 %\loris{this part needs revision. Every time you say we remove constraints, but it actually looks like you are adding extra constraints
 %of the form not(..)}
 
-For a tactic of the form $\neg (l_{src} .^i .^* l_{dst})$ which restricts the path to a length $ < i + 1$ : 
+For a tactic of the form $\neg (l_{src} .^i .^* l_{dst})$ which restricts the path to a length $ < i + 1$ we have: 
 \begin{equation}
-	\pi \vDash \neg (l_{src} .^i .^* l_{dst}) \Leftrightarrow \forall sw,k \geq i + 1. \neg Reach(sw, pc, k)
+	\pi \vDash \neg (l_{src} .^i .^* l_{dst}) \Leftrightarrow \forall sw,k \geq i + 1. (sw,pc,k) \notin Reach
 \end{equation}
-Thus, we can remove the reachability prop. constraints for 
-the above mentioned tuples $(sw,pc,k) \notin Reach$
-as they cannot construct the path satisfying the tactic.  
+Thus, we can remove the reachability constraints for 
+all the tuples $(sw,pc,k) \notin Reach$
+as they cannot contribute to any path satisfying the tactic.  
 
-To satisfy tactics of the form $\neg (l_{src}  .^i l .^* l_{dst})$ where $l \not= l_{dst}$, we can similarly remove 
-the reachability prop. constraints for these tuples:
+Similarly, we can remove more constraints for tactics
+of the form $\neg (l_{src}  .^i l .^* l_{dst})$ where $l \not= l_{dst}$ by observing that:
 \begin{multline} \label{eq:t1}
-\pi \vDash \neg (l_{src} .^i l .^* l_{dst}) \wedge l \not= l_{dst} \Leftrightarrow \\ \forall sw. \phi(sw) = l \implies \neg Reach(sw, pc, i + 1)
+\pi \vDash \neg (l_{src} .^i l .^* l_{dst}) \wedge l \not= l_{dst} \Leftrightarrow \\ \forall sw. \phi(sw) = l \implies (sw, pc, i + 1) \notin Reach
 \end{multline}
 If $l_{dst} = l$, then \cref{eq:t1} will not work, as $l_{src} .^i l_{dst}$ 
 satisfies the tactic, and thus for switches with label $l,Reach(sw,pc,i+1)$ can hold.
-In this case, we need to modify the reachability prop. constraints 
-as follows which say that a switch with label $l$ cannot precede a switch (can only exist at the end of the path) : 
+In this case, we modify the reachability constraints 
+as follows.
 \begin{multline} \label{eq:t2}
  \pi \vDash \neg (l_{src} .^i l .^* l_{dst}) \wedge l = l_{dst} \Leftrightarrow \\ 
  \forall n_1. Reach(n_1,pc,i + 2) \implies \exists n_2.  n_2 \in N(n_1) \wedge \\ \phi(n_2) \not= l \wedge 
  Reach(n_2,pc,i+1) \wedge Fwd(n_2,n_1,pc)
 \end{multline}
-To satisfy tactics of the form $\neg (l_{src}  .^i l_1 l_2 .^* l_{dst})$, the modifications are 
-as follows to ensure that switch with label $l_2$ reached after $i + 2$ steps is not preceded by a switch of label $l_1$ : 
+Informally, a switch with label $l$ can only appear at the end of the path.
+
+For tactics of the form $\neg (l_{src}  .^i l_1 l_2 .^* l_{dst})$, the following modifications 
+ensure that a switch with label $l_2$ reached after $i + 2$ steps is not preceded by a switch with label $l_1$ : 
 \begin{multline} \label{eq:t3}
 \pi \vDash \neg (l_{src} .^i l_1 l_2 .^* l_{dst}) \Leftrightarrow \\ 
 \forall n_1. \phi(n_1) = l_2 \wedge Reach(n_1,pc,i + 2) \implies \exists n_2.  n_2 \in N(n_1) \wedge \\ \phi(n_2) \not= l_1 \wedge 
