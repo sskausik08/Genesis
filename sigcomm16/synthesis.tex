@@ -15,7 +15,7 @@ a pair
 $(predicate :\newline src >> W_1;W_2; \ldots W_n >> dst, pc)$
 where:
 \begin{compactitemize}
-\item  $predicate$ is the packet header identifier pertaining to $r$ ;
+\item  $predicate$ is the packet header identifier pertaining to $r$;
 \item  $src,dst \in S$ are the source and destination switches;
 \item $W_1, W_2, \ldots, W_n \subseteq S$ are the (potentially empty) ordered sets of waypoints; 
 \item $pc \in PC$ is the packet class and is a unique integer used to identify the variables associated to $r$
@@ -28,7 +28,7 @@ We define a static integer $\mu$ to be the synthetic limit for path length for a
 The key roles of the network forwarding model are abstracting the actual forwarding rules at each node and encoding the reachability of each flow. 
 \begin{mydef}
 \label{def:fwd}
-The relation $Fwd \subseteq S \times S \times PC $ captures the forwarding rule behavior of the network. 
+The relation $Fwd \subseteq S \times S \times PC $ captures network forwarding behavior. 
 $(sw_1, sw_2$, $pc)\in$ $Fwd$ if 
 $sw_1$ forwards packets of class $pc$ to switch $sw_2$. 
 \end{mydef}
@@ -152,10 +152,11 @@ single {\em unicast} path from source to destination.
 All these constraints ensure that all waypoints are traversed in the correct order. 
 
 \subsection{Isolation Constraints}
-A traffic isolation policy $pc_1 || \ pc_2$ states that
-the paths for $pc_1$ and $pc_2$ do not share any link in the same direction. 
-We enforce this policy by adding constraints that states that at every switch
-the forwarding rules for $pc_1$ and $pc_2$ must not forward to the same switch.  
+A traffic isolation policy $pc_1 || \ pc_2$ states that the paths for
+$pc_1$ and $pc_2$ do not share any link in the same direction.  We
+enforce this policy by adding constraints that states that at every
+switch the forwarding rules for $pc_1$ and $pc_2$ must not forward to
+the same switch.
 \begin{equation}
 	\forall n_1.~\neg ( \exists n_2. Fwd(n_1,n_2,pc_1) \wedge Fwd(n_1,n_2,pc_2)) \label{eq:isolation}
 \end{equation}
@@ -198,10 +199,11 @@ If the link is not used, the constraints are as follows :
 \begin{multline}
 \forall pc > 0.~\neg Fwd(sw_1,sw_2,pc) \implies \\ C(sw_1, sw_2, pc) =  C(sw_1. sw_2, pc - 1).
 \end{multline}
-To satisfy the capacity policy, the total capacity used should not exceed $\omega$. 
-Since, $\lambda$ is the greatest element in $PC$ we have:
+To satisfy the policy, the total capacity used should not exceed $\omega$. 
+Since $\lambda$ is the greatest element in $PC$ we have:
 \begin{equation}
 	C(sw_1, sw_2, \lambda) \leq \omega.
 \end{equation} 
 For \emph{switch table size} policies, we need to track the number of packet classes that traverses the switch.
-We create inductive constraints similar to those for link capacity for counting the packet classes traversing $sw$.
+We create inductive constraints similar to those for link capacity.
+%. for counting the packet classes traversing $sw$.
