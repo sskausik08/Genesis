@@ -16,8 +16,8 @@ enforcement synthesizer using the python API of Z3; this outputs the
 forwarding rules for the switches, which can be provided as input to a
 SDN controller (POX, Floodlight etc.) to install over the
 network. \Name uses the Metis graph-partitioning library~\cite{metis}
-to perform equi-sized partitioning.  The prototype contains ~5K lines
-of Python code.  We plan to make the code for \Name publicly available.
+to perform equi-sized partitioning.  The prototype contains ~5K Python LoC.  
+We plan to make the code for \Name publicly available.
 
 In this section, we evaluate \Name using
 %\loris{really don't like the word realistic}
@@ -94,8 +94,8 @@ scenarios that translate to these workloads. Consider an example where
 specific flows of tenants require QoS guarantees and these flows must
 be isolated w.r.t all other flows. This translates to a two-tenant
 isolation setting. Operators can provide weaker isolation such that
-two flows must be isolated on only certain links and can share other
-links. This is an easier problem to tackle than isolation over all
+two flows must be isolated on only certain "special" links. 
+This is an easier problem to tackle than isolation over all
 links, and the performance of such scenarios would be better.
 
 \noindent {\bf Effect of Topology Size}: To evaluate \Name across
@@ -132,16 +132,17 @@ and generate 100 waypoint policies with different size and permutation
 of the ordered waypoint sets for a 80 node fat-tree topology. Each
 policy has edge switches as endpoints and randomly picked core or
 aggregate switches for waypoints. The synthetic limit $\mu$ on the
-path length is increased to 15 and no tactics are used (because it is
-difficult to reason about the path satisfying a waypoint policy). The
+path length is increased to 15 and no tactics are used (
+difficult for the path satisfying a waypoint policy). The
 average synthesis time for a waypoint policy is reported in
 \cref{tab:waypointeval}.  We observe that synthesis time increases
 exponentially with total number of waypoints in a packet class's
 policy, owing to the complexity of the problem.  \Name can synthesize
 rules for a path with 3 total waypoints in less than a second on
 average. These waypoint policies were either completely ordered or
-unordered, so had ordered sets of sizes 1 and 2 in different
-orders. \aditya{I don't follow this last sentence}
+unordered or had sets of sizes 1 and 2 in different
+orders. 
+%\aditya{I don't follow this last sentence}
 
 \begin{table}
 	\begin{center}

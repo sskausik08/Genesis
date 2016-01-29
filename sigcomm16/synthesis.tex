@@ -149,7 +149,7 @@ Since, there cannot exist multiple rules at a switch, the model will contain a
 single {\em unicast} path from source to destination. 
 %There would have to 
 %be more than one rule at a switch for multiple paths from the source to exist. 
-All together these constraints ensure that all waypoints are traversed in the correct order. 
+All these constraints ensure that all waypoints are traversed in the correct order. 
 
 \subsection{Isolation Constraints}
 A traffic isolation policy $pc_1 || \ pc_2$ states that
@@ -203,6 +203,5 @@ Since, $\lambda$ is the greatest element in $PC$ we have:
 \begin{equation}
 	C(sw_1, sw_2, \lambda) \leq \omega.
 \end{equation} 
-For \emph{switch table size} policies, we use the relation $Reach$ to track the number of packet classes that traverses the switch.
-We create inductive constraints similar to those for link capacity for counting the packet classes traversing $sw$ 
-This is expressed as $\exists k. Reach(sw, pc, k)$, i.e $sw$ is reachable in some steps. 
+For \emph{switch table size} policies, we need to track the number of packet classes that traverses the switch.
+We create inductive constraints similar to those for link capacity for counting the packet classes traversing $sw$.
