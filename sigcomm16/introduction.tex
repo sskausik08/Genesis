@@ -142,7 +142,7 @@ acting as a search strategy for the solver.
 Tactics can improve the synthesis procedure and achieve
 %constraints added to the solver without additional constraints
 %required to ensure the solution satisfies the tactic and achieve
-a 1.5$\times-400$\times$ speedup for different settings.
+a 1.5$\times$-400$\times$ speedup for different settings.
 
  Secondly, \Name can use a heuristic synthesis procedure termed as
  \emph{optimistic} synthesis, that leverages the structure of tenants'
@@ -151,7 +151,9 @@ a 1.5$\times-400$\times$ speedup for different settings.
  isolation policies into effective components and synthesize these
  components separately and faster than the complete problem (due to
  the exponential time complexity). Optimistic synthesis can halve the
- synthesis time for 40\% of the isolation scenarios we study. \aditya{is this statement correct? what is 40\% of scenarios?}
+ synthesis time for 40\% of isolation workloads  
+ which vary in size and complexity of isolation.
+ %\aditya{is this statement correct? what is 40\% of scenarios?}
  %\aditya{the
    %previous sentence is vague} 
 
@@ -180,9 +182,9 @@ Thus, the main contribution of this paper are:
 		solver Z3 together with an extensive evaluation on different policy workloads, topologies and multi-tenancy settings.
                 \item Our experiments emulating a multi-tenant private
                   data center show that \Name can synthesize the
-                  forwarding plane for networks containing upto XXX
-                  switches, XXX tenants, and with complex policies in
-                  under XXXs. \aditya{Kausik fill in}
+                  forwarding plane for networks containing upto 180
+                  switches, 100 flows across 20 tenants, and with complex policies in
+                  under 100 seconds using tactics which is a 9$\times$ speedup over baseline synthesis. 
 		%to quantify the performance of Genesis. 
 \end{compactitemize}
 %\aditya{todo}
