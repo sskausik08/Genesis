@@ -3,25 +3,29 @@ Given a set of policies, \Name creates the network forwarding model variables wh
 To provide support for the policies in \cref{tab:policysupport}, we use propositional logic (SAT) and linear integer arithmetic (LIA),
 which are both supported by Z3. 
 \subsection{Network Forwarding Model} \label{sec:fwdmodel}
-We define the physical switch topology as an undirected graph $T=\{S, L\}$, where $S$ is the set of switches and $L$ is the set of links. We use the neighbour function $N(s) = \{s'\ | \ (s,s') \in L \}$ to denote the set of neighbour switches of L. The set of reachability policies is denoted as $R$ and each reachability policy $r \in R$ is
-a tuple of the form $(predicate$, $src$, $dst$, $(W_1, W_2 \ldots W_n$, $pc$) where
-\begin{itemize}
+We define the physical switch topology as an undirected graph $T=\{S, L\}$, 
+where $S$ is the set of switches and $L$ is the set of links. 
+We use the neighbour function $N(s) = \{s'\ | \ (s,s') \in L \}$ to denote 
+the set of neighbour switches of $s$. 
+The set of reachability policies is denoted as $R$ and each reachability policy $r \in R$ is
+a tuple of the form $(predicate$, $src$, $dst$, $(W_1, W_2 \ldots W_n$, $pc$) where:
+\begin{compactitemize}
 \item  $predicate$ over the set of packet headers identifies the packet pertaining to $r$ ;
 \item  $src,dst \in S$ are the source and destination switches;
 \item $W_1, W_2 \ldots W_n \subseteq S$ are the (potentially empty) ordered sets of waypoints; 
 \item $pc \in PC$ is the packet class and is a unique integer used to identify the variables associated to $r$
-\end{itemize} 
+\end{compactitemize} 
  We define a set of packet classes $PC : [0,\lambda]$ and map each reachability/waypoint policy to a unique integer in $PC$. In the rest of the paper, we use the term packet class for identifying the reachability/waypoint policy. Other policies are not mapped to packet classes as they do not produce a path, but specify restrictions on paths of packet classes. 
 %Assuming that the intersection of predicates is empty for policies in $R$, we create a mapping $\gamma : R \rightarrow PC$ to associate each reachability policy with a unique integer called packet class in the set $PC$. Switches $src, dst \in S$ denote the ingress and egress switches respectively for the packet class $pc = \gamma(r)$ and Genesis finds a path from $src$ to $dst$ for $pc$. If a waypoint policy is specified, $W$ is the set of switches the path from $src$ to $dst$ must traverse through in no particular order.
 We define a static integer $\mu$ to be the synthetic limit for path length for any packet class, and define the set $K = [0, \mu]$ to be the set of all permissible path lengths.
-\loris{why do we need this? we can enforce it with the length tactic now..} \kausik{I need for the model constraints. This is more of a synthetic limit and not to enforce any specific length properties on the path. Tactics can be used to further improve the search. if I dont have this, the model will have unbounded quantifiers. We dont want to use tactics all the time, right?}
-\loris{you still can bound based on the fact that you only want acylcic paths using the number of nodes minus 1}
+%\loris{why do we need this? we can enforce it with the length tactic now..} \kausik{I need for the model constraints. This is more of a synthetic limit and not to enforce any specific length properties on the path. Tactics can be used to further improve the search. if I dont have this, the model will have unbounded quantifiers. We dont want to use tactics all the time, right?}
+%\loris{you still can bound based on the fact that you only want acylcic paths using the number of nodes minus 1}
 
 The key roles of the network forwarding model are abstracting the actual forwarding rules at each node and encoding the reachability of each flow. 
 \begin{mydef}
 \label{def:fwd}
 The relation $Fwd \subseteq S \times S \times PC $ captures the forwarding rule behavior of the network. 
-Concretely, $(sw_1, sw_2, pc)\in Fwd$ if 
+$(sw_1, sw_2$, $pc)\in$ $Fwd$ if 
 $sw_1$ forwards packets of class $pc$ to switch $sw_2$. 
 \end{mydef}
 \begin{mydef}
@@ -30,7 +34,9 @@ $sw_1$ forwards packets of class $pc$ to switch $sw_2$.
 	Concretely, $(sw, pc, k)\in Reach$ if 
 	the switch $sw$ is reachable in the path from source switch of packet class $pc$ in exactly $k$ steps.  
 \end{mydef}
-For brevity, we write $Fwd(sw_1, sw_2, pc)$ for $(sw_1, sw_2, pc) $ $\in Fwd$ and similarly for the $Reach$ relation. The $Fwd$ relation can contain only connected switches in the topology. For $sw_1, sw_2$ who are not connected by a link, $\forall pc$, $(sw_1,sw_2,pc) \notin Fwd$. 
+For brevity, we write $Fwd(sw_1, sw_2, pc)$ for $(sw_1, sw_2, pc) $ $\in Fwd$ and similarly for the $Reach$ relation. 
+Since $Fwd$ depends on the topology,
+for $sw_1, sw_2$ who are not connected by a link, $\forall pc$, $(sw_1,sw_2,pc) \notin Fwd$. 
 
 Given two concrete assignments of relations Fwd and Reach, let $Paths$ be the set induced paths. 
 $sw_0 \ldots sw_k \in Paths$ is the path for class $pc$ iff : 
@@ -108,13 +114,17 @@ in $W_i$ are reached after all waypoints in $W_{i - 1}$ :
 \forall w_{i - 1} \in W_{i-1}. \\ \exists k_{i-1}. \ 
  k_{i-1} < k_{i} \wedge Reach(w_{i-1}, pc, k_{i-1}) 
 \end{multline}
-However, just ensuring reachability of waypoints is not sufficient. Since, we do not have any restrictions on the count of forwarding rules for a packet class at a switch, it is possible that waypoints are reachable from the source through separate paths, and do not lie in the path from source to destination. Thus, to ensure that all waypoints are reachable in the path from source to destination, we need to add constraints on the count of forwarding rules at each switch. 
-
-Forwarding rule constraints are to ensure that the forwarding relation $Fwd$ for a switch contains a \emph{single} switch which is a \emph{neighbour} or to no node at all (switches which are not reached in the path, and the destination will not have any forwarding rules). We define the forwarding set $FwdSet$ as follows:
+However, to ensure that all waypoints are reachable in a single path from
+$src$ to $dst$, we need constraints to impose unicast forwarding. To achieve
+this, the forwarding rules for $pc$ at a switch must not be greater than 1. 
+%%However, just ensuring reachability of waypoints is not sufficient. Since, we do not have any restrictions on the count of forwarding rules for a packet class at a switch, it is possible that waypoints are reachable from the source through separate paths, and do not lie in the path from source to destination. Thus, to ensure that all waypoints are reachable in the path from source to destination, we need to add constraints on the count of forwarding rules at each switch. 
+%Forwarding rule constraints are to ensure that the forwarding relation $Fwd$ for a switch contains a \emph{single} switch which is a \emph{neighbour} or to no node at all (switches which are not reached in the path, and the destination will not have any forwarding rules). 
+We define the forwarding set $FwdSet$ as follows:
 \begin{equation}
 	FwdSet(sw,pc) = \{n \ | \ Fwd(sw,n,pc)\}
 \end{equation}
-The $|A|$ function is used to the denote the size of set $A$. The constraint on the forwarding set are that the size of each set must not exceed 1 (0 or 1). The forwarding set constraint is as follows : 
+The $|A|$ function is used to the denote the size of set $A$. The constraint on the forwarding set are that the size of each set must not exceed 1 (0 or 1). The forwarding set constraints\footnote{
+	These constraints are expressed completely in SAT.} are as follows : 
 \begin{equation}
 		\forall sw,pc . \ |FwdSet(sw,pc)| \leq 1 \label{eq:fwdset}
 \end{equation}

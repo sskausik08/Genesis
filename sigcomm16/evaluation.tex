@@ -9,17 +9,16 @@
 
 \section{Evaluation}
 In this section, we evaluate \Name using 
-\loris{really don't like the word realistic}
-realistic multi-tenant data
+%\loris{really don't like the word realistic}
+enterprise-scale multi-tenant data
 center settings. 
-In our evaluation, we target enterprise-scale could data centers.
 Specifically, we ask:
 
-\begin{itemize}
+\begin{compactitemize}
 
 \item What is the performance of \Name's baseline synthesis
   algorithms? How does the performance vary with the size of the
-  network, number of policies, and the nature of policies in use?
+  network, number of policies, and the nature of policies in use? (\cref{sec:baselineeval})
   \loris{I usually write points like the following, but I'm not sure what's the standard
   in systems conferences.
 We evaluate the performance using X with no optimization and consider
@@ -27,15 +26,15 @@ different sizes of.... This experiment shows that...
   }
 
 \item To what extent do tactic help improve \Name's synthesis
-  performance? Which tactics offer the best improvement?
+  performance? Which tactics offer the best improvement? (\cref{sec:tacticeval})
 
 \item To what extent does optimistic synthesis improve \Name's
-  performance? When does it lead to degraded synthesis times?
+  performance? When does it lead to degraded synthesis times? (\cref{sec:optimisticeval})
 
-\item what else? XXX
+\item What are the performance trends of performing
+synthesis for incremental policy changes? (\cref{sec:incrementaleval})
 
-\end{itemize}
-
+\end{compactitemize}
 \loris{if you say this here don't write it in the bullet points}
  In
 particular, the settings we study have a few thousand servers, tens of
@@ -49,64 +48,70 @@ seconds. For evaluating the baseline performance, we impose a
 synthetic limit on the path length $\mu$ to be $10$, which is more than adequate 
 for a fat-tree topology with three levels. 
 In measuring this, we focus on the time the Z3 solver takes
-to solve the constraints.\footnote{All experiments were conducted using a
-single (\loris{Citation?}Cloudlab) machine with 32-core Intel-Xeon 2.40GHz CPU and
-128GB of RAM.}
-
-% TODO : Write about max path length.
-
-\subsection{Baseline Performance}
-To evaluate the baseline performance of \Name without tactics, we model a multi-tenant
+to solve the constraints\footnote{All experiments were conducted using a
+ 32-core Intel-Xeon 2.40GHz CPU machine and
+128GB of RAM.}.
+\subsection{Baseline Performance} \label{sec:baselineeval} 
+\noindent {\bf Multi-tenant Isolation}: To evaluate the baseline performance of \Name without tactics, we model a multi-tenant
 80-node fat-tree topology network with   
 tenant-isolation in in \cref{fig:isolation}(a). 
-For each workload, we have $n$ tenants with group size $g$ which 
+For each workload we have $n$ tenants with group size $g$ which 
 is the number of packet classes for each tenant. The x-axis shows the total packet classes $n*g$. 
-A single tenant's packet classes are not isolated to one another and isolated to all packet
-classes belonging to other tenants. Thus, two tenants do not share a link, and can never affect
+Packet classes of a tenant are not isolated, while packet classes
+of different tenants are isolated. Thus, no two tenants share a link, and can never affect
 each other's performance. For empirical purposes, 
-we randomly
-\footnote{Smarter placement of tenants could speed-up synthesis as tenant endpoints would
+we randomly\footnote{
+	Smarter placement of tenants could speed-up synthesis as tenant endpoints would
 	be located closer to each other. The placement algorithm can be used to develop specialised tactics.}
   place endpoints for the tenants' packet classes, ensuring that not more than 4 tenants share a single endpoint
-  (each edge switch has $pod\_size/2 = 4$ links). 
+  (each edge switch 4 links). 
    Operators can aggregate a tenant's traffic from one rack to
 another to a single reachability policy and establish pathways for communication amongst the multiple
 machines in different racks. 
 
-For a fixed group size, we can observe that as number of packet classes increases,
-the total synthesis time increases expotentially as expected (linearly in log scale). As we decrease group size,
+For a fixed group size, we can observe that,
+the total synthesis time increases expotentially with increase in packet classes.
+ As we decrease the group size,
  we can observe that synthesis time increases greatly for the same number of packet classes.
  As the number of tenants increases, consequently the problem is more constrainted 
   due to increased number of isolation policies. 
  Group size = 1 denotes the extreme case where all flows are isolated to one other. 
-      
 
-To evaluate \Name across increasing topology sizes for isolation workloads, 
+\noindent {\bf Effect of Topology Size}:
+ To evaluate \Name across increasing topology sizes for isolation workloads, 
 we fix the tenant-group size to 5, and for each topology, we maintain
  the ratio of packet classes to number of edge-aggregate links to 0.25. 
- We fix this metric to represent the difficulty of packing, as the maximum number 
- of different tenant sources and destination that can be present at a edge switch
- is the number of edge-aggregate links at the switch, otherwise tenant-isolation
- will be violated at the switch. If we fixed the number of packet classes, it would 
- be relatively easier to enforce policies in bigger topologies due to increasing 
- number of links. The average synthesis time per class for
- on increasing fat-tree topology sizes is shown in \cref{fig:tactic-topo}. 
- We are able to synthesize 12 tenants with tenant-group size 5 in a 125-node topology in 124 seconds. 
-  We can also observe that average time per flow increases expotential 
-  with increasing topology, thus the synthesis problem is expotential with number of nodes as well. 
- \Cref{fig:link-capacity} shows the average synthesis time per flow for the same setting, but
+We choose this metric because if we kept the number of classes constant,
+as topology sizes increases, it is easier to find isolated paths. Thus, by keeping
+the number of packet classes proportional to size of the topology, we maintain
+the relative difficulty of the workload across topologies. 
+We show the average synthesis time per class with
+ increasing fat-tree topology sizes in \cref{fig:tactic-topo}. 
+ We are able to synthesize forwarding rules for 
+ 12 tenants with tenant-group size 5 in a 125-node topology in 124 seconds. 
+  We can also observe that average time per flow increases expotentially 
+  with increasing topology, 
+  thus the synthesis problem is also expotential with number of nodes.
+  
+  
+ \noindent{\bf Isolation with Link Capacity Policies:} 
+ \Cref{fig:link-capacity}(orange trace) shows the average synthesis time per flow for the same setting, but
  additionally, there are 10 low-bandwidth links in the network for which the operator
  specifies policies to capacity constraints (all packet classes have uniform capacity). 
-
+Since we use LIA for link capacity constraints, we see an 
+increase in average time for synthesis 
+when compared to pure isolation which is completely 
+encoded using SAT. 
  % Write about waypoints
- \subsection{Tactic Reductions}
- Performance of \Name for isolation workloads using normal synthesis are not 
- very promising, due to the large solution space of forwarding plane configurations. We 
+ \subsection{Tactic Reductions} \label{sec:tacticeval}
+ Performance of \Name for isolation workloads using normal synthesis is not 
+ very promising resulting from the large solution space of forwarding plane configurations. We 
  demonstrate the improvements of using tactics for different tenants and group sizes on a 
  80-node fat-tree topology.
- \Cref{fig:isolation}(b) shows the synthesis time for isolation workloads using the no edge tactic 
+ 
+ \noindent {\bf No Edge Tactic}: \Cref{fig:isolation}(b) shows the synthesis time for isolation workloads using the no edge tactic 
  ($\neg(e .^* e .^* e)$). We achieve a best-case speedup of 9.5x over normal synthesis with this tactic. 
- Using this tactic, we are able to synthesize 12 tenants with group size in under 200
+ Using this tactic, we are able to synthesize forwarding rules for 12 tenants with group size in under 200
  seconds.
  
  \begin{figure}[h]
@@ -116,20 +121,32 @@ we fix the tenant-group size to 5, and for each topology, we maintain
  	\label{fig:tactic-topo}
  \end{figure}
  
- For the same isolation workloads as above, we use the tactic $\neg (e .^5 .^* e)$ $\wedge \neg (e .^* e .^* e)$
+\noindent {\bf Valley-free Routing Tactic}:  
+For the same isolation workloads as above, we use the tactic $\neg (e .^5 .^* e)$ $\wedge \neg (e .^* e .^* e)$
  which ensures {\em valley-free routing}, that is paths are of the form $eacae$. 
  The results are shown in \cref{fig:isolation}(c). 
- While this is a highly
- restrictive tactic, we were able to synthesize the forwarding rules for each workload in under 20 seconds, 
- and can achieve a best-case reduction of 400x compared to synthesis with no tactics. In \cref{fig:tactic-topo},
- we evaluate the performance of different tactics for different topology sizes. Using the no edge tactic
- and path length $\leq 7$ tactic, we can synthesize 20 tenants of group-size 5 in 100 seconds in a 180-node
- topology (9X speedup over synthesis without tactics). A similar setup with additional link capacity 
+ Using this tactic, \Name synthesizes the forwarding rules for each workload in under 20 seconds 
+ and can achieve a best-case reduction of 400x compared to synthesis without tactics. 
+ 
+\noindent {\bf Effect of Topology Size}: 
+In \cref{fig:tactic-topo},
+ we evaluate the performance of different tactics for different topology sizes. There is a
+ significant reduction of synthesis time for each tactic when compared to the baseline synthesis.
+ The performance of each tactic is directly related to the reduction of the solution space, a more
+ restrictive tactic has lower synthesis times. 
+  Using the no edge tactic
+ and path length $\leq 7$ tactic, \Name synthesizes forwarding rules for 20 tenants of group-size 5 in 100 seconds in a 180-node
+ topology (9x speedup over synthesis without tactics).
+  
+  \noindent{\bf Isolation with Link Capacity Policies:} 
+ A similar setup with additional link capacity 
  constraints for 10 links is evaluated using the "no edge" tactic, and we get a best-case 14x
  improvement over normal synthesis, thus demonstrating the usefulness of tactics for 
- different kinds of workloads. Tactics can provide 
- a considerable improvement over the baseline performance as illustrated by these experiments. 
-
+ integrating different kinds of workloads like isolation and link capacities. 
+ Tactics can provide 
+ a considerable improvement over the baseline performance as illustrated by these experiments,
+ and demonstrate the viability of synthesis approach of \Name to real-world networks.  
+ 
 \begin{figure}[h]
 	\includegraphics[width=\columnwidth]{figures/link-capacity-plot.eps}
 	\caption{Average synthesis time per packet class versus fat-tree topology size for isolation workloads 
@@ -140,17 +157,17 @@ we fix the tenant-group size to 5, and for each topology, we maintain
 
 
 \subsection{Optimistic Synthesis Performance} \label{sec:optimisticeval}
-To evaluate the heuristical optimistic synthesis procedure, we perform 100 runs of normal and optimistic synthesis (with the "no edge" tactic) to isolation
+To evaluate the heuristic optimistic synthesis procedure, we perform 100 runs of normal and optimistic synthesis (with the "no edge" tactic) to isolation
  workloads with varying number of tenants and different group sizes 
 we used in the \cref{fig:isolation} experiment and computed the
  speedup $t(Optimistic)/$ $t(normal)$ and plotted its cumulative frequency
   distribution as shown in \cref{fig:opt-cdf} to quantify the benefits of optimistic 
   synthesis. For more than 80\% of the
 workloads, optimistic gets a better or comparable performance to normal synthesis, with
-achieving a speedup of 2X nearly 40\% of the workloads. For 20\% of the workloads, optimistic
+achieving a speedup of 2x nearly 40\% of the workloads. For 20\% of the workloads, optimistic
 performs worse than normal, especially for group size 1 workloads.
 
-\subsection{Incremental Synthesis Performance}
+\subsection{Incremental Synthesis Performance} \label{sec:incrementaleval}
 While network management systems have support for enforcing complex policies, 
 a important feature required from these systems is to be enforce incremental changes
 like addition of new tenants, changes to policies or topology events like link/switch 
@@ -180,16 +197,24 @@ to building a robust network management system.
 %\end{figure}
 %
 %\subsection{Optimistic Synthesis}
+
 \begin{figure}
-	\includegraphics[width=\columnwidth]{figures/opt-cdf.eps}
-	\caption{Cumulative frequency distribution for speedup achieved by optimistic synthesis.}
-	\label{fig:opt-cdf}
+	\centering
+	\subfloat[Optimistic]{\includegraphics[width=0.5\columnwidth]{figures/opt-cdf.eps}}
+	\subfloat[Incremental]{\includegraphics[width=0.5\columnwidth]{figures/incremental-cdf.eps}}
+	\caption{\label{fig:isolation}
+		Total synthesis time (log scale) for isolation workloads over range of packet classes and different tenant-group sizes.}
 \end{figure}
-\begin{figure}
-	\includegraphics[width=\columnwidth]{figures/incremental-cdf.eps}
-	\caption{Cumulative frequency distribution for ratio of incremental synthesis/one-shot synthesis.}
-	\label{fig:incremental-cdf}
-\end{figure}
+%\begin{figure}
+%	\includegraphics[width=\columnwidth]{figures/opt-cdf.eps}
+%	\caption{Cumulative frequency distribution for speedup achieved by optimistic synthesis.}
+%	\label{fig:opt-cdf}
+%\end{figure}
+%\begin{figure}
+%	\includegraphics[width=\columnwidth]{figures/incremental-cdf.eps}
+%	\caption{Cumulative frequency distribution for ratio of incremental synthesis/one-shot synthesis.}
+%	\label{fig:incremental-cdf}
+%\end{figure}
 
 
 %\caption{Synthesis Time for varying number of reachability (with and without tactics) and waypoints policies for a 45 node fat-tree topology}
