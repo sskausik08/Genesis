@@ -5,17 +5,37 @@
 %- algorithm
 %- brief comparison with netgen
 \section{Tactics} \label{sec:tactic}
-If we consider reachability between two end-switches, the synthesis problem translates to choosing a path from the solution space of all paths from the source to destination such that the chosen path satisfies all policies like waypoints and isolation. Datacenter topologies have numerous paths between endpoints to provide full bisection bandwidth. This feature of datacenters ensues that the solution space of paths for a pair of endpoints is large. 
-
-For example, consider the fat-tree topology in \cref{fig:fattree}. The number of paths under length 10 between two edge  switches in the same pod is 242 and two edge switches in different pods is 272. If we consider the synthesis of $n$ packet classes, the problem roughly translates to finding a solution in the solution space of size $n \times 242$ which satisfies all policies. 
+Synthesis for a reachability policy translates to choosing a path from the 
+solution space of all paths from the source to destination such that the 
+chosen path satisfies all policies like waypoints and isolation. Datacenter 
+topologies like fat-trees~\cite{fattree} have numerous paths between 
+edge switches to provide full bisection bandwidth. 
+Thus, the solution space of paths for a pair of endpoints is large. 
+For example, consider the fat-tree topology in \cref{fig:fattree}. 
+The number of paths under length 10 between two edge  switches 
+in the same pod is 242 and two edge switches in different pods is 272. 
+If we consider the synthesis of $n$ packet classes, the problem 
+roughly translates to finding a solution in the solution space of size $n \times 242$.
 \begin{figure}[H]
 	\includegraphics[width=\columnwidth]{fattree.png}
 	\caption{Fat Tree Topology}
 	\label{fig:fattree}
 \end{figure}
-Network operators can leverage the network structure of specific topologies to reduce the solution space by specifying patterns of what structure the path must or must adhere to. For example, In the case of \cref{fig:fattree}, for a path from one edge to another, a reasonable pattern is that the path must not traverse another edge switch. This pattern will not drastically reduce the solution space of paths due to the dense interconnect between aggregate and core switches which can provide isolated paths for the different packet classes. 
+Operators can leverage the network structure of topologies
+ to reduce the solution space by specifying undesirable path patterns. 
+ For example, a path from edge to edge in a fat-tree must not traverse another edge switch.
+ This pattern will not drastically reduce the solution space of paths 
+ due to the dense interconnect between aggregate and core switches,
+ ensuring that synthesis most likely will not fail. 
 
-Tactics and labels are abstractions that allow the operator to impose a high-level restriction on the paths by leveraging the network structure. We use the power of regular expressions to prune constraints in our synthesis algorithm. To describe high-level restrictions on the path, we use the notion of mapping set of switches to labels to have a coarse grained control in describing the path. This ensures we do not reduce the solution space of paths drastically, and not being able to find a path satisfying all the policies.
+We introduce tactics and labels, abstractions that allow the 
+operator to impose a high-level restriction on the paths. 
+To describe high-level restrictions on the path, 
+we use the notion of mapping set of switches to labels to 
+have a coarse-grained way for specifying path patterns. This helps
+to create general search strategies which can be used for majority 
+of the packet classes instead of individual switch-level patterns which
+lack generality.
 
  Let $Lb$ be the set of labels and $S$ be the set of switches in the topology. Let $\phi : S \rightarrow Lb$ be the labelling function that maps each switch to a label in $Lb$. One example for $\phi$ in the fat-tree topology in \cref{fig:fattree} can be that we map all switches in the same level (core, aggregate or edge) to the same label,
 therefore leveraging the hierarchical structure of the topology. A path $p$ is a word over the alphabet $S$. Let $\Phi : S^* \rightarrow Lb^*$ be the path-labelling function which maps each switch in the word to its corresponding label. Let us consider a path $p = e1\ a2\ c3\ a4\ e2$. The label-path obtained by applying the path label function is $\Phi(p) = eacae$ (map each switch to its corresponding label).
