@@ -8,7 +8,16 @@
 \end{figure*}
 
 \section{Evaluation}
-In this section, we evaluate \Name using 
+We have implemented a full working prototype of \Name in Python. We have
+implemented an interpreter for the Genesis Programming Language using 
+PLY\cite{ply} and the policy enforcement synthesizer using the python API of Z3
+and outputs the forwarding rules for the switches, which can be provided
+as input to a SDN controller (POX, Floodlight etc.) to install over the network. \Name
+uses the Metis graph-partitioning library~\cite{metis} to perform equi-sized partitioning.
+The prototype contains ~5K lines of Python code.  We
+plan to make the code for \Name publicly available in the future. 
+
+In this section, we evaluate \Name using
 %\loris{really don't like the word realistic}
 enterprise-scale multi-tenant data
 center settings. 
