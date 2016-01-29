@@ -142,12 +142,13 @@ constraints which construct the path for a packet class. Each constraint says th
   Conversely, the structure of backward reachability propagation constraints 
   prevents us from being able to specify unrestricted regular expressions. Supporting them
   requires additional constraints to our algorithm which leads to increased synthesis times. 
-  Take the following regular expression for example, $\neg(e .^i a c a c .*e)$. To enforce
-  these tactics, we need to have constraints which prevent the path reaching a core switch in $i+4$
-  steps when the path traverses an aggregate, core and aggregate switch at $i+1, i+2$ and $i+3$ steps
+  Take the following regular expression for example, $\neg(e .^i a c a .*e)$. To enforce
+  these tactics, we need to have constraints which prevent the path reaching a aggregate switch in $i+3$
+  steps when the path traverses an aggregate and core switch at $i+1$ and $i+2$ steps
   respectively. This cannot be specified by modifying the backward reachability propagation 
-  constraints, because the constraints for reachability for a switch in $i + 4$ steps only depends on 
-  the constraints for  reachability in $i+3$ steps. Thus, we only support a restricted tactic syntax.   
+  constraints in its current form, 
+  because the constraints for reachability for a switch in $i + 3$ steps only depends on 
+  the constraints for reachability in $i+2$ steps. Thus, we only support a restricted tactic syntax.   
 
 Incorporating tactics in the synthesis is sound and yield a correct path satisfying all policies.
  However, since tactics artificially reduce the search space, the synthesis algorithm with tactics is incomplete. 
