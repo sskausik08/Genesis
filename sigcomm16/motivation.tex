@@ -4,24 +4,24 @@
 	\compactcaption{Overview of the system architecture of Genesis in a multi-tenant datacenter setting.}
 	\label{fig:architecture}
 \end{figure}
-In this section, we describe the type of policies that tenants and
-network operators may wish to realize. %% For simplicity, we assume a
+In this section, we describe the type of policies currently supported by
+Genesis. %% For simplicity, we assume a
 %% multi-tenant cloud set up, where both the tenants and the provider
 %% wish to realize policies over their respective networks. However,
 %% these policies, and our framework, are applicable to other settings,
 %% e.g., enterprise networks with different departments imposing
 %% different sets of policies.
 We use \cref{fig:architecture} as a running example. This figure shows several
-tenants who differ in the nature of policies they wish to realize. We
-note that these policies reflect and, in some cases, extend the
-policies that enterprises realize in their on-site networks today as
-well as policies that data center operators support for the different
-workloads they host~\cite{mpa-imc15}.  The policies include:
+tenants who differ in the nature of policies they wish to realize. 
+Notice that these policies reflect and, in some cases, extend the
+policies that today's enterprises realize in their on-site networks as
+well as the policies that data center operators support for the different hosted
+workloads~\cite{mpa-imc15}.  The policies include:
 
 %\aditya{explain the figure here}.
 %\kausik{Will do this now}
 
-\aditya{define flow, flow group, policy etc here}
+%\aditya{define flow, flow group, policy etc here}
 % \aditya{need to start by saying we focus on multi-tenant clouds, although our system can apply elsewhere too}
 
 % Operators of enterprise and multi-tenant clouds deal with policy
@@ -35,17 +35,17 @@ workloads they host~\cite{mpa-imc15}.  The policies include:
 
 
 \begin{compactitemize}
-\item \textbf{Reachability}: This enables network communication
+\item \textbf{Reachability}. This enables network communication
   between specific groups of a tenant's virtual cloud instances,
   applications, or hosts. For example, the yellow tenant has defined a reachability
   policy for its VMs ($V1 >> V2$), which is translated by the operator after 
   placement as $E2 >> E4$.
-\item \textbf{Middlebox traversals}: A tenant may wish that traffic
+\item \textbf{Middlebox traversals}. A tenant may wish that traffic
   between two of her endpoints, or from another tenant, must traverse
-  through specific middleboxes (locations, or logical descriptors) for
-  security, access control or performance reasons. This can be
+   specific middleboxes (locations, or logical descriptors) for
+  security, access control, or performance reasons. This can be
   specified via an ordered sequence of sets of middleboxes for a flow
-  group to traverse, where the middleboxes in a set can be traversed
+  group \loris{flow group is not defined, group of flows or set of flows?} to traverse, where the middleboxes in a set can be traversed
   in any order, but all middleboxes in the set must be traversed.  The
   unordered set abstraction leverages the fact that middleboxes
   without dependencies in their traffic processing behavior can be
@@ -54,19 +54,19 @@ workloads they host~\cite{mpa-imc15}.  The policies include:
   notion of a service chain. For example, the grey tenant in \cref{fig:architecture}
   defines a waypoint policy $V1 >> FW; [IDS,BC] >> V2$
    which specifies that traffic must first pass through the firewall(FW),
-  and then the set of IDS and byte counter (BC) in any order. 
+  and then through the IDS and the byte counter (BC) in any order. 
 
   %% \aditya{refer here to an example in
   %%   the figure} In several cases \loris{how true is this?} the order
   %% in which these middle-boxes is traversed is not relevant and the
   %% policy language should therefore support unordered waypoints.
 
-\item \textbf{Isolation}: Tenants may require various QoS guarantees
+\item \textbf{Isolation}. Tenants may require various QoS guarantees
   that enforce varying degrees of isolation for their traffic. In the
   extreme, a tenant could ensure that her flow groups are not affected
   by any other tenant by strictly isolating the path of the tenant's
   flows from others' flows. In \cref{fig:architecture}, we have two tenants
-  each with one traffic class which will be isolated from one another, that is
+  each with one traffic class which will be isolated from one another, i.e.,
   they will not share any links in the topology. 
   A tenant could also specify isolation for a subset of her
   (performance-sensitive) flows from other flows of her own deployment
@@ -106,14 +106,16 @@ workloads they host~\cite{mpa-imc15}.  The policies include:
 %% control of network resources, integrated with support for tenant specifications 
 %% for effective management of the network. \newline
 
-\textbf{Network Resource Management}: While support for the above
+\loris{is there a reason why this is not in the itemize?}
+\textbf{Network Resource Management}. While support for the above
 policies can be used to satisfy tenant SLAs, network operators can
 benefit from a fine-grained control of network resources, integrated
 with support for tenant specifications for effective management of the
-network. For instance, to aid traffic enginerring, the network
+network
+\loris{the previous sentence is too long}. For instance, to aid traffic enginerring, the network
 operator may specify policies constraining the maximum number of
 tenant flows that can traverse a given link or sets of links in the
-network. She may also wish to ensure traffic from some sensitive
+network. She may also wish to ensure that traffic from some sensitive
 applications does not contend for bandwidth on constrained links with
 elastic traffic from batch applications. For example, in \cref{fig:architecture},
 there are two low-bandwidth links in the datacenter, and the operator
@@ -125,8 +127,8 @@ and $A2 \rightarrow C4$ do not exceed the link capacity of 100.
           %% useful to ensure the low bandwidth links are not used by
           %% more tenants such that their performance is affected and
           %% can be used to provide bandwidth guarantees to tenants.
-  Likewise, to tackle hardware heterogeniety, operators can specify
-  switch constraint policies, like the size of the rule table to
+  Likewise, to tackle hardware heterogeniety operators can specify
+  switch constraint policies, like the size of the rule table, to
   restrict the number of flows traversing a particular switch or set
   of switches.
 %\item \textbf{Network Maintenance}: \aditya{this whole para does not
@@ -153,15 +155,17 @@ existing SDN programming languages like Pyretic and Frenetic is
 challenging, because these policies are global and cannot be enforced
 by programming individual behaviour of switches. Existing network
 management systems provide support for complex policies including
-middlebox placement and bandwidth constraints~\cite{}; however these
-are tailor-made for certain policies and lack generality and
+middlebox placement and bandwidth constraints~\cite{} \loris{missing citation}. 
+However these tools
+are tailored to specific policies and lack generality and
 extensibility.
 
-We design a general network management system that realizes the above
+We design \name, a general network management system that realizes the above
 sets of policies by performing {\em synthesis} of switch forwarding
-rules to enforce end-to-end policies. The system architecture of \name
-is shown in \cref{fig:architecture} and the way in which policies
-outlined in the previous section can be specified in \name is shown in
+rules to enforce end-to-end policies. The architecture of \name
+is shown in \cref{fig:architecture} and the 
+language used to specify policies
+is shown in
 Table~\ref{tab:policysupport} .
 
 Unlike previous efforts in the synthesis space (see~\cite{netgen,merlin}), \Name is
@@ -170,13 +174,13 @@ this aspect makes it modular and easily extensible.
 %and allows to devise specific
 %techniques for each type of policies. 
 To draw an analogy with SMT solvers, \Name can be seen as a constraint
-solver that allows the addition different types of policies
+solver that allows the addition of different types of policies
 (respectively, the theories in SMT) and that allows the design of
 different types of optimizations based on the properties desired by cloud
   operators using \Name. 
   
-Our work is motivated by recent progress in program synthesis.
-Program synthesis is defined as the task of discovering an executable
+Our work is motivated by recent advances in program synthesis, i.e.,
+the task of discovering an executable
 program from user intent expressed in the form of some
 constraints. There are three key dimensions to synthesis: the kind of
 constraints that it accepts as expression of user intent, the space of
@@ -187,16 +191,16 @@ to learn from examples and synthesize the behavior of individual
 switches (e.g., learning switches or firewalls); furthermore, this
 technique applies to networks operating in a reactive mode (where the
 first packet of a connection is processed by the controller to
-determine the actions to employ). Like Frenetic~\cite{} and
-Pyretic~\cite{}, this switch-centric approach is too constraining.
+determine the actions to employ). Like Frenetic~\cite{frenetic} and
+Pyretic~\cite{pyretic}, this switch-centric approach is too constraining.
 
-\Name\ leverages synthesis at a high level as follows: given a set of
+\Name\ leverages synthesis at a high level: given a set of
 policies which describe user intent, the search space is the space of
 all forwarding plane configurations and the search technique involved
 is SAT/SMT solving. The solution found is implemented by installing
 the necessary switch rules via a skeleton controller.
 
-This approach is appealing for a variety of different reasons: 
+This approach is appealing for the following reasons: 
 
 (1)
 Policies useful to operators are \emph{proactive} (i.e., they are not
@@ -229,7 +233,7 @@ by the network operator.
 For example, enforcing isolation policies
 is as hard as solving
 graph-coloring, a well-known
-NP-complete problem (see \cref{sec:isolationNP} for the proof).
+NP-complete problem (see \cref{sec:isolationNP}).
 %, which means
 %that any system solving this would need to exhaustively search the
 %space of all forwarding plane configurations. 
@@ -245,8 +249,8 @@ every policy into a generalized search technique.
 %research, \Name can provide support for diverse policies required by
 %network operators. 
 Crucially, \Name can be extended with ease to
-support new policies without requiring changes to the search
-techniques to find the solution.
+support new policies without requiring changes to the underlying search
+techniques.
 %% \loris{I would like to convey that we are in some sense a Network solver module policy,
 %% in the sense that we support theories (the policies) and now people can work on engineering
 %% the solver for different classes of policies.
@@ -265,45 +269,46 @@ One of the key challenges of \Name is the synthesis
 performance. 
 Due to the rich  policies supported by \Name
 finding a consistent set of switch forwarding rules 
-has exponential time worst case complexity in
+has, in the worst case, exponential time complexity in
 the number of policies.
 Moreover, since policies such as isolation affect
-the paths many different flows, it is not possible to incrementally synthesize
+the paths pf many different flows, it is not possible to incrementally synthesize
 the forwarding rules corresponding to each flow. 
+\loris{maybe quick mention that this is the case for other tools: netgen}
 Despite the recent advances in SMT solvers, to make
-the synthesis problem feasible in practice,
+the synthesis problem feasible in practice
 there is a need to improve the performance of the solver
 using techniques that are specific to the network domain.
-\loris{I rewrote this previous paragraph}
+We propose various techniques leveraging
+\emph{domain-specific} knowledge to improve synthesis performance. 
 
-
-In this paper, we propose various techniques leveraging
-\emph{domain-specific} knowledge to improve synthesis performance. We
+First, we
 propose the idea of \emph{tactics} (\cref{sec:tactic}), which are
-search strategies leveraging the network structure of datacenter
-topologies, to specify properties of the paths for the reachability
-policies.  Tactics are a way for network operators to specify a
-high-level constraint on the set of paths allowed for reachability
-policies.  Path properties are expressed using a simplified form of
-regular expressions which, after being converted into a finite
+search strategies that leverage the network structure of datacenter
+topologies.
+%, to specify properties of the paths for the reachability
+%policies.  
+Tactics allow network operators to specify a
+high-level description on the set of paths allowed for reachability
+policies.  Tactics are expressed simplified forms of
+regular expressions, which, after being converted into a finite
 automata, can be used to simplify the set of constraints provided to
 the solver.  In particular, one can eliminate constraints that cannot
 be true for any of the paths accepted by the automaton language. We
 find that this can result in 1.5x-400x speedup for different workloads.
 
-
-Another property of datacenter topologies is that the huge
-interconnect of links can lead to multiple solutions to the problem
-(i.e., to enforce the policies provided).  To take advantage of this
-property, we design a heuristic procedure called \emph{optimistic}
+Second, we propose a search strategy that takes advantage of the fact that in 
+datacenter topologies the large
+interconnect of links can lead to multiple ways 
+to enforce the provided policies.  
+We design a heuristic procedure called \emph{optimistic}
 synthesis (\cref{sec:optimistic}) which leverages the structure of
 isolation policy interactions among tenants to partition the input
-policies into effective components and synthesize these components
+policies into components and synthesize these components separately and
 faster than the complete problem. To improve the effectiveness of the
 heuristic, whenever the SMT solver fails to find a solution we extract
 the unsatisfiability core produced by the SMT solver and 
 add it to our set of constraints to quickly converge to a correct solution.
 Informally, the unsatisfiability core can be viewed
-as a set of constraints that describes why there wasn't a feasible solution~\cite{}. 
-\loris{I rewrote this, should add a citation to something discussing unsat core}
+as a set of constraints that describes why there wasn't a feasible solution~\cite{}.\loris{missing citation}
 
