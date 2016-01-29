@@ -6,8 +6,8 @@ diversity of tenant applications, need for security and compliance,
 and the advent of cloud computing, these may be subject to
 increasingly complex policies.
 
-Consider a tenant in such a data center. She may desire---in addition
-to basic reachability among her hosts or applications---that traffic
+Consider a tenant in such a data center. She may desire --- in addition
+to basic reachability among her hosts or applications --- that traffic
 attempting to reach some of her applications be examined by a set of
 middleboxes for auditing and access controls. Another tenant may
 additionally desire (a subset of) her flows to be isolated from
@@ -113,11 +113,10 @@ leveraging the formal guarantees of constraint solving, \Name
 eliminates the room for error in the enforcement of even the most
 complex collections of policies.
 
-Unfortunately, 
-due to the the large space of forwarding plane configurations,
-naively encoding policies using SMT solvers results in
-synthesis speeds that don't match the scale of operations of 
-today's cloud and enterprise networks.
+Unfortunately, due to the the large space of forwarding plane
+configurations, naively encoding policies using SMT solvers results in
+synthesis speeds that don't match the scale of operations of today's
+multitenant networks.
 %enterprise networks today because the space of forwarding plane configurations
 %is huge. 
 For instance, synthesizing 
