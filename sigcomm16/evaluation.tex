@@ -264,16 +264,18 @@ exponential complexity in the face of isolation policies, and is one
 of the future directions in building a robust network management
 system. \newline To summarize the key points of our evaluation are:
 \begin{compactitemize}
-	\item For a representative tenant-group size of 10 in a 80 node fat-tree, the baseline 
-	synthesis performance for synthesizing the forwarding rules for 1 to 8 tenants with 
-	complete tenant-isolation is in the range of 0.1-2000s. 
-      \item Tactics provide a considerable improvement over the
+\item For a representative tenant-group size of 10 in a 80 node
+  fat-tree, the baseline synthesis performance for synthesizing the
+  forwarding rules for 1 to 8 tenants with complete tenant-isolation
+  is in 0.1-2000s.
+      \item Tactics provide considerable improvement over the
         baseline, making \Name practical.  We can synthesize the above
-        workloads in the range of 0.1-300s using the no edge tactic,
+        workloads in 0.1-300s using the no edge tactic,
         and under 12s using the valley-free routing tactic.
-	 \item \Name can effectively tackle real-world scenarios using optimistic synthesis,
-	 which provides a 2.0$\times$ speed-up over non-optimistic synthesis in 40\% of the 
-	 workloads, in addition to the tactic improvements.
+      \item \Name can effectively tackle real-world scenarios using
+        optimistic synthesis, which provides a 2.0$\times$ speed-up
+        over non-optimistic synthesis in 40\% of the workloads, in
+        addition to the tactic improvements.
 \end{compactitemize}
 
 
