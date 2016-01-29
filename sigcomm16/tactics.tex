@@ -93,6 +93,8 @@ Since tactics are path-related restrictions, operators can also apply tactics se
 In our synthesis algorithm, the backward reachability propagation constraints (\cref{eq:bckprop}) ensure 
 that there is a path from source to destination. To incorporate tactics in the path for packet class $pc$, we need to modify these constraints. For a path $\pi = sw_0 \ldots sw_k$ and labelling $\Phi(\pi) = a_0 \ldots a_k$, we describe the modifications of the constraints for each type of tactic.
 
+\loris{this part needs revision. Every time you say we remove constraints, but it actually looks like you are adding extra constraints
+of the form not(..)}
 For a tactic of the form $\neg (l_{src} .^i .^* l_{dst})$ which restricts the path to a length $ < i + 1$, we remove these constraints to ensure that no switch is reached at lengths $\geq i+1$ : 
 \begin{equation}
 	\pi \vDash \neg (l_{src} .^i .^* l_{dst}) \Leftrightarrow \forall sw,k \geq i + 1. \neg Reach(sw, pc, k)
