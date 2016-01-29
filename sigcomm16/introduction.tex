@@ -3,7 +3,7 @@
 Network operators of multi-tenant datacenters deal with a multitude of
 flows traversing large number of heterogeneous devices. With growing
 diversity of tenant applications, need for security and compliance,
-and the advent of cloud computing, these flow groups may be subject to
+and the advent of cloud computing, these may be subject to
 increasingly complex policies.
 
 Consider a tenant in such a data center. She may desire---in addition
@@ -129,12 +129,12 @@ To this
 end, \Name leverages domain-specific properties to simplify the
 constraints handled by the SMT solver.  Specifically, \Name allows the
 network operator to write 
-restricted forms of regular expressions, also called \emph{tactics}, 
+restricted forms of regular expressions, called \emph{tactics}, 
 that blacklist certain
 forwarding plane configurations based on the path patterns   
 that are not desired in a datacenter network. 
 %\loris{how about: ...based on path patterns that are not desired...}
-These tactics are used to discard several constraints, therefore
+These tactics are used to discard several constraints, 
 acting as a search strategy for the solver.
 %\aditya{the previous sentence is vague}
 %By identifying a restricted syntax for specifying
@@ -142,7 +142,7 @@ acting as a search strategy for the solver.
 Tactics can improve the synthesis procedure and achieve
 %constraints added to the solver without additional constraints
 %required to ensure the solution satisfies the tactic and achieve
-a 1.5$\times$-400$\times$ speedup for different settings.
+a 1.5$\times - $400$\times$ speedup. 
 
  Secondly, \Name can use a heuristic procedure termed as
  \emph{optimistic} synthesis, that leverages the structure of tenants'

@@ -11,7 +11,7 @@ Genesis. %% For simplicity, we assume a
 %% these policies, and our framework, are applicable to other settings,
 %% e.g., enterprise networks with different departments imposing
 %% different sets of policies.
-We use \cref{fig:architecture} as a running example. This figure shows several
+We use \Cref{fig:architecture} as a running example. This figure shows several
 tenants who differ in the nature of policies they wish to realize. 
 Notice that these policies reflect and, in some cases, extend the
 policies that today's enterprises realize in their on-site networks, as
@@ -55,7 +55,7 @@ workloads~\cite{mpa-imc15}.  The policies include:
   without dependencies in their traffic processing behavior can be
   placed in any order relative to each other~\cite{pga}. Thus the
   middlebox traversal specification outlined here generalizes the
-  notion of a service chain. For example, the grey tenant in \cref{fig:architecture}
+  notion of a service chain. For example, the grey tenant in \Cref{fig:architecture}
   defines a waypoint policy $V1 >> FW; [IDS,BC] >> V2$
    which specifies that traffic must first pass through the firewall (FW),
   and then through the IDS and the byte counter (BC) in any order. 
@@ -69,7 +69,7 @@ workloads~\cite{mpa-imc15}.  The policies include:
   that enforce varying degrees of isolation for their traffic. In the
   extreme, a tenant could require that her flow groups are not affected
   by any other tenant by strictly isolating the path of the tenant's
-  flows from others' flows. In \cref{fig:architecture}, we have two tenants
+  flows from others' flows. In \Cref{fig:architecture}, we have two tenants
   each with one traffic class which will be isolated from one another, i.e.,
   they will not share any links in the topology. 
   A tenant could also specify isolation for a subset of her
@@ -101,7 +101,7 @@ workloads~\cite{mpa-imc15}.  The policies include:
 %%   would be without guarantees with varying degrees of pricing. 
 %%   Thus, support for isolation is an important feature in multi-tenant 
 %%   networks. 
- \end{compactitemize}
+ 
 %TODO : MODIFY Synthesis of waypoints to support logical waypoints
 %% Since, cloud tenants do not have a view of the actual physical
 %% topology, the policy requirements for tenants are at a coarser level
@@ -112,7 +112,7 @@ workloads~\cite{mpa-imc15}.  The policies include:
 
 %\loris{is there a reason why this is not in the itemize?} 
 %\kausik{This is not a tenant policy, but an operator feature, so separate from itemize.}
-\textbf{Network Resource Management}. While support for the above
+\item \textbf{Network Resource Management}. While support for the above
 policies can be used to satisfy tenant SLAs, network operators can
 benefit from a fine-grained control of network resources. Support for
 resource management integrated with tenant specifications is useful.
@@ -121,7 +121,7 @@ operator may specify policies constraining the maximum number of
 tenant flows that can traverse a given link or sets of links in the
 network. She may also wish to ensure that traffic from some sensitive
 applications does not contend for bandwidth on constrained links with
-elastic traffic from batch applications. For example, in \cref{fig:architecture},
+elastic traffic from batch applications. For example, in \Cref{fig:architecture},
 there are two low-bandwidth links in the datacenter, and the operator
 specifies policies to ensure that flows traversing $A2 \rightarrow C2$ 
 and $A2 \rightarrow C4$ do not exceed the link capacity of 100.
@@ -135,6 +135,7 @@ and $A2 \rightarrow C4$ do not exceed the link capacity of 100.
   switch constraint policies, like the size of the rule table, to
   restrict the number of flows traversing a particular switch or set
   of switches.
+\end{compactitemize}
 %\item \textbf{Network Maintenance}: \aditya{this whole para does not
 %    parse and needs updating} Operators on a regular basis perform link and
 %  switch maintenances, and need to ensure that during maintenance, the network still
@@ -145,7 +146,7 @@ and $A2 \rightarrow C4$ do not exceed the link capacity of 100.
 %  the network before maintenance. 
 %\end{itemize}
 
-  Our goal is to design a system that allows the above policies to be
+  \noindent Our goal is to design a system that allows these policies to be
   specified in a simple, declarative manner, and abstracts away 
   data plane enforcement and the intricacies thereof.
   
@@ -156,19 +157,17 @@ Providing support for realizing the complex set of policies using
 existing SDN programming languages like Pyretic and Frenetic is
 challenging, because these policies are global and cannot be enforced
 by programming individual behaviour of switches. Existing network
-management systems provide support for complex policies including
-middlebox placement, bandwidth and resource constraints~\cite{simple,merlin,oneswitch}.
-However these tools
-are tailored to specific policies and lack generality and
+management systems are tailored to support complex policies including
+middlebox placement, bandwidth and resource constraints~\cite{simple,merlin,oneswitch},
+but lack generality and
 extensibility.
 
-We design \name, a general network management system that realizes the above
-sets of policies by performing {\em synthesis} of switch forwarding
-rules to enforce end-to-end policies. The architecture of \name
-is shown in \cref{fig:architecture} and the 
-language used to specify policies
-is shown in
-Table~\ref{tab:policysupport} .
+We design \name, a general network management system that 
+by performs {\em synthesis} of switch forwarding
+rules to enforce the above set of end-to-end policies . The architecture of \name
+is shown in \Cref{fig:architecture} and the 
+language GPL used to specify policies
+is shown in \Cref{tab:policysupport}.
 
 Unlike previous efforts in the synthesis space (see~\cite{netgen,merlin}), \Name is
 not tailored to specific formalisms such as regular expressions and
@@ -178,7 +177,7 @@ this aspect makes it {\em modular} and {\em easy to extend}.
 To draw an analogy with SMT solvers, \Name can be seen as a constraint
 solver that allows the addition of different types of policies
 (respectively, the theories in SMT) and that allows the design of
-different types of optimizations based on the properties desired by data center
+optimizations based on the properties desired by 
   operators using \Name. 
   
 Our work is motivated by recent advances in program synthesis, i.e.,
@@ -193,14 +192,12 @@ to learn from examples and synthesize the behavior of individual
 switches (e.g., learning switches or firewalls); furthermore, this
 technique applies to networks operating in a reactive mode (where the
 first packet of a connection is processed by the controller to
-determine the actions to employ). Like Frenetic~\cite{frenetic} and
-Pyretic~\cite{pyretic}, this switch-centric approach is too constraining.
+determine the actions to employ). This switch-centric approach is too constraining.
 
 \Name\ leverages synthesis at a high level: given a set of
 policies which describe user intent, the search space is the space of
 all forwarding plane configurations and the search technique involved
-is SAT/SMT solving. The solution found is implemented by installing
-the necessary switch rules via a skeleton controller.
+is SAT/SMT solving. The solution is translated to switch rules installed via a skeleton controller.
 
 This approach is appealing for the following reasons: 
 
@@ -235,7 +232,7 @@ by the network operator.
 For example, enforcing isolation policies
 is as hard as solving
 graph-coloring, a well-known
-NP-complete problem (see \cref{sec:isolationNP}).
+NP-complete problem (see \Cref{sec:isolationNP}).
 %, which means
 %that any system solving this would need to exhaustively search the
 %space of all forwarding plane configurations. 
@@ -269,7 +266,7 @@ techniques.
 
 One of the key challenges of \Name is the synthesis
 performance. 
-Due to the rich  policies supported by \Name
+Due to the rich policies supported by \Name,
 finding a consistent set of switch forwarding rules 
 has, in the worst case, exponential time complexity in
 the number of policies.
@@ -282,11 +279,11 @@ it does not account for inter-flow policies like isolation.
 Despite the recent advances in SMT solvers, to make
 the synthesis problem feasible in practice
 there is a need to improve the performance of the solver
-using techniques that are specific to the network domain.
+using techniques that are specific to the networks.
 We propose various techniques leveraging
 \emph{domain-specific} knowledge to improve synthesis performance. 
 
-First, we propose the idea of \emph{tactics} (\cref{sec:tactic}),
+First, we propose the idea of \emph{tactics} (\Cref{sec:tactic}),
 which are search strategies that leverage the tiered network structure
 of datacenter topologies.
 %, to specify properties of the paths for the reachability
@@ -305,7 +302,7 @@ datacenter topologies the large
 interconnect of links can lead to multiple ways 
 to enforce the provided policies.  
 We design a heuristic procedure called \emph{optimistic}
-synthesis (\cref{sec:optimistic}) which leverages the structure of
+synthesis (\Cref{sec:optimistic}) which leverages the structure of
 isolation policy interactions among tenants to partition the input
 policies into components and synthesize these components separately and
 faster than the complete problem. To improve the effectiveness of the

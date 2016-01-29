@@ -3,8 +3,7 @@ Given a set of policies, \Name creates a set of constraints
 that abstracts the forwarding and reachability rules. 
 These constraints are then given to the SMT Solver Z3 \cite{z3}, which returns a model 
 for them--i.e., it assigns values to all the variables in the constraints. From these values, we extract the forwarding rules for each switch.
-To provide support for the policies in \cref{tab:policysupport}, \name uses propositional logic (SAT) and linear integer arithmetic (LIA),
-which are both supported by Z3. 
+To provide support for the policies in \Cref{tab:policysupport}, \name uses propositional logic (SAT) and linear integer arithmetic (LIA).
 \subsection{Network Forwarding Model} \label{sec:fwdmodel}
 We define the physical switch topology as an undirected graph $T=(S, L)$,
 where $S$ is the set of switches and $L$ is the set of links. 
@@ -16,7 +15,7 @@ a pair
 $(predicate :\newline src >> W_1;W_2; \ldots W_n >> dst, pc)$
 where:
 \begin{compactitemize}
-\item  $predicate$ is a packet header that identifies the packets pertaining to $r$ ;
+\item  $predicate$ is the packet header identifier pertaining to $r$ ;
 \item  $src,dst \in S$ are the source and destination switches;
 \item $W_1, W_2, \ldots, W_n \subseteq S$ are the (potentially empty) ordered sets of waypoints; 
 \item $pc \in PC$ is the packet class and is a unique integer used to identify the variables associated to $r$
@@ -47,10 +46,10 @@ we have that $\forall pc$, $(sw_1,sw_2,pc) \notin Fwd$.
 Given two concrete relations $Fwd$ and $Reach$, 
 the set $Paths$ of induced paths is defined as follows.
 Given a class $pc$,  $sw_0 \ldots sw_k \in Paths$ iff : 
-\begin{enumerate}
+\begin{compactenumerate}
 	\item $\forall i \in [0,k]. (sw_i, pc, i) \in Reach$
 	\item $\forall i \in [0, k - 1]. (sw_i, sw_{i+1}, pc) \in Fwd$
-\end{enumerate}
+\end{compactenumerate}
 Figure~\ref{fig:model} illustrates these definitions.
 
 \begin{figure}[!th]
@@ -118,7 +117,7 @@ A directed edge $n_1 \rightarrow n_2$ appears in the reachability-graph if there
 We extract the rules relevant to the shortest path from source to destination from the model, and the additional rules obtained in the solution (extra paths, forwarding loops) are ignored.  
 
 \subsection{Waypoint Constraints} 
-For a reachability policy with ordered set of waypoints $s >> W_1;W_2 \ldots ... W_n >> d$ and packet class $pc$, we add all the constraints specified in \cref{sec:reach} to ensure the existence of a path from source to destination. To satisfy waypoint policies, we add constraints so that all waypoints $w$
+For a reachability policy with ordered set of waypoints $s >> W_1;W_2 \ldots ... W_n >> d$ and packet class $pc$, we add all the constraints specified in \Cref{sec:reach} to ensure the existence of a path from source to destination. We now add constraints so that all waypoints $w$
 are traversed. 
 \begin{equation} \label{eq:waypoints}
 	\forall w \in W_1, W_2 \ldots W_n. \ \exists k.~Reach(w, pc, k).
@@ -135,7 +134,7 @@ $s$ to $d$, we need constraints to impose unicast forwarding. To achieve
 this, the forwarding rules for $pc$ at a switch must not be greater than 1. 
 %%However, just ensuring reachability of waypoints is not sufficient. Since, we do not have any restrictions on the count of forwarding rules for a packet class at a switch, it is possible that waypoints are reachable from the source through separate paths, and do not lie in the path from source to destination. Thus, to ensure that all waypoints are reachable in the path from source to destination, we need to add constraints on the count of forwarding rules at each switch. 
 %Forwarding rule constraints are to ensure that the forwarding relation $Fwd$ for a switch contains a \emph{single} switch which is a \emph{neighbour} or to no node at all (switches which are not reached in the path, and the destination will not have any forwarding rules). 
-We define the forwarding set $FwdSet$ as follows:
+We define the forwarding set as:
 \begin{equation}
 	FwdSet(sw,pc) = \{k \ | \ Fwd(sw,k,pc)\}
 \end{equation}
@@ -161,13 +160,13 @@ the forwarding rules for $pc_1$ and $pc_2$ must not forward to the same switch.
 	\forall n_1.~\neg ( \exists n_2. Fwd(n_1,n_2,pc_1) \wedge Fwd(n_1,n_2,pc_2)) \label{eq:isolation}
 \end{equation}
 %These constraints are sufficient to ensure that the packet classes $pc_1$ and $pc_2$ would be isolated. 
-When combined with \cref{eq:fwdset}, these constraints have the intuitive behaviour 
+When combined with \Cref{eq:fwdset}, these constraints have the intuitive behaviour 
 as there exists a single path for $pc_1$ and
 $pc_2$ which would be isolated. 
 Interestingly, for a reachability policy without waypoints,  
-the constraints in \cref{eq:fwdset} are not required to enforce isolation. 
+the constraints in \Cref{eq:fwdset} are not required to enforce isolation. 
 Even though the solver could produce multiple forwarding rules which induce multiple paths, 
-the constraints in \cref{eq:isolation} guarantee isolation as the solver would discard
+the constraints in \Cref{eq:isolation} guarantee isolation as the solver would discard
 the additional rules conflicting with another packet class.
 
 %reachability policy. Thus, the solver would remove the additional rules which conflict with
