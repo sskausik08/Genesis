@@ -17,28 +17,30 @@
 
 One of the key challenges to the synthesis performance is the number
 of packet classes synthesized and the policy interactions among them
-(isolation, capacity etc.). Since the complexity of finding a
+(isolation, capacity, etc.). Since the complexity of finding a
 forwarding plane configuration is roughly \emph{expotential} in the
 number of packet classes, the synthesis time shoots up with increasing
-packet classes. Datacenter topologies have a dense interconnection of
-links between layers. Thus, for a set of policies, we can obtain
-numerous forwarding plane configurations as solutions.
+packet classes. 
+We notice that since datacenter topologies have a dense interconnection of
+links between layers there can be
+numerous different forwarding plane configurations as solutions.
 % \aditya{previous sentence does not parse} 
- Thus, we propose a heuristical approach which partitions the problem 
-into components to speed up synthesis.
+We propose a heuristical approach which partitions the problem 
+into smaller components to speed up synthesis.
 
 The intuition is as follows, suppose we have two packet classes $pc_1,
 pc_2$ isolated from one another, the standard synthesis algorithm adds 
 constraints for both packet classes to the solver for finding the solution.
 Instead, we could synthesize $pc_1$
-independently, and find a solution for $pc_2$ isolated from the
+independently and, after that, find a solution for $pc_2$ 
+that is isolated from the
 path obtained for $pc_1$. We term this
 algorithm \emph{optimistic} synthesis, as we optimistically synthesize
 $pc_1$, hoping that the solution for $pc_1$ does not prevent finding a
 solution for $pc_2$. Synthesis of $pc_2$ can fail because the solution
-of $pc_1$ may traverse through edges such that there is no solution
-for $pc_2$, but if they had been synthesized together, we may have
-found paths for both.
+of $pc_1$ may be such that there is no way to place an isolated path for
+$pc_2$. However, if the two paths were to be synthesized at the same time, a
+solution might exist.
 
 \begin{algorithm}[h]
 	\floatname{algorithm}{Pseudocode}
@@ -72,16 +74,17 @@ found paths for both.
 \end{algorithm}
 %% $pc_1$ would have been different.
 
-We define a policy graph $P = \{R, I\}$ where every vertex $r \in R$
-is a packet class for a reachability/waypoint policy.
+We define a policy graph $P = (R, I)$ where every vertex $r \in R$
+is a packet class for a reachability/waypoint policy and edges
+denote isolation constraints between packet classes.
 %\aditya{again the
 %  use of packet class and policy here is unconventional and needs to
 %  be carefully defined early on} 
-An edge $i \in I$ connecting
-vertices $r1$ and $r2$ means that the paths of $r1$ and $r2$ are
+An edge $(r_1,r_2) \in I$  means that the paths of $r1$ and $r2$ are
 isolated from each other. We assume that there are no other policies
 in the input specifications other than isolation, since isolation is a local policy 
-in the sense that correct enforcement of isolation only requires information of neighbours. 
+in the sense that correct enforcement of isolation only requires information of neighbours
+\loris{don't know what this last sentence means}. 
 Resource managements policies like link capacity policies are global,
  and thus difficult to reason about them in smaller components.
   Given the policy graph $P$, we
@@ -89,23 +92,27 @@ can synthesize each connected component independently, since packet
 classes in different connected components are not related by any
 isolation policy, and therefore are independent of each other.
 
-We describe the heuristical optimistic synthesis algorithm in Pseudocode 1
-for each connected component of the policy graph.
- The crux of the algorithm is that we partition each connected component
-  into two components $P_1$ and $P_2$,
+We describe the heuristical optimistic synthesis algorithm in Pseudocode 1,
+which takes as input a connected component of the policy graph.
+ The crux of the algorithm is that we partition each connected component $P$
+  into two smaller components $P_1$ and $P_2$
+  and do the following:
 %   \aditya{are these
 %  two connected components? if so, there will be no policy interaction
 %  across them, no? given that, the following statement seems
 %  incorrect} 
-synthesize $P_1$, and for packet classes of $P_2$
+1) synthesize $P_1$ and obtain a solution $S_1$, and
+2) for packet classes of $P_2$ that are
 isolated to packet classes in $P_1$, 
 %\aditya{this seems incorrect: no such packet classes exist?} 
-add constraints to ensure that the
+add the solution $S_1$ as a constraint to ensure that the
 packet classes in $P_2$ will not share the edges of the respective
-paths obtained in $P_1$ they are isolated to. The difference from
+paths obtained in $P_1$. The difference from
 normal synthesis for a isolation policy is that since we don't have
 the paths for both packet classes, we add isolation constraints at all
-switches (\cref{eq:isolation}). In constrast, if we had a solution for
+switches (\cref{eq:isolation})
+\loris{don't know what previous and next sentence means. Please rewrite clearly}. 
+In contrast, if we had a solution for
 one packet class, we need to ensure the other path is isolated only at
 the switches visited by the path of the solved packet
 class. 
@@ -135,23 +142,28 @@ optimistic synthesis recursively on the components till we cannot partition the
 component further. 
 
 \subsection{Solution Recovery}
-While optimistic synthesis in the best case will lead to a great
-reduction of time, we need a recovery mechanism in case we cannot find
+While in the best case optimistic synthesis  will lead to a great
+increase in performance, we need a recovery mechanism in case we cannot find
 compatible partial solutions.  We describe a bounded \emph{solution} recovery
-scheme in \cref{optimisticsyn} integrated with the optimistic
+scheme in \cref{optimisticsyn} \loris{what line in the figure?} integrated with the optimistic
 synthesis algorithm.  The Z3 solver can track assertions and if it
 fails to find a solution, it can return a set of unsatisfiable cores
 which are the assertions due to which the solver could not find a
 solution\footnote{Z3 does not return the minimum set of unsatisfiable
-  cores.}.  We use this functionality of Z3 in the synthesis of $P_2$
-by tracking the constraints added to ensure isolation with the paths
-of $P_1$.  Thus, if synthesis of $P_2$ fails, the unsatisfiable cores
+  cores.}.  We use this functionality of Z3 
+to add constraints that make us to avoid to choose in the future
+paths that are similar to those that caused failures.
+%  in the synthesis of $P_2$
+%by tracking the constraints added to ensure isolation with the paths
+%of $P_1$.  
+Thus, if synthesis of $P_2$ fails, the unsatisfiable cores
 obtained from Z3 will be the paths of the solution of $P_1$ which are
-causing the synthesis of $P_2$ to fail and perform synthesis of $P_1$
-again, but ensuring we get \emph{different} paths from the
+causing the synthesis of $P_2$ to fail. 
+When performing synthesis of $P_1$
+again, we therefore ensure that we get \emph{different} paths from the
 unsatisfiable cores we extracted.  Basically, we perform a 
 \emph{solver-guided} enumeration of different solutions of $P_1$ to
-find a satisfying solution with $P_2$.  Solution recovery helps to
+find a satisfying solution for $P_2$.  Solution recovery helps to
 converge to the solution faster. 
 
 There are drawbacks to performing recovery. Since, recovery is a 
@@ -170,14 +182,15 @@ This is because, by synthesizing more packet classes together, we decrease the
 conflicts arising between partial solutions. The extreme case is when we do not 
 partition the component at all (normal synthesis), which is complete. 
 Thus, to make the synthesis complete with faster convergence, we
-perform iterations of optimistic synthesis, and each iteration we double the
+perform iterations of optimistic synthesis, and at each iteration we double the
 partition threshold $P_{thres}$ if the previous iteration failed. 
 % \aditya{when is this doubling done? during one of the
 %	recursive invocations, or only at the beginning?} 
 This scheme tries to balance the trade-off between completeness, which
 requires larger components, and performance, as synthesis is faster on smaller
-components due to the expotential time complexity. In the extreme case, after $O(log P)$
-iterations, $P_{thres} > P$ and the optimistic synthesis routine would not partition the graph,
+components. 
+In the extreme case, after $O(log~P)$
+iterations, $P_{thres} > P$ and the optimistic synthesis routine cannot partition the graph any further,
 thus rendering the routine complete. 
 % \aditya{I
 %	don't see this. you may not find a solution, no?}. In the extreme
@@ -197,12 +210,14 @@ thus rendering the routine complete.
 %  can say...'' mean}
  
  Optimistic synthesis is more \emph{effective}
- when there is a greater number of solutions and provides a
- significant improvement. In case when the problem is highly 
+ when there is a large number of solutions and provides a
+ significant improvement. When the problem is highly 
  constrained and the number of solutions is low, 
- the recovery mechanisms, and multiple iterations could 
- lead to a degraded performance by the optimistic synthesis 
- routine. We evaluate the performance improvement of optimistic
+ the recovery mechanisms and multiple iterations could 
+ lead to a degraded performance. 
+% by the optimistic synthesis 
+% routine. 
+ We evaluate the performance improvement of optimistic
  synthesis with varying isolation workloads in \cref{sec:optimisticeval}.
 
  %\aditya{the last para was very vague. rest of the section was OK, modulo my comments}
