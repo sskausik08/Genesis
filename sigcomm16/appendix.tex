@@ -1,17 +1,33 @@
  \appendix
- \section{Proofs of NP-hardness} \label{sec:np}
+ \section{Proofs of NP-completeness} \label{sec:np}
  \subsection{Enforcement of Isolation Policies} \label{sec:isolationNP}
- Given a undirected graph $T=\{S,L\}$ which represents the switch topology denoted in \cref{fig:swtopo} and undirected graph $P =\{R,I\}$ which represents the policy graph. Every vertex $r \in R$ is a reachability policy : $s >> d$ and each edge $i \in I$ which connects vertices $r1$ and $r2$ mean that the paths of $r1$ and $r2$ are isolated from each other. 
+ We show that the graph 3-coloring problem, which is NP-complete reduces to the enforcement problem for
+ reachability and isolation policies. The latter is also in NP, so after the reduction we 
+ can conclude that it is also NP-complete.
+
+Let $G=(V,E)$ be an instance of the graph 3-coloring problem.
+The graph $G$ admits a 3-coloring if there exists a function 
+$f:G\mapsto \{R,G,B\}$ such that for every edge $(v1,v2)\in E$,
+$f(v_1)\neq f(v_2)$.
+
+We now show how to construct a topology $T=(S,L)$ and a corresponding set of policies $P$ that can be 
+enforced iff $G$ admits 3-coloring.
+The topology $T$ is the one depicted in  \cref{fig:swtopo}.
+The set of flows is $V$, $v \in V$ we add a reachability policy $s >> d$ on the flow $v$.
+For each edge $(v1,v2)\in E$ we add an isolation policy $v_1||v_2$.
  \begin{figure}[H] 
  	\centering
  	\includegraphics[width=0.7\columnwidth]{figures/color_topo.eps}
  	\caption{The switch topology $T$. All circles represent switches and all reachability policies are $s$ to $d$}
  	\label{fig:swtopo}
  \end{figure}
-The solution to policy enforcement will be such that each reachability policy $r \in R$ from $s >> d$ will traverse through one of the colored switches $\{red$, $blue$, $green\}$. Color the vertices $R$ with the switch the path traverses through. If two vertices are connected by an edge in $I$, those flows would be isolated, and thus, will not have the same color. Thus, the problem reduces to finding a 3-graph coloring for the graph which is NP-complete. Thus, the enforcement of isolation policies is NP-complete. 
- 
- In genral, k-coloring (for k > 2) is NP-complete and k-coloring problem reduces into a policy enforcement problem in a switch topology with k paths from source to destination, and thus, isolation policy enforcement is NP-complete. 
-Similarly, The Hamiltonian Path problem can be reduced to an unordered waypoint policy, and thus, finding a path with unordered waypoints is NP-complete. The proof for this is omitted in this paper. 
+We not prove that if the policy can enforced $G$ admits 3-coloring.
+If the policy is enforced, we have a path from $s$ to $d$ for each flow/vertex $v$.
+We can set $f(v)$ to the color of the corresponding middle-switch being crossed.
+Since for every $(v1,v2)\in E$ the two flows for $v_1$ and $v_2$ cannot share any edge,
+they must have crossed two middle-switches with different colors and $f$ is a correct 3-coloring.
+The other direction of the proof is analogous.
+
  
 % \subsection{Enforcement of Waypoint Policies}
 % Given a undirected graph $G={V,E}$. Let us assume there exists an polynomial-time algorithm to compute the reachability paths satisfying the policies of the following types on the graph : \\
