@@ -74,12 +74,12 @@ Let $\pi = sw_0\ldots sw_k$ be a path and
 let its labeling be $\Phi(\pi)= a_0\ldots a_k$.
 We say that $\pi$ satisfies a tactic $R$, written $\pi\vDash R$, if the following
 holds:
-\begin{compactitemize}
+\begin{compact2itemize}
 \item $\pi \vDash \neg R$ iff $\pi \not\vDash R$;
 \item $\pi \vDash  l_{src} .^i .^* l_{dst}$ iff $k\geq i+1$, $l_{src}= a_0$, and $l_{dst}= a_k$; 
 \item $\pi \vDash  l_{src} .^i l.^* l_{dst}$ iff $k\geq i+2$, $l_{src}= a_0$, $l_{dst}= a_k$, and $a_{i+1}=l$;
 \item $\pi \vDash  l_{src} .^i l_1 l_2.^* l_{dst}$ iff $k\geq i+3$, $l_{src}= a_0$, $l_{dst}= a_k$, $a_{i+1}=l_1$, and $a_{i+2}=l_2$.
-\end{compactitemize}
+\end{compact2itemize}
 
 Notice that using these constraints we can express more complex forms 
 of tactics such as
@@ -123,7 +123,10 @@ as follows.
  \forall n_1. Reach(n_1,pc,i + 2) \implies \exists n_2.  n_2 \in N(n_1) \wedge \\ \phi(n_2) \not= l \wedge 
  Reach(n_2,pc,i+1) \wedge Fwd(n_2,n_1,pc)
 \end{multline}
-Informally, a switch with label $l$ can only appear at the end of the path.
+Informally, a switch with label $l$ can only appear at the end.
+
+For tactics of the form $\neg (l_{src}  .^i l_1 l_2 .^* l_{dst})$, the following modifications 
+ensure that a switch with label $l_2$ reached after $i + 2$ steps is not preceded by a switch with label $l_1$ : 
 \begin{multline} \label{eq:t3}
 \pi \vDash \neg (l_{src} .^i l_1 l_2 .^* l_{dst}) \Leftrightarrow \\ 
 \forall n_1. \phi(n_1) = l_2 \wedge Reach(n_1,pc,i + 2) \implies \exists n_2.  n_2 \in N(n_1) \wedge \\ \phi(n_2) \not= l_1 \wedge 
