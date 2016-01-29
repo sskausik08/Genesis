@@ -142,8 +142,14 @@ For a traffic isolation policy $pc_1 || \ pc_2$ means that the paths do not shar
 	\forall n_1. \neg ( \exists n_2. Fwd(n_1,n_2,pc_1) \wedge Fwd(n_1,n_2,pc_2)) \label{eq:isolation}
 \end{equation}
 These constraints are sufficient to ensure that the packet classes $pc_1$ and $pc_2$ would be isolated. 
+With \cref{eq:fwdset}, these constraints are intuitive as there exists a single path for $pc_1$ and
+$pc_2$ which would be isolated. For a reachability policy without waypoints, we 
+don't require the constraints in \cref{eq:fwdset} for enforcing isolation. The reasoning 
+behind this is that the additional rules obtained by the solver are not necessary for satisfiability of the 
+reachability policy. Thus, the solver would remove the additional rules which conflict with
+the other class while still ensuring a path exists from source to destination. 
 
-The isolation constraints is intuitive when coupled with the forwarding set constraints (\cref{eq:fwdset}) as the model only has forwarding rules for the path from source to destination. However, for a reachability policy without waypoints, we argue that the forwarding set constraints are not required when coupled with the isolation constraints. The reasoning behind this is that the solver would simply remove the extra forwarding rules of a packet class in the model which conflict with the other packet class, as there are no constraints which require the need of these extra forwarding rules for correctness, but are one particular solution model in the space of solutions. 
+%The isolation constraints is intuitive when coupled with the forwarding set constraints (\cref{eq:fwdset}) as the model only has forwarding rules for the path from source to destination. However, for a reachability policy without waypoints, we argue that the forwarding set constraints are not required when coupled with the isolation constraints. The reasoning behind this is that the solver would simply remove the extra forwarding rules of a packet class in the model which conflict with the other packet class, as there are no constraints which require the need of these extra forwarding rules for correctness, but are one particular solution model in the space of solutions. 
 
 \subsection{Capacity Constraints}
 %\subsubsection{Link Capacity Constraints} \label{sec:linkcap}
