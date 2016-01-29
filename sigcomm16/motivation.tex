@@ -191,19 +191,20 @@ solver that allows the addition of different types of policies
 optimizations based on the properties desired by 
   operators using \Name. 
   
-Our work is motivated by recent advances in program synthesis, i.e.,
-the task of discovering an executable
-program from user intent expressed in the form of some
-constraints. There are three key dimensions to synthesis: the kind of
-constraints that it accepts as expression of user intent, the space of
-programs over which it searches, and the search technique it
-employs. Program synthesis has seen limited applications to networks,
-specifically to controller synthesis~\cite{netegg}, where the idea is
-to learn from examples and synthesize the behavior of individual
-switches (e.g., learning switches or firewalls); furthermore, this
-technique applies to networks operating in a reactive mode (where the
-first packet of a connection is processed by the controller to
-determine the actions to employ). This switch-centric approach is too constraining.
+  Our work is motivated by recent advances in program synthesis, i.e.,
+  the task of discovering an executable program from user intent
+  expressed in the form of some constraints. There are three key
+  dimensions to synthesis: the kind of constraints that it accepts as
+  expression of user intent, the space of programs over which it
+  searches, and the search technique it employs. Program synthesis has
+  seen limited applications to networks~\cite{netegg,decentralize},
+  specifically to controller synthesis. These systems synthesize the
+  behavior of individual switches (e.g., learning switches or
+  firewalls); furthermore, these techniques apply to networks
+  operating in a reactive mode (where the first packet of a connection
+  is processed by the controller to determine the actions to
+  employ). Such switch-centric approaches are too constraining and
+  cannot be applied to realize network-wide objectives.
 
 \Name\ leverages synthesis at a high level: given a set of
 policies which describe user intent, the search space is the space of
