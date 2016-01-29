@@ -11,7 +11,7 @@ chosen path satisfies all policies like waypoints and isolation. Datacenter
 topologies like fat-trees~\cite{fattree} have numerous paths between 
 edge switches to provide full bisection bandwidth. 
 Thus, the solution space of paths for a pair of endpoints is large. 
-For example, consider the fat-tree topology in \cref{fig:fattree}. 
+For example, consider the fat-tree topology in \Cref{fig:fattree}. 
 The number of paths under length 10 between two edge  switches 
 in the same pod is 242 and two edge switches in different pods is 272. 
 If we consider the synthesis of $n$ packet classes, the problem 
@@ -36,7 +36,7 @@ to create search strategies which can be used for majority
 of the packet classes instead of individual switch-level patterns which
 lack generality.
 
- Let $Lb$ be the set of labels and $S$ be the set of switches in the topology. Let $\phi : S \rightarrow Lb$ be the labelling function that maps each switch to a label in $Lb$. One example for $\phi$ in the fat-tree topology in \cref{fig:fattree} can be that we map all switches in the same level (core, aggregate or edge) to the same label,
+ Let $Lb$ be the set of labels and $S$ be the set of switches in the topology. Let $\phi : S \rightarrow Lb$ be the labelling function that maps each switch to a label in $Lb$. One example for $\phi$ in the fat-tree topology in \Cref{fig:fattree} can be that we map all switches in the same level (core, aggregate or edge) to the same label,
 therefore leveraging the hierarchical structure of the topology. A path $p$ is a word over the alphabet $S$. 
 We define the path-labelling function $\Phi : S^* \rightarrow Lb^*$,  which maps each switch in the path to its corresponding 
  label. 
@@ -109,29 +109,27 @@ Thus, we can remove the reachability constraints for
 all the tuples $(sw,pc,k) \notin Reach$
 as they cannot contribute to any path satisfying the tactic.  
 
-Similarly, we can remove more constraints for tactics
-of the form $\neg (l_{src}  .^i l .^* l_{dst})$ where $l \not= l_{dst}$ by observing that:
+Similarly, we can remove constraints for tactics
+of the form $\neg (l_{src}  .^i l .^* l_{dst})$ :
 \begin{multline} \label{eq:t1}
-\pi \vDash \neg (l_{src} .^i l .^* l_{dst}) \wedge l \not= l_{dst} \Leftrightarrow \\ \forall sw. \phi(sw) = l \implies (sw, pc, i + 1) \notin Reach
+\pi \vDash \neg (l_{src} .^i l .^* l_{dst}) \Leftrightarrow \\ \forall sw.~ \phi(sw) = l ~\wedge~ sw \not= dst \implies  (sw, pc, i + 1) \notin Reach
 \end{multline}
-If $l_{dst} = l$, then \cref{eq:t1} will not work, as $l_{src} .^i l_{dst}$ 
-satisfies the tactic, and thus for switches with label $l,Reach(sw,pc,i+1)$ can hold.
-In this case, we modify the reachability constraints 
-as follows.
-\begin{multline} \label{eq:t2}
- \pi \vDash \neg (l_{src} .^i l .^* l_{dst}) \wedge l = l_{dst} \Leftrightarrow \\ 
- \forall n_1. Reach(n_1,pc,i + 2) \implies \exists n_2.  n_2 \in N(n_1) \wedge \\ \phi(n_2) \not= l \wedge 
- Reach(n_2,pc,i+1) \wedge Fwd(n_2,n_1,pc)
-\end{multline}
-Informally, a switch with label $l$ can only appear at the end.
-
-For tactics of the form $\neg (l_{src}  .^i l_1 l_2 .^* l_{dst})$, the following modifications 
-ensure that a switch with label $l_2$ reached after $i + 2$ steps is not preceded by a switch with label $l_1$ : 
+Concretely, we can say that a switch with label $l$ cannot be reached in $i+1$
+steps, except if $l = l_{dst}$. In that case,
+only the destination switch with label $l$ can be reached in $i+1$ steps as 
+the path with labelling $l_{src}.^i l_{dst}$ satisfies the tactic. If $l \not= l_{dst}$, then
+all switches with label $l$ cannot be reached in $i+1$. \newline
+For tactics of the form $\neg (l_{src}  .^i l_1 l_2 .^* l_{dst})$ : 
 \begin{multline} \label{eq:t3}
 \pi \vDash \neg (l_{src} .^i l_1 l_2 .^* l_{dst}) \Leftrightarrow \\ 
-\forall n_1. \phi(n_1) = l_2 \wedge Reach(n_1,pc,i + 2) \implies \exists n_2.  n_2 \in N(n_1) \wedge \\ \phi(n_2) \not= l_1 \wedge 
-Reach(n_2,pc,i+1) \wedge Fwd(n_2,n_1,pc)
+\forall n_1, n_2.~\phi(n_1) = l_1~\wedge~ \phi(n_2 = l_2) ~\wedge~ n_2 \not=dst  \implies \\ 
+\neg (Reach(n_1, pc, i + 1) \wedge Fwd(n_1, n_2, pc))
 \end{multline}
+Concretely, this tactic ensures that a switch with label $l_1$ at $i+1$ in the path
+will not forward the packet to a switch with label $l_2$ (unless it is the destination). 
+To enforce this, we modify the \Cref{eq:bckprop} and remove all $l_1\rightarrow l_2$
+edges at position $i+1$ in the path.  
+
 The intuition behind the restricted tactic syntax comes from the structure of the backward reachability propagation 
 constraints which construct the path for a packet class. Each constraint says that if a switch is reachable in $k$ steps in a path,
  there must a neighbour switch in the path reachable at $k-1$ steps. We design the restricted tactic syntax based
