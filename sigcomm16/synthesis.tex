@@ -25,8 +25,6 @@ In the rest of the paper, we often use the term packet class to identify the cor
 Other policies are not mapped to packet classes as they do not produce a path, but specify restrictions on paths of packet classes. 
 %Assuming that the intersection of predicates is empty for policies in $R$, we create a mapping $\gamma : R \rightarrow PC$ to associate each reachability policy with a unique integer called packet class in the set $PC$. Switches $src, dst \in S$ denote the ingress and egress switches respectively for the packet class $pc = \gamma(r)$ and Genesis finds a path from $src$ to $dst$ for $pc$. If a waypoint policy is specified, $W$ is the set of switches the path from $src$ to $dst$ must traverse through in no particular order.
 We define a static integer $\mu$ to be the synthetic limit for path length for any packet class, and define the set $K = [0, \mu]$ to be the set of all permissible path lengths.
-%\loris{why do we need this? we can enforce it with the length tactic now..} \kausik{I need for the model constraints. This is more of a synthetic limit and not to enforce any specific length properties on the path. Tactics can be used to further improve the search. if I dont have this, the model will have unbounded quantifiers. We dont want to use tactics all the time, right?}
-%\loris{you still can bound based on the fact that you only want acylcic paths using the number of nodes minus 1}
 
 The key roles of the network forwarding model are abstracting the actual forwarding rules at each node and encoding the reachability of each flow. 
 \begin{mydef}
@@ -65,17 +63,11 @@ Figure~\ref{fig:model} illustrates these definitions.
 \end{figure}
 %An example network forwarding model is shown in \cref{fig:model}. 
 %%There are two reachability policies, $r1 : 1 >> [5] >> 2$ with $pc=1$ and $r2 : 1 >> 2$ with $pc=2$ and $r1$ is isolated to $r2$
-%%\loris{The policies should be in the caption of the figure as well or in the figure itself}. 
 %Using the value of $Fwd$ relation, we can find out paths for each packet class the forwarding rules for each switch. 
 
-%\loris{say somewhere that all those relations are encoded as propositions in SAT}
 One of the decisions oriented towards performance is modelling the forwarding and reachability relations using propositions, so that we can reduce enforcement of policies like reachability, waypoints and isolation to a Boolean Satisfiability Problem (SAT) problem\footnote{An earlier iteration of our model used \emph{uninterpreted functions} supported by Z3 and modeled reachability using recursive constraints, 
 	which was slower with a greater number of constraints.}. 
 The two relations for forwarding and reachability ensure we can write the constraints in a concise and intuitive manner.
-%\kausik{Removed the troublesome lines. Is there anything nnoteworthy with the modelling we can specify here?}
-%\loris{not sure what you are trying to say with the previous 2 sentences, is it important at all?}. 
-%\kausik{I am trying to motivate the requirement for the reachability relation to write constraint concisely}
-%\loris{are you saying that constraints enumerating all the paths of some length would be bad? Who would do that?}
 
 \subsection{Reachability Constraints} \label{sec:reach}
 We first discuss the constraints generated for reachability polices without waypoints.
@@ -122,82 +114,96 @@ require to add further constraints.
 
 To extract a concrete $s$-to-$d$ path we 
 perform a breadth-first search on the reachability graph induced by the solution to the constraints. 
-%\loris{the previous point is a bit crucial, clarify a little better} \kausik{TODO}
 A directed edge $n_1 \rightarrow n_2$ appears in the reachability-graph if there is forwarding rule indicated by the relation $(n_1,n_2, pc) \in Fwd$. 
 We extract the rules relevant to the shortest path from source to destination from the model, and the additional rules obtained in the solution (extra paths, forwarding loops) are ignored.  
-%\loris{we should later say that this is perhaps desirable for future extensions with broadcasting.}
+
 \subsection{Waypoint Constraints} 
-For a reachability policy with ordered set of waypoints $s >> W_1;W_2 \ldots ... W_n >> d$ and packet class $pc$, we add all the constraints specified in \cref{sec:reach} to ensure the existence of a path from source to destination. To satisfy waypoint policies, we need to add constraints so that all waypoints $w$
-are reachable. 
+For a reachability policy with ordered set of waypoints $s >> W_1;W_2 \ldots ... W_n >> d$ and packet class $pc$, we add all the constraints specified in \cref{sec:reach} to ensure the existence of a path from source to destination. To satisfy waypoint policies, we add constraints so that all waypoints $w$
+are traversed. 
 \begin{equation} \label{eq:waypoints}
-	\forall w \in W_1, W_2 \ldots W_n. \ \exists k. Reach(w, pc, k)
+	\forall w \in W_1, W_2 \ldots W_n. \ \exists k.~Reach(w, pc, k).
 \end{equation}
-For the relative ordering among sets, we need to add the following constraints which ensure that all waypoints
+For each set $W_i$  such that $i>1$, we add the following constraints which ensure that all waypoints
 in $W_i$ are reached after all waypoints in $W_{i - 1}$ : 
 \begin{multline}
-\forall w_{i} \in W_{i}, \forall k_i. Reach(w_i, pc, k_i) \implies 
+\forall w_{i} \in W_{i}, \forall k_i.~Reach(w_i, pc, k_i) \implies 
 \forall w_{i - 1} \in W_{i-1}. \\ \exists k_{i-1}. \ 
- k_{i-1} < k_{i} \wedge Reach(w_{i-1}, pc, k_{i-1}) 
+ k_{i-1} < k_{i} \wedge Reach(w_{i-1}, pc, k_{i-1}).
 \end{multline}
-However, to ensure that all waypoints are reachable in a single path from
-$src$ to $dst$, we need constraints to impose unicast forwarding. To achieve
+To ensure that all waypoints are reachable in a single path from
+$s$ to $d$, we need constraints to impose unicast forwarding. To achieve
 this, the forwarding rules for $pc$ at a switch must not be greater than 1. 
 %%However, just ensuring reachability of waypoints is not sufficient. Since, we do not have any restrictions on the count of forwarding rules for a packet class at a switch, it is possible that waypoints are reachable from the source through separate paths, and do not lie in the path from source to destination. Thus, to ensure that all waypoints are reachable in the path from source to destination, we need to add constraints on the count of forwarding rules at each switch. 
 %Forwarding rule constraints are to ensure that the forwarding relation $Fwd$ for a switch contains a \emph{single} switch which is a \emph{neighbour} or to no node at all (switches which are not reached in the path, and the destination will not have any forwarding rules). 
 We define the forwarding set $FwdSet$ as follows:
 \begin{equation}
-	FwdSet(sw,pc) = \{n \ | \ Fwd(sw,n,pc)\}
+	FwdSet(sw,pc) = \{k \ | \ Fwd(sw,k,pc)\}
 \end{equation}
-The $|A|$ function is used to the denote the size of set $A$. The constraint on the forwarding set are that the size of each set must not exceed 1. The forwarding set constraints\footnote{
-	These constraints are expressed completely in SAT.} are as follows : 
+We then add constraints stating that the size of the forwarding set must not exceed 1:\footnote{
+	These constraints are expressed in SAT.}
 \begin{equation}
-		\forall sw,pc . \ |FwdSet(sw,pc)| \leq 1 \label{eq:fwdset}
+		\forall sw,pc .\ |FwdSet(sw,pc)| \leq 1 \label{eq:fwdset}
 \end{equation}
-
+Here $|A|$ denotes the size of set $A$. 
 %The forwarding set constraints ensure that the forwarding rules exist only on the path from source to destination, and no other rules exist in the solution. If a switch has a forwarding rule to  elsewhere, then it would not have a rule for the path, and the destination will not be reachable. These restrictions will also ensure there are no forwarding loops in the path. 
 Since, there cannot exist multiple rules at a switch, the model will contain a 
-single {\em unicast} path from source to destination. There would have to 
-be more than one rule at a switch for multiple paths from the source to exist. 
-\cref{eq:waypoints} ensures that waypoints are reachable, therefore
- the path from source to destination must traverse through all the waypoints. 
+single {\em unicast} path from source to destination. 
+%There would have to 
+%be more than one rule at a switch for multiple paths from the source to exist. 
+All together these constraints ensure that all waypoints are traversed in the correct order. 
 
 \subsection{Isolation Constraints}
-For a traffic isolation policy $pc_1 || \ pc_2$ means that the paths do not share an link in the same direction in their paths, therefore, at every switch, the forwarding rules for $pc_1$ and $pc_2$ must not forward it to the same switch.  
+A traffic isolation policy $pc_1 || \ pc_2$ states that
+the paths for $pc_1$ and $pc_2$ do not share any link in the same direction. 
+We enforce this policy by adding constraints that states that at every switch
+the forwarding rules for $pc_1$ and $pc_2$ must not forward to the same switch.  
 \begin{equation}
-	\forall n_1. \neg ( \exists n_2. Fwd(n_1,n_2,pc_1) \wedge Fwd(n_1,n_2,pc_2)) \label{eq:isolation}
+	\forall n_1.~\neg ( \exists n_2. Fwd(n_1,n_2,pc_1) \wedge Fwd(n_1,n_2,pc_2)) \label{eq:isolation}
 \end{equation}
-These constraints are sufficient to ensure that the packet classes $pc_1$ and $pc_2$ would be isolated. 
-With \cref{eq:fwdset}, these constraints are intuitive as there exists a single path for $pc_1$ and
-$pc_2$ which would be isolated. For a reachability policy without waypoints, we 
-don't require the constraints in \cref{eq:fwdset} for enforcing isolation. The reasoning 
-behind this is that the additional rules obtained by the solver are not necessary for satisfiability of the 
-reachability policy. Thus, the solver would remove the additional rules which conflict with
-the other class while still ensuring a path exists from source to destination. 
+%These constraints are sufficient to ensure that the packet classes $pc_1$ and $pc_2$ would be isolated. 
+When combined with \cref{eq:fwdset}, these constraints have the intuitive behaviour 
+as there exists a single path for $pc_1$ and
+$pc_2$ which would be isolated. 
+Interestingly, for a reachability policy without waypoints,  
+the constraints in \cref{eq:fwdset} are not required to enforce isolation. 
+Even though the solver could produce multiple forwarding rules which induce multiple paths, 
+the constraints in \cref{eq:isolation} are still enough guarantee isolation.
+
+%reachability policy. Thus, the solver would remove the additional rules which conflict with
+%the other class while still ensuring a path exists from source to destination. 
 
 %The isolation constraints is intuitive when coupled with the forwarding set constraints (\cref{eq:fwdset}) as the model only has forwarding rules for the path from source to destination. However, for a reachability policy without waypoints, we argue that the forwarding set constraints are not required when coupled with the isolation constraints. The reasoning behind this is that the solver would simply remove the extra forwarding rules of a packet class in the model which conflict with the other packet class, as there are no constraints which require the need of these extra forwarding rules for correctness, but are one particular solution model in the space of solutions. 
 
 \subsection{Capacity Constraints}
 %\subsubsection{Link Capacity Constraints} \label{sec:linkcap}
-For a link capacity policy on the link $sw_1 \rightarrow sw_2$ with capacity $\omega$, we use the theory of integer linear arithmetic to add constraints on the link so that capacity used by the flows traversing the link does not exceed $\omega$. In terms of our model, the link capacity policy translates to constraints to ensure that the tuples of the form $(sw_1, sw_2, pc) \in Fwd$ for $pc \in PC$ conform to the capacity specified in the policy, as the forwarding rule $sw1 \rightarrow sw2$ means that the link is being used by the particular packet class.
+For a link capacity policy on the link $sw_1 \rightarrow sw_2: \omega$, we use the theory of integer linear arithmetic to add constraints on the link so that capacity used by the flows traversing the link does not exceed $\omega$. 
+In terms of our model, the link capacity policy translates to constraints that
+ensure that the tuples of the form $(sw_1, sw_2, pc) \in Fwd$ for $pc \in PC$ conform to the capacity specified in the policy, 
+as the forwarding rule $sw_1 \rightarrow sw_2$ means that the link is being used by the particular packet class.
  
-Let $C(sw_1,sw_2,pc)$ be the cumulative capacity function of the link used by all packet classes less than equal to $pc$. Since we use integers for denoting the packet class, we have total order of the set of packet classes. We use this to create inductive constraints to sum over the set of Boolean variables $Fwd(sw_1, sw_2,pc)$. Let $PC : [0, \lambda]$ be the set of packet classes and $W(pc)$ is the capacity of packet class $pc$ which denotes the bandwidth alloted to the packet class. 
+Let $C(sw_1,sw_2,pc)$ be the cumulative capacity function of the link used by all packet classes less than equal to $pc$. Since we use integers for denoting the packet class, we have a total order of the set of packet classes. We use this to create inductive constraints to sum over the set of Boolean variables $Fwd(sw_1, sw_2,pc)$. Let $PC : [0, \lambda]$ be the set of packet classes and $W(pc)$ 
+denote the capacity of packet class $pc$--i.e., the bandwidth allotted to the packet class. 
 The base case constraint for the capacity function is for $pc = 0$ (the minimum element of $PC$) :
 \begin{equation}
 	Fwd(sw_1, sw_2, 0) \implies C(sw_1, sw_2, 0) = W(0)
 \end{equation}
 \begin{equation}
-	\neg Fwd(sw_1, sw_2, 0) \implies C(sw_1, sw_2, 0) = 0
+	\neg Fwd(sw_1, sw_2, 0) \implies C(sw_1, sw_2, 0) = 0.
 \end{equation} 
-The inductive constraints for the capacity function are as follows if link is used : 
+If link is used, the inductive constraints for the capacity function are as follows:
 \begin{multline}
-	\forall pc > 0. Fwd(sw_1,sw_2,pc) \implies \\ C(sw_1, sw_2, pc) =  C(sw_1. sw_2, pc - 1) + W(pc)
+	\forall pc > 0.~Fwd(sw_1,sw_2,pc) \implies \\ C(sw_1, sw_2, pc) =  C(sw_1. sw_2, pc - 1) + W(pc).
 \end{multline}
 If the link is not used, the constraints are as follows : 
 \begin{multline}
-\forall pc > 0. \neg Fwd(sw_1,sw_2,pc) \implies \\ C(sw_1, sw_2, pc) =  C(sw_1. sw_2, pc - 1)
+\forall pc > 0.~\neg Fwd(sw_1,sw_2,pc) \implies \\ C(sw_1, sw_2, pc) =  C(sw_1. sw_2, pc - 1).
 \end{multline}
-ITo satisfy the capacity policy, the total capacity used should not exceed input $\omega$. $\lambda$ is the greatest element in the set $PC$. 
+To satisfy the capacity policy, the total capacity used should not exceed $\omega$. 
+Since, $\lambda$ is the greatest element in $PC$ we have:
 \begin{equation}
-	C(sw_1, sw_2, \lambda) \leq \omega	
+	C(sw_1, sw_2, \lambda) \leq \omega.
 \end{equation} 
-For switch table size policies, we track the number of packet classes traversing the switch, for each class traversing the switch would require a forwarding rule at the switch. We create inductive constraints similar to link capacity constraints to sum over the set of Boolean variables that denote reachability of the path to switch $sw$, which is $\exists k$. $Reach($ $sw,pc,k)$.
+For \emph{switch table size} policies, we use the relation $Reach$ to track the number of packet classes that traverses the switch.
+We create inductive constraints similar to those for link capacity and use
+them  to sum over the set of Boolean variables that denote reachability of the path to switch $sw$, which is $\exists k.~Reach(sw,pc,k)$.
+\loris{this last sentence doesn't make sense, why the exists?}
