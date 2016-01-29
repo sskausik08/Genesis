@@ -147,7 +147,7 @@ orders.
 			\hline
 		\end{tabular}
 	\end{center}
-	\caption{Average synthesis time per class for Waypoint Policies for increasing number of waypoints } \label{tab:waypointeval} 
+	\caption{Average synthesis time per class for waypoint policies with increasing number of waypoints } \label{tab:waypointeval} 
 \end{table}
  % Write about waypoints
  \subsection{Tactic Reductions} \label{sec:tacticeval}
@@ -187,7 +187,7 @@ In \cref{fig:tactic-topo},
   
   \noindent{\bf Isolation with Link Capacity Policies}: 
  A similar setup with additional link capacity 
- constraints for 10 links is evaluated using the "no edge" tactic, and we get a best-case 14$\times$
+ constraints for 10 links is evaluated using the no edge tactic, and we get a best-case 14$\times$
  improvement over baseline synthesis, thus demonstrating the usefulness of tactics for 
  integrating different kinds of workloads like isolation and link capacities. 
  Tactics can provide 
@@ -205,7 +205,7 @@ In \cref{fig:tactic-topo},
 
 \subsection{Optimistic Synthesis Performance} \label{sec:optimisticeval}
 To evaluate the heuristic optimistic synthesis procedure, we perform 100 runs of non-optimistic
- synthesis and optimistic synthesis (with the "no edge" tactic) on isolation
+ synthesis and optimistic synthesis (with the no edge tactic) on isolation
  workloads with varying number of tenants and different group sizes 
 we used in the \cref{fig:isolation} experiment. We compute the
  speedup $t(non-optimistic)/t(optimistic)$ and plot its cumulative frequency
@@ -225,15 +225,18 @@ different isolation workloads of the experiment in  \cref{fig:isolation} and per
 of $n$ packet classes, and then
 add a single policy to a tenant (with isolation to all other tenant packet classes) and
 measure the time needed for synthesis of the updated policies. Both runs of synthesis use the
-"no edge" tactic for efficiency. We plot a cumulative frequency 
+no edge tactic for efficiency. We plot a cumulative frequency 
 distribution of the ratio of time taken for incremental synthesis time for the $n+1^{th}$ packet class
  versus the synthesis time for $n$ policies  in \cref{fig:incremental-cdf}. For 80 \% of the workloads, the incremental 
 synthesis takes less than 10\% of the total synthesis time for $n$ policies, which makes \Name suitable for 
 performing incremental changes. But in some cases, the new policies may trigger a re-synthesis 
 of the previously synthesized policies, and we can see workloads where the ratio is 1 or greater. This 
-is an intrinsic challenge with the problem setup. 
-Thus, performing incremental synthesis is a challenging problem and is one of the future directions
-to building a robust network management system. \newline
+is an intrinsic challenge with the problem setup, because paths for packet classes are tightly
+coupled with isolation/capacity policies. If there exists a polynomial-time algorithm to perform
+this change, then enforcement of isolation could be done incrementally in polynomial time.
+Thus, performing incremental synthesis is challenging because of its exponential complexity,
+and is one of the future directions
+in building a robust network management system. \newline
 To summarize the main points of the evaluation : 
 \begin{compactitemize}
 	\item For a tenant-group size of 10 in a 80 node fat-tree topology, the baseline 
