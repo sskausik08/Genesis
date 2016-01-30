@@ -114,12 +114,12 @@ of the form $\neg (l_{src}  .^i l .^* l_{dst})$ :
 \begin{multline} \label{eq:t1}
 \pi \vDash \neg (l_{src} .^i l .^* l_{dst}) \Leftrightarrow \\ \forall sw.~ \phi(sw) = l ~\wedge~ sw \not= dst \implies  (sw, pc, i + 1) \notin Reach
 \end{multline}
-Concretely, we can say that a switch with label $l$ cannot be reached in $i+1$
+The tactic ensures that a switch with label $l$ cannot be reached in $i+1$
 steps, except if $l = l_{dst}$. In that case,
 only the destination switch with label $l$ can be reached in $i+1$ steps as 
 the path with labelling $l_{src}.^i l_{dst}$ satisfies the tactic. If $l \not= l_{dst}$, then
 all switches with label $l$ cannot be reached in $i+1$. For all tuples
-$(sw, pc, i+1) \notin Reach$, we can remove the reachability constraints of \Cref{eq:bckprop} for these tuples.
+$(sw, pc, i+1) \notin Reach$, we can remove the reachability constraints of \Cref{eq:bckprop}.
 \newline
 For tactics of the form $\neg (l_{src}  .^i l_1 l_2 .^* l_{dst})$ : 
 \begin{multline} \label{eq:t3}
@@ -130,7 +130,7 @@ For tactics of the form $\neg (l_{src}  .^i l_1 l_2 .^* l_{dst})$ :
 This tactic ensures that a switch with label $l_1$ at $i+1$ in the path
 will not forward the packet to a switch with label $l_2$ (unless $n_2$ is the destination). 
 To enforce this, we modify the \Cref{eq:bckprop} and remove all $l_1\rightarrow l_2$
-edges at position $i+1$ in the path.  
+edges at position $i+1$ in the path for which $l_2$ is different from the destination.  
 
 The intuition behind the restricted tactic syntax comes from the structure of the backward reachability propagation 
 constraints which construct the path for a packet class. Each constraint says that if a switch is reachable in $k$ steps in a path,
