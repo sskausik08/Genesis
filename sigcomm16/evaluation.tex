@@ -16,7 +16,7 @@ enforcement synthesizer using the python API of Z3; this outputs the
 forwarding rules for the switches, which can be provided as input to a
 SDN controller (POX, Floodlight etc.) to install over the
 network. \Name uses the Metis graph-partitioning library~\cite{metis}
-to perform equi-sized partitioning.  The prototype contains ~5K Python LOC.  
+to perform equi-sized partitioning.  The prototype contains ~5K Python lines of code.  
 We plan to make the code for \Name publicly available.
 
 In this section, we evaluate \Name using
@@ -50,7 +50,7 @@ incremental changes?  (\cref{sec:incrementaleval})
 Our experiment settings have a few thousand servers, tens of switches,
 and hierarchical fat-tree network topologies which reflect a private
 datacenter. Our experiments are parameterized by: (a) total size of
-the network which we vary between 45 to 180 switches, (b) number of
+the fat-tree network which we vary between 45 to 180 switches, (b) number of
 tenants (1-80), and (c) number of packet classes in a tenant (1-10).
 
 Our primary metric of interest is synthesis time, measured in
@@ -65,7 +65,7 @@ for a fat-tree topology with three levels.
 \noindent {\bf Multi-tenant Isolation}: To evaluate the baseline
 performance of \Name without tactics, we model a multi-tenant 80 switch
  topology with tenant-isolation in
-\cref{fig:isolation}(a).  For each workload we have $n$ tenants with
+\Cref{fig:isolation}(a).  For each workload we have $n$ tenants with
 group size $g$ which is the number of packet classes for each
 tenant. The x-axis shows the total packet classes $n*g$.  Packet
 classes of a tenant are not isolated (and they implement simple
@@ -108,7 +108,7 @@ paths. Thus, by keeping the number of packet classes proportional to
 size of the topology, we maintain the relative difficulty of the
 workload across topologies.  We show the average synthesis time per
 class with increasing topology sizes in
-\cref{fig:tactic-topo}.  We are able to synthesize forwarding rules
+\Cref{fig:tactic-topo}.  We are able to synthesize forwarding rules
 for 12 tenants with tenant-group size 5 in a 125 switch topology in 124
 seconds (avg. 2 seconds per traffic class).
  %Some comment I dont understand.
@@ -135,7 +135,7 @@ aggregate switches for waypoints. The synthetic limit $\mu$ on the
 path length is increased to 15 and no tactics are used (
 difficult to devise a tactic for the path satisfying a waypoint policy). The
 average synthesis time for a waypoint policy is reported in
-\cref{tab:waypointeval}.  We observe that synthesis time increases
+\Cref{tab:waypointeval}.  We observe that synthesis time increases
 exponentially with total number of waypoints in a packet class's
 policy, owing to the complexity of the problem.  \Name can synthesize
 rules for a path with 3 total waypoints in less than a second on
@@ -180,7 +180,7 @@ unordered or waypoint sets of sizes 1 and 2.
 \noindent {\bf Valley-free Routing Tactic}:  
 For the same isolation workloads as above, we use the tactic $\neg (e .^5 .^* e)$ $\wedge \neg (e .^* e .^* e)$
  which ensures {\em valley-free routing}, that is paths are of the form $eacae$. 
- The results are shown in \cref{fig:isolation}(c). 
+ The results are shown in \Cref{fig:isolation}(c). 
  Using this tactic, \Name synthesizes forwarding rules for each workload in under 20 seconds 
  and can achieve a best-case reduction of 400$\times$ compared to synthesis without tactics. 
  
@@ -192,7 +192,7 @@ For the same isolation workloads as above, we use the tactic $\neg (e .^5 .^* e)
  \end{figure}
  
 \noindent {\bf Effect of Topology Size}: 
-In \cref{fig:tactic-topo},
+In \Cref{fig:tactic-topo},
  we evaluate the performance of different tactics for different topology sizes. There is a
  significant reduction of synthesis time for each tactic when compared to the baseline synthesis.
  The performance of each tactic is directly related to the reduction of the solution space: a more
@@ -226,9 +226,9 @@ In \cref{fig:tactic-topo},
 optimistic synthesis procedure, we perform 100 runs of non-optimistic
 synthesis and optimistic synthesis (with the no edge tactic) on
 isolation workloads with varying number of tenants and different group
-sizes we used in the \cref{fig:isolation} experiment. We compute the
+sizes we used in the \Cref{fig:isolation} experiment. We compute the
 speedup $t(non-opt)/t(opt)$ and plot its cumulative
-frequency distribution in \cref{fig:opt-cdf} to quantify the benefits
+frequency distribution in \Cref{fig:opt-cdf} to quantify the benefits
 of optimistic synthesis. For more than 80\% of the workloads,
 optimistic offers a better or comparable performance to non-optimistic
 synthesis, achieving a speedup of 2$\times$ for nearly 40\% of the
@@ -244,14 +244,14 @@ feature required from these systems is to enforce incremental changes
 like addition of new tenants, changes to policies, or topology events
 like link/switch failures. To evaluate our synthesis algorithm for
 incremental changes, we use 100 runs of different isolation workloads
-of the experiment in \cref{fig:isolation} and perform synthesis of $n$
+of the experiment in \Cref{fig:isolation} and perform synthesis of $n$
 packet classes, and then add a single policy to a tenant (with
 isolation to all other tenant packet classes) and measure the time
 needed for synthesis of the updated policies. Both runs of synthesis
 use the ``no edge'' tactic for efficiency. We plot a cumulative
 frequency distribution of the ratio of time taken for incremental
 synthesis for the $n+1^{th}$ packet class versus the synthesis time
-for $n$ policies in \cref{fig:incremental-cdf}. For 80 \% of the
+for $n$ policies in \Cref{fig:incremental-cdf}. For 80 \% of the
 workloads, the incremental synthesis takes less than 10\% of the total
 synthesis time for $n$ policies, which makes \Name suitable for
 performing incremental changes. But in some cases, the new policies

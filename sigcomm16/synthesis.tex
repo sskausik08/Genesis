@@ -44,8 +44,8 @@ for all $sw_1, sw_2$ that are not connected by a link,
 we have that $\forall pc$, $(sw_1,sw_2,pc) \notin Fwd$. 
 
 Given two concrete relations $Fwd$ and $Reach$, 
-the set $Paths$ of induced paths is defined as follows.
-Given a class $pc$,  $sw_0 \ldots sw_k \in Paths$ iff : 
+the set $Paths$ of induced paths is defined as follows :
+given a class $pc$,  $sw_0 \ldots sw_k \in Paths$ iff : 
 \begin{compactenumerate}
 	\item $\forall i \in [0,k]. (sw_i, pc, i) \in Reach$
 	\item $\forall i \in [0, k - 1]. (sw_i, sw_{i+1}, pc) \in Fwd$
