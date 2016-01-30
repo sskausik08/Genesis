@@ -248,10 +248,10 @@ of the experiment in \Cref{fig:isolation} and perform synthesis of $n$
 packet classes, and then add a single policy to a tenant (with
 isolation to all other tenant packet classes) and measure the time
 needed for synthesis of the updated policies. Both runs of synthesis
-use the ``no edge'' tactic for efficiency. We plot a cumulative
+use the no edge tactic for efficiency. We plot a cumulative
 frequency distribution of the ratio of time taken for incremental
 synthesis for the $n+1^{th}$ packet class versus the synthesis time
-for $n$ policies in \Cref{fig:incremental-cdf}. For 80 \% of the
+for $n$ policies("one-shot" synthesis) in \Cref{fig:incremental-cdf}. For 80 \% of the
 workloads, the incremental synthesis takes less than 10\% of the total
 synthesis time for $n$ policies, which makes \Name suitable for
 performing incremental changes. But in some cases, the new policies
@@ -262,8 +262,8 @@ classes are tightly coupled with isolation/capacity policies. If there
 exists a polynomial-time algorithm to perform this change, then
 enforcement of isolation could be done one-by-one in polynomial time.
 Thus, performing incremental synthesis is challenging because of its
-exponential complexity in the face of isolation policies, and is one
-of the future directions in building a robust network management
+exponential complexity, and is one
+of the future directions of research in building a robust network management
 system. \newline To summarize the key points of our evaluation are:
 \begin{compactitemize}
 \item For a representative tenant-group size of 10 in a 80 switch

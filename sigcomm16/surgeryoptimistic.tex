@@ -53,7 +53,7 @@ solution might exist.
 		\State{Apply normal synthesis on P}  
 		\Else
 		\State{Partition P into $P_1$ and $P_2$ using min-cut or \newline \hspace*{0.95cm} equi-sized partitioning}
-		\If{interpartition edges > $E_T$} \State{Apply normal synthesis on P} \EndIf
+		\If{interpartition edges > $E_{thres}$} \State{Apply normal synthesis on P} \EndIf
 		\State{failed_solns = []}
 		\State{attempts = 0} 
 		\While{attempts < $RA_{max}$}
