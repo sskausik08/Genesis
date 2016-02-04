@@ -31,7 +31,7 @@ class GenesisSynthesiser(object) :
 		self.pc = Int('pc') # Generic variable for packet classes
 		
 		self.z3Solver = Solver()
-		self.z3Solver.set(unsat_core=True)
+		#self.z3Solver.set(unsat_core=True)
 		#self.z3Solver.set("sat.phase", "always-false")
 		self.fwdmodel = None 
 
@@ -271,6 +271,9 @@ class GenesisSynthesiser(object) :
 			self.synthesisSuccessFlag = self.enforceUnicastPolicies()
 			self.enforceMulticastPolicies()		
 
+			print "testing soft constraints"
+			self.enforceChangedPolicies()
+
 		end_t = time.time()
 		print "Time taken to solve the " + str(self.pdb.getPacketClassRange()) + " policies " + str(end_t - start_t)
 
@@ -372,7 +375,7 @@ class GenesisSynthesiser(object) :
 		else : 			
 			for relClass in relClasses :
 				# Independent Synthesis of relClass.
-				self.z3Solver.push()
+				#self.z3Solver.push()
 				#reachtime = time.time()
 
 				for pc in relClass :
@@ -414,7 +417,7 @@ class GenesisSynthesiser(object) :
 					for unsatCore in unsatCores :
 						print str(unsatCore)
 
-				self.z3Solver.pop()
+				#self.z3Solver.pop()
 
 	def enforceUnicastPoliciesNoOptimizations(self) :
 		""" Enforcement of Policies stored in the PDB. """
@@ -1857,513 +1860,506 @@ class GenesisSynthesiser(object) :
 
 	def enforceChangedPolicies(self):
 		# A model already exists. Synthesis of newly added policies. 
-		self.addTopologyConstraints(0, self.pdb.getPacketClassRange())
+
+		relClasses = self.pdb.getRelationalClasses()
 
 		#create the updated relational Classes.
-		self.pdb.createRelationalClasses()
-		relClasses = self.pdb.getUnenforcedRelationalClasses()
-		print relClasses
+		for relClass in relClasses :
 
-		# Naive synthesis approach : Apply enforced policies as constraints to the unenforced ones.
-		for relClass in relClasses:
-			self.z3Solver.push()
+			# Add soft constraints
 			for pc in relClass :
-				if not self.pdb.isEnforced(pc): 
-					if not self.pdb.isMulticast(pc) :  
-						policy = self.pdb.getReachabilityPolicy(pc)
-						print policy
-						self.addReachabilityConstraints(srcIP=policy[0][0], srcSw=policy[0][2], dstIP=policy[0][1], dstSw=policy[0][3],pc=pc, W=policy[1], pathlen=policy[2]) 
+				path = self.pdb.getPath(pc)
+				self.addSoftModelConstraints(pc, path)
 
-			# Add traffic constraints. 
-			for pno in range(self.pdb.getIsolationPolicyCount()) :
-				pc = self.pdb.getIsolationPolicy(pno)
-				pc1 = pc[0]
-				pc2 = pc[1]
-				if pc1 in relClass and pc2 in relClass : 
-					if self.pdb.isEnforced(pc1) and self.pdb.isEnforced(pc2) :
-						continue
-					elif self.pdb.isEnforced(pc1) :
-						self.addPathIsolationConstraints(pc2, self.pdb.getPath(pc1), pc1)
-					elif self.pdb.isEnforced(pc2) :
-						self.addPathIsolationConstraints(pc1, self.pdb.getPath(pc2), pc2)
-					else :
-						self.addTrafficIsolationConstraints(pc1, pc2)
-
-			#self.addSwitchTableConstraints()  # Adding switch table constraints.
-						
 			# Each relational class can be synthesised independently.
 			solvetime = time.time()
 			modelsat = self.z3Solver.check()
+			print time.time() - solvetime, "Time taken for changed policies"
 			self.z3solveTime += time.time() - solvetime
+			#tprint "Time taken to solve constraints is " + str(time.time() - st)
+
+			
 			if modelsat == z3.sat : 
-				print "SAT"
+				#print "Solver return SAT"
 				self.fwdmodel = self.z3Solver.model()
 				for pc in relClass :
-					if not self.pdb.isEnforced(pc) :
-						self.pdb.addPath(pc, self.getPathFromModel(pc))	
+					self.pdb.addPath(pc, self.getPathFromModel(pc))
+					
 			else :
 				print "Input Policies not realisable"
+				unsatCores = self.z3Solver.unsat_core()
+				for unsatCore in unsatCores :
+					print str(unsatCore)
 
-			self.z3Solver.pop()
+			#self.z3Solver.pop()
 
-		self.pdb.printPaths(self.topology)
+		#self.pdb.printPaths(self.topology)
 
-	def enforceSliceGraphPolicies(self, slice, rcGraph, differentPathConstraints=None) :
-		""" Synthesis of the Relational Class Graph given some path constraints (isolation and inequality) on the slice.
-		If True, return the sat core paths for the RC Graph. 
-		If False, return the unsat core paths to aid search for different constraints of isolation"""
 
-		synPaths = dict()
-		unsatLinks = []
+	def addSoftModelConstraints(self, pc, path) : 
+		print path
+		for i in range(len(path) - 1) :
+			self.z3Solver.add(self.Reach(path[i+1], pc, i+1))
+			self.z3Solver.add(self.Fwd(path[i], path[i+1], pc))
 
-		self.z3Solver.push()
+		self.z3Solver.add(self.Reach(path[len(path) - 1], pc, len(path) - 1))
 
-		st = time.time()
-		#tprint "Adding constraints."
-		pclist = []
-		for node in rcGraph.nodes() :
-			pclist.append(int(node))
+	# def enforceSliceGraphPolicies(self, slice, rcGraph, differentPathConstraints=None) :
+	# 	""" Synthesis of the Relational Class Graph given some path constraints (isolation and inequality) on the slice.
+	# 	If True, return the sat core paths for the RC Graph. 
+	# 	If False, return the unsat core paths to aid search for different constraints of isolation"""
 
-		self.pushSATVariables(pclist)
+	# 	synPaths = dict()
+	# 	unsatLinks = []
 
-		if len(pclist) == 0 :
-			print "Function should not be called on empty graph."
-			#exit(0)
+	# 	self.z3Solver.push()
 
-		for pc in pclist : 
-			if not self.pdb.isMulticast(pc) :  
-				policy = self.pdb.getSliceReachabilityPolicy(pc)
-				st = time.time()
-				self.addReachabilityConstraints(srcIP=policy[0][0], srcSw=policy[0][2], dstIP=policy[0][1], dstSw=policy[0][3],pc=pc, W=policy[1]) 
-				#tprint "Time taken to add Reachability constraints is " + str(time.time() - st)
+	# 	st = time.time()
+	# 	#tprint "Adding constraints."
+	# 	pclist = []
+	# 	for node in rcGraph.nodes() :
+	# 		pclist.append(int(node))
+
+	# 	self.pushSATVariables(pclist)
+
+	# 	if len(pclist) == 0 :
+	# 		print "Function should not be called on empty graph."
+	# 		#exit(0)
+
+	# 	for pc in pclist : 
+	# 		if not self.pdb.isMulticast(pc) :  
+	# 			policy = self.pdb.getSliceReachabilityPolicy(pc)
+	# 			st = time.time()
+	# 			self.addReachabilityConstraints(srcIP=policy[0][0], srcSw=policy[0][2], dstIP=policy[0][1], dstSw=policy[0][3],pc=pc, W=policy[1]) 
+	# 			#tprint "Time taken to add Reachability constraints is " + str(time.time() - st)
 				
-				if not self.addGlobalTopoFlag : 
-					st = time.time()
-					# Add Topology Slice Constraints
-					self.addTopologySliceConstraints(slice, pc)
-					#tprint "Time taken to add Topology constraints is " + str(time.time() - st)
+	# 			if not self.addGlobalTopoFlag : 
+	# 				st = time.time()
+	# 				# Add Topology Slice Constraints
+	# 				self.addTopologySliceConstraints(slice, pc)
+	# 				#tprint "Time taken to add Topology constraints is " + str(time.time() - st)
 
-		# Add local traffic constraints. 
-		for edge in rcGraph.edges() :
-			self.addTrafficIsolationConstraints(edge[0], edge[1])
+	# 	# Add local traffic constraints. 
+	# 	for edge in rcGraph.edges() :
+	# 		self.addTrafficIsolationConstraints(edge[0], edge[1])
 
-		# Add Optimistic Traffic Constraints.
-		for pc in pclist : 
-			ipcs = self.pdb.getIsolatedPolicies(self.pdb.getOriginalPacketClass(pc))
-			for ipc in ipcs :
-				if ipc in self.OptimisticPaths : 
-					self.addSlicePathIsolationConstraints(slice, pc, self.OptimisticPaths[ipc], ipc)
+	# 	# Add Optimistic Traffic Constraints.
+	# 	for pc in pclist : 
+	# 		ipcs = self.pdb.getIsolatedPolicies(self.pdb.getOriginalPacketClass(pc))
+	# 		for ipc in ipcs :
+	# 			if ipc in self.OptimisticPaths : 
+	# 				self.addSlicePathIsolationConstraints(slice, pc, self.OptimisticPaths[ipc], ipc)
 
 
-		if not differentPathConstraints == None : 
-			# Unsat Cores: [pc1, path]. pc1 must find a solution which is not equal to path. 
-			for unsatCores in differentPathConstraints : 
-				self.addSliceDifferentSolutionConstraint(unsatCores)
+	# 	if not differentPathConstraints == None : 
+	# 		# Unsat Cores: [pc1, path]. pc1 must find a solution which is not equal to path. 
+	# 		for unsatCores in differentPathConstraints : 
+	# 			self.addSliceDifferentSolutionConstraint(unsatCores)
 				
-		# Add link capacity constraints.  (Ignore for now)
-		#self.addLinkConstraints(pclist, self.OptimisticLinkCapacityConstraints)
+	# 	# Add link capacity constraints.  (Ignore for now)
+	# 	#self.addLinkConstraints(pclist, self.OptimisticLinkCapacityConstraints)
 
-		print "Starting Z3 check for " + str(pclist)
-		st = time.time()
-		solvetime = time.time()
-		modelsat = self.z3Solver.check()
-		self.z3solveTime += time.time() - solvetime
-		if modelsat == z3.sat : 
-			#tprint "Time taken to solve the constraints is " + str(time.time() - st)
-			rcGraphSat = True
-			print "SAT"
-			self.fwdmodel = self.z3Solver.model()
-			for pc in pclist :
-				path = self.getPathFromModel(pc)
-				synPaths[pc] = path
+	# 	print "Starting Z3 check for " + str(pclist)
+	# 	st = time.time()
+	# 	solvetime = time.time()
+	# 	modelsat = self.z3Solver.check()
+	# 	self.z3solveTime += time.time() - solvetime
+	# 	if modelsat == z3.sat : 
+	# 		#tprint "Time taken to solve the constraints is " + str(time.time() - st)
+	# 		rcGraphSat = True
+	# 		print "SAT"
+	# 		self.fwdmodel = self.z3Solver.model()
+	# 		for pc in pclist :
+	# 			path = self.getPathFromModel(pc)
+	# 			synPaths[pc] = path
 
-		else :
-			rcGraphSat = False
-			print "Input Policies not realisable"
+	# 	else :
+	# 		rcGraphSat = False
+	# 		print "Input Policies not realisable"
 		
-		self.popSATVariables(pclist)
-		self.z3Solver.pop()
-		return (rcGraphSat, synPaths)
+	# 	self.popSATVariables(pclist)
+	# 	self.z3Solver.pop()
+	# 	return (rcGraphSat, synPaths)
 
-	def applyTopologySlicing(self, rcGraph, differentPathConstraints=None) :
-		self.topology.useTopologySlicing()
+	# def applyTopologySlicing(self, rcGraph, differentPathConstraints=None) :
+	# 	self.topology.useTopologySlicing()
 
-		slicePaths = dict()
-		pclist = []
-		for node in rcGraph.nodes() :
-			pc = int(node)
-			pclist.append(pc)
-			slicePaths[pc] = dict()
+	# 	slicePaths = dict()
+	# 	pclist = []
+	# 	for node in rcGraph.nodes() :
+	# 		pc = int(node)
+	# 		pclist.append(pc)
+	# 		slicePaths[pc] = dict()
 
-		(rcGraphs, splitReachPolicyEdges, sliceGraphPaths) = self.createSliceRelationalGraphs(pclist)
+	# 	(rcGraphs, splitReachPolicyEdges, sliceGraphPaths) = self.createSliceRelationalGraphs(pclist)
 
-		for slice in rcGraphs.keys() :
-			rcGraph = rcGraphs[slice]
-			(rcGraphSat, synPaths) = self.enforceSliceGraphPolicies(slice, rcGraph, differentPathConstraints)
+	# 	for slice in rcGraphs.keys() :
+	# 		rcGraph = rcGraphs[slice]
+	# 		(rcGraphSat, synPaths) = self.enforceSliceGraphPolicies(slice, rcGraph, differentPathConstraints)
 
-			if rcGraphSat :
-				for pc in synPaths : 
-					originalpc = self.pdb.getOriginalPacketClass(pc)
-					self.addSlicePath(slicePaths[originalpc], synPaths[pc], sliceGraphPaths[originalpc])
-			else : 
-				print "Topology Slicing Failed. Exit Now!"
-				exit(0)
+	# 		if rcGraphSat :
+	# 			for pc in synPaths : 
+	# 				originalpc = self.pdb.getOriginalPacketClass(pc)
+	# 				self.addSlicePath(slicePaths[originalpc], synPaths[pc], sliceGraphPaths[originalpc])
+	# 		else : 
+	# 			print "Topology Slicing Failed. Exit Now!"
+	# 			exit(0)
 
-		for pc in pclist : 
-			path = self.getCompletePath(pc, slicePaths[pc], sliceGraphPaths[pc], splitReachPolicyEdges[pc])
-			self.pdb.addPath(pc, path)
-			self.OptimisticPaths[pc] = path
+	# 	for pc in pclist : 
+	# 		path = self.getCompletePath(pc, slicePaths[pc], sliceGraphPaths[pc], splitReachPolicyEdges[pc])
+	# 		self.pdb.addPath(pc, path)
+	# 		self.OptimisticPaths[pc] = path
 
-		# Clear intermediate split Reachability Policies.
-		self.pdb.clearSliceReachabilityPolicies() 
+	# 	# Clear intermediate split Reachability Policies.
+	# 	self.pdb.clearSliceReachabilityPolicies() 
 
-		self.topology.resetTopologySlicing()
+	# 	self.topology.resetTopologySlicing()
 			
-		return (True, dict())
+	# 	return (True, dict())
 
-	def createSlicePolicy(self, pc) :
-		""" Takes a Reachability policy and converts it into an equivalent Slice reachabilty policy"""
-		policy = self.pdb.getReachabilityPolicy(pc)
-		srcSlice = self.topology.getSliceNumber(policy[0][2])
-		dstSlice = self.topology.getSliceNumber(policy[0][3])
+	# def createSlicePolicy(self, pc) :
+	# 	""" Takes a Reachability policy and converts it into an equivalent Slice reachabilty policy"""
+	# 	policy = self.pdb.getReachabilityPolicy(pc)
+	# 	srcSlice = self.topology.getSliceNumber(policy[0][2])
+	# 	dstSlice = self.topology.getSliceNumber(policy[0][3])
 
-		sliceWaypoints = []
-		for waypoint in policy[1] :
-			sliceWaypoint = self.topology.getSliceNumber(waypoint)
-			if sliceWaypoint not in sliceWaypoints : 
-				sliceWaypoints.append(sliceWaypoint)
+	# 	sliceWaypoints = []
+	# 	for waypoint in policy[1] :
+	# 		sliceWaypoint = self.topology.getSliceNumber(waypoint)
+	# 		if sliceWaypoint not in sliceWaypoints : 
+	# 			sliceWaypoints.append(sliceWaypoint)
 
-		return [srcSlice, dstSlice, sliceWaypoints]
+	# 	return [srcSlice, dstSlice, sliceWaypoints]
 
 
-	def createSliceRelationalGraphs(self, pclist) :
-		""" Splits the reachabilty policies in pclist and returns a Relational Class graph"""
-		self.sliceGraphSolver.push()
+	# def createSliceRelationalGraphs(self, pclist) :
+	# 	""" Splits the reachabilty policies in pclist and returns a Relational Class graph"""
+	# 	self.sliceGraphSolver.push()
 
-		sliceEdgeMappings = dict()
-		sliceGraphPaths = dict()
-		slicePacketClass = dict()
-		splitReachPolicyEdges = dict()
+	# 	sliceEdgeMappings = dict()
+	# 	sliceGraphPaths = dict()
+	# 	slicePacketClass = dict()
+	# 	splitReachPolicyEdges = dict()
 
-		for pc in pclist: 
-			# Find path in slice graph.
-			slicePolicy = self.createSlicePolicy(pc)
-			slicePacketClass[pc] = self.sliceGraphSolver.addReachabilityPolicy(slicePolicy[0], slicePolicy[1], slicePolicy[2])
+	# 	for pc in pclist: 
+	# 		# Find path in slice graph.
+	# 		slicePolicy = self.createSlicePolicy(pc)
+	# 		slicePacketClass[pc] = self.sliceGraphSolver.addReachabilityPolicy(slicePolicy[0], slicePolicy[1], slicePolicy[2])
 
-		for pc in pclist : 
-			ipcs = self.pdb.getIsolatedPolicies(pc)
-			for ipc in ipcs : 
-				if ipc in pclist : 
-					self.sliceGraphSolver.addTrafficIsolationPolicy(slicePacketClass[pc], slicePacketClass[ipc])
+	# 	for pc in pclist : 
+	# 		ipcs = self.pdb.getIsolatedPolicies(pc)
+	# 		for ipc in ipcs : 
+	# 			if ipc in pclist : 
+	# 				self.sliceGraphSolver.addTrafficIsolationPolicy(slicePacketClass[pc], slicePacketClass[ipc])
 
-		sliceGraphSat = self.sliceGraphSolver.enforcePolicies()
-		if sliceGraphSat :
-			for pc in pclist : 
-				(slicePath, sliceEdges) = self.sliceGraphSolver.getSlicePath(pc)
-				sliceGraphPaths[pc] = slicePath
-				splitReachPolicyEdges[pc] = sliceEdges
+	# 	sliceGraphSat = self.sliceGraphSolver.enforcePolicies()
+	# 	if sliceGraphSat :
+	# 		for pc in pclist : 
+	# 			(slicePath, sliceEdges) = self.sliceGraphSolver.getSlicePath(pc)
+	# 			sliceGraphPaths[pc] = slicePath
+	# 			splitReachPolicyEdges[pc] = sliceEdges
 
-		rcGraphs = dict()
-		# Build the slice RC Graphs. 
-		for pc in pclist: 
-			slicePath = sliceGraphPaths[pc] 
-			if slicePath == [] : 
-				# No split of reach policy.
-				slice = self.topology.getSliceNumber(self.pdb.getSourceSwitch(pc))
-				if slice in rcGraphs : 
-					rcGraphs[slice].add_node(pc, switch=str(pc))
-				else : 
-					rcGraphs[slice] = nx.Graph()
-					rcGraphs[slice].add_node(pc, switch=str(pc))
-			else :
-				# Slice path exists. 
-				src = self.pdb.getSourceSwitch(pc)
-				srcSlice = self.topology.getSliceNumber(src)
+	# 	rcGraphs = dict()
+	# 	# Build the slice RC Graphs. 
+	# 	for pc in pclist: 
+	# 		slicePath = sliceGraphPaths[pc] 
+	# 		if slicePath == [] : 
+	# 			# No split of reach policy.
+	# 			slice = self.topology.getSliceNumber(self.pdb.getSourceSwitch(pc))
+	# 			if slice in rcGraphs : 
+	# 				rcGraphs[slice].add_node(pc, switch=str(pc))
+	# 			else : 
+	# 				rcGraphs[slice] = nx.Graph()
+	# 				rcGraphs[slice].add_node(pc, switch=str(pc))
+	# 		else :
+	# 			# Slice path exists. 
+	# 			src = self.pdb.getSourceSwitch(pc)
+	# 			srcSlice = self.topology.getSliceNumber(src)
 
-				i = 0
-				print slicePath
-				while i < len(slicePath) - 1:
-					nextSlice = slicePath[i + 1]
+	# 			i = 0
+	# 			print slicePath
+	# 			while i < len(slicePath) - 1:
+	# 				nextSlice = slicePath[i + 1]
 
-					for edgeKey in splitReachPolicyEdges[pc] :
-						edge = edgeKey.split("-")
-						if self.topology.getSliceNumber(int(edge[0])) == srcSlice and self.topology.getSliceNumber(int(edge[1])) == nextSlice : 
-							if src == int(edge[0]) :
-								print "Don't need to add anything.", src
-							else :
+	# 				for edgeKey in splitReachPolicyEdges[pc] :
+	# 					edge = edgeKey.split("-")
+	# 					if self.topology.getSliceNumber(int(edge[0])) == srcSlice and self.topology.getSliceNumber(int(edge[1])) == nextSlice : 
+	# 						if src == int(edge[0]) :
+	# 							print "Don't need to add anything.", src
+	# 						else :
 
-								slicepc = self.pdb.addSliceReachabilityPolicy(pc, src, int(edge[0]), self.getSliceWaypoints(pc, srcSlice) )
-								if srcSlice in rcGraphs : 
-									rcGraphs[srcSlice].add_node(slicepc, switch=str(slicepc))
-								else : 
-									rcGraphs[srcSlice] = nx.Graph()
-									rcGraphs[srcSlice].add_node(slicepc, switch=str(slicepc))
+	# 							slicepc = self.pdb.addSliceReachabilityPolicy(pc, src, int(edge[0]), self.getSliceWaypoints(pc, srcSlice) )
+	# 							if srcSlice in rcGraphs : 
+	# 								rcGraphs[srcSlice].add_node(slicepc, switch=str(slicepc))
+	# 							else : 
+	# 								rcGraphs[srcSlice] = nx.Graph()
+	# 								rcGraphs[srcSlice].add_node(slicepc, switch=str(slicepc))
 							
-							srcSlice = nextSlice
-							src = int(edge[1])
-							break
-					i += 1
+	# 						srcSlice = nextSlice
+	# 						src = int(edge[1])
+	# 						break
+	# 				i += 1
 
-				# Add Reachability to dst
-				if not src == self.pdb.getDestinationSwitch(pc) : 
-					slicepc = self.pdb.addSliceReachabilityPolicy(pc, src, self.pdb.getDestinationSwitch(pc), self.getSliceWaypoints(pc, srcSlice) )
-					if srcSlice in rcGraphs : 
-						rcGraphs[srcSlice].add_node(slicepc, switch=str(slicepc))
-					else : 
-						rcGraphs[srcSlice] = nx.Graph()
-						rcGraphs[srcSlice].add_node(slicepc, switch=str(slicepc))
+	# 			# Add Reachability to dst
+	# 			if not src == self.pdb.getDestinationSwitch(pc) : 
+	# 				slicepc = self.pdb.addSliceReachabilityPolicy(pc, src, self.pdb.getDestinationSwitch(pc), self.getSliceWaypoints(pc, srcSlice) )
+	# 				if srcSlice in rcGraphs : 
+	# 					rcGraphs[srcSlice].add_node(slicepc, switch=str(slicepc))
+	# 				else : 
+	# 					rcGraphs[srcSlice] = nx.Graph()
+	# 					rcGraphs[srcSlice].add_node(slicepc, switch=str(slicepc))
 
-		# Adding policy edges in the rcGraphs.
-		for rcGraph in rcGraphs.values() :
-			pcs = []
-			for node in rcGraph.nodes() :
-				pcs.append(int(node))
-			for pc1 in pcs : 
-				for pc2 in pcs : 
-					if pc1 >= pc2 :
-						continue
-					else :
-						opc1 = self.pdb.getOriginalPacketClass(pc1)
-						opc2 = self.pdb.getOriginalPacketClass(pc2)
-						if self.pdb.isIsolated(opc1, opc2) :
-							rcGraph.add_edge(pc1, pc2)
+	# 	# Adding policy edges in the rcGraphs.
+	# 	for rcGraph in rcGraphs.values() :
+	# 		pcs = []
+	# 		for node in rcGraph.nodes() :
+	# 			pcs.append(int(node))
+	# 		for pc1 in pcs : 
+	# 			for pc2 in pcs : 
+	# 				if pc1 >= pc2 :
+	# 					continue
+	# 				else :
+	# 					opc1 = self.pdb.getOriginalPacketClass(pc1)
+	# 					opc2 = self.pdb.getOriginalPacketClass(pc2)
+	# 					if self.pdb.isIsolated(opc1, opc2) :
+	# 						rcGraph.add_edge(pc1, pc2)
 
-		return (rcGraphs, splitReachPolicyEdges, sliceGraphPaths)
+	# 	return (rcGraphs, splitReachPolicyEdges, sliceGraphPaths)
 
-	def createSliceRelationalGraphs2(self, pclist) :
-		""" Splits the reachabilty policies in pclist and returns a Relational Class graph"""
+	# def createSliceRelationalGraphs2(self, pclist) :
+	# 	""" Splits the reachabilty policies in pclist and returns a Relational Class graph"""
 		
-		sliceEdgeMappings = dict()
-		sliceGraphPaths = dict()
-		for pc in pclist: 
-			# Find path in slice graph.
-			slicePolicy = self.createSlicePolicy(pc)
+	# 	sliceEdgeMappings = dict()
+	# 	sliceGraphPaths = dict()
+	# 	for pc in pclist: 
+	# 		# Find path in slice graph.
+	# 		slicePolicy = self.createSlicePolicy(pc)
 			
-			slicePath = []
-			paths = self.topology.getSliceGraphPaths(slicePolicy[0], slicePolicy[1], slicePolicy[2])
+	# 		slicePath = []
+	# 		paths = self.topology.getSliceGraphPaths(slicePolicy[0], slicePolicy[1], slicePolicy[2])
 
-			for path in paths : 
-				# pick shortest path. 
-				if slicePath == [] : slicePath = path
-				if len(path) < len(slicePath) :
-					slicePath = path
-			sliceGraphPaths[pc] = slicePath
+	# 		for path in paths : 
+	# 			# pick shortest path. 
+	# 			if slicePath == [] : slicePath = path
+	# 			if len(path) < len(slicePath) :
+	# 				slicePath = path
+	# 		sliceGraphPaths[pc] = slicePath
 
-			ipcs = self.pdb.getIsolatedPolicies(pc)
-			i = 0
+	# 		ipcs = self.pdb.getIsolatedPolicies(pc)
+	# 		i = 0
 
-			while i < len(slicePath) - 1:
-				sliceEdges = self.topology.getSliceEdges(slicePath[i], slicePath[i+1])
-				for edge in sliceEdges : 
-					# Check if edge is used by an optimistic path.
-					edgeUsedFlag = False
-					for ipc in ipcs : 
-						if ipc in self.OptimisticPaths : 
-							opath = self.OptimisticPaths[ipc]
-							j = 0 
-							while j < len(opath) - 1:
-								if opath[j] == edge[0] and opath[j+1] == edge[1] :
-									edgeUsedFlag = True
-									break
+	# 		while i < len(slicePath) - 1:
+	# 			sliceEdges = self.topology.getSliceEdges(slicePath[i], slicePath[i+1])
+	# 			for edge in sliceEdges : 
+	# 				# Check if edge is used by an optimistic path.
+	# 				edgeUsedFlag = False
+	# 				for ipc in ipcs : 
+	# 					if ipc in self.OptimisticPaths : 
+	# 						opath = self.OptimisticPaths[ipc]
+	# 						j = 0 
+	# 						while j < len(opath) - 1:
+	# 							if opath[j] == edge[0] and opath[j+1] == edge[1] :
+	# 								edgeUsedFlag = True
+	# 								break
 
-					if edgeUsedFlag == False :
-						# Can use this edge.
-						key = str(edge[0]) + "-" + str(edge[1])
-						if key in sliceEdgeMappings : 
-							sliceEdgeMappings[key].append(pc)
-						else : 
-							sliceEdgeMappings[key] = [pc]
-				i += 1
+	# 				if edgeUsedFlag == False :
+	# 					# Can use this edge.
+	# 					key = str(edge[0]) + "-" + str(edge[1])
+	# 					if key in sliceEdgeMappings : 
+	# 						sliceEdgeMappings[key].append(pc)
+	# 					else : 
+	# 						sliceEdgeMappings[key] = [pc]
+	# 			i += 1
 
-		reachPolicies = dict()
-		mappingCount = dict()
-		sliceEdgeList = [] # Store relevant slice edges for this rcGraph.
+	# 	reachPolicies = dict()
+	# 	mappingCount = dict()
+	# 	sliceEdgeList = [] # Store relevant slice edges for this rcGraph.
 
-		for path in sliceGraphPaths.values():
-			i = 0
-			while i < len(path) - 1:
-				sedge = str(path[i]) + "-" + str(path[i+1])
-				if sedge not in sliceEdgeList :
-					sliceEdgeList.append(sedge)
-				i += 1
+	# 	for path in sliceGraphPaths.values():
+	# 		i = 0
+	# 		while i < len(path) - 1:
+	# 			sedge = str(path[i]) + "-" + str(path[i+1])
+	# 			if sedge not in sliceEdgeList :
+	# 				sliceEdgeList.append(sedge)
+	# 			i += 1
 
-		print sliceEdgeList
+	# 	print sliceEdgeList
 		
-		sliceEdgeCount = dict()
-		for pc in pclist : 
-			sliceEdgeCount[pc] = dict()
+	# 	sliceEdgeCount = dict()
+	# 	for pc in pclist : 
+	# 		sliceEdgeCount[pc] = dict()
 
-		for sedge in sliceEdgeList : 
-			slice1 = int(sedge.split("-")[0])
-			slice2 = int(sedge.split("-")[1])
+	# 	for sedge in sliceEdgeList : 
+	# 		slice1 = int(sedge.split("-")[0])
+	# 		slice2 = int(sedge.split("-")[1])
 			
-			for pc in pclist : 
-				for edgeKey in sliceEdgeMappings.keys() :
-					edge = edgeKey.split("-") 
-					if slice1 == self.topology.getSliceNumber(int(edge[0])) and slice2 == self.topology.getSliceNumber(int(edge[1])) and pc in sliceEdgeMappings[edgeKey]: 
+	# 		for pc in pclist : 
+	# 			for edgeKey in sliceEdgeMappings.keys() :
+	# 				edge = edgeKey.split("-") 
+	# 				if slice1 == self.topology.getSliceNumber(int(edge[0])) and slice2 == self.topology.getSliceNumber(int(edge[1])) and pc in sliceEdgeMappings[edgeKey]: 
 
-						if sedge in sliceEdgeCount[pc] : 
-							sliceEdgeCount[pc][sedge] += 1
-						else :
-							sliceEdgeCount[pc][sedge] = 1
+	# 					if sedge in sliceEdgeCount[pc] : 
+	# 						sliceEdgeCount[pc][sedge] += 1
+	# 					else :
+	# 						sliceEdgeCount[pc][sedge] = 1
 
-		splitReachPolicyEdges = dict()
-		for sedge in sliceEdgeList : 
-			slice1 = int(sedge.split("-")[0])
-			slice2 = int(sedge.split("-")[1])
+	# 	splitReachPolicyEdges = dict()
+	# 	for sedge in sliceEdgeList : 
+	# 		slice1 = int(sedge.split("-")[0])
+	# 		slice2 = int(sedge.split("-")[1])
 
-			pclistUnmapped = []
-			# Add relevant pcs to the list
-			for pc in pclist : 
-				if sedge in sliceEdgeCount[pc] :
-					pclistUnmapped.append(pc)
+	# 		pclistUnmapped = []
+	# 		# Add relevant pcs to the list
+	# 		for pc in pclist : 
+	# 			if sedge in sliceEdgeCount[pc] :
+	# 				pclistUnmapped.append(pc)
 
-			while len(pclistUnmapped) > 0 :
-				mincount = 100000
-				for pc in pclistUnmapped : 
-					if mincount > sliceEdgeCount[pc][sedge] : 
-						mincount = sliceEdgeCount[pc][sedge]
-						minpc = pc
+	# 		while len(pclistUnmapped) > 0 :
+	# 			mincount = 100000
+	# 			for pc in pclistUnmapped : 
+	# 				if mincount > sliceEdgeCount[pc][sedge] : 
+	# 					mincount = sliceEdgeCount[pc][sedge]
+	# 					minpc = pc
 
-				if mincount == 0 :
-					print "Mapping does not exist!" 
-					exit(0)
+	# 			if mincount == 0 :
+	# 				print "Mapping does not exist!" 
+	# 				exit(0)
 
-				print "Mapping minpc", minpc, "for sedge", sedge
-				# Found minpc. Map one edge for this slice-edge to this pc.
-				for edgeKey in sliceEdgeMappings.keys() :
-					edge = edgeKey.split("-") 
-					if slice1 == self.topology.getSliceNumber(int(edge[0])) and slice2 == self.topology.getSliceNumber(int(edge[1])) and minpc in sliceEdgeMappings[edgeKey]: 
-						# Map this edge to sliceEdgeMapping. 
-						affectedpcs = sliceEdgeMappings[edgeKey]
-						sliceEdgeMappings[edgeKey] = []
+	# 			print "Mapping minpc", minpc, "for sedge", sedge
+	# 			# Found minpc. Map one edge for this slice-edge to this pc.
+	# 			for edgeKey in sliceEdgeMappings.keys() :
+	# 				edge = edgeKey.split("-") 
+	# 				if slice1 == self.topology.getSliceNumber(int(edge[0])) and slice2 == self.topology.getSliceNumber(int(edge[1])) and minpc in sliceEdgeMappings[edgeKey]: 
+	# 					# Map this edge to sliceEdgeMapping. 
+	# 					affectedpcs = sliceEdgeMappings[edgeKey]
+	# 					sliceEdgeMappings[edgeKey] = []
 						
-						if minpc in splitReachPolicyEdges : 
-							splitReachPolicyEdges[minpc].append(edgeKey)
-						else : 
-							splitReachPolicyEdges[minpc] = [edgeKey]
+	# 					if minpc in splitReachPolicyEdges : 
+	# 						splitReachPolicyEdges[minpc].append(edgeKey)
+	# 					else : 
+	# 						splitReachPolicyEdges[minpc] = [edgeKey]
 
-						# Remove minpc from Unmapped pcs
-						pclistUnmapped.remove(minpc)
-						# Decrement count of affectedpcs
-						for apc in affectedpcs :
-							if apc == minpc : continue
-							else : sliceEdgeCount[pc][sedge] -= 1
+	# 					# Remove minpc from Unmapped pcs
+	# 					pclistUnmapped.remove(minpc)
+	# 					# Decrement count of affectedpcs
+	# 					for apc in affectedpcs :
+	# 						if apc == minpc : continue
+	# 						else : sliceEdgeCount[pc][sedge] -= 1
 
-						break
+	# 					break
 		
-		print "Need to find these!"
-		print splitReachPolicyEdges
-		print sliceGraphPaths
+	# 	print "Need to find these!"
+	# 	print splitReachPolicyEdges
+	# 	print sliceGraphPaths
 
-		rcGraphs = dict()
-		# Build the slice RC Graphs. 
-		for pc in pclist: 
-			slicePath = sliceGraphPaths[pc] 
-			if slicePath == [] : 
-				# No split of reach policy.
-				slice = self.topology.getSliceNumber(self.pdb.getSourceSwitch(pc))
-				if slice in rcGraphs : 
-					rcGraphs[slice].add_node(pc, switch=str(pc))
-				else : 
-					rcGraphs[slice] = nx.Graph()
-					rcGraphs[slice].add_node(pc, switch=str(pc))
-			else :
-				# Slice path exists. 
-				src = self.pdb.getSourceSwitch(pc)
-				srcSlice = self.topology.getSliceNumber(src)
+	# 	rcGraphs = dict()
+	# 	# Build the slice RC Graphs. 
+	# 	for pc in pclist: 
+	# 		slicePath = sliceGraphPaths[pc] 
+	# 		if slicePath == [] : 
+	# 			# No split of reach policy.
+	# 			slice = self.topology.getSliceNumber(self.pdb.getSourceSwitch(pc))
+	# 			if slice in rcGraphs : 
+	# 				rcGraphs[slice].add_node(pc, switch=str(pc))
+	# 			else : 
+	# 				rcGraphs[slice] = nx.Graph()
+	# 				rcGraphs[slice].add_node(pc, switch=str(pc))
+	# 		else :
+	# 			# Slice path exists. 
+	# 			src = self.pdb.getSourceSwitch(pc)
+	# 			srcSlice = self.topology.getSliceNumber(src)
 
-				i = 0
-				print slicePath
-				while i < len(slicePath) - 1:
-					nextSlice = slicePath[i + 1]
+	# 			i = 0
+	# 			print slicePath
+	# 			while i < len(slicePath) - 1:
+	# 				nextSlice = slicePath[i + 1]
 
-					for edgeKey in splitReachPolicyEdges[pc] :
-						edge = edgeKey.split("-")
-						if self.topology.getSliceNumber(int(edge[0])) == srcSlice and self.topology.getSliceNumber(int(edge[1])) == nextSlice : 
-							if src == int(edge[0]) :
-								print "Don't need to add anything.", src
-							else :
+	# 				for edgeKey in splitReachPolicyEdges[pc] :
+	# 					edge = edgeKey.split("-")
+	# 					if self.topology.getSliceNumber(int(edge[0])) == srcSlice and self.topology.getSliceNumber(int(edge[1])) == nextSlice : 
+	# 						if src == int(edge[0]) :
+	# 							print "Don't need to add anything.", src
+	# 						else :
 
-								slicepc = self.pdb.addSliceReachabilityPolicy(pc, src, int(edge[0]), self.getSliceWaypoints(pc, srcSlice) )
-								if srcSlice in rcGraphs : 
-									rcGraphs[srcSlice].add_node(slicepc, switch=str(slicepc))
-								else : 
-									rcGraphs[srcSlice] = nx.Graph()
-									rcGraphs[srcSlice].add_node(slicepc, switch=str(slicepc))
+	# 							slicepc = self.pdb.addSliceReachabilityPolicy(pc, src, int(edge[0]), self.getSliceWaypoints(pc, srcSlice) )
+	# 							if srcSlice in rcGraphs : 
+	# 								rcGraphs[srcSlice].add_node(slicepc, switch=str(slicepc))
+	# 							else : 
+	# 								rcGraphs[srcSlice] = nx.Graph()
+	# 								rcGraphs[srcSlice].add_node(slicepc, switch=str(slicepc))
 							
-							srcSlice = nextSlice
-							src = int(edge[1])
-							break
-					i += 1
+	# 						srcSlice = nextSlice
+	# 						src = int(edge[1])
+	# 						break
+	# 				i += 1
 
-				# Add Reachability to dst
-				if not src == self.pdb.getDestinationSwitch(pc) : 
-					slicepc = self.pdb.addSliceReachabilityPolicy(pc, src, self.pdb.getDestinationSwitch(pc), self.getSliceWaypoints(pc, srcSlice) )
-					if srcSlice in rcGraphs : 
-						rcGraphs[srcSlice].add_node(slicepc, switch=str(slicepc))
-					else : 
-						rcGraphs[srcSlice] = nx.Graph()
-						rcGraphs[srcSlice].add_node(slicepc, switch=str(slicepc))
+	# 			# Add Reachability to dst
+	# 			if not src == self.pdb.getDestinationSwitch(pc) : 
+	# 				slicepc = self.pdb.addSliceReachabilityPolicy(pc, src, self.pdb.getDestinationSwitch(pc), self.getSliceWaypoints(pc, srcSlice) )
+	# 				if srcSlice in rcGraphs : 
+	# 					rcGraphs[srcSlice].add_node(slicepc, switch=str(slicepc))
+	# 				else : 
+	# 					rcGraphs[srcSlice] = nx.Graph()
+	# 					rcGraphs[srcSlice].add_node(slicepc, switch=str(slicepc))
 
-		# Adding policy edges in the rcGraphs.
-		for rcGraph in rcGraphs.values() :
-			pcs = []
-			for node in rcGraph.nodes() :
-				pcs.append(int(node))
-			for pc1 in pcs : 
-				for pc2 in pcs : 
-					if pc1 >= pc2 :
-						continue
-					else :
-						opc1 = self.pdb.getOriginalPacketClass(pc1)
-						opc2 = self.pdb.getOriginalPacketClass(pc2)
-						if self.pdb.isIsolated(opc1, opc2) :
-							rcGraph.add_edge(pc1, pc2)
+	# 	# Adding policy edges in the rcGraphs.
+	# 	for rcGraph in rcGraphs.values() :
+	# 		pcs = []
+	# 		for node in rcGraph.nodes() :
+	# 			pcs.append(int(node))
+	# 		for pc1 in pcs : 
+	# 			for pc2 in pcs : 
+	# 				if pc1 >= pc2 :
+	# 					continue
+	# 				else :
+	# 					opc1 = self.pdb.getOriginalPacketClass(pc1)
+	# 					opc2 = self.pdb.getOriginalPacketClass(pc2)
+	# 					if self.pdb.isIsolated(opc1, opc2) :
+	# 						rcGraph.add_edge(pc1, pc2)
 
-		return (rcGraphs, splitReachPolicyEdges, sliceGraphPaths)
+	# 	return (rcGraphs, splitReachPolicyEdges, sliceGraphPaths)
 
-	def getSliceWaypoints(self, pc, slice) :
-		""" Returns waypoints in a particular topology slice """
-		sliceWaypoints = []
-		waypoints = self.pdb.getReachabilityPolicy(pc)[1]
-		print "waypoints", waypoints
-		for waypoint in waypoints : 
-			if self.topology.getSliceNumber(waypoint) == slice and slice not in sliceWaypoints:
-				sliceWaypoints.append(waypoint)
-		print "sliceWaypoints", sliceWaypoints
-		return sliceWaypoints
+	# def getSliceWaypoints(self, pc, slice) :
+	# 	""" Returns waypoints in a particular topology slice """
+	# 	sliceWaypoints = []
+	# 	waypoints = self.pdb.getReachabilityPolicy(pc)[1]
+	# 	print "waypoints", waypoints
+	# 	for waypoint in waypoints : 
+	# 		if self.topology.getSliceNumber(waypoint) == slice and slice not in sliceWaypoints:
+	# 			sliceWaypoints.append(waypoint)
+	# 	print "sliceWaypoints", sliceWaypoints
+	# 	return sliceWaypoints
 
-	# Solution Functions :
-	def addSlicePath(self, slicePath, path, sliceGraphPath) : 
-		slice = self.topology.getSliceNumber(path[0])
-		slicePath[sliceGraphPath.index(slice)] = path
+	# # Solution Functions :
+	# def addSlicePath(self, slicePath, path, sliceGraphPath) : 
+	# 	slice = self.topology.getSliceNumber(path[0])
+	# 	slicePath[sliceGraphPath.index(slice)] = path
 
-	def getCompletePath(self, pc, slicePath, sliceGraphPath, sliceEdges) : 
-		for i in range(len(sliceGraphPath)) : 
-			if i not in slicePath and i == 0:
-				slicePath[i] = [self.pdb.getSourceSwitch(pc)]
-			if i not in slicePath and i > 0: 
-				slice1 = sliceGraphPath[i-1]
-				slice2 = sliceGraphPath[i]
-				for edgeKey in sliceEdges : 
-					edge = edgeKey.split("-")
-					if self.topology.getSliceNumber(int(edge[0])) == slice1 and self.topology.getSliceNumber(int(edge[1])) == slice2 :
-						slicePath[i] = [int(edge[1])]
+	# def getCompletePath(self, pc, slicePath, sliceGraphPath, sliceEdges) : 
+	# 	for i in range(len(sliceGraphPath)) : 
+	# 		if i not in slicePath and i == 0:
+	# 			slicePath[i] = [self.pdb.getSourceSwitch(pc)]
+	# 		if i not in slicePath and i > 0: 
+	# 			slice1 = sliceGraphPath[i-1]
+	# 			slice2 = sliceGraphPath[i]
+	# 			for edgeKey in sliceEdges : 
+	# 				edge = edgeKey.split("-")
+	# 				if self.topology.getSliceNumber(int(edge[0])) == slice1 and self.topology.getSliceNumber(int(edge[1])) == slice2 :
+	# 					slicePath[i] = [int(edge[1])]
 
-		# Combine all paths to get complete Path.
-		completePath = []
-		for path in slicePath.values() :
-			completePath.extend(path)
-		return completePath
+	# 	# Combine all paths to get complete Path.
+	# 	completePath = []
+	# 	for path in slicePath.values() :
+	# 		completePath.extend(path)
+	# 	return completePath
 
 
-	def initializeSliceGraphSolver(self) :
-		""" Initializes the Slice Graph Solver """
-		sliceGraph = self.topology.getSliceGraph() 
-		for sliceNode in sliceGraph : 
-			print sliceNode
-			self.sliceGraphSolver.addSliceNode(sliceNode[0], sliceNode[1])
+	# def initializeSliceGraphSolver(self) :
+	# 	""" Initializes the Slice Graph Solver """
+	# 	sliceGraph = self.topology.getSliceGraph() 
+	# 	for sliceNode in sliceGraph : 
+	# 		print sliceNode
+	# 		self.sliceGraphSolver.addSliceNode(sliceNode[0], sliceNode[1])
 
 
 	# Profiling Statistics : 
