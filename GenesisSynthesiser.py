@@ -1861,10 +1861,34 @@ class GenesisSynthesiser(object) :
 	def enforceChangedPolicies(self):
 		# A model already exists. Synthesis of newly added policies. 
 
+		self.z3Solver = Solver()
 		relClasses = self.pdb.getRelationalClasses()
-
 		#create the updated relational Classes.
 		for relClass in relClasses :
+				# Independent Synthesis of relClass.
+				#self.z3Solver.push()
+				#reachtime = time.time()
+
+			for pc in relClass :
+				if not self.pdb.isMulticast(pc):  
+					policy = self.pdb.getReachabilityPolicy(pc)
+					self.addReachabilityConstraints(srcIP=policy[0][0], srcSw=policy[0][2], dstIP=policy[0][1], dstSw=policy[0][3],pc=pc, W=policy[1], pathlen=policy[2]) 
+
+					if not self.addGlobalTopoFlag : 
+						#st = time.time()
+						# Add Topology Constraints
+						self.addTopologyConstraints(pc)
+
+			#isolationtime = time.time()
+			# Add traffic constraints. 
+			for pno in range(self.pdb.getIsolationPolicyCount()) :
+				pc = self.pdb.getIsolationPolicy(pno)
+				pc1 = pc[0]
+				pc2 = pc[1]
+				if pc1 in relClass and pc2 in relClass: 
+					self.addTrafficIsolationConstraints(pc1, pc2)
+			
+			#print "Time taken to add isolation constraints is", time.time() - isolationtime
 
 			# Add soft constraints
 			for pc in relClass :
@@ -1875,10 +1899,10 @@ class GenesisSynthesiser(object) :
 			solvetime = time.time()
 			modelsat = self.z3Solver.check()
 			print time.time() - solvetime, "Time taken for changed policies"
-			self.z3solveTime += time.time() - solvetime
+			#self.z3solveTime += time.time() - solvetime
 			#tprint "Time taken to solve constraints is " + str(time.time() - st)
 
-			
+		
 			if modelsat == z3.sat : 
 				#print "Solver return SAT"
 				self.fwdmodel = self.z3Solver.model()
