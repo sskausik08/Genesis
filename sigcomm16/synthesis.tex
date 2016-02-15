@@ -191,16 +191,16 @@ The base case constraint for the capacity function is for $pc = 0$:
 \end{multline} 
 If link is used, the inductive constraints for the capacity function are as follows:
 \begin{multline}
-	\forall pc > 0.~Fwd(sw_1,sw_2,pc) \implies \\ C(sw_1, sw_2, pc) =  C(sw_1. sw_2, pc - 1) + W(pc).
+	\forall pc > 0.~Fwd(sw_1,sw_2,pc) \implies \\ C(sw_1, sw_2, pc) =  C(sw_1, sw_2, pc - 1) + W(pc)
 \end{multline}
 If the link is not used, the constraints are as follows : 
 \begin{multline}
-\forall pc > 0.~\neg Fwd(sw_1,sw_2,pc) \implies \\ C(sw_1, sw_2, pc) =  C(sw_1. sw_2, pc - 1).
+\forall pc > 0.~\neg Fwd(sw_1,sw_2,pc) \implies \\ C(sw_1, sw_2, pc) =  C(sw_1, sw_2, pc - 1)
 \end{multline}
 To satisfy the policy, the total capacity used should not exceed $\omega$. 
 Since $\lambda$ is the greatest element in $PC$ we have:
 \begin{equation}
-	C(sw_1, sw_2, \lambda) \leq \omega.
+	C(sw_1, sw_2, \lambda) \leq \omega
 \end{equation} 
 For \emph{switch table size} policies, we need to track the number of packet classes that traverses the switch.
 We create inductive constraints similar to those for link capacity.
