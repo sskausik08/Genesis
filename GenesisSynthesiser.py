@@ -1895,11 +1895,8 @@ class GenesisSynthesiser(object) :
 			# print time.time() - solvetime, "Optimize Time taken for changed policies"
 			# #print "Time taken to add isolation constraints is", time.time() - isolationtime
 
-			# Add soft constraints
-			for pc in relClass :
-				path = self.pdb.getPath(pc)
-				self.addSoftModelConstraints(pc, path)
-			
+			self.addMinRuleChangeConstraints(relClass)
+
 			path = self.pdb.getPath(0)
 			self.z3Solver.add(Not(self.Fwd(path[0], path[1], 0)))
 
@@ -1917,7 +1914,7 @@ class GenesisSynthesiser(object) :
 				for pc in relClass :
 					path = self.pdb.getPath(pc)
 					for i in range(len(path) - 1) :
-						if not is_true(self.fwdmodel.evaluate(self.Reach(path[i+1], pc, i+1))) :
+						if not is_true(self.fwdmodel.evaluate(self.Fwd(path[i], path[i+1], pc))) :
 							weight += 1
 					self.pdb.addPath(pc, self.getPathFromModel(pc))
 				print weight
@@ -1928,17 +1925,20 @@ class GenesisSynthesiser(object) :
 
 		#self.pdb.printPaths(self.topology)
 
-
-	def addSoftModelConstraints(self, pc, path) : 
-		for i in range(len(path) - 1) :
-			self.z3Solver.add_soft(arg=self.Reach(path[i+1], pc, i+1), id="rules")
-			self.z3Solver.add_soft(arg=self.Fwd(path[i], path[i+1], pc), id="rules")
+	def addMinRuleChangeConstraints(self, relClass) : 
+		# Add soft constraints
+		for pc in relClass :
+			path = self.pdb.getPath(pc)
+				
+			for i in range(len(path) - 1) :
+				#self.z3Solver.add_soft(arg=self.Reach(path[i+1], pc, i+1), id="rules")
+				self.z3Solver.add_soft(arg=self.Fwd(path[i], path[i+1], pc), id="rules")
 
 			# neighbours = self.topology.getSwitchNeighbours(path[i])
 			# for n in neighbours :
 			# 	self.z3Solver.add_soft(arg=Not(self.Fwd(path[i], n, pc)), id="rules")
 
-		self.z3Solver.add_soft(arg=self.Reach(path[len(path) - 1], pc, len(path) - 1), id="rules")
+			#self.z3Solver.add_soft(arg=self.Reach(path[len(path) - 1], pc, len(path) - 1), id="rules")
 
 	# def enforceSliceGraphPolicies(self, slice, rcGraph, differentPathConstraints=None) :
 	# 	""" Synthesis of the Relational Class Graph given some path constraints (isolation and inequality) on the slice.
