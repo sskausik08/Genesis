@@ -1861,8 +1861,9 @@ class GenesisSynthesiser(object) :
 	def enforceChangedPolicies(self):
 		# A model already exists. Synthesis of newly added policies. 
 
-		self.z3Solver = Solver()
+		self.z3Solver = Optimize()
 		relClasses = self.pdb.getRelationalClasses()
+		self.z3Solver.push()
 		#create the updated relational Classes.
 		for relClass in relClasses :
 				# Independent Synthesis of relClass.
@@ -1888,12 +1889,19 @@ class GenesisSynthesiser(object) :
 				if pc1 in relClass and pc2 in relClass: 
 					self.addTrafficIsolationConstraints(pc1, pc2)
 			
-			#print "Time taken to add isolation constraints is", time.time() - isolationtime
+			# Takes 3x more time than Solver() using Optimize()
+			# solvetime = time.time()
+			# modelsat = self.z3Solver.check()
+			# print time.time() - solvetime, "Optimize Time taken for changed policies"
+			# #print "Time taken to add isolation constraints is", time.time() - isolationtime
 
 			# Add soft constraints
 			for pc in relClass :
 				path = self.pdb.getPath(pc)
 				self.addSoftModelConstraints(pc, path)
+			
+			path = self.pdb.getPath(0)
+			self.z3Solver.add(Not(self.Fwd(path[0], path[1], 0)))
 
 			# Each relational class can be synthesised independently.
 			solvetime = time.time()
@@ -1902,18 +1910,19 @@ class GenesisSynthesiser(object) :
 			#self.z3solveTime += time.time() - solvetime
 			#tprint "Time taken to solve constraints is " + str(time.time() - st)
 
-		
+			weight = 0
 			if modelsat == z3.sat : 
 				#print "Solver return SAT"
 				self.fwdmodel = self.z3Solver.model()
 				for pc in relClass :
+					path = self.pdb.getPath(pc)
+					for i in range(len(path) - 1) :
+						if not is_true(self.fwdmodel.evaluate(self.Reach(path[i+1], pc, i+1))) :
+							weight += 1
 					self.pdb.addPath(pc, self.getPathFromModel(pc))
-					
+				print weight
 			else :
 				print "Input Policies not realisable"
-				unsatCores = self.z3Solver.unsat_core()
-				for unsatCore in unsatCores :
-					print str(unsatCore)
 
 			#self.z3Solver.pop()
 
@@ -1921,12 +1930,15 @@ class GenesisSynthesiser(object) :
 
 
 	def addSoftModelConstraints(self, pc, path) : 
-		print path
 		for i in range(len(path) - 1) :
-			self.z3Solver.add(self.Reach(path[i+1], pc, i+1))
-			self.z3Solver.add(self.Fwd(path[i], path[i+1], pc))
+			self.z3Solver.add_soft(arg=self.Reach(path[i+1], pc, i+1), id="rules")
+			self.z3Solver.add_soft(arg=self.Fwd(path[i], path[i+1], pc), id="rules")
 
-		self.z3Solver.add(self.Reach(path[len(path) - 1], pc, len(path) - 1))
+			# neighbours = self.topology.getSwitchNeighbours(path[i])
+			# for n in neighbours :
+			# 	self.z3Solver.add_soft(arg=Not(self.Fwd(path[i], n, pc)), id="rules")
+
+		self.z3Solver.add_soft(arg=self.Reach(path[len(path) - 1], pc, len(path) - 1), id="rules")
 
 	# def enforceSliceGraphPolicies(self, slice, rcGraph, differentPathConstraints=None) :
 	# 	""" Synthesis of the Relational Class Graph given some path constraints (isolation and inequality) on the slice.
