@@ -5,6 +5,7 @@ Genesis : Endpoint Policy Enforcement using Flow Table Synthesis
 from GPLInterpreter import GPLInterpreter
 from Topology import Topology
 from GenesisSynthesiser import GenesisSynthesiser
+from GenesisILPSynthesiser import GenesisILPSynthesiser
 import sys
 
 class Genesis(object):
@@ -24,6 +25,7 @@ class Genesis(object):
         UseTacticFlag = False
         NoOptimizationsFlag = False
         WeakIsolationFlag = False
+        useILPFlag = False
         for arg in sys.argv : 
             if arg == "-gpl" :
                 self.gplfile = sys.argv[no + 1]
@@ -42,6 +44,8 @@ class Genesis(object):
                 NoOptimizationsFlag = True
             if arg == "wi" :
                 WeakIsolationFlag = True
+            if arg == "-ilp" :
+                useILPFlag = True
             no += 1
 
         if not (gplargFlag and topoargFlag) : 
@@ -50,7 +54,10 @@ class Genesis(object):
 
 
         self.topology = Topology()
-        self.genesisSynthesiser = GenesisSynthesiser(topo=self.topology, Optimistic=OptimisticFlag, TopoSlicing=TopoSlicingFlag, useTactic=UseTacticFlag, noOptimizations=NoOptimizationsFlag, weakIsolation=WeakIsolationFlag)
+        if not useILPFlag : 
+            self.genesisSynthesiser = GenesisSynthesiser(topo=self.topology, Optimistic=OptimisticFlag, TopoSlicing=TopoSlicingFlag, useTactic=UseTacticFlag, noOptimizations=NoOptimizationsFlag, weakIsolation=WeakIsolationFlag)
+        else :
+            self.genesisSynthesiser = GenesisILPSynthesiser(topo=self.topology, Optimistic=OptimisticFlag, TopoSlicing=TopoSlicingFlag, useTactic=UseTacticFlag, noOptimizations=NoOptimizationsFlag, weakIsolation=WeakIsolationFlag)
         self.gplparser = GPLInterpreter(self.gplfile, self.topofile, self.genesisSynthesiser, self.topology)
         
     def run(self):
@@ -71,7 +78,7 @@ class Genesis(object):
 	    		self.parser.parseGPL(gpl)
 	    		#newpc = self.genesisSynthesiser.addReachabilityPolicy("10.0.0.2", "s1", "10.0.0.8", "s5", ["s9"])
         		#self.genesisSynthesiser.addTrafficIsolationPolicy(0, newpc)
-	    		self.genesisSynthesiser.enforceChangedPolicies()
+	    		#self.genesisSynthesiser.enforceChangedPolicies()
 	    	elif fields[0] == "ex" :
 	    		break
 
