@@ -14,7 +14,7 @@ from collections import deque
 
 
 class GenesisILPSynthesiser(object) :
-	def __init__(self, topo, Optimistic=True, TopoSlicing=False, pclist=None, useTactic=False, noOptimizations=False, BridgeSlicing=True, weakIsolation=False) :
+	def __init__(self, topo, Optimistic=True, TopoSlicing=False, pclist=None, useTactic=False, noOptimizations=False, BridgeSlicing=False, weakIsolation=False) :
 		self.topology = topo
 
 		# Network Forwarding Function
@@ -271,9 +271,6 @@ class GenesisILPSynthesiser(object) :
 			self.synthesisSuccessFlag = self.enforceUnicastPolicies()
 			self.enforceMulticastPolicies()		
 
-			print "testing soft constraints"
-			self.enforceChangedPolicies()
-
 		end_t = time.time()
 		print "Time taken to solve the " + str(self.pdb.getPacketClassRange()) + " policies " + str(end_t - start_t)
 
@@ -401,23 +398,16 @@ class GenesisILPSynthesiser(object) :
 
 				# Each relational class can be synthesised independently.
 				solvetime = time.time()
-				modelsat = self.ilpSolver.check()
+				self.ilpSolver.optimize()
 				self.z3solveTime += time.time() - solvetime
 				#tprint "Time taken to solve constraints is " + str(time.time() - st)
 
-				if modelsat == z3.sat : 
-					#print "Solver return SAT"
-					self.fwdmodel = self.ilpSolver.model()
-					for pc in relClass :
-						self.pdb.addPath(pc, self.getPathFromModel(pc))
-						
-				else :
-					print "Input Policies not realisable"
-					unsatCores = self.ilpSolver.unsat_core()
-					for unsatCore in unsatCores :
-						print str(unsatCore)
+				for pc in relClass :
+					self.pdb.addPath(pc, self.getPathFromModel(pc))
+					print self.getPathFromModel(pc)
 
-				#self.ilpSolver.pop()
+				# for v in self.ilpSolver.getVars() :
+				# 	print('%s %g' % (v.varName, v.x))
 
 	def enforceUnicastPoliciesNoOptimizations(self) :
 		""" Enforcement of Policies stored in the PDB. """
@@ -1197,7 +1187,7 @@ class GenesisILPSynthesiser(object) :
 		destAssert = True
 		destAssertStr = ""
 		for n in neighbours :
-			self.ilpSolver.addConstr(self.Fwd(dstSw,n,pc) = 0)
+			self.ilpSolver.addConstr(self.Fwd(dstSw,n,pc) == 0)
 			
 
 		
@@ -1295,9 +1285,9 @@ class GenesisILPSynthesiser(object) :
 			#self.smtlib2file.write("; Backward Reachability Propagation for switch " + str(i) + "\n")
 
 			for pathlen in range(1,maxPathLen+1) :
-				if i not in self.bfsLists[pathlen] : 
-					# Not at distance i in the topology tree, dont add constraints.
-					continue 
+				# if i not in self.bfsLists[pathlen] : 
+				# 	# Not at distance i in the topology tree, dont add constraints.
+				# 	continue 
 
 				ineighbours = self.topology.getSwitchNeighbours(i, useBridgeSlicing) 
 				if self.useTacticFlag and pc in self.tactics :
@@ -1316,29 +1306,27 @@ class GenesisILPSynthesiser(object) :
 						# Modify the ineighbours
 						ineighbours = labelneighbours
 				
-			
-				# Create constraint.
-				beforeHopAssertions = []
 
-				#beforeHopAssertionsStr = ""
-				ct = time.time()
+				beforeHopVariables = 0
 				for isw in ineighbours : 
-					beforeHopAssertions.append(And(self.Fwd(isw, i, pc), self.Reach(isw, pc, pathlen - 1)))
-					
-				backwardReachConstraint = Implies(self.Reach(i,pc,pathlen), Or(*beforeHopAssertions))
-				#constime += time.time() - ct
+					y = self.ilpSolver.addVar(vtype=GRB.BINARY, name="and"+str(i)+":"+str(isw))
+					self.ilpSolver.update()
+					self.ilpSolver.addConstr(y >= self.Fwd(isw, i, pc) + self.Reach(isw, pc, pathlen - 1) - 1)
+					self.ilpSolver.addConstr(y <= self.Fwd(isw, i, pc))
+					self.ilpSolver.addConstr(y <= self.Reach(isw, pc, pathlen - 1))
+					beforeHopVariables += y
 
 				#at = time.time()	
-				self.ilpSolver.add(backwardReachConstraint)
+				self.ilpSolver.addConstr(self.Reach(i,pc,pathlen) <= beforeHopVariables)
 				#addtime += time.time() - at
 
 				#beforeHopAssertStr = "(=> " + self.ReachStr(i,pc,pathlen) + " (or " + beforeHopAssertionsStr + " ))"
 				#self.smtlib2file.write("(assert " + beforeHopAssertStr + " )\n")
 
 				# Store constraint for reuse. 
-				constraintKey = str(i) + ":" + str(pc) + "*" + str(pathlen)
-				if constraintKey not in self.backwardReachPropagationConstraints :
-					self.backwardReachPropagationConstraints[constraintKey] = backwardReachConstraint
+				# constraintKey = str(i) + ":" + str(pc) + "*" + str(pathlen)
+				# if constraintKey not in self.backwardReachPropagationConstraints :
+				# 	self.backwardReachPropagationConstraints[constraintKey] = backwardReachConstraint
 
 
 		# print "constime", constime
@@ -1414,13 +1402,8 @@ class GenesisILPSynthesiser(object) :
 					if sw1[0] == "e" or sw2[0] == "e" :
 						continue
 
-				isolateAssert = Not( And (self.Fwd(sw,n,pc1), self.Fwd(sw,n,pc2)))
-				self.z3numberofadds += 1
-				#addtime = time.time() # Profiling z3 add.
-				self.ilpSolver.add(isolateAssert)	
-				#self.z3addTime += time.time() - addtime
-
-				#self.smtlib2file.write("(assert (not (and " + self.FwdStr(sw,n,pc1) + " " + self.FwdStr(sw,n,pc2) + ")))\n")
+				# isolateAssert = Not( And (self.Fwd(sw,n,pc1), self.Fwd(sw,n,pc2)))
+				self.ilpSolver.addConstr(self.Fwd(sw,n,pc1) + self.Fwd(sw,n,pc2) <= 1)
 
 
 
@@ -1820,7 +1803,7 @@ class GenesisILPSynthesiser(object) :
 
 			neighbours = self.topology.getSwitchNeighbours(sw)
 			for n in neighbours : 
-				if n not in visited and is_true(self.fwdmodel.evaluate(self.Fwd(sw,n,pc))) :
+				if n not in visited and self.Fwd(sw,n,pc).x == 1 :
 					bfstree[n] = sw
 					swQueue.append(n)
 
@@ -1946,6 +1929,9 @@ class GenesisILPSynthesiser(object) :
 				self.ilpSolver.add(Not(self.Fwd(maxSw, n, pc)))
 
 
-
+	def printProfilingStats(self) :
+		#print "Time taken to add constraints are ", self.z3addTime
+		print "Time taken to solve constraints are ", self.z3solveTime
+		# print "Number of z3 adds to the solver are ", self.z3numberofadds
 
 	
