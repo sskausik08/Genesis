@@ -26,6 +26,9 @@ class PolicyDatabase(object) :
 		self.sliceWaypointTable = dict()
 		self.originalPacketClasses = dict()
 
+		# Support for storing DAGs for control plane generation
+		self.dags = dict()
+
 	def addReachabilityPolicy(self, predicate, srcSw, dstSw, W=None, len=None) :
 		""" srcSw = source IP next hop switch
 			dstSw = Destination IP next hop switch
@@ -453,6 +456,11 @@ class PolicyDatabase(object) :
 				self.fwdRulesFile.write(predicate.getStr() + " : " + topology.getSwName(path[i]) + " > " + topology.getSwName(path[i + 1]) + "\n")
 				i += 1
 
+	def addDestinationDAG(self, dst, dag) : 
+		self.dags[dst] = dag
+
+	def getDestinationDAGs(self) : 
+		return self.dags
 
 
 
