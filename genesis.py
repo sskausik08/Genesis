@@ -5,7 +5,7 @@ Genesis : Endpoint Policy Enforcement using Flow Table Synthesis
 from GPLInterpreter import GPLInterpreter
 from Topology import Topology
 from GenesisSynthesiser import GenesisSynthesiser
-from GenesisILPSynthesiser import GenesisILPSynthesiser
+#from GenesisILPSynthesiser import GenesisILPSynthesiser
 import sys
 
 class Genesis(object):
@@ -26,6 +26,7 @@ class Genesis(object):
         NoOptimizationsFlag = False
         WeakIsolationFlag = False
         useILPFlag = False
+        generateControlPlaneFlag = False
         for arg in sys.argv : 
             if arg == "-gpl" :
                 self.gplfile = sys.argv[no + 1]
@@ -46,6 +47,8 @@ class Genesis(object):
                 WeakIsolationFlag = True
             if arg == "-ilp" :
                 useILPFlag = True
+            if arg == "-c3" :
+                generateControlPlaneFlag = True
             no += 1
 
         if not (gplargFlag and topoargFlag) : 
@@ -55,7 +58,7 @@ class Genesis(object):
 
         self.topology = Topology()
         if not useILPFlag : 
-            self.genesisSynthesiser = GenesisSynthesiser(topo=self.topology, Optimistic=OptimisticFlag, TopoSlicing=TopoSlicingFlag, useTactic=UseTacticFlag, noOptimizations=NoOptimizationsFlag, weakIsolation=WeakIsolationFlag)
+            self.genesisSynthesiser = GenesisSynthesiser(topo=self.topology, Optimistic=OptimisticFlag, TopoSlicing=TopoSlicingFlag, useTactic=UseTacticFlag, noOptimizations=NoOptimizationsFlag, weakIsolation=WeakIsolationFlag, controlPlane=generateControlPlaneFlag)
         else :
             self.genesisSynthesiser = GenesisILPSynthesiser(topo=self.topology, Optimistic=OptimisticFlag, TopoSlicing=TopoSlicingFlag, useTactic=UseTacticFlag, noOptimizations=NoOptimizationsFlag, weakIsolation=WeakIsolationFlag)
         self.gplparser = GPLInterpreter(self.gplfile, self.topofile, self.genesisSynthesiser, self.topology)

@@ -1,7 +1,9 @@
 import networkx as nx
 import metis
 import time
-
+from collections import deque
+import math
+from Queue import PriorityQueue 
 
 class NetworkDatabase(object) :
 	""" Database to store the switch mappings to integers """
@@ -69,6 +71,7 @@ class Topology(object):
 
 		self.useTopologySlicingFlag = False
 		self.useBridgeSlicing = False
+
 
 	def getName(self) :
 		return self.name
@@ -159,7 +162,7 @@ class Topology(object):
 					pos2 = self.dfSwList.index(n)
 					if n <> parent and pos2 < pos1: 
 						# Back Edge. Add directed edge n -> sw
-						self.backEdges[n].append(sw)			
+						self.backEdges[n].append(sw)            
 				else :  
 					# Node not visited. Apply DFS on child.
 					dfs(n, sw)
@@ -186,7 +189,7 @@ class Topology(object):
 
 					parent = self.dfEdges[n][0]
 					# traverse back to root.
-					while True : 			
+					while True :            
 						if self.visited[parent] == False :
 							chain.append(parent)
 							self.visited[parent] = True
@@ -265,6 +268,96 @@ class Topology(object):
 		else :
 			return None
 
+	def getDistance(self, sw1, sw2) :
+		""" returns number of edges in shortest path from sw1 to sw2 """
+		if sw1 == sw2 : return 0
+
+		level = 0
+		swQueue1 = [sw1]
+		swQueue2 = []
+
+		while len(swQueue1) > 0 :
+			level += 1
+			for sw in swQueue1 : 
+				neighbours = self.getSwitchNeighbours(sw)
+				for n in neighbours : 
+					if n == sw2 : return level
+					elif n not in swQueue2 : swQueue2.append(n)
+			swQueue1 = swQueue2 
+			swQueue2 = []
+
+	def initializeWeights(self) :
+		# Edge Weights
+		swCount = self.getSwitchCount()
+		self.edgeWeights = [[0 for x in range(swCount + 1)] for x in range(swCount + 1)]
+
+	def addWeight(self, sw1, sw2, ew) :
+		self.edgeWeights[sw1][sw2] = ew
+
+	def getShortestPath(self, sw1, sw2, routefilters=None) :
+		# Routefilters : list of edges which are disabled. Disable those edges.
+		if sw1 == sw2 : return [sw1]
+		swCount = self.getSwitchCount()
+
+		dist = dict()
+		prev = dict()
+		visited = dict()
+
+		for sw in range(1, swCount + 1) :
+			dist[sw] = 1000000
+			prev[sw] = None
+			visited[sw] = False
+
+		dist[sw1] = 0
+		
+		while not visited[sw2] :
+			mindist = 1000000
+			minsw = None
+			for sw in range(1, swCount + 1) :
+				if not visited[sw] and dist[sw] < mindist : 
+					minsw = sw
+					mindist = dist[sw]
+
+			if minsw == None : 
+				# vertex remains. Thus, no path exists. 
+				return []
+			visited[minsw] = True
+			neighbours = self.getSwitchNeighbours(minsw)
+
+			for n in neighbours :
+				# Route filter present for edge, do not consider the edge.
+				if [minsw, n] in routefilters : continue 
+				if not visited[n] :
+					alt = dist[minsw] + float(self.edgeWeights[minsw][n])
+					if alt < dist[n] : 
+						dist[n] = alt
+						prev[n] = minsw
+
+		# Backtrack to find source
+		path = [sw2]
+		prevsw = prev[sw2]
+
+		while prevsw <> sw1 :
+			path.append(prevsw) 
+			prevsw = prev[prevsw]   
+		path.append(sw1)
+		path.reverse()
+		return path
+
+	def getAllPaths(self, src, dst, routefilters=None) :
+		""" Returns all edge-disjoint paths and costs from src to dst """
+		paths = []
+		path = self.getShortestPath(src, dst, routefilters)
+		while path <> [] :
+			paths.append(path)
+			for i in range(len(path) - 1) : 
+				# Disable all edges from the path
+				routefilters.append([path[i], path[i+1]])
+				# compute next path
+			path = self.getShortestPath(src, dst, routefilters)
+
+		return paths
+
 	def useTopologySlicing(self) :
 		self.useTopologySlicingFlag = True
 
@@ -276,20 +369,8 @@ class Topology(object):
 		by a single node and slices are connected by a single edge if there exists 
 		a non-zero number of inter-slice edges"""
 
-		# Test Slice. Topo is slice.topo
-		# self.setSlice(1,0)
-		# self.setSlice(2,0)
-		# self.setSlice(3,0)
-		# self.setSlice(5,1)
-		# self.setSlice(6,1)
-		# self.setSlice(8,1)
-		# self.setSlice(4,2)
-		# self.setSlice(7,2)
-		# self.setSlice(9,2)
-		# self.setSlice(10,3)
-		# self.setSlice(11,3)
 		(edgecuts, partitions) = metis.part_graph(graph=self.graph, nparts=5, contig=True)
-		i = 0	
+		i = 0   
 		for node in self.graph.nodes():
 			sw = int(node)
 

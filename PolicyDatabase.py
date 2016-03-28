@@ -456,6 +456,14 @@ class PolicyDatabase(object) :
 				self.fwdRulesFile.write(predicate.getStr() + " : " + topology.getSwName(path[i]) + " > " + topology.getSwName(path[i + 1]) + "\n")
 				i += 1
 
+	def getDestinations(self) : 
+		dsts = []
+		for policy in self.endpointTable.values() : 
+			if policy[3] not in dsts : 
+				dsts.append(policy[3])
+
+		return dsts 
+		
 	def addDestinationDAG(self, dst, dag) : 
 		self.dags[dst] = dag
 

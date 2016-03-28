@@ -11,6 +11,7 @@ from Tactic import *
 import re
 from subprocess import *
 from collections import deque
+from ZeppelinSynthesiser import ZeppelinSynthesiser
 
 
 class GenesisSynthesiser(object) :
@@ -103,6 +104,7 @@ class GenesisSynthesiser(object) :
 
 		# Generate Control Plane
 		self.controlPlaneMode = controlPlane
+		self.zeppelinSynthesiser = ZeppelinSynthesiser(self)
 
 		# SMT Variables
 		#self.smtlib2file = open("genesis-z3-smt", 'w')
@@ -291,11 +293,18 @@ class GenesisSynthesiser(object) :
 			#self.pdb.printPaths(self.topology)
 
 		if self.controlPlaneMode : 
-			self.getDestinationDag(self.topology.getSwID("e7"))
+			dsts = self.pdb.getDestinations()
+			for dst in dsts : 
+				self.pdb.addDestinationDAG(dst, self.generateDestinationDAG(dst))
+
+			self.zeppelinSynthesiser.enforceDAGs(self.pdb.getDestinationDAGs())
+		
+
 		self.pdb.validatePolicies(self.topology)
 		#self.pdb.printPaths(self.topology)
 		self.pdb.writeForwardingRulesToFile(self.topology)
 		self.printProfilingStats()
+
 
 	
 	def addReachabilityPolicy(self, predicate, src, dst, waypoints=None, pathlen=None) :
@@ -1995,7 +2004,7 @@ class GenesisSynthesiser(object) :
 	# Profiling Statistics : 
 	def printProfilingStats(self) :
 		#print "Time taken to add constraints are ", self.z3addTime
-		print "Time taken to solve constraints are ", self.z3solveTime
+		print "Genesis: Time taken to solve constraints are ", self.z3solveTime
 		# print "Number of z3 adds to the solver are ", self.z3numberofadds
 
 	def useTactic(self) :
@@ -2097,7 +2106,7 @@ class GenesisSynthesiser(object) :
 			self.z3Solver.add(Implies(And(Or(*reachAssertions1), Or(*reachAssertions2)), Or(*nextSwAssertions)))
 
 
-	def getDestinationDag(self, dst) :
+	def generateDestinationDAG(self, dst) :
 		""" Create a spanning tree from all sources to destination  
 		with already enforced policies """ 
 
