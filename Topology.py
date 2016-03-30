@@ -294,6 +294,14 @@ class Topology(object):
 	def addWeight(self, sw1, sw2, ew) :
 		self.edgeWeights[sw1][sw2] = ew
 
+	def printWeights(self) :
+		print "Printing Edge Weights"
+		swCount = self.getSwitchCount()
+		for sw in range(1, swCount + 1) :
+			neighbours = self.getSwitchNeighbours(sw)
+			for n in neighbours : 
+				print sw, "->", n, ":", self.edgeWeights[sw][n]
+
 	def getShortestPath(self, sw1, sw2, routefilters=None) :
 		# Routefilters : list of edges which are disabled. Disable those edges.
 		if sw1 == sw2 : return [sw1]
