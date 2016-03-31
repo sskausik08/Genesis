@@ -4,6 +4,7 @@ Genesis : Endpoint Policy Enforcement using Flow Table Synthesis
 
 from GPLInterpreter import GPLInterpreter
 from Topology import Topology
+from PolicyDatabase import PolicyDatabase
 from GenesisSynthesiser import GenesisSynthesiser
 #from GenesisILPSynthesiser import GenesisILPSynthesiser
 import sys
@@ -57,8 +58,9 @@ class Genesis(object):
 
 
         self.topology = Topology()
+        self.policyDatabase = PolicyDatabase()
         if not useILPFlag : 
-            self.genesisSynthesiser = GenesisSynthesiser(topo=self.topology, Optimistic=OptimisticFlag, TopoSlicing=TopoSlicingFlag, useTactic=UseTacticFlag, noOptimizations=NoOptimizationsFlag, weakIsolation=WeakIsolationFlag, controlPlane=generateControlPlaneFlag)
+            self.genesisSynthesiser = GenesisSynthesiser(topo=self.topology, pdb=self.policyDatabase, Optimistic=OptimisticFlag, TopoSlicing=TopoSlicingFlag, useTactic=UseTacticFlag, noOptimizations=NoOptimizationsFlag, weakIsolation=WeakIsolationFlag, controlPlane=generateControlPlaneFlag)
         else :
             self.genesisSynthesiser = GenesisILPSynthesiser(topo=self.topology, Optimistic=OptimisticFlag, TopoSlicing=TopoSlicingFlag, useTactic=UseTacticFlag, noOptimizations=NoOptimizationsFlag, weakIsolation=WeakIsolationFlag)
         self.gplparser = GPLInterpreter(self.gplfile, self.topofile, self.genesisSynthesiser, self.topology)

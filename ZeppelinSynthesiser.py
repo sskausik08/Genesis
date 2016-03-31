@@ -12,18 +12,14 @@ import math
 
 
 class ZeppelinSynthesiser(object) :
-	def __init__(self, genesisSynthesiser) :
-		self.genesisSynthesiser = genesisSynthesiser
-		self.topology = self.genesisSynthesiser.topology
-		self.pdb = self.genesisSynthesiser.pdb
+	def __init__(self, topology, pdb) :
+		self.topology = topology
+		self.pdb = pdb
 
 		self.z3Solver = Solver()
 		self.z3Solver.set(unsat_core=True)
 		#self.z3Solver.set("sat.phase", "always-false")
 		self.fwdmodel = None 
-
-		# Policy Database. 
-		self.pdb = PolicyDatabase()
 		
 		# Route Filters
 		self.DISABLE_ROUTE_FILTERS = True
@@ -33,7 +29,6 @@ class ZeppelinSynthesiser(object) :
 
 		#SMT String file
 		self.TO_SMT = True
-
 
 		# Profiling Information.
 		self.z3constraintTime = 0 # Time taken to create the constraints.
@@ -104,15 +99,30 @@ class ZeppelinSynthesiser(object) :
 	def enforceDAGs(self, dags):
 		""" Enforce the input destination dags """
 		start_t = time.time()
-		self.dags = dags
+		self.overlay = dict()
+		self.destinationDAGs = dags
+		swCount = self.topology.getSwitchCount()
+		dsts = self.pdb.getDestinations()
+
 		self.initializeSMTVariables()
 
 		self.z3Solver.push()
-		#self.addDjikstraShortestPathConstraints()
+		for sw in range(1, swCount + 1) :
+			self.overlay[sw] = []
+
+		for dst in dsts : 
+			dag = self.destinationDAGs[dst]
+			for sw1 in dag :
+				sw2 = dag[sw1] # Edge sw1 -> sw2
+				if sw2 <> None : 
+					if sw2 not in self.overlay[sw1] : 
+						self.overlay[sw1].append(sw2)
+
+		self.disableUnusedEdges()
 		
-		dsts = self.pdb.getDestinations()
-		for dst in dsts :
-			dag = self.dags[dst]
+		exit(0)
+		for dst in self.destinationDAGs :
+			dag = self.destinationDAGs[dst]
 			self.addDestinationDAGConstraints(dst, dag)
 
 		solvetime = time.time()
@@ -138,45 +148,42 @@ class ZeppelinSynthesiser(object) :
 
 	def enforceDAGsAlgo(self, dags) :
 		""" Algorithm to find edge weights for given dags """
+		start_t = time.time()
 		swCount = self.topology.getSwitchCount()
 
 		self.edgeWeights = [[0 for x in range(swCount + 1)] for x in range(swCount + 1)]
 		self.edgeUsedFlag = [[False for x in range(swCount + 1)] for x in range(swCount + 1)]
 
-		self.completeDAG = dict()
+		self.overlay = dict()
 		self.destinationDAGs = dags
 		for sw in range(1, swCount + 1) :
-			self.completeDAG[sw] = []
+			self.overlay[sw] = []
 
-		self.constructCompleteDAG()
+		# Reset topology edge statuses
+		self.topology.enableAllEdges()
+		self.overlay()
 		self.setUnusedEdgeWeights()
 
+		end_t = time.time()
+		print "Zeppelin: Time taken to algorithmically find edge weights is ", end_t - start_t
 
-	def constructCompleteDAG(self) :
-		dsts = self.pdb.getDestinations()
+	def disableUnusedEdges(self) : 
 		swCount = self.topology.getSwitchCount()
+		self.edgeUsedFlag = [[False for x in range(swCount + 1)] for x in range(swCount + 1)]
+		dsts = self.pdb.getDestinations()
+		
 		for dst in dsts : 
 			dag = self.destinationDAGs[dst]
 
-			for sw in range(1, swCount + 1):	
-				if sw == dst : continue
-				if dag[sw] not in self.completeDAG[sw] :
-					self.completeDAG[sw].append[dag[sw]]
-
-	def setUnusedEdgeWeights(self) : 
-		dsts = self.pdb.getDestinations()
-		swCount = self.topology.getSwitchCount()
-		for dst in dsts : 
-			dag = self.destinationDAGs[dst]
-
-			for sw in range(1, swCount + 1):	
+			for sw in dag :
 				if sw == dst : continue
 				self.edgeUsedFlag[sw][dag[sw]] = True
 
 		for sw1 in range(1, swCount + 1) :
 			for sw2 in range(1, swCount + 1) : 
 				if not self.edgeUsedFlag[sw1][sw2] : 
-					self.edgeWeights[sw1][sw2] = None # Infinite Weight, not used by any dag
+					#self.edgeWeights[sw1][sw2] = None # Infinite Weight, not used by any dag
+					self.topology.disableEdge(sw1, sw2)
 
 
 	def enforcePolicies(self): 

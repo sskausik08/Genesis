@@ -72,6 +72,7 @@ class Topology(object):
 		self.useTopologySlicingFlag = False
 		self.useBridgeSlicing = False
 
+		self.disabledEdges = dict()
 
 	def getName(self) :
 		return self.name
@@ -122,15 +123,16 @@ class Topology(object):
 				if n in self.bridgeSliceMap and slice == self.bridgeSliceMap[n] :
 					sliceNeighbours.append(n)
 			return sliceNeighbours
-		elif self.useTopologySlicingFlag : 
-			# Find the neighbours in the slice. 
-			slice = self.getSliceNumber(swID)
-			neighbours = self.neighbours[swID] 
-			sliceNeighbours = []
-			for n in neighbours : 
-				if n in self.slices[slice] :
-					sliceNeighbours.append(n)
-			return sliceNeighbours
+		elif len(self.disabledEdges) > 0 : 
+			# Certain edges are disabled.
+			neighbours1 = self.neighbours[swID]
+			neighbours2 = []
+			for n in neighbours1 : 
+				key = str(sw) + "-" + str(n)
+				if key not in self.disabledEdges : 
+					# Edge not disabled
+					neighbours2.append(n)
+			return neighbours2
 		else :
 			return self.neighbours[swID]
 
@@ -366,111 +368,6 @@ class Topology(object):
 
 		return paths
 
-	def useTopologySlicing(self) :
-		self.useTopologySlicingFlag = True
-
-	def resetTopologySlicing(self) :
-		self.useTopologySlicingFlag = False
-
-	def createSliceGraph(self):
-		""" Creates the slice graph of the topology. Each slice is represented 
-		by a single node and slices are connected by a single edge if there exists 
-		a non-zero number of inter-slice edges"""
-
-		(edgecuts, partitions) = metis.part_graph(graph=self.graph, nparts=5, contig=True)
-		i = 0   
-		for node in self.graph.nodes():
-			sw = int(node)
-
-			# Set slice number. 
-			self.setSlice(sw, partitions[i])
-			print "Slice mapping",sw,partitions[i] 
-			i += 1
-
-
-		for slice in self.slices.keys() : 
-			self.sliceGraph.add_node(slice, slice=str(slice))
-
-		for slice in self.slices.keys():
-			swList = self.slices[slice]
-
-			for sw in swList :
-				neighbours = self.neighbours[sw]
-				for n in neighbours :
-					slice2 = self.switchSliceMap[n]
-					if slice == slice2 : continue
-					elif self.sliceGraph.has_edge(slice, slice2) : continue
-					else : self.sliceGraph.add_edge(slice, slice2)
-
-		
-	def setSlice(self, sw, slice) :
-		if slice in self.slices : 
-			if not sw in self.slices[slice] :
-				self.slices[slice].append(sw)
-				self.switchSliceMap[sw] = slice
-		else :
-			self.slices[slice] = [sw]
-			self.switchSliceMap[sw] = slice
-		
-	def getSliceNumber(self, sw):
-		""" returns the topology slice number"""
-		return self.switchSliceMap[sw]
-
-	def getTopologySlice(self, slice) :
-		if slice in self.slices :  
-			return self.slices[slice]
-		else :
-			return []
-
-	def getSliceGraphPaths(self, slice1, slice2, sliceWaypoints=None) :
-		st = time.time()
-		allpaths = nx.all_simple_paths(self.sliceGraph, source=slice1, target=slice2)
-		et = time.time() - st
-		validpaths = []
-		if sliceWaypoints == None : 
-			return allpaths
-
-		# Slice Waypoints.
-		for path in allpaths : 
-			valid = True
-			for slice in sliceWaypoints : 
-				valid = valid and (slice in path) 
-			if valid :
-				validpaths.append(path) 
-		
-		return validpaths
-
-	def getSliceEdges(self, slice1, slice2) :
-		swList1 = self.slices[slice1]
-		swList2 = self.slices[slice2]
-		sliceEdges = []
-		for sw in swList1 : 
-			neighbours = self.neighbours[sw]
-			for n in neighbours : 
-				if n in swList2 :
-					sliceEdges.append([sw,n])
-		print "SliceEdges", slice1, slice2, sliceEdges
-		return sliceEdges
-
-	def getSliceGraph(self) :
-		""" Return slice graph in terms of [slice, edgeKey-list] for each slice to 
-		initialize the Slice Graph Solver"""
-
-		sliceGraph = []
-		for slice1 in self.slices : 
-			sliceEdgeKeys = []
-			for slice2 in self.slices : 
-				if slice1 == slice2 : continue
-				sliceEdges = self.getSliceEdges(slice1, slice2)
-				for edge in sliceEdges : 
-					if edge[0] < edge[1] :
-						sliceEdgeKeys.append(str(edge[0]) + "-" + str(edge[1]))
-					else : 
-						sliceEdgeKeys.append(str(edge[1]) + "-" + str(edge[0]))
-			sliceGraph.append([slice1, sliceEdgeKeys])
-
-		return sliceGraph
-
 	def printSwitchMappings(self) :
 		self.networkDatabase.printSwitchMappings() 
 
@@ -519,7 +416,13 @@ class Topology(object):
 		""" Returns true if labels are connected """
 		return label1 in self.labelneighbours[label2]
 
+	def enableAllEdges(self) :
+		self.disabledEdges = dict()
 
+	def disableEdge(self, sw1, sw2) : 
+		""" disables directed edge sw1 -> sw2 """
+		key = str(sw1) + "-" + str(sw2)
+		self.disabledEdges[key] = True
 
 
 

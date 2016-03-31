@@ -15,7 +15,7 @@ from ZeppelinSynthesiser import ZeppelinSynthesiser
 
 
 class GenesisSynthesiser(object) :
-	def __init__(self, topo, Optimistic=True, TopoSlicing=False, pclist=None, useTactic=False, noOptimizations=False, BridgeSlicing=True, weakIsolation=False, controlPlane=False) :
+	def __init__(self, topo, pdb, Optimistic=True, TopoSlicing=False, pclist=None, useTactic=False, noOptimizations=False, BridgeSlicing=True, weakIsolation=False, controlPlane=False) :
 		self.topology = topo
 
 		# Network Forwarding Function
@@ -40,7 +40,7 @@ class GenesisSynthesiser(object) :
 
 		self.count = 20
 		# Policy Database. 
-		self.pdb = PolicyDatabase()
+		self.pdb = pdb
 		
 		# Optimistic Synthesis Variables
 		self.OptimisticPaths = dict()  # Stores the solutions obtained during the Optimistic synthesis procedure. 
@@ -104,7 +104,6 @@ class GenesisSynthesiser(object) :
 
 		# Generate Control Plane
 		self.controlPlaneMode = controlPlane
-		self.zeppelinSynthesiser = ZeppelinSynthesiser(self)
 
 		# SMT Variables
 		#self.smtlib2file = open("genesis-z3-smt", 'w')
@@ -293,13 +292,13 @@ class GenesisSynthesiser(object) :
 			#self.pdb.printPaths(self.topology)
 
 		if self.controlPlaneMode : 
+			self.zeppelinSynthesiser = ZeppelinSynthesiser(self.topology, self.pdb)
 			dsts = self.pdb.getDestinations()
 			for dst in dsts : 
 				self.pdb.addDestinationDAG(dst, self.generateDestinationDAG(dst))
 
 			self.zeppelinSynthesiser.enforceDAGs(self.pdb.getDestinationDAGs())
 		
-
 		self.pdb.validatePolicies(self.topology)
 		#self.pdb.printPaths(self.topology)
 		self.pdb.writeForwardingRulesToFile(self.topology)
@@ -2088,7 +2087,6 @@ class GenesisSynthesiser(object) :
 		swCount = self.topology.getSwitchCount()
 		maxPathLen = self.topology.getMaxPathLength()
 
-		print "adding for ", pc1, pc2
 		for sw in range(1, swCount + 1):
 			if sw == dst1 : continue
 			reachAssertions1 = []
@@ -2124,10 +2122,10 @@ class GenesisSynthesiser(object) :
 		dag = dict() # For every node, we will have a single successor.
 
 		dag[dst] = None
-		dag[dst] = True
 		for sw in range(1, swCount + 1) :
 			inDag[sw] = False
 
+		inDag[dst] = True
 		for pc in pcs : 
 			path = self.pdb.getPath(pc)
 			for i in range(len(path) - 1) :
@@ -2136,24 +2134,30 @@ class GenesisSynthesiser(object) :
 				inDag[sw1] = True
 				dag[sw1] = sw2
 
-		# Perform BFS from dst to include all switches in the DAG.
-		swQueue1 = [dst]
-		swQueue2 = []
+		return dag
+		# # Perform BFS from dst to include all switches in the DAG.
+		# swQueue1 = [dst]
+		# swQueue2 = []
 
-		while len(swQueue1) > 0 :
-			for sw in swQueue1 : 
-				neighbours = self.topology.getSwitchNeighbours(sw)
-				for n in neighbours : 
-					if not inDag[n] : 
-						inDag[n] = True
-						dag[n] = sw
-						if n not in swQueue2 : 
-							swQueue2.append(n)
-			swQueue1 = swQueue2 
-			swQueue2 = []
+		# while len(swQueue1) > 0 :
+		# 	for sw in swQueue1 : 
+		# 		neighbours = self.topology.getSwitchNeighbours(sw)
+		# 		for n in neighbours : 
+		# 			if not inDag[n] : 
+		# 				inDag[n] = True
+		# 				dag[n] = sw
+		# 				if n not in swQueue2 : 
+		# 					swQueue2.append(n)
+		# 	swQueue1 = swQueue2 
+		# 	swQueue2 = []
 		
-		assert(len(dag) == swCount)
+		# assert(len(dag) == swCount)
 
+	def getPolicyDatabase(self) :
+		return self.pdb
+
+	def getTopology(self) :
+		return self.topology
 
 def toSMT2Benchmark(f, status="unknown", name="benchmark", logic=""):
 	v = (Ast * 0)()
