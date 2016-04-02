@@ -2105,7 +2105,7 @@ class GenesisSynthesiser(object) :
 
 
 	def generateDestinationDAG(self, dst) :
-		""" Create a spanning tree from all sources to destination  
+		""" Create a tree from sources to destination  
 		with already enforced policies """ 
 
 		pcs = []
@@ -2117,21 +2117,14 @@ class GenesisSynthesiser(object) :
 			return
 
 		swCount = self.topology.getSwitchCount()
-
-		inDag = dict()
 		dag = dict() # For every node, we will have a single successor.
-
 		dag[dst] = None
-		for sw in range(1, swCount + 1) :
-			inDag[sw] = False
 
-		inDag[dst] = True
 		for pc in pcs : 
 			path = self.pdb.getPath(pc)
 			for i in range(len(path) - 1) :
 				sw1 = path[i]
 				sw2 = path[i+1]
-				inDag[sw1] = True
 				dag[sw1] = sw2
 
 		return dag

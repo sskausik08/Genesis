@@ -9,7 +9,7 @@ import networkx as nx
 from subprocess import *
 from collections import deque
 import math
-
+import gurobipy as gb
 
 class ZeppelinSynthesiser(object) :
 	def __init__(self, topology, pdb) :
@@ -38,6 +38,9 @@ class ZeppelinSynthesiser(object) :
 		self.metisTime = 0	# Time taken to partition  the graphs.
 		self.z3SolveCount = 0	# Count of z3 solve instances. 
 
+		# ILP
+		self.ilpSolver = gb.Model("C3")
+
 
 	def initializeSMTVariables(self) :
 		swCount = self.topology.getSwitchCount()
@@ -50,27 +53,34 @@ class ZeppelinSynthesiser(object) :
 
 		for sw1 in range(1,swCount+1):
 			for sw2 in range(1,swCount+1):
-				self.edgeWeights[sw1][sw2] = Real(str(sw1)+"-"+str(sw2))
+				#self.edgeWeights[sw1][sw2] = Real(str(sw1)+"-"+str(sw2))
+				self.edgeWeights[sw1][sw2] = self.ilpSolver.addVar(vtype=gb.GRB.INTEGER, name=str(sw1)+"-"+str(sw2))
 
 				# Edge Weights are strictly positive
-				self.z3Solver.add(self.edgeWeights[sw1][sw2] > 0) 
-
+				#self.z3Solver.add(self.edgeWeights[sw1][sw2] > 0) 
 		for sw1 in range(1,swCount+1):
 			for sw2 in range(1, swCount + 1) :
-				self.distvars[sw1][sw2] = Real(str(sw1)+":"+str(sw2))
-				
+				#self.distvars[sw1][sw2] = Real(str(sw1)+":"+str(sw2))
+				self.distvars[sw1][sw2] = self.ilpSolver.addVar(vtype=gb.GRB.INTEGER, name=str(sw1)+":"+str(sw2))
 				# Distances also greater than 0
-				self.z3Solver.add(self.distvars[sw1][sw2]> 0) 
 
+		self.ilpSolver.update()
 		for sw1 in range(1,swCount+1):
 			for sw2 in range(1,swCount+1):
-				for sw3 in range(1,swCount + 1) :
-					self.routefilters[sw1][sw2][sw3] = Bool(str(sw1)+"!-!"+str(sw2) + ":" + str(sw3))
+				self.ilpSolver.addConstr(self.edgeWeights[sw1][sw2] >= 1)
+		for sw1 in range(1,swCount+1):
+			for sw2 in range(1, swCount + 1) :
+				self.ilpSolver.addConstr(self.distvars[sw1][sw2] >= 1) 
+
+		# for sw1 in range(1,swCount+1):
+		# 	for sw2 in range(1,swCount+1):
+		# 		for sw3 in range(1,swCount + 1) :
+					# self.routefilters[sw1][sw2][sw3] = Bool(str(sw1)+"!-!"+str(sw2) + ":" + str(sw3))
 				
 
 	def ew(self, sw1, sw2) :
-		neighbours = self.topology.getSwitchNeighbours(sw2)
-		if sw1 not in neighbours : 
+		neighbours = self.topology.getSwitchNeighbours(sw1)
+		if sw2 not in neighbours : 
 			raise LookupError("Weight for non-neighbours referred!")
 		else : 
 			return self.edgeWeights[sw1][sw2]
@@ -106,7 +116,7 @@ class ZeppelinSynthesiser(object) :
 
 		self.initializeSMTVariables()
 
-		self.z3Solver.push()
+		#self.z3Solver.push()
 		for sw in range(1, swCount + 1) :
 			self.overlay[sw] = []
 
@@ -120,29 +130,34 @@ class ZeppelinSynthesiser(object) :
 
 		self.disableUnusedEdges()
 		
-		exit(0)
-		for dst in self.destinationDAGs :
+		self.addDjikstraShortestPathConstraints()
+
+		for dst in dsts : 
 			dag = self.destinationDAGs[dst]
 			self.addDestinationDAGConstraints(dst, dag)
 
 		solvetime = time.time()
-		modelsat = self.z3Solver.check()
+		#modelsat = self.z3Solver.check()
+		self.ilpSolver.optimize()
 		self.z3solveTime += time.time() - solvetime
-
-		if modelsat == z3.sat : 
-			#print "Solver return SAT"
-			self.fwdmodel = self.z3Solver.model()
-			self.getEdgeWeightModel()
-		else :
-			print "Input Policies not realisable"
-			unsatCores = self.z3Solver.unsat_core()
-			for unsatCore in unsatCores :
-				print str(unsatCore)
-
-		self.z3Solver.pop()		
 		self.printProfilingStats()
+		self.topology.enableAllEdges()
 
-		self.pdb.printPaths(self.topology)
+		self.getEdgeWeightModel()
+		# if modelsat == z3.sat : 
+		# 	print "Solver return SAT"
+		# 	self.fwdmodel = self.z3Solver.model()
+		
+		# else :
+		# 	print "Input Policies not realisable"
+		# 	unsatCores = self.z3Solver.unsat_core()
+		# 	for unsatCore in unsatCores :
+		# 		print str(unsatCore)
+
+		# self.z3Solver.pop()		
+		
+
+		#self.pdb.printPaths(self.topology)
 		self.pdb.validateControlPlane(self.topology)
 		#self.topology.printWeights()
 
@@ -169,22 +184,17 @@ class ZeppelinSynthesiser(object) :
 
 	def disableUnusedEdges(self) : 
 		swCount = self.topology.getSwitchCount()
-		self.edgeUsedFlag = [[False for x in range(swCount + 1)] for x in range(swCount + 1)]
-		dsts = self.pdb.getDestinations()
-		
-		for dst in dsts : 
-			dag = self.destinationDAGs[dst]
-
-			for sw in dag :
-				if sw == dst : continue
-				self.edgeUsedFlag[sw][dag[sw]] = True
-
-		for sw1 in range(1, swCount + 1) :
-			for sw2 in range(1, swCount + 1) : 
-				if not self.edgeUsedFlag[sw1][sw2] : 
-					#self.edgeWeights[sw1][sw2] = None # Infinite Weight, not used by any dag
-					self.topology.disableEdge(sw1, sw2)
-
+		for sw in range(1, swCount + 1) :
+			neighbours = self.topology.getSwitchNeighbours(sw)
+			if sw in self.overlay :
+				activeNeighbours = self.overlay[sw]
+				for n in neighbours :
+					if n not in activeNeighbours : 
+						self.topology.disableEdge(sw, n)
+			else :
+				# All edges are disabled
+				for n in neighbours : 
+					self.topology.disableEdge(sw, n)
 
 	def enforcePolicies(self): 
 		start_t = time.time()
@@ -255,7 +265,6 @@ class ZeppelinSynthesiser(object) :
 			self.addResilienceConstraints(src=policy[0][2], dst=policy[0][3], t_res=1) # Resilience = 1 is Reachability
 
 		print self.toSMT2Benchmark(self.z3Solver, logic="QF_LRA")
-		exit(0)
 		# for pno in range(self.pdb.getIsolationPolicyCount()) :
 		# 	pc = self.pdb.getIsolationPolicy(pno)
 		# 	self.addTrafficIsolationConstraints(pc[0], pc[1])
@@ -267,7 +276,7 @@ class ZeppelinSynthesiser(object) :
 		if modelsat == z3.sat : 
 			#print "Solver return SAT"
 			self.fwdmodel = self.z3Solver.model()
-			self.getEdgeWeightModel()
+			#self.getEdgeWeightModel()
 		else :
 			print "Input Policies not realisable"
 			unsatCores = self.z3Solver.unsat_core()
@@ -276,37 +285,50 @@ class ZeppelinSynthesiser(object) :
 
 		self.z3Solver.pop()
 
-	# # These constraints are solved fast, does exponentially increase synthesis time.
-	# def addDjikstraShortestPathConstraints(self) :
-	# 	swCount = self.topology.getSwitchCount()
-	# 	dsts = self.pdb.getDestinations()
-	# 	#print "number of destinations", len(dsts)
-	# 	for src in range(1, swCount + 1):
-	# 		for dst in dsts : 
-	# 			if src == dst : continue
+	def constructOverlayPaths(self) :
+		""" Construct paths on overlay """
 
-	# 			neighbours = self.topology.getSwitchNeighbours(src)
-	# 			for n in neighbours : 
-					
-	# 				if self.DISABLE_ROUTE_FILTERS : 
-	# 					self.z3Solver.add(self.dist(src, dst) <= self.ew(src, n) + self.dist(n,dst))	
-	# 				else : 
-	# 					self.z3Solver.add(Implies(Not(self.rf(src, n, dst)), self.dist(src, dst) <= self.ew(src, n) + self.dist(n,dst)))
+	# These constraints are solved fast, does exponentially increase synthesis time.
+	def addDjikstraShortestPathConstraints(self) :
+		swCount = self.topology.getSwitchCount()
+		dsts = self.pdb.getDestinations()
+		#print "number of destinations", len(dsts)
+		for src in range(1, swCount + 1):
+			for dst in range(1, swCount + 1) :
+				if src == dst : 
+					continue
+				
+				for sw in range(1, swCount + 1) :
+					if sw == src or sw == dst : continue 
+					if self.topology.isSwitchDisabled(src) or self.topology.isSwitchDisabled(sw) or self.topology.isSwitchDisabled(dst) : 
+						continue
+
+					# src-sw-dst : Three unique switches which are present in the overlay
+					# If there is no path from src-dst via sw, do not need to add these constraints
+					# If src-sw-dst is not the shortest path, strict inequality
+					for dst2 in dsts : 
+						dag = self.destinationDAGs[dst2]
+						if src in dag and dst in dag : 
+							path = []
+							nextsw = dag[sw]
+							if nextsw <> None : 
+								
+					self.ilpSolver.addConstr(self.dist(src, dst) <= self.dist(src, sw) + self.dist(sw, dst))
 
 
 	def addDestinationDAGConstraints(self, dst, dag) :
 		""" Adds constraints such that dag weights are what we want them to be """
+		
+		for sw in dag : 
+			if sw == dst : continue		
+			
+			# Add shortest path constraints for sw -> ... -> d
+			self.ilpSolver.addConstr(self.dist(sw, dag[sw]) == self.ew(sw, dag[sw]))
 
-		swCount = self.topology.getSwitchCount()
-		for sw in range(1, swCount) : 
-			if sw == dst : continue
-
-			neighbours = self.topology.getSwitchNeighbours(sw)
-			for n in neighbours : 
-				if n == dag[sw] :
-					self.z3Solver.add(self.dist(sw,dst) == self.ew(sw,n) + self.dist(n,dst))
-				else : 
-					self.z3Solver.add(self.dist(sw,dst) < self.ew(sw,n) + self.dist(n,dst))
+			nextsw = dag[dag[sw]]
+			while nextsw <> None :
+				self.ilpSolver.addConstr(self.dist(sw, nextsw) == self.dist(sw, dag[sw]) + self.dist(dag[sw], nextsw))
+				nextsw = dag[nextsw]
 
 
 	def addForwardingRuleConstraints(self, src, dst) :
@@ -447,9 +469,11 @@ class ZeppelinSynthesiser(object) :
 
 		for sw in range(1, swCount + 1) :
 			for n in self.topology.getSwitchNeighbours(sw) : 
-				ew_rat = self.fwdmodel.evaluate(self.ew(sw,n))
-				self.topology.addWeight(sw, n, float(ew_rat.numerator_as_long())/float(ew_rat.denominator_as_long()))
-			
+				# ew_rat = self.fwdmodel.evaluate(self.ew(sw,n))
+				# self.topology.addWeight(sw, n, float(ew_rat.numerator_as_long())/float(ew_rat.denominator_as_long()))
+				ew = self.ew(sw, n).x
+				self.topology.addWeight(sw, n, float(ew))
+
 		routefilters = dict()
 		for dst in dsts : 
 			routefilters[dst] = []

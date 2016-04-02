@@ -128,7 +128,7 @@ class Topology(object):
 			neighbours1 = self.neighbours[swID]
 			neighbours2 = []
 			for n in neighbours1 : 
-				key = str(sw) + "-" + str(n)
+				key = str(swID) + "-" + str(n)
 				if key not in self.disabledEdges : 
 					# Edge not disabled
 					neighbours2.append(n)
@@ -304,7 +304,7 @@ class Topology(object):
 			for n in neighbours : 
 				print sw, "->", n, ":", self.edgeWeights[sw][n]
 
-	def getShortestPath(self, sw1, sw2, routefilters=None) :
+	def getShortestPath(self, sw1, sw2, routefilters=[]) :
 		# Routefilters : list of edges which are disabled. Disable those edges.
 		if sw1 == sw2 : return [sw1]
 		swCount = self.getSwitchCount()
@@ -423,6 +423,18 @@ class Topology(object):
 		""" disables directed edge sw1 -> sw2 """
 		key = str(sw1) + "-" + str(sw2)
 		self.disabledEdges[key] = True
+
+	def isSwitchDisabled(self, sw) :
+		neighbours = self.neighbours[sw]
+		isDisabled = True
+		for n in neighbours :
+			key1 = str(sw) + "-" + str(n)
+			key2 = str(n) + "-" + str(sw)
+			if key1 not in self.disabledEdges or key2 not in self.disabledEdges: 
+				isDisabled = False
+		return isDisabled
+
+		
 
 
 

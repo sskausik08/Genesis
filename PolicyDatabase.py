@@ -474,11 +474,10 @@ class PolicyDatabase(object) :
 		for pc in range(self.getPacketClassRange()) :
 			src = self.getSourceSwitch(pc)
 			dst = self.getDestinationSwitch(pc)
-			cpath = self.topology.getShortestPath(src,dst, routefilters[dst])
+			cpath = topology.getShortestPath(src,dst)
+			print cpath, self.getPath(pc)
 			if cpath <> self.getPath(pc) : 
 				print "Not Shortest Path in control plane for class", pc
-				exit(0)
-
 
 
 
