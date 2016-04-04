@@ -434,7 +434,68 @@ class Topology(object):
 				isDisabled = False
 		return isDisabled
 
+	def isConnected(self, src, dst, mid=None) :
+		""" Is there a path from src to dst which passes through mid """
+		if src == dst and sw <> None : return False # Weird case, shouldnt arise. 
+
+		visited = dict()
+		for sw in range(1, self.getSwitchCount()) :
+			visited[sw] = False
+
+		if sw <> None : 
+			# BFS from src to mid and then bfs from mid to dst
+			swQueue1 = [src]
+			swQueue2 = []
+			midReach = False
+			while len(swQueue1) > 0 and not midReach:
+				for sw in swQueue1 : 
+					visited[sw] = True
+					neighbours = self.getSwitchNeighbours(sw)
+					for n in neighbours : 
+						if n == mid : midReach = True
+						elif n not in swQueue2 and not visited[n]: swQueue2.append(n)
+				swQueue1 = swQueue2 
+				swQueue2 = []
+
+			if not midReach : return False # src -> mid not connected.
+
+			for sw in range(1, self.getSwitchCount()) :
+				visited[sw] = False
+
+			# BFS from mid to dst
+			swQueue1 = [mid]
+			swQueue2 = []
+			dstReach = False
+			while len(swQueue1) > 0 and not dstReach:
+				for sw in swQueue1 : 
+					neighbours = self.getSwitchNeighbours(sw)
+					for n in neighbours : 
+						if n == dst : dstReach = False
+						elif n not in swQueue2 : swQueue2.append(n)
+				swQueue1 = swQueue2 
+				swQueue2 = []
+			return dstReach
+		else : 
+			# BFS from src to dst
+			swQueue1 = [src]
+			swQueue2 = []
+			dstReach = False
+			while len(swQueue1) > 0 and not dstReach:
+				for sw in swQueue1 : 
+					visited[sw] = True
+					neighbours = self.getSwitchNeighbours(sw)
+					for n in neighbours : 
+						if n == mid : dstReach = True
+						elif n not in swQueue2 and not visited[n]: swQueue2.append(n)
+				swQueue1 = swQueue2 
+				swQueue2 = []
+
+			return dstReach
 		
+
+
+		
+
 
 
 

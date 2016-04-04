@@ -299,8 +299,6 @@ class PolicyDatabase(object) :
 		return True
 
 
-
-
 	def isMulticast(self, pc) :
 		if pc in self.mutlicastTable :
 			return True

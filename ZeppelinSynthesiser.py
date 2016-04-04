@@ -315,7 +315,6 @@ class ZeppelinSynthesiser(object) :
 								
 					self.ilpSolver.addConstr(self.dist(src, dst) <= self.dist(src, sw) + self.dist(sw, dst))
 
-
 	def addDestinationDAGConstraints(self, dst, dag) :
 		""" Adds constraints such that dag weights are what we want them to be """
 		
@@ -377,9 +376,9 @@ class ZeppelinSynthesiser(object) :
 		for sw1 in range(1,swCount+1):
 			for pc in range(t_res) :
 				for k in range(maxPathLen + 1) : 
-	 				resreachvars[sw1][pc][k] = Bool("res" + str(src) + "->" + str(dst) + ":" + str(sw1) + ":" + str(pc) + ";" + str(k))
+					resreachvars[sw1][pc][k] = Bool("res" + str(src) + "->" + str(dst) + ":" + str(sw1) + ":" + str(pc) + ";" + str(k))
 
-	 	# Route Filters disable forwarding.
+		# Route Filters disable forwarding.
 		if not self.DISABLE_ROUTE_FILTERS : 
 			for sw in range(1, swCount + 1):
 				neighbours = self.topology.getSwitchNeighbours(sw)
