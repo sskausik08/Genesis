@@ -468,14 +468,18 @@ class PolicyDatabase(object) :
 	def getDestinationDAGs(self) : 
 		return self.dags
 
-	def validateControlPlane(self, topology) :
+	def validateControlPlane(self, topology, distances) :
 		for pc in range(self.getPacketClassRange()) :
 			src = self.getSourceSwitch(pc)
 			dst = self.getDestinationSwitch(pc)
 			cpath = topology.getShortestPath(src,dst)
-			print cpath, self.getPath(pc)
+			#print "G", self.getPath(pc), "Z", cpath
 			if cpath <> self.getPath(pc) : 
 				print "Not Shortest Path in control plane for class", pc
+				print "Genesis path distance:", topology.getPathDistance(self.getPath(pc)), " Zeppelin: ", topology.getPathDistance(cpath)
+				print "Zeppelin Model distance:", distances[src][dst]
+			if not topology.checkUniquenessShortestPath(cpath) :
+				print "Path is not uniquely shortest for PC", pc
 
 
 

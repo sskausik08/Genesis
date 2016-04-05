@@ -291,7 +291,7 @@ class Topology(object):
 	def initializeWeights(self) :
 		# Edge Weights
 		swCount = self.getSwitchCount()
-		self.edgeWeights = [[0 for x in range(swCount + 1)] for x in range(swCount + 1)]
+		self.edgeWeights = [[10000 for x in range(swCount + 1)] for x in range(swCount + 1)]
 
 	def addWeight(self, sw1, sw2, ew) :
 		self.edgeWeights[sw1][sw2] = ew
@@ -304,9 +304,9 @@ class Topology(object):
 			for n in neighbours : 
 				print sw, "->", n, ":", self.edgeWeights[sw][n]
 
-	def getShortestPath(self, sw1, sw2, routefilters=[]) :
+	def getShortestPath(self, src, dst, routefilters=[]) :
 		# Routefilters : list of edges which are disabled. Disable those edges.
-		if sw1 == sw2 : return [sw1]
+		if src == dst : return [src]
 		swCount = self.getSwitchCount()
 
 		dist = dict()
@@ -318,9 +318,9 @@ class Topology(object):
 			prev[sw] = None
 			visited[sw] = False
 
-		dist[sw1] = 0
+		dist[src] = 0
 		
-		while not visited[sw2] :
+		while not visited[dst] :
 			mindist = 1000000
 			minsw = None
 			for sw in range(1, swCount + 1) :
@@ -329,7 +329,7 @@ class Topology(object):
 					mindist = dist[sw]
 
 			if minsw == None : 
-				# vertex remains. Thus, no path exists. 
+				# no vertex remains. Thus, no path exists. 
 				return []
 			visited[minsw] = True
 			neighbours = self.getSwitchNeighbours(minsw)
@@ -344,16 +344,51 @@ class Topology(object):
 						prev[n] = minsw
 
 		# Backtrack to find source
-		path = [sw2]
-		prevsw = prev[sw2]
+		path = [dst]
+		prevsw = prev[dst]
 
-		while prevsw <> sw1 :
+		while prevsw <> src :
 			path.append(prevsw) 
 			prevsw = prev[prevsw]   
-		path.append(sw1)
+		path.append(src)
 		path.reverse()
 		return path
 
+	def checkUniquenessShortestPath(self, spath) :
+		""" Check if there exists a path different from spath with the same weight """
+		spathWeight = 0
+		i = 0
+		for i in range(len(spath) - 1) : 
+			spathWeight += self.edgeWeights[spath[i]][spath[i+1]]
+		src = spath[0]
+		dst = spath[len(spath) - 1]
+
+		i = 0
+		for i in range(len(spath) - 1) : 
+			disableEdge = [[spath[i], spath[i+1]]]
+			path = self.getShortestPath(src, dst, disableEdge) # Obtain the shortest path without this edge in the path.
+			if len(path) == 0 : 
+				# No path exists. 
+				continue
+			pathW = 0
+			for j in range(len(path) - 1) : 
+				pathW += self.edgeWeights[path[j]][path[j+1]] 
+				
+			if pathW <= spathWeight : 
+				# Another shorter path exists. Violation
+				return False
+		return True
+
+	def getPathDistance(self, path) :
+		""" Returns the distance of path """
+		i = 0
+		dist = 0
+		while i < len(path) - 1 :
+			sw1 = path[i]
+			sw2 = path[i + 1]
+			dist += self.edgeWeights[sw1][sw2]
+			i += 1
+		return dist
 	def getAllPaths(self, src, dst, routefilters=None) :
 		""" Returns all edge-disjoint paths and costs from src to dst """
 		paths = []
@@ -439,10 +474,10 @@ class Topology(object):
 		if src == dst and sw <> None : return False # Weird case, shouldnt arise. 
 
 		visited = dict()
-		for sw in range(1, self.getSwitchCount()) :
+		for sw in range(1, self.getSwitchCount()+1) :
 			visited[sw] = False
 
-		if sw <> None : 
+		if mid <> None : 
 			# BFS from src to mid and then bfs from mid to dst
 			swQueue1 = [src]
 			swQueue2 = []
@@ -459,7 +494,7 @@ class Topology(object):
 
 			if not midReach : return False # src -> mid not connected.
 
-			for sw in range(1, self.getSwitchCount()) :
+			for sw in range(1, self.getSwitchCount() + 1) :
 				visited[sw] = False
 
 			# BFS from mid to dst
@@ -468,10 +503,11 @@ class Topology(object):
 			dstReach = False
 			while len(swQueue1) > 0 and not dstReach:
 				for sw in swQueue1 : 
+					visited[sw] = True
 					neighbours = self.getSwitchNeighbours(sw)
 					for n in neighbours : 
 						if n == dst : dstReach = False
-						elif n not in swQueue2 : swQueue2.append(n)
+						elif n not in swQueue2 and not visited[n]: swQueue2.append(n)
 				swQueue1 = swQueue2 
 				swQueue2 = []
 			return dstReach
