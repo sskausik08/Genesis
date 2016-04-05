@@ -104,6 +104,7 @@ class GenesisSynthesiser(object) :
 
 		# Generate Control Plane
 		self.controlPlaneMode = controlPlane
+		self.destinationDAGs = dict()
 
 		# SMT Variables
 		#self.smtlib2file = open("genesis-z3-smt", 'w')
@@ -291,6 +292,7 @@ class GenesisSynthesiser(object) :
 			self.pdb.validatePolicies(self.topology)
 			#self.pdb.printPaths(self.topology)
 
+		self.pdb.validatePolicies(self.topology)
 		if self.controlPlaneMode : 
 			self.zeppelinSynthesiser = ZeppelinSynthesiser(self.topology, self.pdb)
 			dsts = self.pdb.getDestinations()
@@ -299,7 +301,6 @@ class GenesisSynthesiser(object) :
 
 			self.zeppelinSynthesiser.enforceDAGs(self.pdb.getDestinationDAGs())
 		
-		self.pdb.validatePolicies(self.topology)
 		#self.pdb.printPaths(self.topology)
 		self.pdb.writeForwardingRulesToFile(self.topology)
 		self.printProfilingStats()
@@ -1461,14 +1462,6 @@ class GenesisSynthesiser(object) :
 		for sw in swList:
 			#self.smtlib2file.write("; Traffic Isolation Constraints for switch " + str(sw) + "\n")
 			for n in self.topology.getSwitchNeighbours(sw, useBridgeSlicing) :
-				if self.weakIsolationFlag : 
-					# Add constraints only for core, aggregate switch links. Using for evaluation
-					# TODO : Policy interpreter.
-					sw1 = self.topology.getSwName(sw)
-					sw2 = self.topology.getSwName(n)
-					if sw1[0] == "e" or sw2[0] == "e" :
-						continue
-
 				isolateAssert = Not( And (self.Fwd(sw,n,pc1), self.Fwd(sw,n,pc2)))
 				self.z3numberofadds += 1
 				#addtime = time.time() # Profiling z3 add.
@@ -1853,6 +1846,12 @@ class GenesisSynthesiser(object) :
 		src = self.pdb.getSourceSwitch(pc)
 		dst = self.pdb.getDestinationSwitch(pc)
 
+		dag = None
+		if self.controlPlaneMode :
+			# Create Destination DAGs
+			if dst in self.destinationDAGs : 
+				dag = self.destinationDAGs[dst]
+
 		bfstree = dict()
 		visited = dict()
 
@@ -1860,15 +1859,52 @@ class GenesisSynthesiser(object) :
 		while len(swQueue) > 0 :
 			sw = swQueue.popleft()
 			visited[sw] = True
+			if self.controlPlaneMode and dag <> None : 
+				if sw in dag and sw <> dst and is_true(self.fwdmodel.evaluate(self.Fwd(sw,dag[sw],pc))): 
+					# Continue path along the dag
+					path = []
+					nextsw = sw
+					while nextsw <> src :
+						path.append(nextsw)
+						nextsw = bfstree[nextsw]
+					path.append(src)
+					# Reverse path.
+					path.reverse() # path is now from src -> sw
+
+					# Traverse the DAG fron sw
+					nextsw = dag[sw]
+					while nextsw <> None : 
+						path.append(nextsw)
+						nextsw = dag[nextsw]
+					
+					# Sanity Check if path is valid
+					i = 0
+					for i in range(len(path) - 1) :
+						sw1 = path[i]
+						sw2 = path[i + 1]
+						if path[i] not in dag :
+							dag[path[i]] = path[i+1]
+						self.destinationDAGs[dst] = dag
+					return path
+
 			if sw == dst :
 				path = [dst]
-				nextsw = bfstree[sw]
+				nextsw = bfstree[dst]
 				while nextsw <> src :
 					path.append(nextsw)
 					nextsw = bfstree[nextsw]
-				path.append(nextsw)
+				path.append(src)
 				# Reverse path.
 				path.reverse()
+
+				if self.controlPlaneMode :
+					if dag == None : dag = dict()
+					i = 0
+					for i in range(len(path) - 1) : 
+						assert False
+						dag[path[i]] = path[i+1]
+					dag[dst] = None
+					self.destinationDAGs[dst] = dag
 				return path
 
 			neighbours = self.topology.getSwitchNeighbours(sw)
@@ -1878,6 +1914,20 @@ class GenesisSynthesiser(object) :
 					swQueue.append(n)
 
 		return []
+
+	def pathSanityCheck(self) :
+		# Sanity Check if path is valid
+		for pc in range(self.pdb.getPacketClassRange()) :
+			path = self.pdb.getPath(pc)
+			i = 0
+			for i in range(len(path) - 1) :
+				sw1 = path[i]
+				sw2 = path[i + 1]
+				assert(is_true(self.fwdmodel.evaluate(self.Fwd(sw1, sw2, pc))))
+				assert(not is_true(self.fwdmodel.evaluate(self.Fwd(sw1, sw2, pc))))
+				if path[i] not in dag :
+					dag[path[i]] = path[i+1]
+				self.destinationDAGs[dst] = dag
 
 	def enforceChangedPolicies(self):
 		# A model already exists. Synthesis of newly added policies. 
