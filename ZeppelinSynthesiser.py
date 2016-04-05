@@ -136,12 +136,13 @@ class ZeppelinSynthesiser(object) :
 			dag = self.destinationDAGs[dst]
 			self.addDestinationDAGConstraints(dst, dag)
 
+		print "Solving ILP"
 		solvetime = time.time()
 		#modelsat = self.z3Solver.check()
 		self.ilpSolver.optimize()
 		self.z3solveTime += time.time() - solvetime
 		self.printProfilingStats()
-		self.topology.enableAllEdges()
+		#self.topology.enableAllEdges()
 
 		self.getEdgeWeightModel()
 		# if modelsat == z3.sat : 
@@ -158,7 +159,7 @@ class ZeppelinSynthesiser(object) :
 		
 
 		#self.pdb.printPaths(self.topology)
-		self.pdb.validateControlPlane(self.topology)
+		self.pdb.validateControlPlane(self.topology, self.distances)
 		#self.topology.printWeights()
 
 	def enforceDAGsAlgo(self, dags) :
@@ -292,28 +293,25 @@ class ZeppelinSynthesiser(object) :
 	def addDjikstraShortestPathConstraints(self) :
 		swCount = self.topology.getSwitchCount()
 		dsts = self.pdb.getDestinations()
+
 		#print "number of destinations", len(dsts)
 		for src in range(1, swCount + 1):
+			if self.topology.isSwitchDisabled(src) :
+				continue
 			for dst in range(1, swCount + 1) :
+				if self.topology.isSwitchDisabled(dst) :
+					continue
 				if src == dst : 
 					continue
-				
+				# if not self.topology.isConnected(src, dst) :
+				# 	continue # src, dst is not connected in overlay, distance(src, dst) does not matter
+
 				for sw in range(1, swCount + 1) :
 					if sw == src or sw == dst : continue 
-					if self.topology.isSwitchDisabled(src) or self.topology.isSwitchDisabled(sw) or self.topology.isSwitchDisabled(dst) : 
+					if self.topology.isSwitchDisabled(sw) : 
 						continue
-
-					# src-sw-dst : Three unique switches which are present in the overlay
-					# If there is no path from src-dst via sw, do not need to add these constraints
-					# If src-sw-dst is not the shortest path, strict inequality
-					for dst2 in dsts : 
-						dag = self.destinationDAGs[dst2]
-						if src in dag and dst in dag : 
-							path = []
-							nextsw = dag[sw]
-							if nextsw <> None : 
-								
-					self.ilpSolver.addConstr(self.dist(src, dst) <= self.dist(src, sw) + self.dist(sw, dst))
+					
+					self.ilpSolver.addConstr(self.dist(src, dst) <= self.dist(src, sw) + self.dist(sw, dst))	
 
 	def addDestinationDAGConstraints(self, dst, dag) :
 		""" Adds constraints such that dag weights are what we want them to be """
@@ -327,6 +325,13 @@ class ZeppelinSynthesiser(object) :
 			nextsw = dag[dag[sw]]
 			while nextsw <> None :
 				self.ilpSolver.addConstr(self.dist(sw, nextsw) == self.dist(sw, dag[sw]) + self.dist(dag[sw], nextsw))
+			
+				# For uniqueness of shortest path : 
+				neighbours = self.topology.getSwitchNeighbours(sw)
+				for n in neighbours : 
+					if n <> dag[sw] : 
+						self.ilpSolver.addConstr(self.dist(sw, nextsw) <= self.ew(sw, n) + self.dist(n, nextsw) - 1)
+
 				nextsw = dag[nextsw]
 
 
@@ -465,6 +470,7 @@ class ZeppelinSynthesiser(object) :
 		self.topology.initializeWeights()
 		swCount = self.topology.getSwitchCount()
 		dsts = self.pdb.getDestinations()
+		self.distances = [[0 for x in range(swCount + 1)] for x in range(swCount + 1)]
 
 		for sw in range(1, swCount + 1) :
 			for n in self.topology.getSwitchNeighbours(sw) : 
@@ -472,6 +478,11 @@ class ZeppelinSynthesiser(object) :
 				# self.topology.addWeight(sw, n, float(ew_rat.numerator_as_long())/float(ew_rat.denominator_as_long()))
 				ew = self.ew(sw, n).x
 				self.topology.addWeight(sw, n, float(ew))
+
+		for s in range(1, swCount + 1) :
+			for t in range(1, swCount + 1) :
+				if s == t : continue
+				self.distances[s][t] = self.dist(s,t).x
 
 		routefilters = dict()
 		for dst in dsts : 

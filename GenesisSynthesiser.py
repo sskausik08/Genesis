@@ -297,7 +297,7 @@ class GenesisSynthesiser(object) :
 			self.zeppelinSynthesiser = ZeppelinSynthesiser(self.topology, self.pdb)
 			dsts = self.pdb.getDestinations()
 			for dst in dsts : 
-				self.pdb.addDestinationDAG(dst, self.generateDestinationDAG(dst))
+				self.pdb.addDestinationDAG(dst, self.destinationDAGs[dst])
 
 			self.zeppelinSynthesiser.enforceDAGs(self.pdb.getDestinationDAGs())
 		
@@ -2154,47 +2154,6 @@ class GenesisSynthesiser(object) :
 			self.z3Solver.add(Implies(And(Or(*reachAssertions1), Or(*reachAssertions2)), Or(*nextSwAssertions)))
 
 
-	def generateDestinationDAG(self, dst) :
-		""" Create a tree from sources to destination  
-		with already enforced policies """ 
-
-		pcs = []
-		for pc in range(self.pdb.getPacketClassRange()) :
-			if dst == self.pdb.getDestinationSwitch(pc) : 
-				pcs.append(pc)
-
-		if len(pcs) == 0 :
-			return
-
-		swCount = self.topology.getSwitchCount()
-		dag = dict() # For every node, we will have a single successor.
-		dag[dst] = None
-
-		for pc in pcs : 
-			path = self.pdb.getPath(pc)
-			for i in range(len(path) - 1) :
-				sw1 = path[i]
-				sw2 = path[i+1]
-				dag[sw1] = sw2
-
-		return dag
-		# # Perform BFS from dst to include all switches in the DAG.
-		# swQueue1 = [dst]
-		# swQueue2 = []
-
-		# while len(swQueue1) > 0 :
-		# 	for sw in swQueue1 : 
-		# 		neighbours = self.topology.getSwitchNeighbours(sw)
-		# 		for n in neighbours : 
-		# 			if not inDag[n] : 
-		# 				inDag[n] = True
-		# 				dag[n] = sw
-		# 				if n not in swQueue2 : 
-		# 					swQueue2.append(n)
-		# 	swQueue1 = swQueue2 
-		# 	swQueue2 = []
-		
-		# assert(len(dag) == swCount)
 
 	def getPolicyDatabase(self) :
 		return self.pdb
