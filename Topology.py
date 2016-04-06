@@ -4,6 +4,7 @@ import time
 from collections import deque
 import math
 from Queue import PriorityQueue 
+import copy
 
 class NetworkDatabase(object) :
 	""" Database to store the switch mappings to integers """
@@ -354,7 +355,7 @@ class Topology(object):
 		path.reverse()
 		return path
 
-	def checkUniquenessShortestPath(self, spath) :
+	def checkUniquenessShortestPath(self, spath, routefilters) :
 		""" Check if there exists a path different from spath with the same weight """
 		spathWeight = 0
 		i = 0
@@ -365,15 +366,16 @@ class Topology(object):
 
 		i = 0
 		for i in range(len(spath) - 1) : 
-			disableEdge = [[spath[i], spath[i+1]]]
-			path = self.getShortestPath(src, dst, disableEdge) # Obtain the shortest path without this edge in the path.
+			disabledEdges = copy.deepcopy(routefilters)
+			disabledEdges.append([spath[i], spath[i+1]])
+			path = self.getShortestPath(src, dst, disabledEdges) # Obtain the shortest path without this edge in the path.
 			if len(path) == 0 : 
 				# No path exists. 
 				continue
 			pathW = 0
 			for j in range(len(path) - 1) : 
 				pathW += self.edgeWeights[path[j]][path[j+1]] 
-				
+
 			if pathW <= spathWeight : 
 				# Another shorter path exists. Violation
 				return False

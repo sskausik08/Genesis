@@ -2121,7 +2121,6 @@ class GenesisSynthesiser(object) :
 				tacticAssert = Implies(self.Fwd(i, isw, pc), self.rho(i, pc) == self.delta(self.rho(isw, pc), t.getSwitchLabelMapping(i)))
 				self.z3Solver.add(tacticAssert)
 					
-			
 		print "Tactic constraints time is " + str(time.time() - st)
 	
 	def addDestinationTreeConstraints(self, pc1, pc2) : 
@@ -2131,6 +2130,13 @@ class GenesisSynthesiser(object) :
 		dst2 = self.pdb.getDestinationSwitch(pc2)
 		if dst1 <> dst2 : 
 			return 
+
+		src1 = self.pdb.getSourceSwitch(pc1)
+		src2 = self.pdb.getSourceSwitch(pc2)
+		if src1 == src2 : 
+			print "Error: In C3 mode, cannot have two packet classes with same source and destination."
+			print "Packet Classes:", pc1, pc2
+			exit(0)
 
 		# If pc1 and pc2 intersect (are reachable at a switch), 
 		# then both are forwarded to the same switch. 
@@ -2152,8 +2158,6 @@ class GenesisSynthesiser(object) :
 
 			# if a switch is reachable by pc1 and pc2, next switch in the path has to be the same.
 			self.z3Solver.add(Implies(And(Or(*reachAssertions1), Or(*reachAssertions2)), Or(*nextSwAssertions)))
-
-
 
 	def getPolicyDatabase(self) :
 		return self.pdb
