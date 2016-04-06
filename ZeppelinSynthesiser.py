@@ -114,6 +114,7 @@ class ZeppelinSynthesiser(object) :
 		swCount = self.topology.getSwitchCount()
 		dsts = self.pdb.getDestinations()
 
+		self.detectDiamonds() # Detect diamonds for route-filters
 		self.initializeSMTVariables()
 
 		#self.z3Solver.push()
@@ -144,19 +145,7 @@ class ZeppelinSynthesiser(object) :
 		self.printProfilingStats()
 		#self.topology.enableAllEdges()
 
-		self.getEdgeWeightModel()
-		# if modelsat == z3.sat : 
-		# 	print "Solver return SAT"
-		# 	self.fwdmodel = self.z3Solver.model()
-		
-		# else :
-		# 	print "Input Policies not realisable"
-		# 	unsatCores = self.z3Solver.unsat_core()
-		# 	for unsatCore in unsatCores :
-		# 		print str(unsatCore)
-
-		# self.z3Solver.pop()		
-		
+		self.getEdgeWeightModel()		
 
 		#self.pdb.printPaths(self.topology)
 		self.pdb.validateControlPlane(self.topology, self.distances)
@@ -493,6 +482,51 @@ class ZeppelinSynthesiser(object) :
 					if is_true(self.fwdmodel.evaluate(self.rf(sw,n,dst))) : 
 						routefilters[dst].append([sw, n])
 		
+	def detectDiamonds(self) :
+		""" Detecting diamonds in the different dags. A diamond is 
+		defined as a subgraph of the overlay where there are two paths from s to t
+		such that the two paths belong to different destination Dags. This implies that
+		there are two shortest paths from s to t which is not enforceable with route filtering """
+
+		self.diamonds = []
+		dsts = self.pdb.getDestinations()
+		for dst1 in dsts :
+			for dst2 in dsts : 
+				if dst1 >= dst2 : continue 
+				dag1 = self.destinationDAGs[dst1]
+				dag2 = self.destinationDAGs[dst2]
+
+				for sw in dag1 : 
+					if sw == dst1 or sw == dst2 : continue 
+					# Detect a diamond
+					if sw in dag2 : 
+						# sw in the dag. Check if both dags diverge
+						if dag1[sw] <> dag2[sw] : 
+							# Diverging common switches, search for intersecting switch
+							dstpath1 = [dag1[sw]]
+							nextsw = dag1[dag1[sw]]
+							while nextsw <> None:
+								dstpath1.append(nextsw)
+								nextsw = dag1[nextsw]
+							dstpath2 = [dag2[sw]]
+							nextsw = dag2[dag2[sw]]
+							while nextsw <> None:
+								dstpath2.append(nextsw)
+								nextsw = dag2[nextsw]
+							# dstpath1 and dstpath2 are paths from sw to their respective destinations
+							# Find intersection
+
+							for swIn in dstpath1 : 
+								if swIn in dstpath2 : 
+									# Intersection! This is the smallest diamond starting at sw
+									in1 = dstpath1.index(swIn)
+									dstpath1 = dstpath1[:in1+1]
+									dstpath1.insert(0, sw)
+									in2 = dstpath2.index(swIn)
+									dstpath2 = dstpath2[:in2+1]
+									dstpath2.insert(0, sw)
+									self.diamonds.append([dst1, dstpath1, dst2, dstpath2])
+									break
 
 	# Profiling Statistics : 
 	def printProfilingStats(self) :
