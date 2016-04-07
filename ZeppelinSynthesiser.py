@@ -118,10 +118,6 @@ class ZeppelinSynthesiser(object) :
 		self.detectDiamonds() # Detect diamonds for route-filters
 		self.initializeSMTVariables()
 
-		for s in range(1, swCount + 1) : 
-			for t in range(1, swCount + 1) : 
-				print s,t, self.diamondPaths[s][t]
-		print self.routefilters
 		for sw in range(1, swCount + 1) :
 			self.overlay[sw] = []
 
@@ -311,12 +307,7 @@ class ZeppelinSynthesiser(object) :
 		""" Adds constraints such that dag weights are what we want them to be """
 		
 		for sw in dag : 
-			if sw == dst : continue		
-			
-			# Add shortest path constraints for sw -> ... -> d
-			self.ilpSolver.addConstr(self.dist(sw, dag[sw]) == self.ew(sw, dag[sw]))
-
-			nextsw = dag[dag[sw]]
+			nextsw = dag[sw]
 			while nextsw <> None :
 				if self.getRank(sw, nextsw, dag[sw]) > 1 : 
 					# Not shortest path in a diamond. Bypass intermediate distances
@@ -495,9 +486,18 @@ class ZeppelinSynthesiser(object) :
 		there are two shortest paths from s to t which is not enforceable with route filtering """
 		swCount = self.topology.getSwitchCount()
 		dsts = self.pdb.getDestinations()
-		self.diamonds = []
+		self.dstDiamonds = dict()
 		self.switchRanks = [[dict() for x in range(swCount + 1)] for x in range(swCount + 1)]
 		self.diamondPaths = [[dict() for x in range(swCount + 1)] for x in range(swCount + 1)]
+		
+		# Diamond dependencies
+		self.dependencyFlag = dict()
+		self.dependencyList = dict()
+		self.subsets = dict()
+		self.supersets = dict()
+		
+		for dst in dsts : 
+			self.dstDiamonds[dst] = []
 
 		for dst1 in dsts :
 			for dst2 in dsts : 
@@ -534,45 +534,164 @@ class ZeppelinSynthesiser(object) :
 									in2 = dstpath2.index(swConv)
 									dstpath2 = dstpath2[:in2+1]
 									dstpath2.insert(0, swDiv)
-									self.diamonds.append([dst1, dstpath1, dst2, dstpath2])
+									
 									self.diamondPaths[swDiv][swConv][dst1] = dstpath1 
+									if dstpath1 not in self.dstDiamonds[dst1] : 
+										self.dstDiamonds[dst1].append(dstpath1)
+
 									self.diamondPaths[swDiv][swConv][dst2] = dstpath2 
+									if dstpath2 not in self.dstDiamonds[dst2] : 
+										self.dstDiamonds[dst2].append(dstpath2)
 									break
 
-		# for each src-dst pair diamond, ranks all paths according to length (shortest length has min rank)
-		for s in range(1, swCount + 1) :
+		# Assign ranks
+		for dst in self.dstDiamonds : 
+			diamondpaths = self.dstDiamonds[dst]
+			for dpath1 in diamondpaths : 
+				for dpath2 in diamondpaths : 
+					if dpath1 == dpath2 : continue
+					if len(dpath1) >= len(dpath2) : continue 
+					# check if dpath1 completely in dpath2
+					start = dpath1[0]
+					end = dpath1[len(dpath1) - 1]
+					if start in dpath2 and end in dpath2 : 
+						# From this and condition 2 (dpath1 < dpath2), dpath1 is strict subpath of dpath2
+						self.addDependency(dpath1, dpath2, dst)
+
+		totalRanks = 0
+		for s in range(1, swCount + 1) : 
 			for t in range(1, swCount + 1) : 
-				if len(self.diamondPaths[s][t]) > 0 : 
-					# Diamonds exists from s to t. Rank them by length
-					diamonds = self.diamondPaths[s][t]
-					ranks = dict()
-					currRank = 1
-					# All paths are not ranked
-					while len(ranks) < len(diamonds) : 
-						# Pick minimum length path
-						minpath = range(100000)
-						mindst = None
+				totalRanks += len(self.diamondPaths[s][t])
+
+		assignedRanks = 0
+		while assignedRanks < totalRanks :
+			# Find a suitable source-dst pair to assign ranks
+			for s in range(1, swCount + 1) : 
+				for t in range(1, swCount + 1) : 
+					if len(self.diamondPaths[s][t]) > 0 and len(self.switchRanks[s][t]) < len(self.diamondPaths[s][t]): 
+						subsetOnlyEdges = []
+						supersetOnlyEdges = []
+						unConstrainedEdges = []
+						diamonds = self.diamondPaths[s][t]
 						for dst in diamonds : 
 							path = diamonds[dst]
-							if len(path) < len(minpath) and dst not in ranks :
-								minpath = path
-								mindst = dst
-						# min path is least path without a rank
-						ranks[mindst] = currRank
-						currRank += 1
-					# All paths are ranked. set up ranks of switches
-					for dst in diamonds : 
-						path = diamonds[dst]
-						self.switchRanks[s][t][path[1]] = ranks[dst]
+							if self.isUnconstrained(path, dst) : 
+								unConstrainedEdges.append(path[1])
+							elif self.isSubsetOnly(path, dst) : 
+								subsetOnlyEdges.append(path[1])
+							elif self.isSupersetOnly(path, dst) : 
+								supersetOnlyEdges.append(path[1])
+						
+						if len(subsetOnlyEdges) + len(unConstrainedEdges) == len(diamonds) : 
+							# Largest Diamond. Set Ranks at will
+							currRank = 1
+							for n in unConstrainedEdges : 
+								self.switchRanks[s][t][n] = currRank
+								currRank += 1
+								assignedRanks += 1
+							for n in subsetOnlyEdges : 
+								self.switchRanks[s][t][n] = currRank
+								if currRank > 1 : 
+									# Can remove dependencies of smaller paths
+									for dst in diamonds : 
+										path = diamonds[dst]
+										if path[1] == n : 
+											print "Removing dependencies", path, dst
+											self.removeDependencies(path, dst)
+								currRank += 1
+								assignedRanks += 1	
 
-		self.generateRouteFilters()
+		self.generateRouteFilters() 
+	
+	def addDependency(self, path1, path2, dst) : 
+		""" Diamonds: path1 is a subpath of path2 in dag of dst"""
+		s1 = path1[0]
+		t1 = path1[len(path1) - 1]
+		key1 = str(s1) + "-" + str(t1) + ":" + str(dst)
+
+		s2 = path2[0]
+		t2 = path2[len(path2) - 1]
+		key2 = str(s2) + "-" + str(t2) + ":" + str(dst)
+
+		# Dependent diamond paths
+		self.dependencyFlag[key1] = True
+		self.dependencyFlag[key2] = True 
+			
+		if key1 in self.dependencyList : 
+			self.dependencyList[key1].append(path2)
+		else : 
+			self.dependencyList[key1] = [path2]
+
+		if key2 in self.dependencyList : 
+			self.dependencyList[key2].append(path1)
+		else : 
+			self.dependencyList[key2] = [path1]
+
+		self.subsets[key2] = True
+		self.supersets[key1] = True 
+
+	def isUnconstrained(self, path1, dst) :
+		""" Returns if path1's rank is not dependent with any other path rank"""
+		s1 = path1[0]
+		t1 = path1[len(path1) - 1]
+		key1 = str(s1) + "-" + str(t1) + ":" + str(dst)
+		if key1 in self.dependencyFlag :
+			return False
+		else :
+			return True 
+
+	def isSubsetOnly(self, path1, dst) :
+		s1 = path1[0]
+		t1 = path1[len(path1) - 1]
+		key1 = str(s1) + "-" + str(t1) + ":" + str(dst)
+		if key1 in self.subsets and key1 not in self.supersets : 
+			return True
+		else :
+			return False
+
+	def isSupersetOnly(self, path1, dst) :
+		s1 = path1[0]
+		t1 = path1[len(path1) - 1]
+		key1 = str(s1) + "-" + str(t1) + ":" + str(dst)
+		if key1 in self.supersets and key1 not in self.subsets : 
+			return True
+		else :
+			return False
+
+	def removeDependencies(self, path1, dst) :
+		""" Removes dependencies of all paths subset of path as path is not sp"""
+		s1 = path1[0]
+		t1 = path1[len(path1) - 1]
+		key1 = str(s1) + "-" + str(t1) + ":" + str(dst)
+		dpaths = self.dependencyList[key1]
+		self.dependencyList[key1] = []
+		del self.dependencyFlag[key1]
+
+		for dpath in dpaths : 
+			s2 = dpath[0]
+			t2 = dpath[len(dpath) - 1]
+			key2 = str(s2) + "-" + str(t2) + ":" + str(dst)
+			dpaths2 = self.dependencyList[key2]
+			newdpaths2 = []
+			for dpath2 in dpaths2 : 
+				if dpath2 <> path1 :
+					newdpaths2.append(dpath2)
+			if len(newdpaths2) == 0 :
+				# Unconstrained 
+				self.dependencyList[key2] = []
+				del  self.dependencyFlag[key2]
+			else : 
+				self.dependencyList[key2] = newdpaths2
 
 	def getRank(self, s, t, nextsw) : 
 		""" Rank of path from s to t via nextsw (which is neighbour of s """
 		if nextsw in self.switchRanks[s][t] :
 			return self.switchRanks[s][t][nextsw]
+		elif len(self.switchRanks[s][t]) > 0 :
+			# There exists a diamond from s-t, but nextsw not in any diamond paths. Return a high rank
+			return 100000
 		else :
-			# Not in a diamond, so shortest path
+			# No diamonds from s-t. Shortest Path
 			return 1
 
 	def addDiamondConstraints(self) :
@@ -619,6 +738,8 @@ class ZeppelinSynthesiser(object) :
 								# Lower ranked paths would be disabled
 								self.routefilters[dst1].append([s, nextsw2])
 
+		print self.routefilters
+
 	# Profiling Statistics : 
 	def printProfilingStats(self) :
 		#print "Time taken to add constraints are ", self.z3addTime
@@ -638,6 +759,50 @@ class ZeppelinSynthesiser(object) :
 
 
 
+		# for each src-dst pair diamond, ranks all paths according to length (shortest length has min rank)
+		# for s in range(1, swCount + 1) :
+		# 	diamondDsts = []
+		# 	for t in range(1, swCount + 1) : 
+		# 		if len(self.diamondPaths[s][t]) > 0 : 
+		# 			diamondDsts.append(t)
+		# 	if len(diamondDsts) == 0 : continue # No diamonds starting at source
+		# 	else : 
+		# 		# Rank all neighbours of s randomly
+		# 		neighbours = self.topology.getSwitchNeighbours(s)
+		# 		sRanks = dict()
+		# 		currRank = 1
+		# 		for n in neighbours : 
+		# 			sRanks[n] = currRank
+		# 			currRank += 1
+
+		# 		# Number of diamonds from s is greater than 1
+		# 		# If two diamonds with same source share a edge, if edge is ranked one
+		# 		# in one of the diamonds, it has to be ranked one in the other as well.
+				
+		# 		for t in diamondDsts : 
+		# 			diamonds = self.diamondPaths[s][t]
+		# 			ranks = dict()
+		# 			currRank = 1
+		# 			while len(ranks) < len(diamonds):
+		# 				minRank = 100000
+		# 				minNeighbour = None 
+		# 				for dst in diamonds : 
+		# 					path = diamonds[dst]
+		# 					if path[1] not in ranks and sRanks[path[1]] < minRank : 
+		# 						minNeighbour = path[1]
+		# 						minRank = sRanks[minNeighbour]
+		# 				ranks[minNeighbour] = currRank
+		# 				currRank += 1					
+		# 			for n in ranks : 
+		# 				self.switchRanks[s][t][n] = ranks[n]
+
+		# for t in range(1, swCount + 1) :
+		# 	diamondSrcs = []
+		# 	for s in range(1, swCount + 1) :
+		# 		if len(self.diamondPaths[s][t]) > 0 : 
+		# 			diamondSrcs.append(s)
+		# 	if len(diamondSrcs)	 > 0 : 
+		# 		print t, diamondSrcs	
 
 
 
