@@ -142,9 +142,11 @@ class ZeppelinSynthesiser(object) :
 		solvetime = time.time()
 		#modelsat = self.z3Solver.check()
 		self.ilpSolver.optimize()
+		self.ilpSolver.computeIIS()
+		self.ilpSolver.write("model.ilp")
 		self.z3solveTime += time.time() - solvetime
 		self.printProfilingStats()
-		#self.topology.enableAllEdges()
+		self.topology.enableAllEdges()
 
 		self.getEdgeWeightModel()		
 
@@ -319,7 +321,10 @@ class ZeppelinSynthesiser(object) :
 						nextsw = dag[nextsw]
 					break
 				
-				self.ilpSolver.addConstr(self.dist(sw, nextsw) == self.dist(sw, dag[sw]) + self.dist(dag[sw], nextsw))
+				if nextsw == dag[sw] :
+					self.ilpSolver.addConstr(self.dist(sw, nextsw) == self.ew(sw, dag[sw]))
+				else : 
+					self.ilpSolver.addConstr(self.dist(sw, nextsw) == self.dist(sw, dag[sw]) + self.dist(dag[sw], nextsw))
 			
 				neighbours = self.topology.getSwitchNeighbours(sw)
 				for n in neighbours : 
@@ -468,17 +473,24 @@ class ZeppelinSynthesiser(object) :
 
 		for sw in range(1, swCount + 1) :
 			for n in self.topology.getSwitchNeighbours(sw) : 
+				if n not in self.overlay[sw] :
+					self.topology.addWeight(sw, n, float(1000))
+					#print sw, n, 1000
+				else : 
 				# ew_rat = self.fwdmodel.evaluate(self.ew(sw,n))
 				# self.topology.addWeight(sw, n, float(ew_rat.numerator_as_long())/float(ew_rat.denominator_as_long()))
-				ew = self.ew(sw, n).x
-				self.topology.addWeight(sw, n, float(ew))
+					ew = self.ew(sw, n).x
+					if float(ew) > 1000 : 
+						ew = 1000
+					self.topology.addWeight(sw, n, float(ew))
+					#print sw, n, float(ew)
 
 		for s in range(1, swCount + 1) :
 			for t in range(1, swCount + 1) :
 				if s == t : continue
 				self.distances[s][t] = self.dist(s,t).x
+				#print s,t, self.distances[s][t]
 
-		
 	def detectDiamonds(self) :
 		""" Detecting diamonds in the different dags. A diamond is 
 		defined as a subgraph of the overlay where there are two paths from s to t
@@ -534,12 +546,29 @@ class ZeppelinSynthesiser(object) :
 									in2 = dstpath2.index(swConv)
 									dstpath2 = dstpath2[:in2+1]
 									dstpath2.insert(0, swDiv)
-									
-									self.diamondPaths[swDiv][swConv][dst1] = dstpath1 
+
+									exists = False
+									for dst in self.diamondPaths[swDiv][swConv] :
+										if self.diamondPaths[swDiv][swConv][dst] == dstpath1 and dst <> dst1 :
+											# dstpath1's diamond already exists, ignore. 
+											exists = True
+											break
+									if not exists : 
+										self.diamondPaths[swDiv][swConv][dst1] = dstpath1 
+
 									if dstpath1 not in self.dstDiamonds[dst1] : 
 										self.dstDiamonds[dst1].append(dstpath1)
 
-									self.diamondPaths[swDiv][swConv][dst2] = dstpath2 
+									exists = False
+									for dst in self.diamondPaths[swDiv][swConv] :
+										if self.diamondPaths[swDiv][swConv][dst] == dstpath2 and dst <> dst2 :
+											# dstpath1's diamond already exists, ignore. 
+											exists = True
+											break
+
+									if not exists : 
+										self.diamondPaths[swDiv][swConv][dst2] = dstpath2
+
 									if dstpath2 not in self.dstDiamonds[dst2] : 
 										self.dstDiamonds[dst2].append(dstpath2)
 									break
@@ -563,15 +592,17 @@ class ZeppelinSynthesiser(object) :
 			for t in range(1, swCount + 1) : 
 				totalRanks += len(self.diamondPaths[s][t])
 
+		print "Finding ranks"
 		assignedRanks = 0
 		while assignedRanks < totalRanks :
 			# Find a suitable source-dst pair to assign ranks
 			for s in range(1, swCount + 1) : 
 				for t in range(1, swCount + 1) : 
-					if len(self.diamondPaths[s][t]) > 0 and len(self.switchRanks[s][t]) < len(self.diamondPaths[s][t]): 
+					if len(self.diamondPaths[s][t]) > 0 and len(self.switchRanks[s][t]) <> len(self.diamondPaths[s][t]): 
 						subsetOnlyEdges = []
 						supersetOnlyEdges = []
 						unConstrainedEdges = []
+						assignedEdges = []
 						diamonds = self.diamondPaths[s][t]
 						for dst in diamonds : 
 							path = diamonds[dst]
@@ -579,28 +610,54 @@ class ZeppelinSynthesiser(object) :
 								unConstrainedEdges.append(path[1])
 							elif self.isSubsetOnly(path, dst) : 
 								subsetOnlyEdges.append(path[1])
+							elif path[1] in self.switchRanks[s][t] : 
+								assignedEdges.append(path[1])
 							elif self.isSupersetOnly(path, dst) : 
 								supersetOnlyEdges.append(path[1])
-						
-						if len(subsetOnlyEdges) + len(unConstrainedEdges) == len(diamonds) : 
+							
+						print s,t, subsetOnlyEdges, supersetOnlyEdges, unConstrainedEdges, assignedEdges
+						print diamonds, self.switchRanks[s][t], len(self.switchRanks[s][t]), len(self.diamondPaths[s][t])
+
+						if len(subsetOnlyEdges) + len(unConstrainedEdges) + len(assignedEdges) == len(diamonds) : 
 							# Largest Diamond. Set Ranks at will
-							currRank = 1
-							for n in unConstrainedEdges : 
+							if len(assignedEdges) > 1 : 
+								print "Not possible, error"
+								exit(0)
+							elif len(assignedEdges) == 1 : 
+								currRank = 2
+							else : 
+								currRank = 1
+							for n in unConstrainedEdges :
 								self.switchRanks[s][t][n] = currRank
 								currRank += 1
 								assignedRanks += 1
 							for n in subsetOnlyEdges : 
 								self.switchRanks[s][t][n] = currRank
+								if currRank == 1 : 
+									# Need to make sure the subset paths are set to 1
+									for dst in diamonds : 
+										path = diamonds[dst]
+										if path[1] == n : 
+											dependencies = self.getDependencies(path, dst)
+											for dpath in dependencies : 
+												if dpath[1] not in self.switchRanks[dpath[0]][dpath[len(dpath) - 1]] : 
+													self.switchRanks[dpath[0]][dpath[len(dpath) - 1]][dpath[1]] = 1 # Cannot be lower ranked 
+													assignedRanks += 1
+												elif dpath[1] in self.switchRanks[dpath[0]][dpath[len(dpath) - 1]] : 
+													if self.switchRanks[dpath[0]][dpath[len(dpath) - 1]][dpath[1]] > 1 : 
+														print "Violation of invariant!" 
+														exit(0)
 								if currRank > 1 : 
 									# Can remove dependencies of smaller paths
 									for dst in diamonds : 
 										path = diamonds[dst]
 										if path[1] == n : 
-											print "Removing dependencies", path, dst
 											self.removeDependencies(path, dst)
 								currRank += 1
 								assignedRanks += 1	
 
+
+		print "Found ranks"
 		self.generateRouteFilters() 
 	
 	def addDependency(self, path1, path2, dst) : 
@@ -627,8 +684,14 @@ class ZeppelinSynthesiser(object) :
 		else : 
 			self.dependencyList[key2] = [path1]
 
-		self.subsets[key2] = True
-		self.supersets[key1] = True 
+	def getDependencies(self, path1, dst) : 
+		s1 = path1[0]
+		t1 = path1[len(path1) - 1]
+		key1 = str(s1) + "-" + str(t1) + ":" + str(dst)
+		if key1 in self.dependencyList : 
+			return self.dependencyList[key1]
+		else : 
+			return []
 
 	def isUnconstrained(self, path1, dst) :
 		""" Returns if path1's rank is not dependent with any other path rank"""
@@ -644,19 +707,23 @@ class ZeppelinSynthesiser(object) :
 		s1 = path1[0]
 		t1 = path1[len(path1) - 1]
 		key1 = str(s1) + "-" + str(t1) + ":" + str(dst)
-		if key1 in self.subsets and key1 not in self.supersets : 
-			return True
-		else :
-			return False
+		if key1 not in self.dependencyList : return False
+		dpaths = self.dependencyList[key1]
+		for dpath in dpaths : 
+			if dpath[0] not in path1 or dpath[len(dpath) - 1] not in path1 :
+				return False
+		return True 
 
 	def isSupersetOnly(self, path1, dst) :
 		s1 = path1[0]
 		t1 = path1[len(path1) - 1]
 		key1 = str(s1) + "-" + str(t1) + ":" + str(dst)
-		if key1 in self.supersets and key1 not in self.subsets : 
-			return True
-		else :
-			return False
+		if key1 not in self.dependencyList : return False
+		dpaths = self.dependencyList[key1]
+		for dpath in dpaths : 
+			if path1[0] not in dpath or path1[len(path1) - 1] not in dpath :
+				return False
+		return True 
 
 	def removeDependencies(self, path1, dst) :
 		""" Removes dependencies of all paths subset of path as path is not sp"""
