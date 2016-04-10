@@ -130,16 +130,16 @@ class ZeppelinSynthesiser(object) :
 						self.overlay[sw1].append(sw2)
 
 		self.disableUnusedEdges()
-		print "Overlay Connnectivity started"
-		self.overlayConnectivity()
-		print "Overlay Connnectivity ended"
+		#print "Overlay Connnectivity started"
+		#self.overlayConnectivity()
+		#print "Overlay Connnectivity ended"
 		self.addDjikstraShortestPathConstraints()
 
 		for dst in dsts : 
 			dag = self.destinationDAGs[dst]
 			self.addDestinationDAGConstraints(dst, dag)
 
-		#self.addDiamondConstraints()
+		self.addDiamondConstraints()
 		print "Solving ILP"
 		solvetime = time.time()
 		#modelsat = self.z3Solver.check()
@@ -286,9 +286,6 @@ class ZeppelinSynthesiser(object) :
 				swQueue2 = []
 			explored[sw] = True
 
-
-
-
 	# These constraints are solved fast, does exponentially increase synthesis time.
 	def addDjikstraShortestPathConstraints(self) :
 		swCount = self.topology.getSwitchCount()
@@ -317,18 +314,26 @@ class ZeppelinSynthesiser(object) :
 		""" Adds constraints such that dag weights are what we want them to be """
 		
 		for sw in dag : 
-			nextsw = dag[sw]
-			while nextsw <> None :
-				if self.getRank(sw, nextsw, dag[sw]) > 1: 
-					# Not shortest path in a diamond. Bypass intermediate distances
-					swConv = nextsw
+			if self.isDiamondSource(sw) : 
+				# Add Diamonds constraints in addDiamondConstraints.
+				nextsw = dag[sw]
+				diamondDst = None
+				while nextsw <> None:
+					if self.isDiamondDestination(nextsw) : 
+						diamondDst = nextsw
+					if diamondDst == None : 
+						self.ilpSolver.addConstr(self.dist(sw, nextsw) == self.dist(sw, dag[sw]) + self.dist(dag[sw], nextsw))
+						# Strict inequality
+						neighbours = self.topology.getSwitchNeighbours(sw)
+						for n in neighbours : 
+							if n <> dag[sw] : 
+								self.ilpSolver.addConstr(self.dist(sw, nextsw) <= self.ew(sw, n) + self.dist(n, nextsw) - 1)
+					else : 
+						self.ilpSolver.addConstr(self.dist(sw, nextsw) == self.dist(sw, diamondDst) + self.dist(diamondDst, nextsw))
 					nextsw = dag[nextsw]
-					while nextsw <> None : 
-						# Distance = Distance of diamond + rest of path
-						self.ilpSolver.addConstr(self.dist(sw, nextsw) == self.dist(sw, swConv) + self.dist(swConv, nextsw))
-						nextsw = dag[nextsw]
-					break
-				
+				continue
+			nextsw = dag[sw]
+			while nextsw <> None :				
 				if nextsw == dag[sw] :
 					self.ilpSolver.addConstr(self.dist(sw, nextsw) == self.ew(sw, dag[sw]))
 				else : 
@@ -655,12 +660,24 @@ class ZeppelinSynthesiser(object) :
 			return self.switchRanks[s][t][nextsw]
 		elif len(self.switchRanks[s][t]) > 0 :
 			# There exists a diamond from s-t, but nextsw not in any diamond paths. Return a high rank
-			print s,t,nextsw, 100000
-			exit(0)
-			return 100000
+			return 10000
 		else :
 			# No diamonds from s-t. Shortest Path
 			return 1
+
+	def isDiamondSource(self, s) :
+		swCount = self.topology.getSwitchCount()
+		for t in range(1, swCount + 1) :
+			if len(self.switchRanks[s][t]) > 0 :
+				return True
+		return False
+
+	def isDiamondDestination(self, t) :
+		swCount = self.topology.getSwitchCount()
+		for s in range(1, swCount + 1) :
+			if len(self.switchRanks[s][t]) > 0 :
+				return True
+		return False
 
 	def addDiamondConstraints(self) :
 		swCount = self.topology.getSwitchCount()
@@ -669,18 +686,50 @@ class ZeppelinSynthesiser(object) :
 				if len(self.diamondPaths[s][t]) > 0 : 
 					# Diamonds exist. Add constraints to ensure path weights follow ranking
 					diamonds = self.diamondPaths[s][t]
+					diamondNeighbours = []
+					neighbours = self.topology.getSwitchNeighbours(s)
+					print s,t, diamonds, "is a diamond"
 					for dst1 in diamonds :
 						nextsw1= diamonds[dst1][1] # Neighbour of s
+						diamondNeighbours.append(nextsw1)
 						rank1 = self.switchRanks[s][t][nextsw1]
-						if rank1 > 1 : 
-							# Not shortest path, therefore ensure path distance 
-							# is strictly lesser than higher ranked paths from s to t
-							for dst2 in diamonds : 
-								nextsw2 = diamonds[dst2][1] # Neighbour of s
-								rank2 = self.switchRanks[s][t][nextsw2] 
-								if rank2 > rank1 :
-									# Higher ranked path
-									self.ilpSolver.addConstr(self.dist(s,nextsw1) + self.dist(nextsw1, t) <= self.dist(s, nextsw2) + self.dist(nextsw2, t) - 1)
+						if rank1 == 1 : 
+							print diamonds[dst1]
+							# Shortest path from s to t is through nextsw1
+							self.ilpSolver.addConstr(self.dist(s,t) == self.dist(s, nextsw1) + self.dist(nextsw1, t))
+					
+							print neighbours, s,t, "I am here!", rank1
+							for n in neighbours : 
+								if self.getRank(s,t,n) > rank1 : 
+									print nextsw1, n, self.getRank(s,t,n)
+									# Higher ranked path should be strictly greater in distance
+									self.ilpSolver.addConstr(self.dist(s,nextsw1) + self.dist(nextsw1, t) <= self.dist(s, n) + self.dist(n, t) - 1)
+
+						# for dst2 in diamonds : 
+						# 	nextsw2 = diamonds[dst2][1] # Neighbour of s
+						# 	rank2 = self.switchRanks[s][t][nextsw2] 
+						# 	if rank2 > rank1 :
+						# 		# Higher ranked path
+						# 		self.ilpSolver.addConstr(self.dist(s,nextsw1) + self.dist(nextsw1, t) <= self.dist(s, nextsw2) + self.dist(nextsw2, t) - 1)
+
+
+					#Constraints to ensure highest rank path is shorter than other non-ranked paths
+					
+					# neighbours = self.topology.getSwitchNeighbours(s)
+					# for dst1 in diamonds :
+					# 	nextsw1= diamonds[dst1][1] # Neighbour of s
+					# 	rank1 = self.switchRanks[s][t][nextsw1]
+					# 	if rank1 == len(diamonds) :
+					# 		# Highest Rank Path
+					# 		for n in neighbours : 
+					# 			if n not in diamondNeighbours : 
+					# 				self.ilpSolver.addConstr(self.dist(s,nextsw1) + self.dist(nextsw1, t) <= self.dist(s, n) + self.dist(n, t) - 1)
+
+
+
+
+					
+
 
 
 	def generateRouteFilters(self) :
