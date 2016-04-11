@@ -130,16 +130,13 @@ class ZeppelinSynthesiser(object) :
 						self.overlay[sw1].append(sw2)
 
 		self.disableUnusedEdges()
-		#print "Overlay Connnectivity started"
-		#self.overlayConnectivity()
-		#print "Overlay Connnectivity ended"
 		self.addDjikstraShortestPathConstraints()
 
 		for dst in dsts : 
 			dag = self.destinationDAGs[dst]
 			self.addDestinationDAGConstraints(dst, dag)
 
-		self.addDiamondConstraints()
+		#self.addDiamondConstraints()
 		print "Solving ILP"
 		solvetime = time.time()
 		#modelsat = self.z3Solver.check()
@@ -314,24 +311,24 @@ class ZeppelinSynthesiser(object) :
 		""" Adds constraints such that dag weights are what we want them to be """
 		
 		for sw in dag : 
-			if self.isDiamondSource(sw) : 
-				# Add Diamonds constraints in addDiamondConstraints.
-				nextsw = dag[sw]
-				diamondDst = None
-				while nextsw <> None:
-					if self.isDiamondDestination(nextsw) : 
-						diamondDst = nextsw
-					if diamondDst == None : 
-						self.ilpSolver.addConstr(self.dist(sw, nextsw) == self.dist(sw, dag[sw]) + self.dist(dag[sw], nextsw))
-						# Strict inequality
-						neighbours = self.topology.getSwitchNeighbours(sw)
-						for n in neighbours : 
-							if n <> dag[sw] : 
-								self.ilpSolver.addConstr(self.dist(sw, nextsw) <= self.ew(sw, n) + self.dist(n, nextsw) - 1)
-					else : 
-						self.ilpSolver.addConstr(self.dist(sw, nextsw) == self.dist(sw, diamondDst) + self.dist(diamondDst, nextsw))
-					nextsw = dag[nextsw]
-				continue
+			# if self.isDiamondSource(sw) : 
+			# 	# Add Diamonds constraints in addDiamondConstraints.
+			# 	nextsw = dag[sw]
+			# 	diamondDst = None
+			# 	while nextsw <> None:
+			# 		if self.isDiamondDestination(nextsw) : 
+			# 			diamondDst = nextsw
+			# 		if diamondDst == None : 
+			# 			self.ilpSolver.addConstr(self.dist(sw, nextsw) == self.dist(sw, dag[sw]) + self.dist(dag[sw], nextsw))
+			# 			# Strict inequality
+			# 			neighbours = self.topology.getSwitchNeighbours(sw)
+			# 			for n in neighbours : 
+			# 				if n <> dag[sw] : 
+			# 					self.ilpSolver.addConstr(self.dist(sw, nextsw) <= self.ew(sw, n) + self.dist(n, nextsw) - 1)
+			# 		else : 
+			# 			self.ilpSolver.addConstr(self.dist(sw, nextsw) == self.dist(sw, diamondDst) + self.dist(diamondDst, nextsw))
+			# 		nextsw = dag[nextsw]
+			# 	continue
 			nextsw = dag[sw]
 			while nextsw <> None :				
 				if nextsw == dag[sw] :
@@ -372,7 +369,7 @@ class ZeppelinSynthesiser(object) :
 				self.distances[s][t] = self.dist(s,t).x
 				#print s,t, self.distances[s][t]
 
-	def detectDiamonds(self) :
+	def detectDiamonds(self, onlyDetect=False) :
 		""" Detecting diamonds in the different dags. A diamond is 
 		defined as a subgraph of the overlay where there are two paths from s to t
 		such that the two paths belong to different destination Dags. This implies that
@@ -421,6 +418,12 @@ class ZeppelinSynthesiser(object) :
 							for swConv in dstpath1 : 
 								if swConv in dstpath2 : 
 									# Intersection! This is the smallest diamond starting at sw
+									
+									# If diamond detection mode, return True, as Diamond as been detected
+									if onlyDetect :
+										print dst1, dst2, swDiv, swConv
+ 										return True
+
 									in1 = dstpath1.index(swConv)
 									dstpath1 = dstpath1[:in1+1]
 									dstpath1.insert(0, swDiv)
@@ -453,6 +456,9 @@ class ZeppelinSynthesiser(object) :
 									if dstpath2 not in self.dstDiamonds[dst2] : 
 										self.dstDiamonds[dst2].append(dstpath2)
 									break
+
+		if onlyDetect : 
+			return False # If diamond was detected, then return value would be inside the loop itself
 
 		# Assign ranks
 		for dst in self.dstDiamonds : 
@@ -537,7 +543,7 @@ class ZeppelinSynthesiser(object) :
 								currRank += 1
 								assignedRanks += 1	
 						if len(supersetOnlyEdges) + len(unConstrainedEdges) + len(subsetOnlyEdges) == len(diamonds) and len(supersetOnlyEdges) == 1 :
-							# Set the superset Edge to rank 1 (np contradtictions)
+							# Set the superset Edge to rank 1 (no contradtictions)
 							currRank = 1
 							for n in supersetOnlyEdges : 
 								self.switchRanks[s][t][n] = currRank 
@@ -562,6 +568,7 @@ class ZeppelinSynthesiser(object) :
 
 
 		print "Found ranks"
+		self.modifyDAGs()
 		self.generateRouteFilters() 
 	
 	def addDependency(self, path1, path2, dst) : 
@@ -726,34 +733,104 @@ class ZeppelinSynthesiser(object) :
 					# 				self.ilpSolver.addConstr(self.dist(s,nextsw1) + self.dist(nextsw1, t) <= self.dist(s, n) + self.dist(n, t) - 1)
 
 
+	def modifyDAGs(self) :
+		self.unmodifiedDestinationDAGs = copy.deepcopy(self.destinationDAGs)
+		swCount = self.topology.getSwitchCount()
+		self.routefilters = dict()
+		dsts = self.pdb.getDestinations()
 
+		# Initialize route filters to the empty set
+		for dst in dsts : 
+			self.routefilters[dst] = []
 
+		for s in range(1, swCount + 1) :
+			diamondDsts = []
+			for t in range(1, swCount + 1) : 
+				if len(self.diamondPaths[s][t]) > 0 : 
+					diamondDsts.append(t)
+
+			if len(diamondDsts) < 1 : continue # No diamonds.			
+			elif len(diamondDsts) == 1 : 
+				# Only one diamond, can modify DAGs
+				t = diamondDsts[0] 
+				diamonds = self.diamondPaths[s][t]
+				for dst1 in diamonds :
+					spath = diamonds[dst1]
+					nextsw1 = spath[1] # Neighbour of s
+					rank1 = self.switchRanks[s][t][nextsw1] 
 					
+					if rank1 == 1 : 
+						for dst2 in diamonds : 
+							if dst2 <> dst1 : 
+								# Rank > 1. Reroute s to spath
+								path2 = diamonds[dst2]
+								# Rerouting
+								self.reroute(dst2, path2, spath)
 
+			else : 	
+				# More than one diamond at source. 
+				# If a destination DAG has to be rerouted along multiple paths
+				# (It is a lower ranked path in two diamonds) 
+				# => Reroute along longer path.
+				rerouteDstPaths = dict()
+				for t in diamondDsts : 
+					diamonds =  self.diamondPaths[s][t]
+					firstRankPath = self.getFirstRankPath(s,t)
+					for dst1 in diamonds : 
+						path1 = diamonds[dst1]
+						rank1 = self.switchRanks[s][t][path1[1]]
+						diamondDsts = [] # Destinations sharing diamond path <path1>
+						if rank1 > 1 :
+							for dst2 in dsts : 
+								if path1 in self.dstDiamonds[dst2] and dst2 not in diamondDsts : 
+									diamondDsts.append(dst2)
 
+							for dst2 in diamondDsts : 
+							# Higher ranked path, needs rerouting
+								if dst2 not in rerouteDstPaths :
+									rerouteDstPaths[dst2] = [[path1, firstRankPath]]
+								else : 
+									rerouteDstPaths[dst2].append([path1, firstRankPath])
+
+				for dst1 in rerouteDstPaths : 
+					if len(rerouteDstPaths[dst1]) >= 1 : 
+						# Part of multiple diamonds, reroute to longest first rank path
+						# Sort by path length, and reroute depending on largest diamond
+						rerouteDstPaths[dst1] = sorted(rerouteDstPaths[dst1], key=lambda p: len(p[0]), reverse=True) 
+						# First element of the list will have the longest diamond path for dst
+						path1 = rerouteDstPaths[dst1][0][0]
+						spath = rerouteDstPaths[dst1][0][1]
+						self.reroute(dst1, path1, spath)
+
+		print self.detectDiamonds(onlyDetect=True), " is Diamonds still here?"
+
+	def reroute(self, rdst, path, spath) :
+		""" Reroute all dsts using path to spath """ 
+
+		dag = self.destinationDAGs[rdst]
+		# Start from s and send dag2 traffic through the largest
+		# subpath of <spath>
+		dag[spath[0]] = spath[1] 
+		for i in range(1, len(spath) - 1) : 
+			if spath[i] not in dag : 
+				dag[spath[i]] = spath[i + 1]
+			else :
+				# Switch in dag2 
+				break 
+
+	def getFirstRankPath(self, s, t) : 
+		diamonds = self.diamondPaths[s][t]
+		for dst in diamonds : 
+			path = diamonds[dst]
+			rank = self.switchRanks[s][t][path[1]]
+			if rank == 1 : 
+				return path
 
 	def generateRouteFilters(self) :
 		""" Disable lower ranked first edges of s in every s-t diamond for each destination"""
 		swCount = self.topology.getSwitchCount()
 		self.routefilters = dict()
 		dsts = self.pdb.getDestinations()
-		for dst in dsts : 
-			self.routefilters[dst] = []
-
-		for s in range(1, swCount + 1) :
-			for t in range(1, swCount + 1) : 
-				if len(self.diamondPaths[s][t]) > 0 : 
-					# Diamonds exist. Add constraints to ensure path weights follow ranking
-					diamonds = self.diamondPaths[s][t]
-					for dst1 in diamonds :
-						nextsw1= diamonds[dst1][1] # Neighbour of s
-						rank1 = self.switchRanks[s][t][nextsw1] 
-						for dst2 in diamonds : 
-							nextsw2 = diamonds[dst2][1] # Neighbour of s
-							rank2 = self.switchRanks[s][t][nextsw2] 
-							if rank2 < rank1 : 
-								# Lower ranked paths would be disabled
-								self.routefilters[dst1].append([s, nextsw2])
 
 		print self.routefilters
 
