@@ -80,11 +80,11 @@ class ZeppelinSynthesiser(object) :
 				
 
 	def ew(self, sw1, sw2) :
-		neighbours = self.topology.getSwitchNeighbours(sw1)
-		if sw2 not in neighbours : 
-			raise LookupError("Weight for non-neighbours referred!")
-		else : 
-			return self.edgeWeights[sw1][sw2]
+		# neighbours = self.topology.getSwitchNeighbours(sw1)
+		# if sw2 not in neighbours : 
+		# 	raise LookupError("Weight for non-neighbours referred!")
+		# else : 
+		return self.edgeWeights[sw1][sw2]
 
 	def rf(self, sw1, sw2, sw3) :
 		neighbours = self.topology.getSwitchNeighbours(sw2)
@@ -111,7 +111,7 @@ class ZeppelinSynthesiser(object) :
 		""" Enforce the input destination dags """
 		start_t = time.time()
 		self.overlay = dict()
-		self.destinationDAGs = dags
+		self.destinationDAGs = copy.deepcopy(dags)
 		swCount = self.topology.getSwitchCount()
 		dsts = self.pdb.getDestinations()
 
@@ -130,6 +130,8 @@ class ZeppelinSynthesiser(object) :
 						self.overlay[sw1].append(sw2)
 
 		self.disableUnusedEdges()
+		self.generateRouteFilters()
+
 		self.addDjikstraShortestPathConstraints()
 
 		for dst in dsts : 
@@ -145,8 +147,10 @@ class ZeppelinSynthesiser(object) :
 		# self.ilpSolver.write("model.ilp")
 		self.z3solveTime += time.time() - solvetime
 		self.printProfilingStats()
+		
+		# Enable Topology Edges
 		self.topology.enableAllEdges()
-
+		# Extract Edge weights for Gurobi		
 		self.getEdgeWeightModel()		
 
 		#self.pdb.printPaths(self.topology)
@@ -358,8 +362,10 @@ class ZeppelinSynthesiser(object) :
 				# ew_rat = self.fwdmodel.evaluate(self.ew(sw,n))
 				# self.topology.addWeight(sw, n, float(ew_rat.numerator_as_long())/float(ew_rat.denominator_as_long()))
 					ew = self.ew(sw, n).x
+					# if [sw,n] in self.hiddenEdges : 
+					# 	ew = 1000
 					if float(ew) > 1000 : 
-						ew = 1000
+						ew = 100000
 					self.topology.addWeight(sw, n, float(ew))
 					#print sw, n, float(ew)
 
@@ -569,7 +575,6 @@ class ZeppelinSynthesiser(object) :
 
 		print "Found ranks"
 		self.modifyDAGs()
-		self.generateRouteFilters() 
 	
 	def addDependency(self, path1, path2, dst) : 
 		""" Diamonds: path1 is a subpath of path2 in dag of dst"""
@@ -688,29 +693,24 @@ class ZeppelinSynthesiser(object) :
 
 	def addDiamondConstraints(self) :
 		swCount = self.topology.getSwitchCount()
+		self.hiddenEdges = []
 		for s in range(1, swCount + 1) :
 			for t in range(1, swCount + 1) : 
 				if len(self.diamondPaths[s][t]) > 0 : 
 					# Diamonds exist. Add constraints to ensure path weights follow ranking
 					diamonds = self.diamondPaths[s][t]
-					diamondNeighbours = []
 					neighbours = self.topology.getSwitchNeighbours(s)
-					print s,t, diamonds, "is a diamond"
 					for dst1 in diamonds :
 						nextsw1= diamonds[dst1][1] # Neighbour of s
-						diamondNeighbours.append(nextsw1)
 						rank1 = self.switchRanks[s][t][nextsw1]
-						if rank1 == 1 : 
-							print diamonds[dst1]
-							# Shortest path from s to t is through nextsw1
-							self.ilpSolver.addConstr(self.dist(s,t) == self.dist(s, nextsw1) + self.dist(nextsw1, t))
-					
-							print neighbours, s,t, "I am here!", rank1
+						if rank1 > 1 : 
 							for n in neighbours : 
-								if self.getRank(s,t,n) > rank1 : 
-									print nextsw1, n, self.getRank(s,t,n)
+								if n not in self.switchRanks[s][t] : 
 									# Higher ranked path should be strictly greater in distance
-									self.ilpSolver.addConstr(self.dist(s,nextsw1) + self.dist(nextsw1, t) <= self.dist(s, n) + self.dist(n, t) - 1)
+									self.ilpSolver.addConstr(self.ew(s,nextsw1) + self.dist(nextsw1, t) <= self.dist(s, n) + self.dist(n, t) - 1)
+
+									if [s, nextsw1] not in self.hiddenEdges : 
+										self.hiddenEdges.append([s, nextsw1])
 
 						# for dst2 in diamonds : 
 						# 	nextsw2 = diamonds[dst2][1] # Neighbour of s
@@ -738,6 +738,7 @@ class ZeppelinSynthesiser(object) :
 		swCount = self.topology.getSwitchCount()
 		self.routefilters = dict()
 		dsts = self.pdb.getDestinations()
+		self.reroutedEdges = []
 
 		# Initialize route filters to the empty set
 		for dst in dsts : 
@@ -802,7 +803,13 @@ class ZeppelinSynthesiser(object) :
 						spath = rerouteDstPaths[dst1][0][1]
 						self.reroute(dst1, path1, spath)
 
-		print self.detectDiamonds(onlyDetect=True), " is Diamonds still here?"
+		
+		print self.dstDiamonds
+
+		for s in range(1, swCount + 1) :
+			for t in range(1, swCount + 1) : 
+				if len( self.switchRanks[s][t] ) > 0 : 
+					print s, t, self.diamondPaths[s][t], self.switchRanks[s][t]
 
 	def reroute(self, rdst, path, spath) :
 		""" Reroute all dsts using path to spath """ 
@@ -827,12 +834,57 @@ class ZeppelinSynthesiser(object) :
 				return path
 
 	def generateRouteFilters(self) :
-		""" Disable lower ranked first edges of s in every s-t diamond for each destination"""
+		""" Generate the complete set of routefilters """
+
 		swCount = self.topology.getSwitchCount()
-		self.routefilters = dict()
 		dsts = self.pdb.getDestinations()
 
+		# Rerouting process generates route filters for diamond paths. 
+		# However, to ensure the path in the dag is followed, we need
+		# to ensure it is the shortest path among the other paths.  
+		for s in range(1, swCount + 1) :
+			for t in range(1, swCount + 1) : 
+				if len(self.diamondPaths[s][t]) > 0 : 
+					diamonds = self.diamondPaths[s][t]
+					for dst1 in diamonds : 
+						path1 = diamonds[dst1]
+						rank1 = self.switchRanks[s][t][path1[1]]
+						# Find other destinations sharing this path in the diamond
+						filterDsts = []
+						for dst in dsts : 
+							if path1 in self.dstDiamonds[dst] : 
+								filterDsts.append(dst)
+
+						if rank1 == 1 : continue # No route filters needed for the first rank path
+						
+						#Add route filters for other edges
+					
+						for dst2 in diamonds : 
+							if dst1 <> dst2 : 
+								path2 = diamonds[dst2]
+
+								for dst in filterDsts : 
+								# add s-path2[1] to dst1's route filter
+									if [s, path2[1]] not in self.routefilters[dst] : 
+										self.routefilters[dst].append([s, path2[1]])
+						
+						# neighbours = self.overlay[s]
+						# for dst in filterDsts : 
+						# 	for n in neighbours  :
+						# 		if n <> path1[1] and [s,n] not in self.routefilters[dst] : 
+						# 			self.routefilters[dst].append([s, n])
+
 		print self.routefilters
+
+	# def analyzeDiamonds(self) : 
+	# 	swCount = self.topology.getSwitchCount()
+	# 	dsts = self.pdb.getDestinations()
+	# 	for s in range(1, swCount + 1) :
+	# 		for t in range(1, swCount + 1) : 
+	# 			if len(self.diamondPaths[s][t]) > 0 : 
+	# 				diamonds = self.diamondPaths[s][t]
+	# 				for dst1 in diamonds : 
+
 
 	# Profiling Statistics : 
 	def printProfilingStats(self) :

@@ -469,18 +469,28 @@ class PolicyDatabase(object) :
 		return self.dags
 
 	def validateControlPlane(self, topology, routefilters, distances) :
+		violationCount = 0
 		for pc in range(self.getPacketClassRange()) :
 			src = self.getSourceSwitch(pc)
 			dst = self.getDestinationSwitch(pc)
-			cpath = topology.getShortestPath(src,dst, routefilters[dst])
-			if cpath <> self.getPath(pc) : 
-				print "G", self.getPath(pc), "Z", cpath
-				print "Not Shortest Path in control plane for class", pc
-				print "Genesis path distance:", topology.getPathDistance(self.getPath(pc)), " Zeppelin: ", topology.getPathDistance(cpath)
-				print "Zeppelin Model distance:", distances[src][dst]
-			if not topology.checkUniquenessShortestPath(cpath, routefilters[dst]) :
-				print "Path is not uniquely shortest for PC", pc
+			zpath = topology.getShortestPath(src,dst, routefilters[dst])
+			dag = self.dags[dst]
+			gpath = []
+			nextsw = src
+			while nextsw <> None : 
+				gpath.append(nextsw)
+				nextsw = dag[nextsw] 
 
+			if zpath <> gpath : 
+				print "G", gpath, "Z", zpath, "shortest path is", topology.getShortestPath(src,dst)
+				print "Not Shortest Path in control plane for class", pc
+				print "Genesis path distance:", topology.getPathDistance(gpath), " Zeppelin: ", topology.getPathDistance(zpath)
+				print "Zeppelin Model distance:", distances[src][dst]
+				violationCount += 1
+			if not topology.checkUniquenessShortestPath(zpath, routefilters[dst]) :
+				print "Path is not uniquely shortest for PC", pc
+				violationCount += 1
+		print "Number of Violations is", violationCount
 
 
 
