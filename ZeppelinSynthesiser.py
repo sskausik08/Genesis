@@ -130,7 +130,7 @@ class ZeppelinSynthesiser(object) :
 						self.overlay[sw1].append(sw2)
 
 		self.disableUnusedEdges()
-		self.generateRouteFilters()
+		#self.generateRouteFilters()
 
 		self.addDjikstraShortestPathConstraints()
 
@@ -138,7 +138,7 @@ class ZeppelinSynthesiser(object) :
 			dag = self.destinationDAGs[dst]
 			self.addDestinationDAGConstraints(dst, dag)
 
-		self.addDiamondConstraints()
+		#self.addDiamondConstraints()
 		print "Solving ILP"
 		solvetime = time.time()
 		#modelsat = self.z3Solver.check()
@@ -333,6 +333,7 @@ class ZeppelinSynthesiser(object) :
 			# 			self.ilpSolver.addConstr(self.dist(sw, nextsw) == self.dist(sw, diamondDst) + self.dist(diamondDst, nextsw))
 			# 		nextsw = dag[nextsw]
 			# 	continue
+			if self.isDiamondSource(sw, dst) : continue
 			nextsw = dag[sw]
 			while nextsw <> None :				
 				if nextsw == dag[sw] :
@@ -394,6 +395,12 @@ class ZeppelinSynthesiser(object) :
 		
 		for dst in dsts : 
 			self.dstDiamonds[dst] = []
+
+		# Route filter initialization
+		self.routefilters = dict()
+		for dst in dsts : 
+			self.routefilters[dst] = []
+
 
 		for dst1 in dsts :
 			for dst2 in dsts : 
@@ -574,7 +581,7 @@ class ZeppelinSynthesiser(object) :
 
 
 		print "Found ranks"
-		self.modifyDAGs()
+		print self.dstDiamonds
 	
 	def addDependency(self, path1, path2, dst) : 
 		""" Diamonds: path1 is a subpath of path2 in dag of dst"""
@@ -677,10 +684,12 @@ class ZeppelinSynthesiser(object) :
 			# No diamonds from s-t. Shortest Path
 			return 1
 
-	def isDiamondSource(self, s) :
-		swCount = self.topology.getSwitchCount()
-		for t in range(1, swCount + 1) :
-			if len(self.switchRanks[s][t]) > 0 :
+	def isDiamondSource(self, s, dst) :
+		if dst not in self.dstDiamonds : 
+			return False
+		diamonds = self.dstDiamonds[dst]
+		for dpath in diamonds : 
+			if dpath[0] == s :
 				return True
 		return False
 
@@ -699,38 +708,18 @@ class ZeppelinSynthesiser(object) :
 				if len(self.diamondPaths[s][t]) > 0 : 
 					# Diamonds exist. Add constraints to ensure path weights follow ranking
 					diamonds = self.diamondPaths[s][t]
+					neighbours = self.topology.getSwitchNeighbours(s)
 					for dst1 in diamonds :
 						nextsw1= diamonds[dst1][1] # Neighbour of s
 						rank1 = self.switchRanks[s][t][nextsw1]
 						if rank1 > 1 : 
-							srcs1 = self.pdb.getDAGSources(dst1, s)
-							for src in srcs1 : 
-								neighbours = self.topology.getSwitchNeighbours(src)
-								for n in neighbours : 
-									if n <> self.destinationDAGs[dst1][src]:  # Next neighbour of src in dag 
-									# Any other path from source must be strictly smaller
-										self.ilpSolver.addConstr(self.dist(src, s) + self.dist(s, dst1) <= self.dist(src, n) + self.dist(n, dst1) - 1)
+							for n in neighbours : 
+								if n not in self.switchRanks[s][t] : 
+									# Higher ranked path should be strictly greater in distance
+									self.ilpSolver.addConstr(self.ew(s,nextsw1) + self.dist(nextsw1, t) <= self.dist(s, n) + self.dist(n, t) - 1)
 
-	# def addDiamondConstraints(self) :
-	# 	swCount = self.topology.getSwitchCount()
-	# 	self.hiddenEdges = []
-	# 	for s in range(1, swCount + 1) :
-	# 		for t in range(1, swCount + 1) : 
-	# 			if len(self.diamondPaths[s][t]) > 0 : 
-	# 				# Diamonds exist. Add constraints to ensure path weights follow ranking
-	# 				diamonds = self.diamondPaths[s][t]
-	# 				neighbours = self.topology.getSwitchNeighbours(s)
-	# 				for dst1 in diamonds :
-	# 					nextsw1= diamonds[dst1][1] # Neighbour of s
-	# 					rank1 = self.switchRanks[s][t][nextsw1]
-	# 					if rank1 > 1 : 
-	# 						for n in neighbours : 
-	# 							if n not in self.switchRanks[s][t] : 
-	# 								# Higher ranked path should be strictly greater in distance
-	# 								self.ilpSolver.addConstr(self.ew(s,nextsw1) + self.dist(nextsw1, t) <= self.dist(s, n) + self.dist(n, t) - 1)
-
-	# 								if [s, nextsw1] not in self.hiddenEdges : 
-	# 									self.hiddenEdges.append([s, nextsw1])
+									if [s, nextsw1] not in self.hiddenEdges : 
+										self.hiddenEdges.append([s, nextsw1])
 
 						# for dst2 in diamonds : 
 						# 	nextsw2 = diamonds[dst2][1] # Neighbour of s
@@ -753,83 +742,92 @@ class ZeppelinSynthesiser(object) :
 					# 				self.ilpSolver.addConstr(self.dist(s,nextsw1) + self.dist(nextsw1, t) <= self.dist(s, n) + self.dist(n, t) - 1)
 
 
-	def modifyDAGs(self) :
-		self.unmodifiedDestinationDAGs = copy.deepcopy(self.destinationDAGs)
-		swCount = self.topology.getSwitchCount()
-		self.routefilters = dict()
-		dsts = self.pdb.getDestinations()
-		self.reroutedEdges = []
+	# def modifyDAGs(self) :
+	# 	self.unmodifiedDestinationDAGs = copy.deepcopy(self.destinationDAGs)
+	# 	swCount = self.topology.getSwitchCount()
+	# 	self.routefilters = dict()
+	# 	dsts = self.pdb.getDestinations()
+	# 	self.reroutedEdges = []
 
-		# Initialize route filters to the empty set
-		for dst in dsts : 
-			self.routefilters[dst] = []
+	# 	print "Original DAGs"
+	# 	print self.destinationDAGs
 
-		for s in range(1, swCount + 1) :
-			diamondDsts = []
-			for t in range(1, swCount + 1) : 
-				if len(self.diamondPaths[s][t]) > 0 : 
-					diamondDsts.append(t)
+	# 	# Initialize route filters to the empty set
+	# 	for dst in dsts : 
+	# 		self.routefilters[dst] = []
 
-			if len(diamondDsts) < 1 : continue # No diamonds.			
-			elif len(diamondDsts) == 1 : 
-				# Only one diamond, can modify DAGs
-				t = diamondDsts[0] 
-				diamonds = self.diamondPaths[s][t]
-				for dst1 in diamonds :
-					spath = diamonds[dst1]
-					nextsw1 = spath[1] # Neighbour of s
-					rank1 = self.switchRanks[s][t][nextsw1] 
+	# 	for s in range(1, swCount + 1) :
+	# 		diamondDsts = []
+	# 		for t in range(1, swCount + 1) : 
+	# 			if len(self.diamondPaths[s][t]) > 0 : 
+	# 				diamondDsts.append(t)
+
+	# 		if len(diamondDsts) < 1 : continue # No diamonds.			
+	# 		elif len(diamondDsts) == 1 : 
+	# 			# Only one diamond, can modify DAGs
+	# 			t = diamondDsts[0] 
+	# 			diamonds = self.diamondPaths[s][t]
+	# 			for dst1 in diamonds :
+	# 				spath = diamonds[dst1]
+	# 				nextsw1 = spath[1] # Neighbour of s
+	# 				rank1 = self.switchRanks[s][t][nextsw1] 
 					
-					if rank1 == 1 : 
-						for dst2 in diamonds : 
-							if dst2 <> dst1 : 
-								# Rank > 1. Reroute s to spath
-								path2 = diamonds[dst2]
-								# Rerouting
-								self.reroute(dst2, path2, spath)
+	# 				if rank1 == 1 : 
+	# 					for dst2 in diamonds : 
+	# 						if dst2 <> dst1 : 
+	# 							# Rank > 1. Reroute s to spath
+	# 							path2 = diamonds[dst2]
+	# 							# Rerouting
+	# 							self.reroute(dst2, path2, spath)
 
-			else : 	
-				# More than one diamond at source. 
-				# If a destination DAG has to be rerouted along multiple paths
-				# (It is a lower ranked path in two diamonds) 
-				# => Reroute along longer path.
-				rerouteDstPaths = dict()
-				for t in diamondDsts : 
-					diamonds =  self.diamondPaths[s][t]
-					firstRankPath = self.getFirstRankPath(s,t)
-					for dst1 in diamonds : 
-						path1 = diamonds[dst1]
-						rank1 = self.switchRanks[s][t][path1[1]]
-						diamondDsts = [] # Destinations sharing diamond path <path1>
-						if rank1 > 1 :
-							for dst2 in dsts : 
-								if path1 in self.dstDiamonds[dst2] and dst2 not in diamondDsts : 
-									diamondDsts.append(dst2)
+	# 		else : 	
+	# 			# More than one diamond at source. 
+	# 			# If a destination DAG has to be rerouted along multiple paths
+	# 			# (It is a lower ranked path in two diamonds) 
+	# 			# => Reroute along longer path.
+	# 			rerouteDstPaths = dict()
+	# 			for t in diamondDsts : 
+	# 				diamonds =  self.diamondPaths[s][t]
+	# 				firstRankPath = self.getFirstRankPath(s,t)
+	# 				for dst1 in diamonds : 
+	# 					path1 = diamonds[dst1]
+	# 					rank1 = self.switchRanks[s][t][path1[1]]
+	# 					diamondDsts = [] # Destinations sharing diamond path <path1>
+	# 					if rank1 > 1 :
+	# 						for dst2 in dsts : 
+	# 							if path1 in self.dstDiamonds[dst2] and dst2 not in diamondDsts : 
+	# 								diamondDsts.append(dst2)
 
-							for dst2 in diamondDsts : 
-							# Higher ranked path, needs rerouting
-								if dst2 not in rerouteDstPaths :
-									rerouteDstPaths[dst2] = [[path1, firstRankPath]]
-								else : 
-									rerouteDstPaths[dst2].append([path1, firstRankPath])
+	# 						for dst2 in diamondDsts : 
+	# 						# Higher ranked path, needs rerouting
+	# 							if dst2 not in rerouteDstPaths :
+	# 								rerouteDstPaths[dst2] = [[path1, firstRankPath]]
+	# 							else : 
+	# 								rerouteDstPaths[dst2].append([path1, firstRankPath])
 
-				for dst1 in rerouteDstPaths : 
-					if len(rerouteDstPaths[dst1]) >= 1 : 
-						# Part of multiple diamonds, reroute to longest first rank path
-						# Sort by path length, and reroute depending on largest diamond
-						rerouteDstPaths[dst1] = sorted(rerouteDstPaths[dst1], key=lambda p: len(p[0]), reverse=True) 
-						# First element of the list will have the longest diamond path for dst
-						path1 = rerouteDstPaths[dst1][0][0]
-						spath = rerouteDstPaths[dst1][0][1]
-						self.reroute(dst1, path1, spath)
+	# 			for dst1 in rerouteDstPaths : 
+	# 				if len(rerouteDstPaths[dst1]) >= 1 : 
+	# 					# Part of multiple diamonds, reroute to longest first rank path
+	# 					# Sort by path length, and reroute depending on largest diamond
+	# 					rerouteDstPaths[dst1] = sorted(rerouteDstPaths[dst1], key=lambda p: len(p[0]), reverse=True) 
+	# 					# First element of the list will have the longest diamond path for dst
+	# 					path1 = rerouteDstPaths[dst1][0][0]
+	# 					spath = rerouteDstPaths[dst1][0][1]
+	# 					self.reroute(dst1, path1, spath)
 
 		
-		print self.dstDiamonds
+	# 	print "\n\n"
+	# 	print self.destinationDAGs
+	# 	print "\n\n"
 
-		for s in range(1, swCount + 1) :
-			for t in range(1, swCount + 1) : 
-				if len( self.switchRanks[s][t] ) > 0 : 
-					print s, t, self.diamondPaths[s][t], self.switchRanks[s][t]
+	# 	print self.dstDiamonds
+		
+	# 	for s in range(1, swCount + 1) :
+	# 		for t in range(1, swCount + 1) : 
+	# 			if len( self.switchRanks[s][t] ) > 0 : 
+	# 				print s, t, self.diamondPaths[s][t], self.switchRanks[s][t]
+
+	# 	print self.detectDiamonds(onlyDetect=True)
 
 	def reroute(self, rdst, path, spath) :
 		""" Reroute all dsts using path to spath """ 
