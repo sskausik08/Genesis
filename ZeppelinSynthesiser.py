@@ -153,6 +153,8 @@ class ZeppelinSynthesiser(object) :
 		# Extract Edge weights for Gurobi		
 		self.getEdgeWeightModel()		
 
+		self.findRouteFilters()
+
 		#self.pdb.printPaths(self.topology)
 		self.pdb.validateControlPlane(self.topology, self.routefilters, self.distances)
 		#self.topology.printWeights()
@@ -333,14 +335,13 @@ class ZeppelinSynthesiser(object) :
 			# 			self.ilpSolver.addConstr(self.dist(sw, nextsw) == self.dist(sw, diamondDst) + self.dist(diamondDst, nextsw))
 			# 		nextsw = dag[nextsw]
 			# 	continue
-			if self.isDiamondSource(sw, dst) : continue
 			nextsw = dag[sw]
 			while nextsw <> None :				
 				if nextsw == dag[sw] :
 					self.ilpSolver.addConstr(self.dist(sw, nextsw) == self.ew(sw, dag[sw]))
 				else : 
 					self.ilpSolver.addConstr(self.dist(sw, nextsw) == self.dist(sw, dag[sw]) + self.dist(dag[sw], nextsw))
-			
+				
 				neighbours = self.topology.getSwitchNeighbours(sw)
 				for n in neighbours : 
 					if n <> dag[sw] : 
@@ -383,23 +384,25 @@ class ZeppelinSynthesiser(object) :
 		there are two shortest paths from s to t which is not enforceable with route filtering """
 		swCount = self.topology.getSwitchCount()
 		dsts = self.pdb.getDestinations()
-		self.dstDiamonds = dict()
-		self.switchRanks = [[dict() for x in range(swCount + 1)] for x in range(swCount + 1)]
-		self.diamondPaths = [[dict() for x in range(swCount + 1)] for x in range(swCount + 1)]
 		
-		# Diamond dependencies
-		self.dependencyFlag = dict()
-		self.dependencyList = dict()
-		self.subsets = dict()
-		self.supersets = dict()
-		
-		for dst in dsts : 
-			self.dstDiamonds[dst] = []
+		if not onlyDetect : 
+			self.dstDiamonds = dict()
+			self.switchRanks = [[dict() for x in range(swCount + 1)] for x in range(swCount + 1)]
+			self.diamondPaths = [[dict() for x in range(swCount + 1)] for x in range(swCount + 1)]
+			
+			# Diamond dependencies
+			self.dependencyFlag = dict()
+			self.dependencyList = dict()
+			self.subsets = dict()
+			self.supersets = dict()
+			
+			for dst in dsts : 
+				self.dstDiamonds[dst] = []
 
-		# Route filter initialization
-		self.routefilters = dict()
-		for dst in dsts : 
-			self.routefilters[dst] = []
+			# Route filter initialization
+			self.routefilters = dict()
+			for dst in dsts : 
+				self.routefilters[dst] = []
 
 
 		for dst1 in dsts :
@@ -409,13 +412,14 @@ class ZeppelinSynthesiser(object) :
 				dag2 = self.destinationDAGs[dst2]
 
 				for swDiv in dag1 : 
-					if swDiv == dst1 or swDiv == dst2 : continue 
+					if dag1[swDiv] == None : continue 
 					# Detect a diamond
 					if swDiv in dag2 : 
+						if dag2[swDiv] == None : continue
 						# swDiv in the dag. Check if both dags diverge
 						if dag1[swDiv] <> dag2[swDiv] : 
 							# Diverging common switches, search for intersecting switch
-							dstpath1 = [dag1[swDiv]]
+							dstpath1 = [dag1[swDiv]] 
 							nextsw = dag1[dag1[swDiv]]
 							while nextsw <> None:
 								dstpath1.append(nextsw)
@@ -582,6 +586,7 @@ class ZeppelinSynthesiser(object) :
 
 		print "Found ranks"
 		print self.dstDiamonds
+		self.modifyDAGs()
 	
 	def addDependency(self, path1, path2, dst) : 
 		""" Diamonds: path1 is a subpath of path2 in dag of dst"""
@@ -702,7 +707,7 @@ class ZeppelinSynthesiser(object) :
 
 	def addDiamondConstraints(self) :
 		swCount = self.topology.getSwitchCount()
-		self.hiddenEdges = []
+		
 		for s in range(1, swCount + 1) :
 			for t in range(1, swCount + 1) : 
 				if len(self.diamondPaths[s][t]) > 0 : 
@@ -742,35 +747,42 @@ class ZeppelinSynthesiser(object) :
 					# 				self.ilpSolver.addConstr(self.dist(s,nextsw1) + self.dist(nextsw1, t) <= self.dist(s, n) + self.dist(n, t) - 1)
 
 
-	# def modifyDAGs(self) :
-	# 	self.unmodifiedDestinationDAGs = copy.deepcopy(self.destinationDAGs)
-	# 	swCount = self.topology.getSwitchCount()
-	# 	self.routefilters = dict()
-	# 	dsts = self.pdb.getDestinations()
-	# 	self.reroutedEdges = []
+	def modifyDAGs(self) :
+		self.unmodifiedDestinationDAGs = copy.deepcopy(self.destinationDAGs)
+		swCount = self.topology.getSwitchCount()
+		self.routefilters = dict()
+		dsts = self.pdb.getDestinations()
+		self.reroutedEdges = []
+		self.hiddenEdges = []
 
-	# 	print "Original DAGs"
-	# 	print self.destinationDAGs
+		print "Original DAGs"
+		print self.destinationDAGs
 
-	# 	# Initialize route filters to the empty set
-	# 	for dst in dsts : 
-	# 		self.routefilters[dst] = []
+		# Initialize route filters to the empty set
+		for dst in dsts : 
+			self.routefilters[dst] = []
 
-	# 	for s in range(1, swCount + 1) :
-	# 		diamondDsts = []
-	# 		for t in range(1, swCount + 1) : 
-	# 			if len(self.diamondPaths[s][t]) > 0 : 
-	# 				diamondDsts.append(t)
+		for s in range(1, swCount + 1) :
+			diamondDsts = []
+			for t in range(1, swCount + 1) : 
+				if len(self.diamondPaths[s][t]) > 0 : 
+					diamondDsts.append(t)
 
-	# 		if len(diamondDsts) < 1 : continue # No diamonds.			
-	# 		elif len(diamondDsts) == 1 : 
-	# 			# Only one diamond, can modify DAGs
-	# 			t = diamondDsts[0] 
-	# 			diamonds = self.diamondPaths[s][t]
-	# 			for dst1 in diamonds :
-	# 				spath = diamonds[dst1]
-	# 				nextsw1 = spath[1] # Neighbour of s
-	# 				rank1 = self.switchRanks[s][t][nextsw1] 
+			if len(diamondDsts) < 1 : continue # No diamonds.			
+			elif len(diamondDsts) >= 1 : 
+				# Only one diamond, can modify DAGs
+				for t in diamondDsts : 
+					diamonds = self.diamondPaths[s][t]
+					for dst1 in diamonds :
+						spath = diamonds[dst1]
+						nextsw1 = spath[1] # Neighbour of s
+						rank1 = self.switchRanks[s][t][nextsw1] 
+						if rank1 > 1 : 
+							dag1 = self.destinationDAGs[dst1]
+							dag1[s] = None 
+
+
+		self.generateRouteFilters()
 					
 	# 				if rank1 == 1 : 
 	# 					for dst2 in diamonds : 
@@ -875,16 +887,13 @@ class ZeppelinSynthesiser(object) :
 
 						if rank1 == 1 : continue # No route filters needed for the first rank path
 						
-						#Add route filters for other edges
-					
-						for dst2 in diamonds : 
-							if dst1 <> dst2 : 
-								path2 = diamonds[dst2]
-
-								for dst in filterDsts : 
-								# add s-path2[1] to dst1's route filter
-									if [s, path2[1]] not in self.routefilters[dst] : 
-										self.routefilters[dst].append([s, path2[1]])
+						#Add route filters for first rank path
+						frPath = self.getFirstRankPath(s,t)
+						
+						for dst in filterDsts : 
+							# add s-path2[1] to dst1's route filter
+							if [s, frPath[1]] not in self.routefilters[dst] : 
+								self.routefilters[dst].append([s, frPath[1]])
 						
 						# neighbours = self.overlay[s]
 						# for dst in filterDsts : 
@@ -893,6 +902,34 @@ class ZeppelinSynthesiser(object) :
 						# 			self.routefilters[dst].append([s, n])
 
 		print self.routefilters
+
+
+	def findRouteFilters(self) : 
+		""" Generate the rest of the route filters """ 
+		for pc in range(self.pdb.getPacketClassRange()) :
+			src = self.pdb.getSourceSwitch(pc)
+			dst = self.pdb.getDestinationSwitch(pc)
+			genesisPath = self.pdb.getPath(pc)
+
+			print pc
+			# Add route filters such that path from src-> dst is genesisPath
+			path = self.topology.getShortestPath(src, dst, self.routefilters[dst])
+
+			while genesisPath <> path:
+				# Find first divergence
+				print path, genesisPath
+				i = 0
+				while genesisPath[i] == path[i]:
+					i += 1
+
+				self.routefilters[dst].append([path[i - 1], path[i]])
+
+				# Update path
+				path = self.topology.getShortestPath(src, dst, self.routefilters[dst])
+				if path == [] : 
+					break
+
+ 
 
 	# def analyzeDiamonds(self) : 
 	# 	swCount = self.topology.getSwitchCount()
