@@ -462,6 +462,18 @@ class PolicyDatabase(object) :
 
 		return dsts 
 		
+	def getDAGSources(self, dst, dStart) :
+		# Return all sources which have dStart in the path
+		srcs = []
+		for pc in range(self.getPacketClassRange()) : 
+			policy = self.endpointTable[pc]
+			if policy[3] == dst : 
+				path = self.getPath(pc) 
+				if dStart in path : 
+					srcs.append(path[0])
+		
+		return srcs
+		
 	def addDestinationDAG(self, dst, dag) : 
 		self.dags[dst] = dag
 

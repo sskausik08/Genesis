@@ -138,7 +138,7 @@ class ZeppelinSynthesiser(object) :
 			dag = self.destinationDAGs[dst]
 			self.addDestinationDAGConstraints(dst, dag)
 
-		#self.addDiamondConstraints()
+		self.addDiamondConstraints()
 		print "Solving ILP"
 		solvetime = time.time()
 		#modelsat = self.z3Solver.check()
@@ -699,18 +699,38 @@ class ZeppelinSynthesiser(object) :
 				if len(self.diamondPaths[s][t]) > 0 : 
 					# Diamonds exist. Add constraints to ensure path weights follow ranking
 					diamonds = self.diamondPaths[s][t]
-					neighbours = self.topology.getSwitchNeighbours(s)
 					for dst1 in diamonds :
 						nextsw1= diamonds[dst1][1] # Neighbour of s
 						rank1 = self.switchRanks[s][t][nextsw1]
 						if rank1 > 1 : 
-							for n in neighbours : 
-								if n not in self.switchRanks[s][t] : 
-									# Higher ranked path should be strictly greater in distance
-									self.ilpSolver.addConstr(self.ew(s,nextsw1) + self.dist(nextsw1, t) <= self.dist(s, n) + self.dist(n, t) - 1)
+							srcs1 = self.pdb.getDAGSources(dst1, s)
+							for src in srcs1 : 
+								neighbours = self.topology.getSwitchNeighbours(src)
+								for n in neighbours : 
+									if n <> self.destinationDAGs[dst1][src]:  # Next neighbour of src in dag 
+									# Any other path from source must be strictly smaller
+										self.ilpSolver.addConstr(self.dist(src, s) + self.dist(s, dst1) <= self.dist(src, n) + self.dist(n, dst1) - 1)
 
-									if [s, nextsw1] not in self.hiddenEdges : 
-										self.hiddenEdges.append([s, nextsw1])
+	# def addDiamondConstraints(self) :
+	# 	swCount = self.topology.getSwitchCount()
+	# 	self.hiddenEdges = []
+	# 	for s in range(1, swCount + 1) :
+	# 		for t in range(1, swCount + 1) : 
+	# 			if len(self.diamondPaths[s][t]) > 0 : 
+	# 				# Diamonds exist. Add constraints to ensure path weights follow ranking
+	# 				diamonds = self.diamondPaths[s][t]
+	# 				neighbours = self.topology.getSwitchNeighbours(s)
+	# 				for dst1 in diamonds :
+	# 					nextsw1= diamonds[dst1][1] # Neighbour of s
+	# 					rank1 = self.switchRanks[s][t][nextsw1]
+	# 					if rank1 > 1 : 
+	# 						for n in neighbours : 
+	# 							if n not in self.switchRanks[s][t] : 
+	# 								# Higher ranked path should be strictly greater in distance
+	# 								self.ilpSolver.addConstr(self.ew(s,nextsw1) + self.dist(nextsw1, t) <= self.dist(s, n) + self.dist(n, t) - 1)
+
+	# 								if [s, nextsw1] not in self.hiddenEdges : 
+	# 									self.hiddenEdges.append([s, nextsw1])
 
 						# for dst2 in diamonds : 
 						# 	nextsw2 = diamonds[dst2][1] # Neighbour of s
