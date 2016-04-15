@@ -295,7 +295,8 @@ class ZeppelinSynthesiser(object) :
 						routefiltersCount += 1
 
 		self.ilpSolver.setParam(gb.GRB.Param.MIPGapAbs, routefiltersCount/2)
-		self.ilpSolver.setParam(gb.GRB.Param.TimeLimit, 200)
+		self.ilpSolver.setParam(gb.GRB.Param.TimeLimit, 400)
+		#self.ilpSolver.setParam(gb.GRB.Param.Method, 2)
 		self.ilpSolver.setObjective(totalRouteFilters, gb.GRB.MINIMIZE)
 
 
