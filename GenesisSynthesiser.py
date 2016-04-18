@@ -359,10 +359,13 @@ class GenesisSynthesiser(object) :
 
 		if self.controlPlaneMode :
 			print "In control plane generation mode"
+			start_t = time.time()
 			# Need to generate paths for synthesis of control plane
 			for pc1 in range(self.pdb.getPacketClassRange()) : 
 				for pc2 in range(pc1 + 1, self.pdb.getPacketClassRange()) :
 					self.addDestinationTreeConstraints(pc1, pc2)
+					#self.addDiamondConstraints(pc1, pc2)
+			print "Added control plane constraints", time.time() - start_t
 
 		linkCapacityConstraints = self.pdb.getLinkCapacityConstraints()
 		self.addLinkConstraints(range(self.pdb.getPacketClassRange()), linkCapacityConstraints)
@@ -2154,10 +2157,40 @@ class GenesisSynthesiser(object) :
 
 			nextSwAssertions = []
 			for n in neighbours : 
-				nextSwAssertions.append(And(self.Fwd(sw, n, pc1), self.Fwd(sw, n, pc1)))
+				nextSwAssertions.append(And(self.Fwd(sw, n, pc1), self.Fwd(sw, n, pc2)))
 
 			# if a switch is reachable by pc1 and pc2, next switch in the path has to be the same.
 			self.z3Solver.add(Implies(And(Or(*reachAssertions1), Or(*reachAssertions2)), Or(*nextSwAssertions)))
+
+
+	# def addDiamondConstraints(self, pc1, pc2) :
+	# 	""" If pc1 and pc2 have different destinations, add constraints to ensure there are no diamonds """
+	# 	dst1 = self.pdb.getDestinationSwitch(pc1)
+	# 	dst2 = self.pdb.getDestinationSwitch(pc2)
+	# 	if dst1 == dst2 : 
+	# 		return
+
+	# 	swCount = self.topology.getSwitchCount()
+	# 	maxPathLen = self.topology.getMaxPathLength()
+
+	# 	for s in range(1, swCount + 1) :
+	# 		for t in range(1, swCount + 1) : 
+	# 			if s == t : continue
+				
+	# 			neighbours = self.topology.getSwitchNeighbours(s)
+	# 			divergenceAssertions = []
+	# 			for n in neighbours : 
+	# 				divergenceAssertions.append(And(self.Fwd(s, n, pc1), self.Fwd(s, n, pc2)))
+
+	# 			divergenceAssert = Not(Or(*divergenceAssertions))
+	# 			print s, t
+	# 			for splen1 in range(0, maxPathLen - 1) : 
+	# 				for splen2 in range(0, maxPathLen - 1) : 
+	# 					for tplen1 in range(splen1 + 2, maxPathLen + 1) : 
+	# 						for tplen2 in range(splen2 + 2, maxPathLen + 1) : 
+	# 							self.z3Solver.add(Not(And(self.Reach(s, pc1, splen1), self.Reach(t, pc1, tplen1), self.Reach(s, pc2, splen2), self.Reach(t, pc2, tplen2), divergenceAssert)))
+
+
 
 	def getPolicyDatabase(self) :
 		return self.pdb
