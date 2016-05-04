@@ -12,6 +12,7 @@ import re
 from subprocess import *
 from collections import deque
 from ZeppelinSynthesiser import ZeppelinSynthesiser
+from collections import defaultdict
 
 
 class GenesisSynthesiser(object) :
@@ -27,13 +28,15 @@ class GenesisSynthesiser(object) :
 		self.stackreachvars = dict()
 
 		self.R = Function('R', IntSort(), IntSort(), IntSort())
-		self.L = Function('L', IntSort(), IntSort(), IntSort(), IntSort())
+		self.L = Function('L', IntSort(), IntSort(), IntSort(), RealSort())
 		#self.delta = Function('delta', IntSort(), IntSort(), IntSort())
 		self.pc = Int('pc') # Generic variable for packet classes
 		
-		self.z3Solver = Solver()
-		self.z3Solver.set(unsat_core=True)
-		#self.z3Solver.set("sat.phase", "always-false")
+		# self.z3Solver = Solver()
+		# self.z3Solver.set(unsat_core=True)
+		self.z3Solver = Optimize()
+		
+		# #self.z3Solver.set("sat.phase", "always-false")
 		self.fwdmodel = None 
 
 		self.sliceGraphSolver = SliceGraphSolver()
@@ -299,9 +302,10 @@ class GenesisSynthesiser(object) :
 			for dst in dsts : 
 				self.pdb.addDestinationDAG(dst, self.destinationDAGs[dst])
 
+			self.pdb.printPaths(self.topology)
 			self.zeppelinSynthesiser.enforceDAGs(self.pdb.getDestinationDAGs())
 		
-		#self.pdb.printPaths(self.topology)
+		self.pdb.printPaths(self.topology)
 		self.pdb.writeForwardingRulesToFile(self.topology)
 		self.printProfilingStats()
 
@@ -348,6 +352,12 @@ class GenesisSynthesiser(object) :
 		swID2 = self.topology.getSwID(sw2)
 		self.pdb.addLinkCapacityConstraint(swID1, swID2, cap)
 
+	def addTrafficEngineeringObjective(self, minavg=False, minmax=False):
+		""" Add a traffic engineering objective.
+			minavg : Minimizing average utilization of links
+		"""
+		self.pdb.addTrafficEngineeringObjective(minavg, minmax)
+
 	def enforceUnicastPolicies(self) :
 		""" Enforcement of Policies stored in the PDB. """
 
@@ -370,79 +380,87 @@ class GenesisSynthesiser(object) :
 		linkCapacityConstraints = self.pdb.getLinkCapacityConstraints()
 		self.addLinkConstraints(range(self.pdb.getPacketClassRange()), linkCapacityConstraints)
 
-		if len(linkCapacityConstraints) > 0 :
-			# Cannot synthesise relational Classes independently. 
-			self.addTopologyConstraints(0, self.pdb.getPacketClassRange())
+		# if len(linkCapacityConstraints) > 0 :
+		# 	# Cannot synthesise relational Classes independently. 
+		# 	self.addTopologyConstraints(0, self.pdb.getPacketClassRange())
 
-			for pc in range(self.pdb.getPacketClassRange()) :
-				if not self.pdb.isMulticast(pc) : 
+		# 	for pc in range(self.pdb.getPacketClassRange()) :
+		# 		if not self.pdb.isMulticast(pc) : 
+		# 			policy = self.pdb.getReachabilityPolicy(pc)
+		# 			self.addReachabilityConstraints(srcIP=policy[0][0], srcSw=policy[0][2], dstIP=policy[0][1], dstSw=policy[0][3],pc=pc, W=policy[1], pathlen=policy[2]) 
+
+		# 	# Add traffic constraints. 
+		# 	for pno in range(self.pdb.getIsolationPolicyCount()) :
+		# 		pcs = self.pdb.getIsolationPolicy(pno)
+		# 		pc1 = pcs[0]
+		# 		pc2 = pcs[1]
+		# 		self.addTrafficIsolationConstraints(pc1, pc2)
+			
+		# 	# Apply synthesis
+		# 	solvetime = time.time()
+		# 	modelsat = self.z3Solver.check()
+		# 	self.z3solveTime += time.time() - solvetime
+		# 	if modelsat == z3.sat : 
+		# 		#print "Solver return SAT"
+		# 		self.fwdmodel = self.z3Solver.model()
+		# 		for pc in range(self.pdb.getPacketClassRange()) :
+		# 			self.pdb.addPath(pc, self.getPathFromModel(pc))		
+		# 	else :
+		# 		print "Input Policies not realisable"
+		# else : 			
+		for relClass in relClasses :
+			# Independent Synthesis of relClass.
+			self.z3Solver.push()
+			#reachtime = time.time()
+
+			for pc in relClass :
+				if not self.pdb.isMulticast(pc):  
 					policy = self.pdb.getReachabilityPolicy(pc)
 					self.addReachabilityConstraints(srcIP=policy[0][0], srcSw=policy[0][2], dstIP=policy[0][1], dstSw=policy[0][3],pc=pc, W=policy[1], pathlen=policy[2]) 
 
+					if not self.addGlobalTopoFlag : 
+						#st = time.time()
+						# Add Topology Constraints
+						self.addTopologyConstraints(pc)
+
+			#isolationtime = time.time()
 			# Add traffic constraints. 
 			for pno in range(self.pdb.getIsolationPolicyCount()) :
-				pcs = self.pdb.getIsolationPolicy(pno)
-				pc1 = pcs[0]
-				pc2 = pcs[1]
-				self.addTrafficIsolationConstraints(pc1, pc2)
+				pc = self.pdb.getIsolationPolicy(pno)
+				pc1 = pc[0]
+				pc2 = pc[1]
+				if pc1 in relClass and pc2 in relClass: 
+					self.addTrafficIsolationConstraints(pc1, pc2)
 			
-			# Apply synthesis
+			#print "Time taken to add isolation constraints is", time.time() - isolationtime
+
+			# check if global traffic engineering constraints! 
+			if self.pdb.minimizeAverageUtilizationTE() : 
+				self.addAverageUtilizationMinimizationConstraints()
+			elif self.pdb.minimizeMaxUtilizationTE() :
+				self.addMaxUtilizationMinimizationConstraints()
+
+
+			# Each relational class can be synthesised independently.
 			solvetime = time.time()
 			modelsat = self.z3Solver.check()
 			self.z3solveTime += time.time() - solvetime
+			#tprint "Time taken to solve constraints is " + str(time.time() - st)
+
 			if modelsat == z3.sat : 
 				#print "Solver return SAT"
 				self.fwdmodel = self.z3Solver.model()
-				for pc in range(self.pdb.getPacketClassRange()) :
-					self.pdb.addPath(pc, self.getPathFromModel(pc))		
+				print "Total utilization", self.fwdmodel.evaluate(self.totalUtilizationVar)
+				for pc in relClass :
+					self.pdb.addPath(pc, self.getPathFromModel(pc))
+					
 			else :
 				print "Input Policies not realisable"
-		else : 			
-			for relClass in relClasses :
-				# Independent Synthesis of relClass.
-				#self.z3Solver.push()
-				#reachtime = time.time()
+				unsatCores = self.z3Solver.unsat_core()
+				for unsatCore in unsatCores :
+					print str(unsatCore)
 
-				for pc in relClass :
-					if not self.pdb.isMulticast(pc):  
-						policy = self.pdb.getReachabilityPolicy(pc)
-						self.addReachabilityConstraints(srcIP=policy[0][0], srcSw=policy[0][2], dstIP=policy[0][1], dstSw=policy[0][3],pc=pc, W=policy[1], pathlen=policy[2]) 
-
-						if not self.addGlobalTopoFlag : 
-							#st = time.time()
-							# Add Topology Constraints
-							self.addTopologyConstraints(pc)
-
-				#isolationtime = time.time()
-				# Add traffic constraints. 
-				for pno in range(self.pdb.getIsolationPolicyCount()) :
-					pc = self.pdb.getIsolationPolicy(pno)
-					pc1 = pc[0]
-					pc2 = pc[1]
-					if pc1 in relClass and pc2 in relClass: 
-						self.addTrafficIsolationConstraints(pc1, pc2)
-				
-				#print "Time taken to add isolation constraints is", time.time() - isolationtime
-
-				# Each relational class can be synthesised independently.
-				solvetime = time.time()
-				modelsat = self.z3Solver.check()
-				self.z3solveTime += time.time() - solvetime
-				#tprint "Time taken to solve constraints is " + str(time.time() - st)
-
-				if modelsat == z3.sat : 
-					#print "Solver return SAT"
-					self.fwdmodel = self.z3Solver.model()
-					for pc in relClass :
-						self.pdb.addPath(pc, self.getPathFromModel(pc))
-						
-				else :
-					print "Input Policies not realisable"
-					unsatCores = self.z3Solver.unsat_core()
-					for unsatCore in unsatCores :
-						print str(unsatCore)
-
-				#self.z3Solver.pop()
+			self.z3Solver.pop()
 
 	def enforceUnicastPoliciesNoOptimizations(self) :
 		""" Enforcement of Policies stored in the PDB. """
@@ -1817,6 +1835,100 @@ class GenesisSynthesiser(object) :
 					self.z3Solver.add(Implies(self.Fwd(sw1, sw2, pc) == False, self.L(sw1, sw2, pc) == self.L(sw1, sw2, prevpc)))
 					self.z3addTime += time.time() - addtime
 			i += 1
+
+	def addAverageUtilizationMinimizationConstraints(self) :
+		""" Assuming a single path connection for loads, and equal weights for each flow. 
+		The objective is to minimize the total utilization of the network"""
+
+		pcRange = self.pdb.getPacketClassRange()
+		swCount = self.topology.getSwitchCount()
+
+		self.linkCapacity = defaultdict(lambda:defaultdict(lambda:None))
+		for sw1 in range(1, swCount + 1) :
+			neighbours = self.topology.getSwitchNeighbours(sw1)
+			for sw2 in neighbours : 
+				self.linkCapacity[sw1][sw2] = 10.0 
+
+		self.utilizationMatrix = defaultdict(lambda:defaultdict(lambda:None))
+		for sw1 in range(1, swCount + 1) :
+			neighbours = self.topology.getSwitchNeighbours(sw1)
+			for sw2 in neighbours : 
+				load = 0.0
+				for pc in range(pcRange) :
+					load = load + If(self.Fwd(sw1, sw2, pc), 1.0, 0.0) # Replace 1 by actual traffic
+				self.utilizationMatrix[sw1][sw2] = load/self.linkCapacity[sw1][sw2] 
+
+					# if pc == 0 : 
+					# 	self.z3numberofadds += 1
+					# 	addtime = time.time() # Profiling z3 add.
+					# 	self.z3Solver.add(Implies(self.Fwd(sw1, sw2, pc), self.L(sw1, sw2, pc) == 1))
+					# 	self.z3addTime += time.time() - addtime
+					# 	self.z3numberofadds += 1
+					# 	addtime = time.time() # Profiling z3 add.
+					# 	self.z3Solver.add(Implies(self.Fwd(sw1, sw2, pc) == False, self.L(sw1, sw2, pc) == 0))
+					# 	self.z3addTime += time.time() - addtime
+					# else : 
+					# 	self.z3numberofadds += 1
+					# 	addtime = time.time() # Profiling z3 add.
+					# 	self.z3Solver.add(Implies(self.Fwd(sw1, sw2, pc), self.L(sw1, sw2, pc) == self.L(sw1, sw2, pc - 1) + 1))
+					# 	self.z3addTime += time.time() - addtime
+					# 	self.z3numberofadds += 1
+					# 	addtime = time.time() # Profiling z3 add.
+					# 	self.z3Solver.add(Implies(self.Fwd(sw1, sw2, pc) == False, self.L(sw1, sw2, pc) == self.L(sw1, sw2, pc - 1)))
+					# 	self.z3addTime += time.time() - addtime
+
+		""" Self.L(sw1, sw2, maxpc) denotes the load of link sw1-sw2
+		TE objective: Minimize average utilization of the links [utilization = load/capacity], 
+		equivalent to minimizing total utitlization, as avg = sum/constant """
+		
+		totalUtilization = 0.0
+		for sw1 in range(1, swCount + 1) :
+			neighbours = self.topology.getSwitchNeighbours(sw1)
+			for sw2 in neighbours : 
+				totalUtilization = totalUtilization + self.utilizationMatrix[sw1][sw2]
+
+		self.totalUtilizationVar = Real('totUtilVar')
+		self.z3Solver.add(self.totalUtilizationVar == totalUtilization)
+		self.z3Solver.minimize(totalUtilization)
+		print "Added TE constraints"
+
+	def addMaxUtilizationMinimizationConstraints(self) :
+		""" Assuming a single path connection for loads, and equal weights for each flow. 
+		The objective is to minimize the max link utilization in the network"""
+
+		pcRange = self.pdb.getPacketClassRange()
+		swCount = self.topology.getSwitchCount()
+
+		self.linkCapacity = defaultdict(lambda:defaultdict(lambda:None))
+		for sw1 in range(1, swCount + 1) :
+			neighbours = self.topology.getSwitchNeighbours(sw1)
+			for sw2 in neighbours : 
+				self.linkCapacity[sw1][sw2] = 10.0 
+
+		self.utilizationMatrix = defaultdict(lambda:defaultdict(lambda:None))
+		for sw1 in range(1, swCount + 1) :
+			neighbours = self.topology.getSwitchNeighbours(sw1)
+			for sw2 in neighbours : 
+				load = 0.0
+				for pc in range(pcRange) :
+					load = load + If(self.Fwd(sw1, sw2, pc), 1.0, 0.0) # Replace 1 by actual traffic
+				self.utilizationMatrix[sw1][sw2] = load/self.linkCapacity[sw1][sw2] 
+
+		""" Self.L(sw1, sw2, maxpc) denotes the load of link sw1-sw2
+		TE objective: Minimize max link utilization[utilization = load/capacity] """
+
+		self.maxUtilization = Real('maxUtilVar')
+		# Add constraints to ensure maxUtil Variable is greater than all the utilizations
+		for sw1 in range(1, swCount + 1) :
+			neighbours = self.topology.getSwitchNeighbours(sw1)
+			for sw2 in neighbours : 
+				self.z3Solver.add(self.maxUtilization >= self.utilizationMatrix[sw1][sw2])
+
+		# These constraints will ensure that max util value is greater than all link utils.
+		# Adding a minimize objective will ensure its equality with the actual max util 
+		self.z3Solver.minimize(self.maxUtilization)	
+		print "Added TE constraints"
+
 
 	def getPathFromModel(self, pc) :
 		return self.getBFSModelPath(pc)

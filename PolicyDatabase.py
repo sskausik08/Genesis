@@ -20,14 +20,18 @@ class PolicyDatabase(object) :
 		self.paths = dict()
 		self.switchTableConstraints = []
 		self.linkCapacityConstraints = []
-
+		self.minimizeAverageUtilizationTEFlag = False
+		self.minimizeMaxUtilizationTEFlag = False
+		
 		# Support for topology 
 		self.sliceEndpointTable = dict()
 		self.sliceWaypointTable = dict()
 		self.originalPacketClasses = dict()
 
+
 		# Support for storing DAGs for control plane generation
 		self.dags = dict()
+
 
 	def addReachabilityPolicy(self, predicate, srcSw, dstSw, W=None, len=None) :
 		""" srcSw = source IP next hop switch
@@ -144,6 +148,15 @@ class PolicyDatabase(object) :
 		""" Create Relational classes of packet classes. A relational class is a maximal set of
 		packet classes which need to be synthesised together because of inter-class policies like
 		isolation """
+
+		# If link capacity policies exist, or global traffic engineering constraints, No relational classes!
+		if len(self.getLinkCapacityConstraints()) > 0 or self.minimizeAverageUtilizationTE : 
+			self.relationalClassCreationFlag = True
+			self.relClasses = []
+			self.relClasses.append(range(self.getPacketClassRange()))	
+
+			return self.relClasses
+
 		# For now, our inter-class policy is isolation.
 		for pno in range(self.getIsolationPolicyCount()) :
 			pc = self.getIsolationPolicy(pno)
@@ -485,7 +498,7 @@ class PolicyDatabase(object) :
 		for pc in range(self.getPacketClassRange()) :
 			src = self.getSourceSwitch(pc)
 			dst = self.getDestinationSwitch(pc)
-			zpath = topology.getShortestPath(src,dst, routefilters[dst])
+			zpath = topology.getShortestPath(src, dst, routefilters[dst])
 			dag = self.dags[dst]
 			gpath = []
 			nextsw = src
@@ -505,7 +518,21 @@ class PolicyDatabase(object) :
 		print "Number of Violations is", violationCount
 
 
+	def addTrafficEngineeringObjective(self, minavg=False, minmax=False) :
+		""" Add a traffic engineering objective """
 
+		if minavg : 
+			self.minimizeAverageUtilizationTEFlag = True
+		elif minmax : 
+			self.minimizeMaxUtilizationTEFlag = True
+
+	def trafficEngineeringEnabled(self) : 
+		return self.minimizeAverageUtilizationTEFlag or self.minimizeMaxUtilizationTEFlag
+	def minimizeAverageUtilizationTE(self) :
+		return self.minimizeAverageUtilizationTEFlag
+
+	def minimizeMaxUtilizationTE(self) :
+		return self.minimizeMaxUtilizationTEFlag
 
 
 
