@@ -1,0 +1,20 @@
+\section{Policy-compliant Resiliency}
+Datacenter networks are highly prone to failures, 
+and it is crucial to ensure certain guarantees during such failure
+situations. For example, if the operator want to guarantee
+reachability amongst endpoints, the controller has to find a active
+path in the network to re-establish reachability. However, if the new
+paths must still satisfy tenant SLAs like isolation, this may require 
+changing paths of other classes which were unaffected by the failure event,
+and in the worst case, can incur an exponential complexity.
+While \name provides a systematic and correct approach
+to enforcing policies, the implications of using SMT solvers is that
+it is very difficult to be able to synthesize configuration repairs to
+network failures \emph{reactively} in a bounded amount of time. 
+Instead, we propose a \emph{proactive} approach 
+of support for \emph{policy-compliant resiliency} to tackle network failures
+by synthesizing alternate paths which satisfy the input policies, such that the SDN controller 
+can choose an alternate path in the scenario of a link/switch failure.
+
+We define $t-resilience$ for a packet class as the property that 
+for upto $t$ arbitary link failures 

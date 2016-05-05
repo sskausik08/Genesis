@@ -40,5 +40,25 @@ While $maxU$ can be set to a large value trivially to satisfy \Cref{eq:maxu}
 , since our objective is to minimize $maxU$, it will be set to the actual
 minimized maximum link utilization. 
 
-
 \subsection{Network Repair}
+While policy-compliance is a major requirement in a network management system,
+another important consideration is datacenters is the occurence of failures (switches, links etc.),
+which requires recomputation of paths compliant to the policies for the modified topology. 
+Also, the network requirements are constantly \emph{in flux}, and operators have the requirement to 
+add new tenants/policies. While a naive approach is to use \name to resynthesize the modified instance,
+the new solution may be drastically different from the original configuration, incurring a
+large overhead of changing the forwarding rules.
+
+We integrate \name's synthesis algorithm with an extension for performing
+minimal network repair, using the MaxSMT of Z3. The basic intuition is that
+we add the existing configuration as \emph{soft} constraints to the set of \emph{hard} 
+policy constraints. This results in a new policy-compliant forwarding 
+configuration with minimal 
+number of changes from the older one, thus reducing the overhead of
+updating the forwarding rules in the network. 
+
+
+
+
+
+ 
