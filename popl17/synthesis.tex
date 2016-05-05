@@ -175,33 +175,33 @@ the additional rules conflicting with another packet class.
 
 %The isolation constraints is intuitive when coupled with the forwarding set constraints (\cref{eq:fwdset}) as the model only has forwarding rules for the path from source to destination. However, for a reachability policy without waypoints, we argue that the forwarding set constraints are not required when coupled with the isolation constraints. The reasoning behind this is that the solver would simply remove the extra forwarding rules of a packet class in the model which conflict with the other packet class, as there are no constraints which require the need of these extra forwarding rules for correctness, but are one particular solution model in the space of solutions. 
 
-\subsection{Capacity Constraints}
-%\subsubsection{Link Capacity Constraints} \label{sec:linkcap}
-For a link capacity policy on the link $sw_1 \rightarrow sw_2: \omega$, we use the theory of integer linear arithmetic to add constraints on the link so that capacity used by the flows traversing the link does not exceed $\omega$. 
-In terms of our model, the link capacity policy translates to constraints that
-ensure that the tuples of the form $(sw_1, sw_2, pc) \in Fwd$ for $pc \in PC$ conform to the capacity specified in the policy, 
-as the forwarding rule $sw_1 \rightarrow sw_2$ means that the link is being used by the particular packet class.
- 
-Let $C(sw_1,sw_2,pc)$ be the cumulative capacity function of the link used by all packet classes less than equal to $pc$. Since we use integers for denoting the packet class, we have a total order of the set of packet classes. We use this to create inductive constraints to sum over the set of Boolean variables $Fwd(sw_1, sw_2,pc)$. Let $PC : [0, \lambda]$ be the set of packet classes and $W(pc)$ 
-denote the capacity of packet class $pc$--i.e., the bandwidth allotted to the packet class. 
-The base case constraint for the capacity function is for $pc = 0$:
-\begin{multline}
-\neg Fwd(sw_1, sw_2, 0) \implies C(sw_1, sw_2, 0) = 0 \\
-	Fwd(sw_1, sw_2, 0) \implies C(sw_1, sw_2, 0) = W(0)
-\end{multline} 
-If link is used, the inductive constraints for the capacity function are as follows:
-\begin{multline}
-	\forall pc > 0.~Fwd(sw_1,sw_2,pc) \implies \\ C(sw_1, sw_2, pc) =  C(sw_1, sw_2, pc - 1) + W(pc)
-\end{multline}
-If the link is not used, the constraints are as follows : 
-\begin{multline}
-\forall pc > 0.~\neg Fwd(sw_1,sw_2,pc) \implies \\ C(sw_1, sw_2, pc) =  C(sw_1, sw_2, pc - 1)
-\end{multline}
-To satisfy the policy, the total capacity used should not exceed $\omega$. 
-Since $\lambda$ is the greatest element in $PC$ we have:
-\begin{equation}
-	C(sw_1, sw_2, \lambda) \leq \omega
-\end{equation} 
-For \emph{switch table size} policies, we need to track the number of packet classes that traverses the switch.
-We create inductive constraints similar to those for link capacity.
+%\subsection{Capacity Constraints} \label{sec:linkcap}
+%%\subsubsection{Link Capacity Constraints} 
+%For a link capacity policy on the link $sw_1 \rightarrow sw_2: \omega$, we use the theory of integer linear arithmetic to add constraints on the link so that capacity used by the flows traversing the link does not exceed $\omega$. 
+%In terms of our model, the link capacity policy translates to constraints that
+%ensure that the tuples of the form $(sw_1, sw_2, pc) \in Fwd$ for $pc \in PC$ conform to the capacity specified in the policy, 
+%as the forwarding rule $sw_1 \rightarrow sw_2$ means that the link is being used by the particular packet class.
+% 
+%Let $C(sw_1,sw_2,pc)$ be the cumulative capacity function of the link used by all packet classes less than equal to $pc$. Since we use integers for denoting the packet class, we have a total order of the set of packet classes. We use this to create inductive constraints to sum over the set of Boolean variables $Fwd(sw_1, sw_2,pc)$. Let $PC : [0, \lambda]$ be the set of packet classes and $W(pc)$ 
+%denote the capacity of packet class $pc$--i.e., the bandwidth allotted to the packet class. 
+%The base case constraint for the capacity function is for $pc = 0$:
+%\begin{multline}
+%\neg Fwd(sw_1, sw_2, 0) \implies C(sw_1, sw_2, 0) = 0 \\
+%	Fwd(sw_1, sw_2, 0) \implies C(sw_1, sw_2, 0) = W(0)
+%\end{multline} 
+%If link is used, the inductive constraints for the capacity function are as follows:
+%\begin{multline}
+%	\forall pc > 0.~Fwd(sw_1,sw_2,pc) \implies \\ C(sw_1, sw_2, pc) =  C(sw_1, sw_2, pc - 1) + W(pc)
+%\end{multline}
+%If the link is not used, the constraints are as follows : 
+%\begin{multline}
+%\forall pc > 0.~\neg Fwd(sw_1,sw_2,pc) \implies \\ C(sw_1, sw_2, pc) =  C(sw_1, sw_2, pc - 1)
+%\end{multline}
+%To satisfy the policy, the total capacity used should not exceed $\omega$. 
+%Since $\lambda$ is the greatest element in $PC$ we have:
+%\begin{equation}
+%	C(sw_1, sw_2, \lambda) \leq \omega
+%\end{equation} 
+%For \emph{switch table size} policies, we need to track the number of packet classes that traverses the switch.
+%We create inductive constraints similar to those for link capacity.
 %. for counting the packet classes traversing $sw$.

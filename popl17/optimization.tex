@@ -1,0 +1,44 @@
+\section{Synthesis with Optimization Objectives}
+Using the $\nu Z$ extension of Z3 \cite{nuz3}, we can incorporate 
+linear optimization
+objectives and MaxSMT in the synthesis algorithm. 
+We describe two applications paramount to network management:
+traffic engineering and network repair, which can be tackled using
+these extensions of SMT solvers.
+\subsection{Traffic Engineering}
+While the link capacity policies described in \Cref{sec:linkcap} can
+be used to perform a strict form of traffic engineering in terms of 
+adhering to link bandwidths, support for traffic engineering objectives
+like minimizing the max link utilization, minimizing average link utilization
+is highly \emph{desirable}. By specifying linear optimization objectives over
+SMT formulas, \name can synthesize paths satisfying policies and minimizing
+a global traffic engineering objective. 
+
+To perform traffic engineering, link capacities of the network and traffic 
+rates of the packet classes are specified as input to \name. The utilization 
+of a link $U(sw_1, sw_2)$ is defined as the ratio of total traffic flowing through the link to the 
+link capacity, and encoded in Z3 as:
+\begin{equation}
+U(sw_1, sw_2) = \frac{\sum_{\forall pc} IF(Fwd(sw_1,sw_2, pc), T(pc), 0)} {\omega}
+\end{equation}
+The TE objective of minimizing average link utilization is equivalent to minimizing
+the total link utilization (as average = total/constant). Thus, the minimization
+objective is:
+\begin{equation}
+	MIN\ \sum_{\forall sw_1, sw_2} U(sw_1, sw_2)
+\end{equation}
+To encode the TE objective of minimizing the maximum link utilization, we define
+a variable $maxU$, and constraints to ensure that $maxU$ is greater than or equal to all 
+individual link utilisations, and the objective: 
+\begin{equation} \label{eq:maxu}
+\forall sw_1, sw_2.\ \ maxU \geq U(sw_1, sw_2)
+\end{equation} 
+\begin{equation}
+	MIN\ maxU
+\end{equation}
+While $maxU$ can be set to a large value trivially to satisfy \Cref{eq:maxu}
+, since our objective is to minimize $maxU$, it will be set to the actual
+minimized maximum link utilization. 
+
+
+\subsection{Network Repair}
