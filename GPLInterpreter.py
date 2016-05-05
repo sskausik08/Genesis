@@ -330,12 +330,12 @@ class GPLInterpreter(object):
 		# Switch Table Constraint.
 		self.genesisSynthesiser.addLinkCapacityPolicy(p[1], p[3], p[5])
 
-	def p_constraint_te(self, p):
+	def p_constraint_te_minavg(self, p):
 		'constraint : MINAVGTE'
 		# Traffic engineering objective: Minimize average utilisation of links
 		self.genesisSynthesiser.addTrafficEngineeringObjective(minavg=True)
 
-	def p_constraint_te(self, p):
+	def p_constraint_te_minmax(self, p):
 		'constraint : MINMAXTE'
 		# Traffic engineering objective: Minimize the max link utilisation
 		self.genesisSynthesiser.addTrafficEngineeringObjective(minmax=True)

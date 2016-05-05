@@ -102,6 +102,10 @@ class GenesisSynthesiser(object) :
 		for i in range(1, self.topology.getMaxPathLength() + 1) :
 			self.bfsLists[i] = []
 
+		# TE Variables
+		self.maxUtilizationVar = Real('maxUtilVar')
+		self.totalUtilizationVar = Real('totUtilVar')
+
 		# Repair Mode
 		self.repairMode = False
 
@@ -380,34 +384,6 @@ class GenesisSynthesiser(object) :
 		linkCapacityConstraints = self.pdb.getLinkCapacityConstraints()
 		self.addLinkConstraints(range(self.pdb.getPacketClassRange()), linkCapacityConstraints)
 
-		# if len(linkCapacityConstraints) > 0 :
-		# 	# Cannot synthesise relational Classes independently. 
-		# 	self.addTopologyConstraints(0, self.pdb.getPacketClassRange())
-
-		# 	for pc in range(self.pdb.getPacketClassRange()) :
-		# 		if not self.pdb.isMulticast(pc) : 
-		# 			policy = self.pdb.getReachabilityPolicy(pc)
-		# 			self.addReachabilityConstraints(srcIP=policy[0][0], srcSw=policy[0][2], dstIP=policy[0][1], dstSw=policy[0][3],pc=pc, W=policy[1], pathlen=policy[2]) 
-
-		# 	# Add traffic constraints. 
-		# 	for pno in range(self.pdb.getIsolationPolicyCount()) :
-		# 		pcs = self.pdb.getIsolationPolicy(pno)
-		# 		pc1 = pcs[0]
-		# 		pc2 = pcs[1]
-		# 		self.addTrafficIsolationConstraints(pc1, pc2)
-			
-		# 	# Apply synthesis
-		# 	solvetime = time.time()
-		# 	modelsat = self.z3Solver.check()
-		# 	self.z3solveTime += time.time() - solvetime
-		# 	if modelsat == z3.sat : 
-		# 		#print "Solver return SAT"
-		# 		self.fwdmodel = self.z3Solver.model()
-		# 		for pc in range(self.pdb.getPacketClassRange()) :
-		# 			self.pdb.addPath(pc, self.getPathFromModel(pc))		
-		# 	else :
-		# 		print "Input Policies not realisable"
-		# else : 			
 		for relClass in relClasses :
 			# Independent Synthesis of relClass.
 			self.z3Solver.push()
@@ -451,6 +427,7 @@ class GenesisSynthesiser(object) :
 				#print "Solver return SAT"
 				self.fwdmodel = self.z3Solver.model()
 				print "Total utilization", self.fwdmodel.evaluate(self.totalUtilizationVar)
+				print "Max utilization", self.fwdmodel.evaluate(self.maxUtilizationVar)
 				for pc in relClass :
 					self.pdb.addPath(pc, self.getPathFromModel(pc))
 					
@@ -1887,7 +1864,6 @@ class GenesisSynthesiser(object) :
 			for sw2 in neighbours : 
 				totalUtilization = totalUtilization + self.utilizationMatrix[sw1][sw2]
 
-		self.totalUtilizationVar = Real('totUtilVar')
 		self.z3Solver.add(self.totalUtilizationVar == totalUtilization)
 		self.z3Solver.minimize(totalUtilization)
 		print "Added TE constraints"
@@ -1917,16 +1893,15 @@ class GenesisSynthesiser(object) :
 		""" Self.L(sw1, sw2, maxpc) denotes the load of link sw1-sw2
 		TE objective: Minimize max link utilization[utilization = load/capacity] """
 
-		self.maxUtilization = Real('maxUtilVar')
 		# Add constraints to ensure maxUtil Variable is greater than all the utilizations
 		for sw1 in range(1, swCount + 1) :
 			neighbours = self.topology.getSwitchNeighbours(sw1)
 			for sw2 in neighbours : 
-				self.z3Solver.add(self.maxUtilization >= self.utilizationMatrix[sw1][sw2])
+				self.z3Solver.add(self.maxUtilizationVar >= self.utilizationMatrix[sw1][sw2])
 
 		# These constraints will ensure that max util value is greater than all link utils.
 		# Adding a minimize objective will ensure its equality with the actual max util 
-		self.z3Solver.minimize(self.maxUtilization)	
+		self.z3Solver.minimize(self.maxUtilizationVar)	
 		print "Added TE constraints"
 
 
