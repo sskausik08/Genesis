@@ -306,10 +306,16 @@ class GenesisSynthesiser(object) :
 			for dst in dsts : 
 				self.pdb.addDestinationDAG(dst, self.destinationDAGs[dst])
 
-			self.pdb.printPaths(self.topology)
-			self.zeppelinSynthesiser.enforceDAGs(self.pdb.getDestinationDAGs())
+			# Find endpoints for all flows:
+			self.endpoints = []
+			for pc in range(self.pdb.getPacketClassRange()) : 
+				endpt = [self.pdb.getSourceSwitch(pc), self.pdb.getDestinationSwitch(pc)]
+				if endpt not in self.endpoints : 
+					self.endpoints.append(endpt)
+
+			self.zeppelinSynthesiser.enforceDAGs(self.pdb.getDestinationDAGs(), self.endpoints)
 		
-		self.pdb.printPaths(self.topology)
+		#self.pdb.printPaths(self.topology)
 		self.pdb.writeForwardingRulesToFile(self.topology)
 		self.printProfilingStats()
 
