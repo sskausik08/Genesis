@@ -32,9 +32,9 @@ class GenesisSynthesiser(object) :
 		#self.delta = Function('delta', IntSort(), IntSort(), IntSort())
 		self.pc = Int('pc') # Generic variable for packet classes
 		
-		# self.z3Solver = Solver()
-		# self.z3Solver.set(unsat_core=True)
 		self.z3Solver = Optimize()
+		# self.z3Solver.set(unsat_core=True)
+		#self.z3Solver = Optimize()
 		
 		# #self.z3Solver.set("sat.phase", "always-false")
 		self.fwdmodel = None 
@@ -415,8 +415,7 @@ class GenesisSynthesiser(object) :
 				self.addAverageUtilizationMinimizationConstraints()
 			elif self.pdb.minimizeMaxUtilizationTE() :
 				self.addMaxUtilizationMinimizationConstraints()
-
-
+			
 			# Each relational class can be synthesised independently.
 			solvetime = time.time()
 			modelsat = self.z3Solver.check()
@@ -1865,8 +1864,34 @@ class GenesisSynthesiser(object) :
 				totalUtilization = totalUtilization + self.utilizationMatrix[sw1][sw2]
 
 		self.z3Solver.add(self.totalUtilizationVar == totalUtilization)
+		#self.z3Solver.add(totalUtilization <= 200/5)
 		self.z3Solver.minimize(totalUtilization)
 		print "Added TE constraints"
+
+		# Solve iteratively instead. -> Does not Work!
+		# solvetime = time.time()
+		# modelsat = self.z3Solver.check()
+		# self.z3solveTime += time.time() - solvetime
+		# print "Time taken", time.time() - solvetime
+		#tprint "Time taken to solve constraints is " + str(time.time() - st)
+
+		# while modelsat == z3.sat : 
+		# 	#print "Solver return SAT"
+		# 	self.fwdmodel = self.z3Solver.model()
+		# 	print "Total utilization", self.fwdmodel.evaluate(self.totalUtilizationVar)
+		# 	newUtilVar = 0.5 * float(self.fwdmodel.evaluate(self.totalUtilizationVar).as_decimal(3))
+		# 	for pc in range(self.pdb.getPacketClassRange()) :
+		# 		self.pdb.addPath(pc, self.getPathFromModel(pc))
+		# 	self.z3Solver.push()
+		# 	self.z3Solver.add(totalUtilization <= newUtilVar)
+			
+		# 	# Solve with new limit. 
+		# 	solvetime = time.time()
+		# 	modelsat = self.z3Solver.check()
+		# 	self.z3solveTime += time.time() - solvetime
+		# 	print "Time taken", time.time() - solvetime
+		# 	#tprint "Time taken to solve constraints is " + str(time.time() - st)
+
 
 	def addMaxUtilizationMinimizationConstraints(self) :
 		""" Assuming a single path connection for loads, and equal weights for each flow. 
