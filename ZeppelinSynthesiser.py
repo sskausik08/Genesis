@@ -11,6 +11,7 @@ from collections import deque
 import math
 import gurobipy as gb
 import copy
+from collections import defaultdict
 
 class ZeppelinSynthesiser(object) :
 	def __init__(self, topology, pdb) :
@@ -39,6 +40,9 @@ class ZeppelinSynthesiser(object) :
 		# ILP
 		self.ilpSolver = gb.Model("C3")
 
+		# Resilience 
+		self.t_res = 2
+
 
 	def initializeSMTVariables(self) :
 		swCount = self.topology.getSwitchCount()
@@ -46,6 +50,7 @@ class ZeppelinSynthesiser(object) :
 		self.edgeWeights = [[0 for x in range(swCount + 1)] for x in range(swCount + 1)]
 		self.distVars = [[[0 for x in range(swCount + 1)] for x in range(swCount + 1)] for x in range(swCount + 1)] 
 		self.routefiltersVars = [[[0 for x in range(swCount+1)] for x in range(swCount + 1)] for x in range(swCount + 1)]
+		self.maxFlowVars = defaultdict(lambda:defaultdict(lambda:None))
 
 		dsts = self.pdb.getDestinations()
 
@@ -153,12 +158,13 @@ class ZeppelinSynthesiser(object) :
 
 			# Add max-flow end point constraints
 			for endpt in self.endpoints : 
-				self.addMaxFlowConstraints(endpt[0], endpt[1], 2)  # Add t-resilience
+				self.addMaxFlowConstraints(endpt[0], endpt[1], self.t_res)  # Add t-resilience
 
 
 			print "Solving ILP with routefilters"
 			solvetime = time.time()
 			#modelsat = self.z3Solver.check()
+			self.ilpSolver.setParam(gb.GRB.Param.Method, 3)
 			self.ilpSolver.optimize()
 			#self.ilpSolver.computeIIS()
 			#self.ilpSolver.write("model.ilp")
@@ -172,7 +178,7 @@ class ZeppelinSynthesiser(object) :
 		self.getEdgeWeightModel(self.routeFilterMode)		
 
 		#self.pdb.printPaths(self.topology)
-		self.pdb.validateControlPlane(self.topology, self.routefilters, self.distances)
+		self.pdb.validateControlPlane(self.topology, self.routefilters, self.distances, self.t_res)
 		#self.topology.printWeights()
 		self.printProfilingStats()
 
@@ -311,7 +317,38 @@ class ZeppelinSynthesiser(object) :
 
 
 	def addMaxFlowConstraints(self, src, dst, t_res) :
-		pass
+		swCount = self.topology.getSwitchCount()
+
+		self.maxFlowVars[src][dst] = self.ilpSolver.addVar(vtype=gb.GRB.CONTINUOUS, name="MaxF" + "-" + str(src)+":"+str(dst))
+
+		flowVar = defaultdict(lambda:defaultdict(lambda:None))
+		for sw1 in range(1, swCount + 1) :
+			for sw2 in self.topology.getAllSwitchNeighbours(sw1) :
+				flowVar[sw1][sw2] = self.ilpSolver.addVar(vtype=gb.GRB.BINARY, name="F" + "-" + str(sw1)+":"+str(sw2))
+
+		self.ilpSolver.update()
+
+		for sw1 in range(1, swCount + 1) :
+			inFlow = 0
+			outFlow = 0
+			for sw2 in self.topology.getAllSwitchNeighbours(sw1) :
+				inFlow += flowVar[sw2][sw1]
+				outFlow += flowVar[sw1][sw2]
+
+			if sw1 == src : 
+				self.ilpSolver.addConstr(outFlow - inFlow == self.maxFlowVars[src][dst])
+			elif sw1 == dst : 
+				self.ilpSolver.addConstr(inFlow - outFlow == self.maxFlowVars[src][dst])
+			else :
+				self.ilpSolver.addConstr(outFlow - inFlow == 0)				
+
+		# Add resilience constraint.
+		self.ilpSolver.addConstr(self.maxFlowVars[src][dst] >= t_res + 1)
+
+		# Add route filter semantic constraints
+		for sw1 in range(1, swCount + 1) :
+			for sw2 in self.topology.getSwitchNeighbours(sw1) : 
+				self.ilpSolver.addConstr(self.rf(sw1, sw2, dst) + flowVar[sw1][sw2] <= 1)
 
 
 	# def minimiseRouteFilters(self) : 

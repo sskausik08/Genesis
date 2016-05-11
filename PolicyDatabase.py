@@ -1,5 +1,6 @@
 import networkx as nx
 import metis
+import copy
 
 """Policy Database is used to maintain the database of policies incorporated in the network. 
 This will help in better bookmarking and aid in policy change synthesis."""
@@ -493,7 +494,7 @@ class PolicyDatabase(object) :
 	def getDestinationDAGs(self) : 
 		return self.dags
 
-	def validateControlPlane(self, topology, routefilters, distances) :
+	def validateControlPlane(self, topology, routefilters, distances, t_res) :
 		violationCount = 0
 		for pc in range(self.getPacketClassRange()) :
 			src = self.getSourceSwitch(pc)
@@ -514,6 +515,9 @@ class PolicyDatabase(object) :
 				violationCount += 1
 			if not topology.checkUniquenessShortestPath(zpath, routefilters[dst]) :
 				print "Path is not uniquely shortest for PC", pc
+				violationCount += 1
+			if not topology.checkResilience(src, dst, t_res, copy.deepcopy(routefilters[dst])) : 
+				print "Not resilient", pc
 				violationCount += 1
 		print "Number of Violations is", violationCount
 

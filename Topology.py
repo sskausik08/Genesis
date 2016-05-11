@@ -137,6 +137,11 @@ class Topology(object):
 		else :
 			return self.neighbours[swID]
 
+	def getAllSwitchNeighbours(self, swID) :
+		"""Returns all enabled/disabled edges neighbours  """
+		return self.neighbours[swID]
+
+
 	def findTopologyBridges(self) :
 		""" Uses Schmidt Chain Decomposition Algorithm to find the bridges in the topology """ 
 		swCount = self.getSwitchCount()
@@ -391,6 +396,7 @@ class Topology(object):
 			dist += self.edgeWeights[sw1][sw2]
 			i += 1
 		return dist
+
 	def getAllPaths(self, src, dst, routefilters=None) :
 		""" Returns all edge-disjoint paths and costs from src to dst """
 		paths = []
@@ -404,6 +410,13 @@ class Topology(object):
 			path = self.getShortestPath(src, dst, routefilters)
 
 		return paths
+
+	def checkResilience(self, src, dst, t_res, routefilters) :
+		paths = self.getAllPaths(src, dst, routefilters)
+		if len(paths) >= t_res + 1 :
+			return True
+		else : 
+			return False
 
 	def printSwitchMappings(self) :
 		self.networkDatabase.printSwitchMappings() 
