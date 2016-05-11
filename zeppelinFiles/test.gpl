@@ -1,0 +1,28 @@
+p0_0 := tcp.port = 0 : e14 >> e17
+p0_1 := tcp.port = 0 : e30 >> e23
+p0_2 := tcp.port = 0 : e2 >> e23
+p0_3 := tcp.port = 0 : e12 >> e8
+p0_4 := tcp.port = 0 : e18 >> e2
+p0_5 := tcp.port = 0 : e0 >> e29
+p0_6 := tcp.port = 0 : e11 >> e18
+p0_7 := tcp.port = 0 : e20 >> e10
+p0_8 := tcp.port = 0 : e25 >> e7
+p0_9 := tcp.port = 0 : e18 >> e17
+p1_0 := tcp.port = 1 : e12 >> e2
+p1_1 := tcp.port = 1 : e31 >> e23
+p1_2 := tcp.port = 1 : e15 >> e19
+p1_3 := tcp.port = 1 : e4 >> e7
+p1_4 := tcp.port = 1 : e5 >> e12
+p1_5 := tcp.port = 1 : e29 >> e10
+p1_6 := tcp.port = 1 : e9 >> e31
+p1_7 := tcp.port = 1 : e18 >> e10
+p1_8 := tcp.port = 1 : e26 >> e7
+p1_9 := tcp.port = 1 : e3 >> e15
+== 
+[ p1_0, p1_1, p1_2, p1_3, p1_4, p1_5, p1_6, p1_7, p1_8, p1_9 ] || [ p0_0,  p0_2, p0_3, p0_4, p0_5, p0_6, p0_7, p0_8, p0_9 ]
+
+# p0 := tcp.port = 0 : s3 >> s10
+# p1 := tcp.port = 0 : s3 >> s11
+# p2 := tcp.port = 0 : s3 >> s12
+# ==
+# || [p0, p1, p2]

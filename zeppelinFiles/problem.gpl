@@ -1,0 +1,61 @@
+p0_0 := tcp.port = 0 : e27 >> e0
+p0_1 := tcp.port = 0 : e16 >> e6
+p0_2 := tcp.port = 0 : e25 >> e20
+p0_3 := tcp.port = 0 : e28 >> e6
+p0_4 := tcp.port = 0 : e9 >> e20
+p0_5 := tcp.port = 0 : e12 >> e31
+p0_6 := tcp.port = 0 : e28 >> e22
+p0_7 := tcp.port = 0 : e17 >> e0
+p0_8 := tcp.port = 0 : e1 >> e21
+p0_9 := tcp.port = 0 : e29 >> e9
+p1_0 := tcp.port = 1 : e5 >> e25
+p1_1 := tcp.port = 1 : e5 >> e20
+p1_2 := tcp.port = 1 : e0 >> e21
+p1_3 := tcp.port = 1 : e4 >> e26
+p1_4 := tcp.port = 1 : e24 >> e21
+p1_5 := tcp.port = 1 : e13 >> e31
+p1_6 := tcp.port = 1 : e19 >> e15
+p1_7 := tcp.port = 1 : e17 >> e2
+p1_8 := tcp.port = 1 : e0 >> e19
+p1_9 := tcp.port = 1 : e23 >> e5
+p2_0 := tcp.port = 2 : e7 >> e24
+p2_1 := tcp.port = 2 : e4 >> e15
+p2_2 := tcp.port = 2 : e2 >> e0
+p2_3 := tcp.port = 2 : e0 >> e18
+p2_4 := tcp.port = 2 : e16 >> e27
+p2_5 := tcp.port = 2 : e16 >> e12
+p2_6 := tcp.port = 2 : e15 >> e13
+p2_7 := tcp.port = 2 : e3 >> e8
+p2_8 := tcp.port = 2 : e9 >> e8
+p2_9 := tcp.port = 2 : e3 >> e4
+p3_0 := tcp.port = 3 : e7 >> e19
+p3_1 := tcp.port = 3 : e2 >> e16
+p3_2 := tcp.port = 3 : e8 >> e29
+p3_3 := tcp.port = 3 : e22 >> e12
+p3_4 := tcp.port = 3 : e22 >> e8
+p3_5 := tcp.port = 3 : e7 >> e30
+p3_6 := tcp.port = 3 : e18 >> e1
+p3_7 := tcp.port = 3 : e28 >> e18
+p3_8 := tcp.port = 3 : e1 >> e9
+p3_9 := tcp.port = 3 : e19 >> e26
+p4_0 := tcp.port = 4 : e5 >> e3
+p4_1 := tcp.port = 4 : e17 >> e20
+p4_2 := tcp.port = 4 : e6 >> e18
+p4_3 := tcp.port = 4 : e16 >> e9
+p4_4 := tcp.port = 4 : e3 >> e25
+p4_5 := tcp.port = 4 : e1 >> e11
+p4_6 := tcp.port = 4 : e17 >> e15
+p4_7 := tcp.port = 4 : e0 >> e25
+p4_8 := tcp.port = 4 : e18 >> e25
+p4_9 := tcp.port = 4 : e2 >> e9
+== 
+[ p1_0, p1_1, p1_2, p1_3, p1_4, p1_5, p1_6, p1_7, p1_8, p1_9 ] || [ p0_0, p0_1, p0_2, p0_3, p0_4, p0_5, p0_6, p0_7, p0_8, p0_9 ]
+[ p2_0, p2_1, p2_2, p2_3, p2_4, p2_5, p2_6, p2_7, p2_8, p2_9 ] || [ p0_0, p0_1, p0_2, p0_3, p0_4, p0_5, p0_6, p0_7, p0_8, p0_9 ]
+[ p2_0, p2_1, p2_2, p2_3, p2_4, p2_5, p2_6, p2_7, p2_8, p2_9 ] || [ p1_0, p1_1, p1_2, p1_3, p1_4, p1_5, p1_6, p1_7, p1_8, p1_9 ]
+[ p3_0, p3_1, p3_2, p3_3, p3_4, p3_5, p3_6, p3_7, p3_8, p3_9 ] || [ p0_0, p0_1, p0_2, p0_3, p0_4, p0_5, p0_6, p0_7, p0_8, p0_9 ]
+[ p3_0, p3_1, p3_2, p3_3, p3_4, p3_5, p3_6, p3_7, p3_8, p3_9 ] || [ p1_0, p1_1, p1_2, p1_3, p1_4, p1_5, p1_6, p1_7, p1_8, p1_9 ]
+[ p3_0, p3_1, p3_2, p3_3, p3_4, p3_5, p3_6, p3_7, p3_8, p3_9 ] || [ p2_0, p2_1, p2_2, p2_3, p2_4, p2_5, p2_6, p2_7, p2_8, p2_9 ]
+[ p4_0, p4_1, p4_2, p4_3, p4_4, p4_5, p4_6, p4_7, p4_8, p4_9 ] || [ p0_0, p0_1, p0_2, p0_3, p0_4, p0_5, p0_6, p0_7, p0_8, p0_9 ]
+[ p4_0, p4_1, p4_2, p4_3, p4_4, p4_5, p4_6, p4_7, p4_8, p4_9 ] || [ p1_0, p1_1, p1_2, p1_3, p1_4, p1_5, p1_6, p1_7, p1_8, p1_9 ]
+[ p4_0, p4_1, p4_2, p4_3, p4_4, p4_5, p4_6, p4_7, p4_8, p4_9 ] || [ p2_0, p2_1, p2_2, p2_3, p2_4, p2_5, p2_6, p2_7, p2_8, p2_9 ]
+[ p4_0, p4_1, p4_2, p4_3, p4_4, p4_5, p4_6, p4_7, p4_8, p4_9 ] || [ p3_0, p3_1, p3_2, p3_3, p3_4, p3_5, p3_6, p3_7, p3_8, p3_9 ]
