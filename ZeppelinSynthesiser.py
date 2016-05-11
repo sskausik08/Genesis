@@ -56,7 +56,7 @@ class ZeppelinSynthesiser(object) :
 
 		for sw1 in range(1,swCount+1):
 			for sw2 in range(1,swCount+1):
-				self.edgeWeights[sw1][sw2] = self.ilpSolver.addVar(lb=0.00, vtype=gb.GRB.CONTINUOUS, name=str(sw1)+"-"+str(sw2))
+				self.edgeWeights[sw1][sw2] = self.ilpSolver.addVar(lb=1.00, vtype=gb.GRB.CONTINUOUS, name=str(sw1)+"-"+str(sw2))
 
 		for sw1 in range(1,swCount+1):
 			for sw2 in range(1, swCount + 1) :
@@ -70,7 +70,7 @@ class ZeppelinSynthesiser(object) :
 		for sw1 in range(1,swCount+1):
 			for sw2 in range(1,swCount+1):
 				for dst in dsts:
-					self.routefiltersVars[sw1][sw2][dst] = self.ilpSolver.addVar(vtype=gb.GRB.BINARY, name="RF" + "-" + str(sw1)+":"+str(sw2)+"#"+str(dst))
+					self.routefiltersVars[sw1][sw2][dst] = self.ilpSolver.addVar(lb=0.00, vtype=gb.GRB.CONTINUOUS, name="RF" + "-" + str(sw1)+":"+str(sw2)+"#"+str(dst))
 		
 
 		self.ilpSolver.update()
@@ -164,7 +164,7 @@ class ZeppelinSynthesiser(object) :
 			print "Solving ILP with routefilters"
 			solvetime = time.time()
 			#modelsat = self.z3Solver.check()
-			self.ilpSolver.setParam(gb.GRB.Param.Method, 3)
+			#self.ilpSolver.setParam(gb.GRB.Param.Method, 2)
 			self.ilpSolver.optimize()
 			#self.ilpSolver.computeIIS()
 			#self.ilpSolver.write("model.ilp")
@@ -324,7 +324,7 @@ class ZeppelinSynthesiser(object) :
 		flowVar = defaultdict(lambda:defaultdict(lambda:None))
 		for sw1 in range(1, swCount + 1) :
 			for sw2 in self.topology.getAllSwitchNeighbours(sw1) :
-				flowVar[sw1][sw2] = self.ilpSolver.addVar(vtype=gb.GRB.BINARY, name="F" + "-" + str(sw1)+":"+str(sw2))
+				flowVar[sw1][sw2] = self.ilpSolver.addVar(lb=0.00, ub=1.00, vtype=gb.GRB.CONTINUOUS, name="F" + "-" + str(sw1)+":"+str(sw2))
 
 		self.ilpSolver.update()
 
@@ -423,7 +423,9 @@ class ZeppelinSynthesiser(object) :
 					if n <> dag[sw] : 
 						totalRouteFilters += 1
 						rf = self.rf(sw, n, dst).x
-						if int(rf) == 1 :
+						# if float(rf) > 0 :
+						# 	print "routefilter val", sw, n, dst, float(rf)
+						if float(rf) > 0.01 :
 							self.routefilters[dst].append([sw, n])
 							setRouteFilters += 1
 		
