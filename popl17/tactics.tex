@@ -28,7 +28,9 @@ Operators can leverage the network structure of topologies
  due to the dense interconnect between aggregate and core switches,
  ensuring that synthesis most likely will not fail. 
 
-We introduce tactics and labels, abstractions that allow the 
+We introduce tactics\footnote{
+	Inspired from use of the term \emph{tactic} in Z3.} 
+and labels, abstractions that allow the 
 operator to impose a high-level restriction on the paths. 
 We use the notion of mapping set of switches to labels to 
 have a coarse-grained way for specifying path patterns. This helps
@@ -132,6 +134,35 @@ will not forward the packet to a switch with label $l_2$ (unless $n_2$ is the de
 To enforce this, we modify the \Cref{eq:bckprop} and remove all $l_1\rightarrow l_2$
 edges at position $i+1$ in the path for which $l_2$ is different from the destination.  
 
+%-> if a path is solution of modified constraint it satisfies regex
+%<- if a path is solution of original constraints and satisfies regex, then it's a possible solution of modified constraints.
+
+\kausik{Write about the path and unmodified constraints, basic facts}
+\begin{theorem}
+	If the path for a packet class is a solution of the modified constraints, 
+	then it satisfies the tactic regular expression.
+\end{theorem}
+\begin{proof}
+Let us prove this theorem by contradiction for each tactic type. \newline
+\textbf{Type 1}: $\neg (l_{src} .^i .^* l_{dst})$ \newline
+Let us assume that $\pi \models l_{src} .^i .^* l_{dst}$. \\
+Thus, $\pi = src\ sw_1 \ldots sw_i \ldots dst$. \\
+Therefore,  $(dst, pc, k_{dst}) \in Reach, k_{dst} \geq i + 1$. \\
+However,
+The modified constraints for this type of tactic are $ \forall sw,k \geq i + 1. (sw,pc,k) \notin Reach$,
+which is a contradiction, as $\exists sw, k \geq i + 1. (sw,pc,k) \in Reach$. Hence, our assumption is incorrect. 
+\newline \newline
+\textbf{Type 2}: $\neg (l_{src} .^i \ l \ .^* l_{dst})$ \newline
+Let us assume that $\pi \models l_{src} .^i \ l \ .^* l_{dst}$. \\
+Thus, $\pi = src\ sw_1 \ldots sw_i \ sw \ldots dst$ such that $\phi(sw) = l$. Also $sw \not=dst\\
+Therefore,  $(sw, pc, i+1) \in Reach, \phi(sw) = l $. \\
+However,
+The modified constraints for this type of tactic are $\forall sw.~ \phi(sw) = l ~\wedge~ sw \not= dst \implies  (sw, pc, i + 1) \notin Reach$,
+which is a contradiction, as $\exists sw, (sw,pc,k) \in Reach$. Hence, our assumption is incorrect. 
+ 
+\end{proof}
+
+
 The intuition behind the restricted tactic syntax comes from the structure of the backward reachability propagation 
 constraints which construct the path for a packet class. Each constraint says that if a switch is reachable in $k$ steps in a path,
  there must a neighbour switch in the path reachable at $k-1$ steps. We design the restricted tactic syntax based
@@ -155,7 +186,10 @@ Incorporating tactics in the synthesis is sound and yield a correct path satisfy
  In practice, tactics can be used to specify restrictions which would be reasonably complete, 
  and speed up the synthesis, especially in datacenter topologies which are hierarchical 
  and can be used to specify interesting tactics. Some examples are : edge-edge path must not
- traverse another edge, and valley-free routing ($eacae$).
+ traverse another edge, and valley-free routing ($eacae$). We have provided a framework for the
+ development of new tactics, and we envision entities providing network
+ management as a service to develop a \emph{repository} of tactics for various network topologies 
+ (much like Z3's tactics), which can be used by network operators without writing tactics of their own. 
 %\loris{For that restricted set of regexes the algorithm is trivial you should write the first pass. 
 %See the simplified syntax.
 %I'll help you with the proof but essentially you have to show that

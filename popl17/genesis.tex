@@ -65,11 +65,13 @@
 \usepackage[export]{adjustbox}
 \usepackage{subfig}
 \usepackage{mathtools}
+\usepackage{amsthm}
 \input{defs}
 %\usepackage[small,compact]{titlesec}
 %\usepackage[font={bf,small}]{caption}
 
 \newtheorem{mydef}{Definition}
+\newtheorem{theorem}{Theorem}[section]
 \lstset{
 	basicstyle=\itshape,
 	xleftmargin=2em,
@@ -84,9 +86,9 @@
 
 
 \usepackage{color}
-%\newcommand{\loris}[1]{\textcolor[rgb]{0.00,0.00,1.00}{L: #1}}
-%\newcommand{\aditya}[1]{\textcolor[rgb]{0.00,0.00,1.00}{A:#1}}
-%\newcommand{\kausik}[1]{\textcolor[rgb]{0.00,1.00,0.00}{K: #1}}
+\newcommand{\loris}[1]{\textcolor[rgb]{0.00,0.00,1.00}{L: #1}}
+\newcommand{\aditya}[1]{\textcolor[rgb]{0.00,0.00,1.00}{A:#1}}
+\newcommand{\kausik}[1]{\textcolor[rgb]{0.00,1.00,0.00}{K: #1}}
 %\renewcommand{\aditya}[1]{{\color{red}{\bf AA: #1}}}
 
 \usepackage{float}
