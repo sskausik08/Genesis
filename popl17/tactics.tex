@@ -140,7 +140,7 @@ edges at position $i+1$ in the path for which $l_2$ is different from the destin
 %TODO
 \kausik{Write about the path and unmodified constraints, basic facts}
 \begin{theorem}
-	If the path for a packet class is a solution of the modified constraints, 
+	If the path $\pi$ for class $pc$ is a solution of the modified constraints, 
 	then it satisfies the tactic regular expression.
 \end{theorem}
 \begin{proof}
@@ -170,9 +170,34 @@ The modified constraints for this type of tactic are
 $\forall n_1, n_2.~\phi(n_1) = l_1~\wedge~ \phi(n_2) = l_2 ~\wedge~ n_2 \not=dst  \implies \\ 
 \neg (Reach(n_1, pc, i + 1) \wedge Fwd(n_1, n_2, pc))$
 which is a contradiction, as $\exists n_1. n_2. ~\phi(n_1) = l_1~\wedge~ \phi(n_2) = l_2 ~\wedge~ n_2 \not=dst \wedge Reach(n_1, pc, i + 1) \wedge Fwd(n_1, n_2, pc)$. Hence, our assumption is incorrect. 
- 
 \end{proof}
 
+\begin{theorem}
+If a path $\pi$ is a solution of original constraints for class $pc$ and satisfies the tactic regular expression, then it is a possible solution of modified constraints.
+\end{theorem}
+\begin{proof}
+Let us prove this theorem by contradiction for each tactic type. \newline
+\textbf{Type 1}: $\neg (l_{src}\ .^i \ .^* \ l_{dst})$ \newline
+Lets us assume that $\pi$ is not a solution of the modified constraints $ \forall sw,k \geq i + 1. (sw,pc,k) \notin Reach$. \newline
+Therefore $\exists sw, k \geq i + 1. (sw,pc,k) \in Reach$. \\
+Therefore, $\pi \models l_{src}\ .^i \ .^* \ \phi(sw) \ .^* \ l_{dst} \implies \pi \models l_{src} .^i .^* l_{dst}$
+Contradiction, as $\pi \models \neg (l_{src}\ .^i \ .^* \ l_{dst})$. Hence, our assumption is incorrect.
+ \newline 
+  \newline 
+ \textbf{Type 2}: $\neg (l_{src} .^i \ l \ .^* l_{dst})$ \newline
+ Lets us assume that $\pi$ is not a solution of the modified constraints $\forall sw.~ \phi(sw) = l ~\wedge~ sw \not= dst \implies  (sw, pc, i + 1) \notin Reach$  \newline
+ Therefore $\exists sw. \ sw \not= dst \ \wedge \ \phi(sw) = l \ \wedge \ (sw,pc,i+1) \in Reach$. \\
+ Therefore, $\pi \models l_{src}\ .^i \ l \ .^* \ l_{dst}$ \\
+ Contradiction, as $\pi \models \neg (l_{src} .^i \ l \ .^* l_{dst})$. Hence, our assumption is incorrect.
+  \newline  
+  \newline
+  \textbf{Type 3}: $\neg (l_{src} .^i \ l_1 \ l_2 \ .^* l_{dst})$ \newline
+   Lets us assume that $\pi$ is not a solution of the modified constraints $\forall n_1, n_2.~\phi(n_1) = l_1~\wedge~ \phi(n_2) = l_2 ~\wedge~ n_2 \not=dst  \implies \\ 
+   \neg (Reach(n_1, pc, i + 1) \wedge Fwd(n_1, n_2, pc))$  \newline
+   Therefore $\exists n_1, n_2. ~\phi(n_1) = l_1~\wedge~ \phi(n_2) = l_2 ~\wedge~ n_2 \not=dst ~\wedge~ Reach(n_1, pc, i + 1) ~\wedge~ Fwd(n_1, n_2, pc)$ \\
+   Therefore, $\pi \models l_{src}\ .^i \ l_1~l_2 \ .^* \ l_{dst}$ \\
+   Contradiction, as $\pi \models \neg (l_{src} .^i \ l_1 \ l_2 \ .^* l_{dst})$. Hence, our assumption is incorrect.
+\end{proof}
 
 The intuition behind the restricted tactic syntax comes from the structure of the backward reachability propagation 
 constraints which construct the path for a packet class. Each constraint says that if a switch is reachable in $k$ steps in a path,
