@@ -315,6 +315,7 @@ class GenesisSynthesiser(object) :
 
 			self.zeppelinSynthesiser.enforceDAGs(self.pdb.getDestinationDAGs(), self.endpoints)
 		
+		self.enforceChangedPolicies()
 		#self.pdb.printPaths(self.topology)
 		self.pdb.writeForwardingRulesToFile(self.topology)
 		self.printProfilingStats()
@@ -1840,25 +1841,6 @@ class GenesisSynthesiser(object) :
 					load = load + If(self.Fwd(sw1, sw2, pc), 1.0, 0.0) # Replace 1 by actual traffic
 				self.utilizationMatrix[sw1][sw2] = load/self.linkCapacity[sw1][sw2] 
 
-					# if pc == 0 : 
-					# 	self.z3numberofadds += 1
-					# 	addtime = time.time() # Profiling z3 add.
-					# 	self.z3Solver.add(Implies(self.Fwd(sw1, sw2, pc), self.L(sw1, sw2, pc) == 1))
-					# 	self.z3addTime += time.time() - addtime
-					# 	self.z3numberofadds += 1
-					# 	addtime = time.time() # Profiling z3 add.
-					# 	self.z3Solver.add(Implies(self.Fwd(sw1, sw2, pc) == False, self.L(sw1, sw2, pc) == 0))
-					# 	self.z3addTime += time.time() - addtime
-					# else : 
-					# 	self.z3numberofadds += 1
-					# 	addtime = time.time() # Profiling z3 add.
-					# 	self.z3Solver.add(Implies(self.Fwd(sw1, sw2, pc), self.L(sw1, sw2, pc) == self.L(sw1, sw2, pc - 1) + 1))
-					# 	self.z3addTime += time.time() - addtime
-					# 	self.z3numberofadds += 1
-					# 	addtime = time.time() # Profiling z3 add.
-					# 	self.z3Solver.add(Implies(self.Fwd(sw1, sw2, pc) == False, self.L(sw1, sw2, pc) == self.L(sw1, sw2, pc - 1)))
-					# 	self.z3addTime += time.time() - addtime
-
 		""" Self.L(sw1, sw2, maxpc) denotes the load of link sw1-sw2
 		TE objective: Minimize average utilization of the links [utilization = load/capacity], 
 		equivalent to minimizing total utitlization, as avg = sum/constant """
@@ -2153,7 +2135,7 @@ class GenesisSynthesiser(object) :
 
 			self.z3Solver.add_soft(arg=And(*swAssertions), id="switches")
 
-		self.addMinRuleChangeConstraints(relClass)
+		#self.addMinRuleChangeConstraints(relClass)
 
 		# disable switch with max rules
 		maxrules = 0
