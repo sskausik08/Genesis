@@ -17,7 +17,7 @@ a global traffic engineering objective.
 To perform traffic engineering, link capacities of the network and traffic 
 rates of the packet classes are specified as input to \name. The utilization 
 of a link $U(sw_1, sw_2)$ is defined as the ratio of total traffic flowing through the link to the 
-link capacity, and encoded in Z3 as:
+link capacity, and encoded in Z3 using the theory of rational linear arithmetic as:
 \begin{equation}
 U(sw_1, sw_2) = \frac{\sum_{\forall pc} IF(Fwd(sw_1,sw_2, pc), T(pc), 0)} {\omega}
 \end{equation}
@@ -39,6 +39,7 @@ individual link utilisations, and the objective:
 While $maxU$ can be set to a large value trivially to satisfy \Cref{eq:maxu}
 , since our objective is to minimize $maxU$, it will be set to the actual
 minimized maximum link utilization. 
+\kausik{Similar approach can be used to load-balance traffic to middleboxes}
 
 \subsection{Network Repair}
 While policy-compliance is a major requirement in a network management system,
@@ -47,15 +48,35 @@ which requires recomputation of paths compliant to the policies for the modified
 Also, the network requirements are constantly \emph{in flux}, and operators have the requirement to 
 add new tenants/policies. While a naive approach is to use \name to resynthesize the modified instance,
 the new solution may be drastically different from the original configuration, incurring a
-large overhead of changing the forwarding rules.
+large overhead of changing the forwarding rules. This can also be used to
+port existing non-policy compliant configurations deployed in a network to
+satisfy a set of policies.
 
-We integrate \name's synthesis algorithm with an extension for performing
-minimal network repair, using the MaxSMT of Z3. The basic intuition is that
+We extend \name's synthesis algorithm for performing
+minimal network repair, using the MaxSMT extension of Z3. The basic intuition is that
 we add the existing configuration as \emph{soft} constraints to the set of \emph{hard} 
-policy constraints. This results in a new policy-compliant forwarding 
+policy constraints. The solver would return a solution which \emph{maximizes} the 
+number of satisfied soft constraints (the older configuration),
+thus resulting in a new policy-compliant forwarding 
 configuration with minimal 
-number of changes from the older one, thus reducing the overhead of
-updating the forwarding rules in the network. 
+number of changes from the older one and reducing the overhead of
+updating the forwarding rules in the network.  
+
+We describe one application of network repair, which tries to minimize
+the number of switches which needs to be updated. \name is provided the policies
+and the current forwarding rules $(\overline{Fwd})$ as input. The policy constraints are added as hard
+constraints as described in the earlier sections. To maximize the number of unchanged
+switches, we add \emph{soft} constraints for each switch $sw_1$ of uniform weight as follows:
+\begin{equation}
+\bigvee_{\forall sw_2, pc. (sw_1, sw_2, pc) \in \overline{Fwd} } Fwd(sw_1, sw_2, pc)
+\end{equation}
+Thus, the new forwarding rules $Fwd$ will maximise the number of unchanged
+switch rules in $\overline{Fwd}$.
+
+
+ 
+
+
 
 
 
