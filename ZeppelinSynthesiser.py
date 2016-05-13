@@ -41,7 +41,7 @@ class ZeppelinSynthesiser(object) :
 		self.ilpSolver = gb.Model("C3")
 
 		# Resilience 
-		self.t_res = 2
+		self.t_res = 1
 
 
 	def initializeSMTVariables(self) :
@@ -56,7 +56,7 @@ class ZeppelinSynthesiser(object) :
 
 		for sw1 in range(1,swCount+1):
 			for sw2 in range(1,swCount+1):
-				self.edgeWeights[sw1][sw2] = self.ilpSolver.addVar(lb=1.00, vtype=gb.GRB.CONTINUOUS, name=str(sw1)+"-"+str(sw2))
+				self.edgeWeights[sw1][sw2] = self.ilpSolver.addVar(lb=1.00, ub=10000, vtype=gb.GRB.CONTINUOUS, name=str(sw1)+"-"+str(sw2))
 
 		for sw1 in range(1,swCount+1):
 			for sw2 in range(1, swCount + 1) :
@@ -70,7 +70,7 @@ class ZeppelinSynthesiser(object) :
 		for sw1 in range(1,swCount+1):
 			for sw2 in range(1,swCount+1):
 				for dst in dsts:
-					self.routefiltersVars[sw1][sw2][dst] = self.ilpSolver.addVar(lb=0.00, vtype=gb.GRB.CONTINUOUS, name="RF" + "-" + str(sw1)+":"+str(sw2)+"#"+str(dst))
+					self.routefiltersVars[sw1][sw2][dst] = self.ilpSolver.addVar(lb=0.00, ub=1.00, vtype=gb.GRB.BINARY, name="RF" + "-" + str(sw1)+":"+str(sw2)+"#"+str(dst))
 		
 
 		self.ilpSolver.update()
@@ -319,7 +319,7 @@ class ZeppelinSynthesiser(object) :
 	def addMaxFlowConstraints(self, src, dst, t_res) :
 		swCount = self.topology.getSwitchCount()
 
-		self.maxFlowVars[src][dst] = self.ilpSolver.addVar(vtype=gb.GRB.CONTINUOUS, name="MaxF" + "-" + str(src)+":"+str(dst))
+		#self.maxFlowVars[src][dst] = self.ilpSolver.addVar(vtype=gb.GRB.CONTINUOUS, name="MaxF" + "-" + str(src)+":"+str(dst))
 
 		flowVar = defaultdict(lambda:defaultdict(lambda:None))
 		for sw1 in range(1, swCount + 1) :
@@ -336,14 +336,15 @@ class ZeppelinSynthesiser(object) :
 				outFlow += flowVar[sw1][sw2]
 
 			if sw1 == src : 
-				self.ilpSolver.addConstr(outFlow - inFlow == self.maxFlowVars[src][dst])
+				#self.ilpSolver.addConstr(outFlow - inFlow == self.maxFlowVars[src][dst])
+				self.ilpSolver.addConstr(outFlow - inFlow == t_res + 1)
 			elif sw1 == dst : 
-				self.ilpSolver.addConstr(inFlow - outFlow == self.maxFlowVars[src][dst])
+				self.ilpSolver.addConstr(inFlow - outFlow == t_res + 1)
 			else :
 				self.ilpSolver.addConstr(outFlow - inFlow == 0)				
 
 		# Add resilience constraint.
-		self.ilpSolver.addConstr(self.maxFlowVars[src][dst] >= t_res + 1)
+		#self.ilpSolver.addConstr(self.maxFlowVars[src][dst] >= t_res + 1)
 
 		# Add route filter semantic constraints
 		for sw1 in range(1, swCount + 1) :
@@ -385,7 +386,7 @@ class ZeppelinSynthesiser(object) :
 		for sw in range(1, swCount + 1) :
 			for n in self.topology.getSwitchNeighbours(sw) : 
 				if n not in self.overlay[sw] :
-					self.topology.addWeight(sw, n, float(1000))
+					self.topology.addWeight(sw, n, float(100000))
 					#print sw, n, 1000
 				else : 
 				# ew_rat = self.fwdmodel.evaluate(self.ew(sw,n))
@@ -393,10 +394,8 @@ class ZeppelinSynthesiser(object) :
 					ew = self.ew(sw, n).x
 					# if [sw,n] in self.hiddenEdges : 
 					# 	ew = 1000
-					if float(ew) > 1000 : 
-						ew = 100000
 					self.topology.addWeight(sw, n, float(ew))
-					#print sw, n, float(ew)
+					print sw, n, float(ew)
 
 		# for s in range(1, swCount + 1) :
 		# 	for t in range(1, swCount + 1) :
@@ -418,6 +417,7 @@ class ZeppelinSynthesiser(object) :
 		for dst in dsts : 
 			dag = self.destinationDAGs[dst]
 			for sw in dag : 
+				if sw == dst : continue
 				neighbours = self.overlay[sw]
 				for n in neighbours : 
 					if n <> dag[sw] : 
@@ -425,7 +425,7 @@ class ZeppelinSynthesiser(object) :
 						rf = self.rf(sw, n, dst).x
 						# if float(rf) > 0 :
 						# 	print "routefilter val", sw, n, dst, float(rf)
-						if float(rf) > 0.01 :
+						if float(rf) > 0 :
 							self.routefilters[dst].append([sw, n])
 							setRouteFilters += 1
 		

@@ -315,7 +315,7 @@ class GenesisSynthesiser(object) :
 
 			self.zeppelinSynthesiser.enforceDAGs(self.pdb.getDestinationDAGs(), self.endpoints)
 		
-		self.enforceChangedPolicies()
+		#self.enforceChangedPolicies()
 		#self.pdb.printPaths(self.topology)
 		self.pdb.writeForwardingRulesToFile(self.topology)
 		self.printProfilingStats()
