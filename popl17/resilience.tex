@@ -16,5 +16,9 @@ of support for \emph{policy-compliant resiliency} to tackle network failures
 by synthesizing alternate paths which satisfy the input policies, such that the SDN controller 
 can choose an alternate path in the scenario of a link/switch failure.
 
-We define $t-resilience$ for a packet class as the property that 
-for upto $t$ arbitary link failures 
+\begin{mydef}
+	$t-resilience$ synthesis for a packet class is defined as the
+	synthesis of paths such that in the event of upto arbitary
+	$t$ link failures, there exists a synthesized path for the packet class which
+	satisfies the input policies. 
+\end{mydef}
