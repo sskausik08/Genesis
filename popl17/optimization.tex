@@ -71,7 +71,8 @@ switches, we add \emph{soft} constraints for each switch $sw_1$ of uniform weigh
 \bigvee_{\forall sw_2, pc. (sw_1, sw_2, pc) \in \overline{Fwd} } Fwd(sw_1, sw_2, pc)
 \end{equation}
 Thus, the new forwarding rules $Fwd$ will maximise the number of unchanged
-switch rules in $\overline{Fwd}$.
+switch rules in $\overline{Fwd}$, because the constraint will be unsatisfied if a rule on the
+switch changes. 
 
 
  
