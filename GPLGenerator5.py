@@ -72,18 +72,19 @@ for i in range(groups) :
 gplfile.write("== \n")
 isolatePercentage = 10
 # Assume 5% of links are constrainted by capacity.
-switches = []
+links = []
 
-
-while len(switches) < isolatePercentage :
+while len(links) < isolatePercentage :
 	s = random.randint(1, swCount)
-	if s not in switches :	
-		switches.append(s)
+	neighbours = topology.getSwitchNeighbours(s)
+	d = neighbours[random.randint(0, len(neighbours) - 1)]
+	link = [s,d]
+	if link not in links :	
+		links.append(link)
 
-for sw in switches :
+for link in links :
 	cap = count / isolatePercentage + 1
-	gplfile.write(topology.getSwName(sw) + ":" + str(cap) + "\n")
-
+	gplfile.write(topology.getSwName(link[0]) + "->" + topology.getSwName(link[1]) + ":" + str(cap) + "\n")
 
 
 # for i in range(count) : 

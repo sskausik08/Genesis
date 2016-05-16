@@ -1751,40 +1751,17 @@ class GenesisSynthesiser(object) :
 		if len(constraints) == 0 : return
 		""" Constraints : List of [sw1, sw2, max-number-of-flows]"""
 
-		pclist.sort()
-		maxpc = pclist[len(pclist) - 1] # Max pc in pclist
+		pcRange = self.pdb.getPacketClassRange()
+		maxPathLen = self.topology.getMaxPathLength()
+		self.switchRuleCount = dict()
 		for constraint in constraints :
-			sw1 = constraint[0]
+			sw1= constraint[0]
 			sw2 = constraint[1]
-			tracker = str(sw1) + "-" + str(sw2)
-			self.z3Solver.assert_and_track(self.L(sw1, sw2, maxpc) < constraint[2] + 1, tracker)
-
-		i = 0
-		for pc in pclist :
-			for constraint in constraints :
-				sw1 = constraint[0]
-				sw2 = constraint[1]
-
-				if i == 0 :
-					self.z3numberofadds += 1
-					addtime = time.time() # Profiling z3 add.
-					self.z3Solver.add(Implies(self.Fwd(sw1, sw2, pc), self.L(sw1, sw2, pc) == 1))
-					self.z3addTime += time.time() - addtime
-					self.z3numberofadds += 1
-					addtime = time.time() # Profiling z3 add.
-					self.z3Solver.add(Implies(self.Fwd(sw1, sw2, pc) == False, self.L(sw1, sw2, pc) == 0))
-					self.z3addTime += time.time() - addtime
-				else :
-					prevpc = pclist[i - 1]
-					self.z3numberofadds += 1
-					addtime = time.time() # Profiling z3 add.
-					self.z3Solver.add(Implies(self.Fwd(sw1, sw2, pc), self.L(sw1, sw2, pc) == self.L(sw1, sw2, prevpc) + 1))
-					self.z3addTime += time.time() - addtime
-					self.z3numberofadds += 1
-					addtime = time.time() # Profiling z3 add.
-					self.z3Solver.add(Implies(self.Fwd(sw1, sw2, pc) == False, self.L(sw1, sw2, pc) == self.L(sw1, sw2, prevpc)))
-					self.z3addTime += time.time() - addtime
-			i += 1
+			capacity = constraint[2]
+			traffic = 0
+			for pc in range(pcRange) :
+				traffic = traffic + If(self.Fwd(sw1,sw2,pc), 1, 0) # If sw1-sw2 is used
+			self.z3Solver.add(traffic < capacity)
 
 	def addAverageUtilizationMinimizationConstraints(self) :
 		""" Assuming a single path connection for loads, and equal weights for each flow. 
