@@ -76,7 +76,7 @@ switches = []
 
 
 while len(switches) < isolatePercentage :
-	s = random.randint(1, swCount + 1)
+	s = random.randint(1, swCount)
 	if s not in switches :	
 		switches.append(s)
 
