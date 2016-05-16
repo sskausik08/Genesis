@@ -1,4 +1,4 @@
-\section{Motivation}
+\section{Motivation \& Challenges}
 \begin{figure}
 	\includegraphics[width=\columnwidth,center]{figures/architecture.eps}
 	\compactcaption{\Name in a multi-tenant datacenter setting.}
@@ -114,7 +114,9 @@ workloads~\cite{mpa-imc15}.  The policies include:
 %\kausik{This is not a tenant policy, but an operator feature, so separate from itemize.}
 \item \textbf{Network Resource Management}. While support for the above
 policies can be used to satisfy tenant SLAs, network operators can
-benefit from a fine-grained control of network resources. Support for
+benefit from a fine-grained control of network resources, to enforce
+strict guarantees, or optimize an objective like average utilization of the network
+links. Support for
 resource management integrated with tenant specifications is useful.
 For instance, to aid traffic engineering, the network
 operator may specify policies constraining the maximum number of

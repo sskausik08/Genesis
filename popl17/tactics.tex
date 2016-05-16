@@ -224,8 +224,11 @@ constraints which construct the path for a packet class. Each constraint says th
  In practice, tactics can be used to specify restrictions which would be not reduce the search space dramatically, 
  and speed up the synthesis, especially in datacenter topologies which are hierarchical 
  and can be used to specify interesting tactics. Some examples are : edge-edge path must not
- traverse another edge, and valley-free routing ($eacae$). We have provided a framework for the
- development of new tactics, and we envision entities providing network
+ traverse another edge, and valley-free routing ($eacae$). One of the biggest advantages
+ of tactics is that it is \emph{policy-agnostic}, since it enforces condition on the path, and
+ can be used in conjuction with the different policies supported by \name (isolation, traffic engineering etc.).  
+ Thus, we have provided a framework for the
+ development of search strategies based on path properties, and we envision entities providing network
  management as a service to develop a \emph{repository} of tactics for various network topologies 
  (much like Z3's tactics), which can be used by network operators without writing tactics of their own. 
 %\loris{For that restricted set of regexes the algorithm is trivial you should write the first pass. 
