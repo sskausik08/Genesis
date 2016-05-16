@@ -151,7 +151,7 @@ class PolicyDatabase(object) :
 		isolation """
 
 		# If link capacity policies exist, or global traffic engineering constraints, No relational classes!
-		if len(self.getLinkCapacityConstraints()) > 0 or self.minimizeAverageUtilizationTE : 
+		if len(self.getLinkCapacityConstraints()) > 0 or len(self.getSwitchTableConstraints()) > 0 or self.minimizeAverageUtilizationTE : 
 			self.relationalClassCreationFlag = True
 			self.relClasses = []
 			self.relClasses.append(range(self.getPacketClassRange()))	

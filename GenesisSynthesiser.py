@@ -375,9 +375,6 @@ class GenesisSynthesiser(object) :
 		# Create Relational Packet Classses.
 		relClasses = self.pdb.getRelationalClasses()
 
-		# switchTableConstraints = self.pdb.getSwitchTableConstraints()
-		# self.addSwitchTableConstraints(switchTableConstraints)  # Adding switch table constraints.
-
 		if self.controlPlaneMode :
 			print "In control plane generation mode"
 			start_t = time.time()
@@ -390,6 +387,9 @@ class GenesisSynthesiser(object) :
 
 		linkCapacityConstraints = self.pdb.getLinkCapacityConstraints()
 		self.addLinkConstraints(range(self.pdb.getPacketClassRange()), linkCapacityConstraints)
+
+		switchTableConstraints = self.pdb.getSwitchTableConstraints()
+		self.addSwitchTableConstraints(switchTableConstraints)  # Adding switch table constraints.
 
 		for relClass in relClasses :
 			# Independent Synthesis of relClass.
@@ -1732,53 +1732,20 @@ class GenesisSynthesiser(object) :
 	def addSwitchTableConstraints(self, constraints) :
 		if len(constraints) == 0 : return
 		""" Constraints : List of [switch-name, max-size]"""
-
-		for pc in range(self.pdb.getPacketClassRange()) :
-			src = self.pdb.getSourceSwitch(pc)
-			dst = self.pdb.getDestinationSwitch(pc)
-			swCount = self.topology.getSwitchCount()
-			maxPathLen = self.topology.getMaxPathLength()
-
-			if pc == 0: 
-				for i in range(1,swCount+1) : 
-					if not i == dst : 
-						self.z3numberofadds += 1
-						addtime = time.time() # Profiling z3 add.
-						self.z3Solver.add(Implies(self.F(src, i, pc, maxPathLen), self.R(i, pc) == 1))
-						self.z3addTime += time.time() - addtime
-						self.z3numberofadds += 1
-						addtime = time.time() # Profiling z3 add.
-						self.z3Solver.add(Implies(self.F(src, i, pc, maxPathLen) == False, self.R(i, pc) == 0))
-						self.z3addTime += time.time() - addtime
-					else :
-						self.z3numberofadds += 1
-						addtime = time.time() # Profiling z3 add.
-						self.z3Solver.add(self.R(i, pc) == 0)
-						self.z3addTime += time.time() - addtime
-			else :
-				for i in range(1,swCount+1) :
-					if not i == dst :
-						self.z3numberofadds += 1
-						addtime = time.time() # Profiling z3 add.
-						self.z3Solver.add(Implies(self.F(src, i, pc, maxPathLen), self.R(i, pc) == self.R(i, pc-1) + 1))
-						self.z3addTime += time.time() - addtime
-						self.z3numberofadds += 1
-						addtime = time.time() # Profiling z3 add.
-						self.z3Solver.add(Implies(self.F(src, i, pc, maxPathLen) == False, self.R(i, pc) == self.R(i, pc-1)))
-						self.z3addTime += time.time() - addtime
-					else :
-						self.z3numberofadds += 1
-						addtime = time.time() # Profiling z3 add.
-						self.z3Solver.add(self.R(i, pc) == self.R(i, pc-1))
-						self.z3addTime += time.time() - addtime
-
-		maxpc = self.pdb.getPacketClassRange() - 1
+		pcRange = self.pdb.getPacketClassRange()
+		maxPathLen = self.topology.getMaxPathLength()
+		self.switchRuleCount = dict()
 		for constraint in constraints :
 			sw = constraint[0]
-			self.z3numberofadds += 1
-			addtime = time.time() # Profiling z3 add.
-			self.z3Solver.add(self.R(sw, maxpc) < constraint[1] + 1)
-			self.z3addTime += time.time() - addtime
+			maxCount = constraint[1]
+			rules = 0
+			for pc in range(pcRange) :
+				reachAssertions = []
+				for plen in range(1, maxPathLen + 1):
+					reachAssertions.append(self.Reach(sw,pc,plen))
+				rules = rules + If(Or(*reachAssertions), 1, 0) # If sw is reachable, one forwarding rule required
+			print sw, maxCount
+			self.z3Solver.add(rules < maxCount)
 
 	def addLinkConstraints(self, pclist, constraints):
 		if len(constraints) == 0 : return
