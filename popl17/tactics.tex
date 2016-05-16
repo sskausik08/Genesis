@@ -136,32 +136,34 @@ edges at position $i+1$ in the path for which $l_2$ is different from the destin
 
 %-> if a path is solution of modified constraint it satisfies regex
 %<- if a path is solution of original constraints and satisfies regex, then it's a possible solution of modified constraints.
-
-%TODO
-\kausik{Write about the path and unmodified constraints, basic facts}
-\begin{theorem}
+We now prove the soundness and completeness of the tactic synthesis algorithm. 
+A path $\pi$ of the packet class $pc$ will be of the form $src \ldots dst$ due to the original synthesis
+constraints. 
+\begin{theorem}[Soundness]
 	If the path $\pi$ for class $pc$ is a solution of the modified constraints, 
 	then it satisfies the tactic regular expression.
 \end{theorem}
 \begin{proof}
-Let us prove this theorem by contradiction for each tactic type. \newline
-\textbf{Type 1}: $\neg (l_{src} .^i .^* l_{dst})$ \newline
+The proof of this theorem is by contradiction for each type of tactic. \newline
+\textbf{Type 1}:\\ $\forall sw,k \geq i + 1. (sw,pc,k) \notin Reach \implies \pi \models \neg (l_{src} .^i .^* l_{dst}) $ \newline
 Let us assume that $\pi \models l_{src} .^i .^* l_{dst}$. \\
 Thus, $\pi = src\ sw_1 \ldots sw_i \ldots dst$. \\
 Therefore,  $(dst, pc, k_{dst}) \in Reach, k_{dst} \geq i + 1$. \\
 However,
 The modified constraints for this type of tactic are $ \forall sw,k \geq i + 1. (sw,pc,k) \notin Reach$,
-which is a contradiction, as $\exists sw, k \geq i + 1. (sw,pc,k) \in Reach$. Hence, our assumption is incorrect. 
-\newline \newline
-\textbf{Type 2}: $\neg (l_{src} .^i \ l \ .^* l_{dst})$ \newline
+which is a contradiction, as $\exists sw, k \geq i + 1. (sw,pc,k) \in Reach$.
+\newline
+ \newline
+\textbf{Type 2}: $(\forall sw.~ \phi(sw) = l ~\wedge~ sw \not= dst \implies  (sw, pc, i + 1) \notin Reach) \implies \pi \models \neg (l_{src} .^i \ l \ .^* l_{dst})$ \newline
 Let us assume that $\pi \models l_{src} .^i \ l \ .^* l_{dst}$. \\
 Thus, $\pi = src\ sw_1 \ldots sw_i \ sw_{i+1} \ldots dst$ such that $\phi(sw_{i+1}) = l$. Also $sw_{i+1} \not=dst$ (dst has to be the last switch in $\pi$)\\
 Therefore,  $(sw_{i+1}, pc, i+1) \in Reach$. \\
 However,
 The modified constraints for this type of tactic are $\forall sw.~ \phi(sw) = l ~\wedge~ sw \not= dst \implies  (sw, pc, i + 1) \notin Reach$,
-which is a contradiction, as $\exists sw. ~ \phi(sw) = l ~\wedge~ sw \not= dst \wedge (sw,pc,i+1) \in Reach$. Hence, our assumption is incorrect. 
+which is a contradiction, as $\exists sw. ~ \phi(sw) = l ~\wedge~ sw \not= dst \wedge (sw,pc,i+1) \in Reach$.
  \newline \newline
-\textbf{Type 3}: $\neg (l_{src} .^i \ l_1 \ l_2 \ .^* l_{dst})$ \newline
+\textbf{Type 3}: $(\forall n_1, n_2.~\phi(n_1) = l_1~\wedge~ \phi(n_2) = l_2 ~\wedge~ n_2 \not=dst  \implies \\ 
+\neg (Reach(n_1, pc, i + 1) \wedge Fwd(n_1, n_2, pc)))\implies \pi \models \neg (l_{src} .^i \ l_1 \ l_2 \ .^* l_{dst})$ \newline
 Let us assume that $\pi \models l_{src} .^i \ l_1 \ l_2 \ .^* l_{dst}$. \\
 Thus, $\pi = src\ sw_1 \ldots sw_i \ sw_{i+1} \ sw_{i+2} \ldots dst$ such that $\phi(sw_{i+1}) = l_1, \phi(sw_{i+2}) = l_2$. Also $sw_{i+2} \not=dst$ (dst has to be the last switch in $\pi$)\\
 Therefore,  $(sw_{i+1}, pc, i+1) \in Reach \wedge (sw_{i+1}, sw_{i+2}, pc) \in Fwd$. \\
@@ -169,34 +171,35 @@ However,
 The modified constraints for this type of tactic are 
 $\forall n_1, n_2.~\phi(n_1) = l_1~\wedge~ \phi(n_2) = l_2 ~\wedge~ n_2 \not=dst  \implies \\ 
 \neg (Reach(n_1, pc, i + 1) \wedge Fwd(n_1, n_2, pc))$
-which is a contradiction, as $\exists n_1. n_2. ~\phi(n_1) = l_1~\wedge~ \phi(n_2) = l_2 ~\wedge~ n_2 \not=dst \wedge Reach(n_1, pc, i + 1) \wedge Fwd(n_1, n_2, pc)$. Hence, our assumption is incorrect. 
+which is a contradiction, as $\exists n_1. n_2. ~\phi(n_1) = l_1~\wedge~ \phi(n_2) = l_2 ~\wedge~ n_2 \not=dst \wedge Reach(n_1, pc, i + 1) \wedge Fwd(n_1, n_2, pc)$. 
 \end{proof}
 
-\begin{theorem}
+\begin{theorem}[Completeness]
 If a path $\pi$ is a solution of original constraints for class $pc$ and satisfies the tactic regular expression, then it is a possible solution of modified constraints.
 \end{theorem}
 \begin{proof}
-Let us prove this theorem by contradiction for each tactic type. \newline
-\textbf{Type 1}: $\neg (l_{src}\ .^i \ .^* \ l_{dst})$ \newline
+The proof of this theorem is by contradiction for each type of tactic. \newline
+\textbf{Type 1}:\\ $\pi \models \neg (l_{src} .^i .^* l_{dst}) \implies \forall sw,k \geq i + 1. (sw,pc,k) \notin Reach$ \newline
 Lets us assume that $\pi$ is not a solution of the modified constraints $ \forall sw,k \geq i + 1. (sw,pc,k) \notin Reach$. \newline
 Therefore $\exists sw, k \geq i + 1. (sw,pc,k) \in Reach$. \\
 Therefore, $\pi \models l_{src}\ .^i \ .^* \ \phi(sw) \ .^* \ l_{dst} \implies \pi \models l_{src} .^i .^* l_{dst}$
-Contradiction, as $\pi \models \neg (l_{src}\ .^i \ .^* \ l_{dst})$. Hence, our assumption is incorrect.
+Contradiction, as $\pi \models \neg (l_{src}\ .^i \ .^* \ l_{dst})$.
  \newline 
   \newline 
- \textbf{Type 2}: $\neg (l_{src} .^i \ l \ .^* l_{dst})$ \newline
+ \textbf{Type 2}: $\pi \models \neg (l_{src} .^i \ l \ .^* l_{dst}) \implies (\ \forall sw.~ \phi(sw) = l ~\wedge~ sw \not= dst \implies  (sw, pc, i + 1) \notin Reach)$ \newline
  Lets us assume that $\pi$ is not a solution of the modified constraints $\forall sw.~ \phi(sw) = l ~\wedge~ sw \not= dst \implies  (sw, pc, i + 1) \notin Reach$  \newline
  Therefore $\exists sw. \ sw \not= dst \ \wedge \ \phi(sw) = l \ \wedge \ (sw,pc,i+1) \in Reach$. \\
  Therefore, $\pi \models l_{src}\ .^i \ l \ .^* \ l_{dst}$ \\
- Contradiction, as $\pi \models \neg (l_{src} .^i \ l \ .^* l_{dst})$. Hence, our assumption is incorrect.
+ Contradiction, as $\pi \models \neg (l_{src} .^i \ l \ .^* l_{dst})$. 
   \newline  
   \newline
-  \textbf{Type 3}: $\neg (l_{src} .^i \ l_1 \ l_2 \ .^* l_{dst})$ \newline
+  \textbf{Type 3}: $\pi \models \neg (l_{src} .^i \ l_1 \ l_2 \ .^* l_{dst}) \implies (\ \forall n_1, n_2.~\phi(n_1) = l_1~\wedge~ \phi(n_2) = l_2 ~\wedge~ n_2 \not=dst  \implies  
+  \neg (Reach(n_1, pc, i + 1) \wedge Fwd(n_1, n_2, pc)))$ \newline
    Lets us assume that $\pi$ is not a solution of the modified constraints $\forall n_1, n_2.~\phi(n_1) = l_1~\wedge~ \phi(n_2) = l_2 ~\wedge~ n_2 \not=dst  \implies \\ 
    \neg (Reach(n_1, pc, i + 1) \wedge Fwd(n_1, n_2, pc))$  \newline
    Therefore $\exists n_1, n_2. ~\phi(n_1) = l_1~\wedge~ \phi(n_2) = l_2 ~\wedge~ n_2 \not=dst ~\wedge~ Reach(n_1, pc, i + 1) ~\wedge~ Fwd(n_1, n_2, pc)$ \\
    Therefore, $\pi \models l_{src}\ .^i \ l_1~l_2 \ .^* \ l_{dst}$ \\
-   Contradiction, as $\pi \models \neg (l_{src} .^i \ l_1 \ l_2 \ .^* l_{dst})$. Hence, our assumption is incorrect.
+   Contradiction, as $\pi \models \neg (l_{src} .^i \ l_1 \ l_2 \ .^* l_{dst})$.
 \end{proof}
 
 The intuition behind the restricted tactic syntax comes from the structure of the backward reachability propagation 
@@ -217,9 +220,8 @@ constraints which construct the path for a packet class. Each constraint says th
   because the constraints for reachability for a switch in $i + 3$ steps only depends on 
   the constraints for reachability in $i+2$ steps. Thus, we only support a restricted tactic syntax.   
 
-Incorporating tactics in the synthesis is sound and yield a correct path satisfying all policies.
- However, since tactics artificially reduce the search space, the synthesis algorithm with tactics is incomplete. 
- In practice, tactics can be used to specify restrictions which would be reasonably complete, 
+ Since tactics artificially reduce the search space, the synthesis algorithm with tactics is incomplete (a solution satisfying the tactic may not exist). 
+ In practice, tactics can be used to specify restrictions which would be not reduce the search space dramatically, 
  and speed up the synthesis, especially in datacenter topologies which are hierarchical 
  and can be used to specify interesting tactics. Some examples are : edge-edge path must not
  traverse another edge, and valley-free routing ($eacae$). We have provided a framework for the

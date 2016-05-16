@@ -25,7 +25,7 @@ The TE objective of minimizing average link utilization is equivalent to minimiz
 the total link utilization (as average = total/constant). Thus, the minimization
 objective is:
 \begin{equation}
-	MIN\ \sum_{\forall sw_1, sw_2} U(sw_1, sw_2)
+	\text{minimize}\ \sum_{\forall sw_1, sw_2} U(sw_1, sw_2)
 \end{equation}
 To encode the TE objective of minimizing the maximum link utilization, we define
 a variable $maxU$, and constraints to ensure that $maxU$ is greater than or equal to all 
@@ -34,12 +34,12 @@ individual link utilisations, and the objective:
 \forall sw_1, sw_2.\ \ maxU \geq U(sw_1, sw_2)
 \end{equation} 
 \begin{equation}
-	MIN\ maxU
+		\text{minimize}\ maxU
 \end{equation}
 While $maxU$ can be set to a large value trivially to satisfy \Cref{eq:maxu}
-, since our objective is to minimize $maxU$, it will be set to the actual
-minimized maximum link utilization. 
-\kausik{Similar approach can be used to load-balance traffic to middleboxes}
+, since the objective is to minimize $maxU$, it will be set to the actual
+minimized maximum link utilization. Using an encoding similar to the one presented in this section, \name can be used for other objectives like minimizing total latency and load balancing
+traffic across the network middleboxes.
 
 \subsection{Network Repair}
 While policy-compliance is a major requirement in a network management system,

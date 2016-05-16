@@ -39,11 +39,11 @@ Specifically, we ask:
 \item How much do tactics help improve \Name's 
   performance? Which tactics offer the best improvement? (\cref{sec:tacticeval})
 
-\item To what extent does optimistic synthesis improve \Name's
+\item To what extent does the divide-and-conquer synthesis improve \Name's
   performance? When does it lead to degraded synthesis times? (\cref{sec:optimisticeval})
 
-\item Can \Name be used effectively for performing synthesis for
-incremental changes?  (\cref{sec:incrementaleval})
+\item What is the performance of Genesis with optimization objectives like traffic engineering
+and network repair? (\cref{sec:optimizationeval})
 
 \end{compactitemize}
 %\loris{if you say this here don't write it in the bullet points}
@@ -221,50 +221,55 @@ In \Cref{fig:tactic-topo},
 \end{figure}
 
 
-\subsection{Optimistic Synthesis
+\subsection{Divide-and-Conquer Synthesis
   Performance} \label{sec:optimisticeval} To evaluate the heuristic
-optimistic synthesis procedure, we perform 100 runs of non-optimistic
-synthesis and optimistic synthesis (with the no edge tactic) on
+divide-and-conquer synthesis procedure, we perform 100 runs of non-heuristic
+synthesis and divde-and-conquer synthesis (with the no edge tactic in both cases) on
 isolation workloads with varying number of tenants and different group
 sizes we used in the \Cref{fig:isolation} experiment. We compute the
-speedup $t(non-opt)/t(opt)$ and plot its cumulative
+speedup $t(non-dcsyn)/t(dcsyn)$ and plot its cumulative
 frequency distribution in \Cref{fig:opt-cdf} to quantify the benefits
 of optimistic synthesis. For more than 80\% of the workloads,
-optimistic offers a better or comparable performance to non-optimistic
+divide-and-conquer offers a better or comparable performance to non-optimistic
 synthesis, achieving a speedup of 2$\times$ for nearly 40\% of the
-workloads. For 20\% of the workloads, optimistic performs worse than
-the non-optimistic approach, especially for workloads with tenant
+workloads. For 20\% of the workloads, divide-and-conquer performs worse than
+the non-heuristic approach, especially for workloads with tenant
 group size 1.  This arises due to greater recovery attempts which
-results in increased time.
+results in increased time. We can leverage parallelism by running 
+both instances of synthesis, thus giving the best performance, with
+or without the divide-and-conquer approach.
 
-\subsection{Incremental Synthesis
-  Performance} \label{sec:incrementaleval} While network management
-systems have support for enforcing complex policies, a important
-feature required from these systems is to enforce incremental changes
-like addition of new tenants, changes to policies, or topology events
-like link/switch failures. To evaluate our synthesis algorithm for
-incremental changes, we use 100 runs of different isolation workloads
-of the experiment in \Cref{fig:isolation} and perform synthesis of $n$
-packet classes, and then add a single policy to a tenant (with
-isolation to all other tenant packet classes) and measure the time
-needed for synthesis of the updated policies. Both runs of synthesis
-use the no edge tactic for efficiency. We plot a cumulative
-frequency distribution of the ratio of time taken for incremental
-synthesis for the $n+1^{th}$ packet class versus the synthesis time
-for $n$ policies("one-shot" synthesis) in \Cref{fig:incremental-cdf}. For 80 \% of the
-workloads, the incremental synthesis takes less than 10\% of the total
-synthesis time for $n$ policies, which makes \Name suitable for
-performing incremental changes. But in some cases, the new policies
-may trigger a re-synthesis of the previously synthesized policies, and
-we can see workloads where the ratio is 1 or greater. This is an
-intrinsic challenge with the problem setup, because paths for packet
-classes are tightly coupled with isolation/capacity policies. If there
-exists a polynomial-time algorithm to perform this change, then
-enforcement of isolation could be done one-by-one in polynomial time.
-Thus, performing incremental synthesis is challenging because of its
-exponential complexity, and is one
-of the future directions of research in building a robust network management
-system. \newline To summarize the key points of our evaluation are:
+\subsection{Synthesis with Optimizations}
+Fill stuff here... \newline
+%\subsection{Incremental Synthesis
+%  Performance} \label{sec:incrementaleval} While network management
+%systems have support for enforcing complex policies, a important
+%feature required from these systems is to enforce incremental changes
+%like addition of new tenants, changes to policies, or topology events
+%like link/switch failures. To evaluate our synthesis algorithm for
+%incremental changes, we use 100 runs of different isolation workloads
+%of the experiment in \Cref{fig:isolation} and perform synthesis of $n$
+%packet classes, and then add a single policy to a tenant (with
+%isolation to all other tenant packet classes) and measure the time
+%needed for synthesis of the updated policies. Both runs of synthesis
+%use the no edge tactic for efficiency. We plot a cumulative
+%frequency distribution of the ratio of time taken for incremental
+%synthesis for the $n+1^{th}$ packet class versus the synthesis time
+%for $n$ policies("one-shot" synthesis) in \Cref{fig:incremental-cdf}. For 80 \% of the
+%workloads, the incremental synthesis takes less than 10\% of the total
+%synthesis time for $n$ policies, which makes \Name suitable for
+%performing incremental changes. But in some cases, the new policies
+%may trigger a re-synthesis of the previously synthesized policies, and
+%we can see workloads where the ratio is 1 or greater. This is an
+%intrinsic challenge with the problem setup, because paths for packet
+%classes are tightly coupled with isolation/capacity policies. If there
+%exists a polynomial-time algorithm to perform this change, then
+%enforcement of isolation could be done one-by-one in polynomial time.
+%Thus, performing incremental synthesis is challenging because of its
+%exponential complexity, and is one
+%of the future directions of research in building a robust network management
+%system. 
+To summarize the key points of our evaluation are:
 \begin{compactitemize}
 \item For a representative tenant-group size of 10 in a 80 switch
   fat-tree, the baseline synthesis performance for synthesizing the
