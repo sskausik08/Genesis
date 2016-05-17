@@ -220,7 +220,12 @@ In \Cref{fig:tactic-topo},
 	\label{fig:link-capacity}
 \end{figure}
 
-
+\begin{figure}
+	\centering
+	\includegraphics[width=0.75\columnwidth]{figures/dcsyn-cdf.eps}
+	\caption{CDF for speedup achieved by divide-and-conquer synthesis.}
+	\label{fig:dcsyn-cdf}
+\end{figure}
 \subsection{Divide-and-Conquer Synthesis Performance} \label{sec:optimisticeval} 
 To evaluate the heuristic
 divide-and-conquer synthesis procedure, we perform 100 runs of non-heuristic
@@ -228,7 +233,7 @@ synthesis and divde-and-conquer synthesis (with the no edge tactic in both cases
 isolation workloads with varying number of tenants and different group
 sizes we used in the \Cref{fig:isolation} experiment. We compute the
 speedup $t(non$-$dcsyn)/t(dcsyn)$ and plot its cumulative
-frequency distribution in \Cref{fig:opt-cdf} to quantify the benefits
+frequency distribution in \Cref{fig:dcsyn-cdf} to quantify the benefits
 of optimistic synthesis. For more than 80\% of the workloads,
 divide-and-conquer offers a better or comparable performance to non-optimistic
 synthesis, achieving a speedup of 2$\times$ for nearly 40\% of the
@@ -314,12 +319,7 @@ synthesize the new configuration in ~200 seconds.
 %	\caption{\label{fig:cdf}
 %		Cumulative frequency distribution over 100 runs of isolation workloads for optimistic and incremental synthesis.}
 %\end{figure}
-\begin{figure}
-	\centering
-	\includegraphics[width=0.75\columnwidth]{figures/opt-cdf.eps}
-	\caption{CDF for speedup achieved by optimistic synthesis.}
-	\label{fig:opt-cdf}
-\end{figure}
+
 %\begin{figure}
 %	\centering
 %	\includegraphics[width=0.75\columnwidth]{figures/incremental-cdf.eps}
