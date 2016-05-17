@@ -118,7 +118,7 @@ benefit from a fine-grained control of network resources, to enforce
 strict guarantees, or optimize an objective like average utilization of the network
 links. Support for
 resource management integrated with tenant specifications is useful.
-For instance, the operator may want to minimize the max link utilization 
+For instance, the operator may want to minimize the average link utilization 
 of the network, or restrict traffic on certain links. For example, in \Cref{fig:architecture},
 the red links are low bandwidth, and the operator wants to ensure
 traffic on these links do not exceed the link capacity of 100.
@@ -141,6 +141,15 @@ traffic on these links do not exceed the link capacity of 100.
   switch constraint policies, like the size of the rule table, to
   restrict the number of flows traversing a particular switch or set
   of switches.
+ 
+ \item \textbf{Handling Failures}. Modern networks experience failures (link or switch) 
+ frequently, and an essential requirement in network management systems to
+ provide certain guarantees during failure scenarios. \name addresses this by
+ providing two mechanisms: minimal network repair and resilience synthesis. 
+ Minimal network repair tries to minimize the overhead of transitioning from a
+ old forwarding configuration to a new policy-compliant one. Resilience synthesis
+ tries to provide guarantees during failure events by synthesizing policy-compliant
+ backup paths \emph{proactively} to tackle failures.
 \end{compactitemize}
 %\item \textbf{Network Maintenance}: \aditya{this whole para does not
 %    parse and needs updating} Operators on a regular basis perform link and

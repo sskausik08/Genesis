@@ -187,7 +187,7 @@ Contradiction, as $\pi \models \neg (l_{src}\ .^i \ .^* \ l_{dst})$.
  \newline 
   \newline 
  \textbf{Type 2}: $\pi \models \neg (l_{src} .^i \ l \ .^* l_{dst}) \implies (\ \forall sw.~ \phi(sw) = l ~\wedge~ sw \not= dst \implies  (sw, pc, i + 1) \notin Reach)$ \newline
- Lets us assume that $\pi$ is not a solution of the modified constraints \\
+ Lets us assume that $\pi$ is not a solution of the modified constraints. \\
  Therefore $\exists sw. \ sw \not= dst \ \wedge \ \phi(sw) = l \ \wedge \ (sw,pc,i+1) \in Reach$. \\
  Therefore, $\pi \models l_{src}\ .^i \ l \ .^* \ l_{dst}$ \\
  Contradiction, as $\pi \models \neg (l_{src} .^i \ l \ .^* l_{dst})$. 
@@ -222,7 +222,7 @@ constraints which construct the path for a packet class. Each constraint says th
  Since tactics artificially reduce the search space, the synthesis algorithm with tactics is incomplete (a solution satisfying the tactic may not exist). 
  In practice, tactics can be used to specify restrictions which would be not reduce the search space dramatically, 
  and speed up the synthesis, especially in datacenter topologies which are hierarchical 
- and can be used to specify interesting tactics. Some examples are : edge-edge path must not
+ and can be used to specify interesting tactics. Some examples are: an edge to edge path must not
  traverse another edge, and valley-free routing ($eacae$). One of the biggest advantages
  of tactics is that it is \emph{policy-agnostic}, since it enforces condition on the path, and
  can be used in conjuction with the different policies supported by \name (isolation, traffic engineering etc.).  
