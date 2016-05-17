@@ -87,21 +87,16 @@ policy enforcement in \Name.
 
 \noindent
 {\bf Future directions:}
-\Name focuses on correct policy enforcement, but there are other
-interesting optimization problems worth considering: e.g., minimizing
-the length of all paths, maximizing utilisation of the datacenter
-etc. MaxSMT solvers~\cite{z3maxSMT} could be used to encode these problems.  
-Formulas can be labeled as hard and soft constraints in MaxSMT. A
-satisfying assignment is one that makes all the hard constraints true
-and as many of the soft constraints as possible true.  Soft
-constraints can also be assigned weights.  We believe that by specifying
-optimization objectives using the soft constraints many of the problems
-we mentioned such as minimizing the lengths of paths 
-could be encoded.  The ability of MaxSMT solvers such as Z3
-to support several different kind of objective functions (e.g., Pareto
-optimality and ordered objectives) could be used to turn \Name into a
-full-blown language able to support complex traffic engineering
-problems.  However, MaxSMT solvers are much slower than SMT solvers,
-so leveraging these and achieving tangible performance is one of the
-directions of future work.
+\Name has support for single-path traffic engineering, however in
+practice, traffic is split in variable proportions along different 
+paths for effective traffic engineering. One of the future 
+directions of research is to extend the functionality of Genesis
+to support fine-grained traffic engineering. Also, the performance
+of SMT solvers with optimization objectives is quite slow, and calls for 
+domain-specific techniques to speed up the synthesis. Also, datacenter
+networks are highly symmetrical, and this symmetry can be leveraged
+to speed up synthesis (similar to the work of Plotkin et. al ~\cite{symmetry} to
+speed up network verification using symmetry). The main challenges of
+using symmetry in synthesis is considering two aspects of symmetry: network
+symmetry and policy symmetry. 
  

@@ -180,14 +180,14 @@ If a path $\pi$ is a solution of original constraints for class $pc$ and satisfi
 \begin{proof}
 The proof of this theorem is by contradiction for each type of tactic. \newline
 \textbf{Type 1}:\\ $\pi \models \neg (l_{src} .^i .^* l_{dst}) \implies \forall sw,k \geq i + 1. (sw,pc,k) \notin Reach$ \newline
-Lets us assume that $\pi$ is not a solution of the modified constraints $ \forall sw,k \geq i + 1. (sw,pc,k) \notin Reach$. \newline
+Lets us assume that $\pi$ is not a solution of the modified constraints. \newline
 Therefore $\exists sw, k \geq i + 1. (sw,pc,k) \in Reach$. \\
 Therefore, $\pi \models l_{src}\ .^i \ .^* \ \phi(sw) \ .^* \ l_{dst} \implies \pi \models l_{src} .^i .^* l_{dst}$
 Contradiction, as $\pi \models \neg (l_{src}\ .^i \ .^* \ l_{dst})$.
  \newline 
   \newline 
  \textbf{Type 2}: $\pi \models \neg (l_{src} .^i \ l \ .^* l_{dst}) \implies (\ \forall sw.~ \phi(sw) = l ~\wedge~ sw \not= dst \implies  (sw, pc, i + 1) \notin Reach)$ \newline
- Lets us assume that $\pi$ is not a solution of the modified constraints $\forall sw.~ \phi(sw) = l ~\wedge~ sw \not= dst \implies  (sw, pc, i + 1) \notin Reach$  \newline
+ Lets us assume that $\pi$ is not a solution of the modified constraints \\
  Therefore $\exists sw. \ sw \not= dst \ \wedge \ \phi(sw) = l \ \wedge \ (sw,pc,i+1) \in Reach$. \\
  Therefore, $\pi \models l_{src}\ .^i \ l \ .^* \ l_{dst}$ \\
  Contradiction, as $\pi \models \neg (l_{src} .^i \ l \ .^* l_{dst})$. 
@@ -195,8 +195,7 @@ Contradiction, as $\pi \models \neg (l_{src}\ .^i \ .^* \ l_{dst})$.
   \newline
   \textbf{Type 3}: $\pi \models \neg (l_{src} .^i \ l_1 \ l_2 \ .^* l_{dst}) \implies (\ \forall n_1, n_2.~\phi(n_1) = l_1~\wedge~ \phi(n_2) = l_2 ~\wedge~ n_2 \not=dst  \implies  
   \neg (Reach(n_1, pc, i + 1) \wedge Fwd(n_1, n_2, pc)))$ \newline
-   Lets us assume that $\pi$ is not a solution of the modified constraints $\forall n_1, n_2.~\phi(n_1) = l_1~\wedge~ \phi(n_2) = l_2 ~\wedge~ n_2 \not=dst  \implies \\ 
-   \neg (Reach(n_1, pc, i + 1) \wedge Fwd(n_1, n_2, pc))$  \newline
+   Lets us assume that $\pi$ is not a solution of the modified constraints.
    Therefore $\exists n_1, n_2. ~\phi(n_1) = l_1~\wedge~ \phi(n_2) = l_2 ~\wedge~ n_2 \not=dst ~\wedge~ Reach(n_1, pc, i + 1) ~\wedge~ Fwd(n_1, n_2, pc)$ \\
    Therefore, $\pi \models l_{src}\ .^i \ l_1~l_2 \ .^* \ l_{dst}$ \\
    Contradiction, as $\pi \models \neg (l_{src} .^i \ l_1 \ l_2 \ .^* l_{dst})$.

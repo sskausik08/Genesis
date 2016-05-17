@@ -12,9 +12,10 @@ attempting to reach some of her applications be examined by a set of
 middleboxes for auditing and access controls. Another tenant may
 additionally desire (a subset of) her flows to be isolated from
 others' flows for strong security or QoS reasons. On top of this,
-cloud operators may need to satisfy resource constraints pertaining to
-link bandwidths and switch table sizes in order to perform traffic
-engineering and network resource management.
+cloud operators may need to optimize traffic engineering objectives
+like minimizing maximum load 
+and deal with heterogeneous resource demands like switch table 
+sizes. 
 
 Today, configuring network devices to implement these diverse
 and complex policies in aggregate is manual, ad-hoc, and error-prone. 
@@ -116,14 +117,9 @@ complex collections of policies.
 Unfortunately, due to the the large space of forwarding plane
 configurations, naively encoding policies using SMT solvers results in
 synthesis speeds that don't match the scale of operations of today's
-multitenant networks.
+multi-tenant networks.
 %enterprise networks today because the space of forwarding plane configurations
 %is huge. 
-For instance, synthesizing 
-rules that enforce simple
-reachability among switches in a 125 switch fat-tree topology can take
-several seconds. This raises the need for better search strategies.
-
 To this
 end, \Name leverages domain-specific properties to simplify the
 constraints handled by the SMT solver.  Specifically, \Name allows the
@@ -143,13 +139,14 @@ Tactics can improve the synthesis procedure and achieve
 %required to ensure the solution satisfies the tactic and achieve
 a 1.5$\times - $400$\times$ speedup. 
 
- Secondly, \Name can use a heuristic procedure termed as
- \emph{optimistic} synthesis, that leverages the structure of tenants'
+ Secondly, \Name can use a heuristic \emph{divide-and-conquer}
+ synthesis
+ procedure, that leverages the structure of tenants'
  isolation policy interactions to improve synthesis performance. The
- optimistic procedure partitions the input policies
+ heuristic procedure partitions the input policies
   into effective components to synthesize these
  components separately and faster than the complete problem (due to
- the exponential time complexity). Optimistic synthesis can halve the
+ the exponential time complexity). Divide-and-conquer synthesis can halve the
  synthesis time for 40\% of isolation workloads  
  which vary in size and complexity of isolation.
  %\aditya{is this statement correct? what is 40\% of scenarios?}

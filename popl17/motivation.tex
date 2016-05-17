@@ -118,15 +118,19 @@ benefit from a fine-grained control of network resources, to enforce
 strict guarantees, or optimize an objective like average utilization of the network
 links. Support for
 resource management integrated with tenant specifications is useful.
-For instance, to aid traffic engineering, the network
-operator may specify policies constraining the maximum number of
-tenant flows that can traverse a given link or sets of links in the
-network. She may also wish to ensure that traffic from some sensitive
-applications does not contend for bandwidth on constrained links with
-elastic traffic from batch applications. For example, in \Cref{fig:architecture},
-there are two low-bandwidth links in the datacenter, and the operator
-specifies policies to ensure that flows traversing $A2 \rightarrow C2$ 
-and $A2 \rightarrow C4$ do not exceed the link capacity of 100.
+For instance, the operator may want to minimize the max link utilization 
+of the network, or restrict traffic on certain links. For example, in \Cref{fig:architecture},
+the red links are low bandwidth, and the operator wants to ensure
+traffic on these links do not exceed the link capacity of 100.
+%For instance, to aid traffic engineering, the network
+%operator may specify policies constraining the maximum number of
+%tenant flows that can traverse a given link or sets of links in the
+%network. She may also wish to ensure that traffic from some sensitive
+%applications does not contend for bandwidth on constrained links with
+%elastic traffic from batch applications. For example, in \Cref{fig:architecture},
+%there are two low-bandwidth links in the datacenter, and the operator
+%specifies policies to ensure that flows traversing $A2 \rightarrow C2$ 
+%and $A2 \rightarrow C4$ do not exceed the link capacity of 100.
           %% capacity
           %% of certain links such that tenant flows using the link do
           %% not exceed the capacity of the link. Such policies can be
@@ -231,7 +235,7 @@ naturally aligns with such proactive policies.
 
 (2) Correct policy enforcement is challenging due to different
 objectives for each of the policies - ensuring isolation between flows
-may lead to overshooting capacity and vice-versa - and is a common
+may lead to overshooting traffic objectives and vice-versa - and is a common
 cause of incorrect configurations in networks.  Our approach removes
 the need for a verification step in which the operator has to
 ``check'' whether an attempted configuration meets the desired
@@ -252,8 +256,8 @@ NP-complete problem (proof has been omitted for brevity).
 %space of all forwarding plane configurations. 
 Many search techniques can be used to find the forwarding rules when
 handling a particular class of policies, but when multiple types of
-policies are combined (isolation, middlebox traversal, capacity
-constraints), devising good search techniques becomes challenging.
+policies are combined (isolation, middlebox traversal, traffic
+engineering), devising good search techniques becomes challenging.
 Thanks to the many engineering efforts, SMT solvers abstract away most
 of this complexity and allow us to unify the search objectives for
 every policy into a generalized search technique.
@@ -314,8 +318,8 @@ Second, we propose a heuristic procedure that takes advantage of the fact that i
 datacenter topologies the large
 interconnect of links can lead to multiple solutions 
 to enforce the provided policies.  
-We design a heuristic procedure called \emph{optimistic}
-synthesis (\Cref{sec:optimistic}) which leverages the structure of
+The divide-and-conquer
+synthesis approach(\Cref{sec:optimistic}) leverages the structure of
 isolation policy interactions among tenants to partition the input
 policies into components and synthesize these components separately and
 faster than the complete problem. To improve the effectiveness of the

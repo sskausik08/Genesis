@@ -14,12 +14,13 @@ is highly \emph{desirable}. By specifying linear optimization objectives over
 SMT formulas, \name can synthesize paths satisfying policies and minimizing
 a global traffic engineering objective. 
 
-To perform traffic engineering, link capacities of the network and traffic 
-rates of the packet classes are specified as input to \name. The utilization 
+To perform traffic engineering, link capacities of the network $C(sw_1, sw_2)$ and traffic 
+rates of the packet classes $T(pc)$ are specified as input to \name (we assume a single
+path for a packet class). The utilization 
 of a link $U(sw_1, sw_2)$ is defined as the ratio of total traffic flowing through the link to the 
 link capacity, and encoded in Z3 using the theory of rational linear arithmetic as:
 \begin{equation}
-U(sw_1, sw_2) = \frac{\sum_{\forall pc} IF(Fwd(sw_1,sw_2, pc), T(pc), 0)} {\omega}
+U(sw_1, sw_2) = \frac{\sum_{\forall pc} \text{IF}(Fwd(sw_1,sw_2, pc), T(pc), 0)} {C(sw_1, sw_2)}
 \end{equation}
 The TE objective of minimizing average link utilization is equivalent to minimizing
 the total link utilization (as average = total/constant). Thus, the minimization
@@ -34,7 +35,7 @@ individual link utilisations, and the objective:
 \forall sw_1, sw_2.\ \ maxU \geq U(sw_1, sw_2)
 \end{equation} 
 \begin{equation}
-		\text{minimize}\ maxU
+		\text{minimize}(maxU)
 \end{equation}
 While $maxU$ can be set to a large value trivially to satisfy \Cref{eq:maxu}
 , since the objective is to minimize $maxU$, it will be set to the actual
