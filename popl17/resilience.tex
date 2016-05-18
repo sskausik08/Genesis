@@ -44,23 +44,31 @@ paths share an edge. Choose this edge, and $t-1$ edges from remaining $t-1$ path
 thus, we have a $t$ link failure scenario which affects all paths. Therefore, the $t+1$ resilient
 paths have to be edge-disjoint.
 \begin{figure}
-	\includegraphics[width=0.8\columnwidth,center]{figures/resilience-transform.eps}
-	\compactcaption{Resilience Transformation for $pc_1 || \ pc_2$ for providing $1-resilience$. The dotted lines represent traffic isolation policies, while the solid lines represent link isolation.}
-	\label{fig:restransform}
+	\centering
+	\subfloat[Traffic Isolation]{\includegraphics[width=0.5\columnwidth]{figures/resilience.eps}}
+	\subfloat[Link Isolation]{\includegraphics[width=0.5\columnwidth]{figures/resilience-cex.eps}}
+	\caption{\label{fig:restransform}
+		(a) Resilience Transformation for $pc_1 || \ pc_2$ for providing $1-resilience$. 
+		The dotted lines represent traffic isolation policies, 
+		while the solid lines represent link isolation. (b) Example of a sufficient transformation
+		for 1-resilience in the case of a link-isolation policy.}
 \end{figure}
-To extend this transformation for isolation policies, consider two packet class $pc_1 ||\ pc_2$. 
+
+To extend this transformation for isolation (traffic and link) policies, consider two packet class $pc_1$ 
+and $pc_2$. 
 To provide $t-resilience$ to only $pc_1$, we apply the transformation to $pc_1$ as described
 earlier, and add isolation policies for all the $t+1$ packet classes of $pc_1$ to $pc_2$,
 thus ensuring that all paths of $pc_1$ are isolated to $pc_2$ under any arbitary $t$ link 
 failure scenario. For $t-resilience$ synthesis for both $pc_1$ and $pc_2$, the transformation
-is shown in \Cref{fig:restransform}.
+is shown in \Cref{fig:restransform}(a), where all packet classes of $pc_1$ and $pc_2$ have 
+isolation policies amongst them. 
 
-This transformation is sound, as all paths of $pc_1$ are isolated to all paths of $pc_2$,
+This transformation is sufficient for resilience, as all paths of $pc_1$ are isolated to all paths of $pc_2$,
 therefore, irrespective of whichever pair of paths are chosen for $pc_1$ and $pc_2$,
-they will satisfy $pc_1 || \ pc_2$.
-\kausik{Dont know about completeness!}
- However, this transformation is not complete (refer to 
-figure showing counter-ex). 
+they will satisfy the original isolation policy. 
+ However, this transformation is not necessary if the original policy for 
+ $pc_1$ and $pc_2$ is a link-isolation policy. \Cref{fig:restransform}(b) shows
+ the sufficient transformation required for resilience with link-isolation.
 
 We presented a sound transformation of policies to provide $t-resilience$ in
 the case of reachability, waypoint and isolation policies. However, for global policies like 
@@ -68,5 +76,6 @@ traffic engineering, $t-resilience$ synthesis is complicated as the $t$ backup p
 cannot be considered simply as different packet classes (they do not exist at the same time
 in the network),
 and thus cannot be considered in the optimization objective. Therefore, we require a 
-temporal notion of the objective (like average link utilization) across link failures. Synthesis of resilient paths
+temporal notion of the objective (like average link utilization) across link failures.
+ Synthesis of resilient paths
 satisfying traffic engineering objectives is one of the future directions of research.
