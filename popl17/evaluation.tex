@@ -7,7 +7,7 @@
 		Total synthesis time (log scale) for isolation workloads over range of packet classes and different tenant-group sizes.}
 \end{figure*}
 
-\section{Evaluation}
+\section{Evaluation} \label{sec:evaluation}
 
 \noindent {\bf \Name Prototype:} We have implemented a full working
 prototype of \Name in Python. We have implemented an interpreter for
@@ -42,8 +42,8 @@ Specifically, we ask:
 \item To what extent does the divide-and-conquer synthesis improve \Name's
   performance? When does it lead to degraded synthesis times? (\cref{sec:optimisticeval})
 
-\item What is the performance of Genesis with optimization objectives like traffic engineering
-and network repair? (\cref{sec:optimizationeval})
+\item What is the performance of \name for traffic engineering and network repair
+which makes use of SMT with linear optimization objectives, and MaxSMT?
 
 \end{compactitemize}
 %\loris{if you say this here don't write it in the bullet points}
@@ -280,21 +280,23 @@ with different optimization objectives like traffic engineering and network repa
  of rules, and try to find a new configuration from the old one with maximum number of switches
 unaffected, and the new configuration satisfies the original tenant isolation policies, and we can
 synthesize the new configuration in ~200 seconds. 
-\newline
-\noindent To summarize the key points of our evaluation are:
+\subsection{Summary}
+To summarize, the key points of our evaluation are:
 \begin{compactitemize}
 \item For a representative tenant-group size of 10 in a 80 switch
   fat-tree, the baseline synthesis performance for synthesizing the
   forwarding rules for 1 to 8 tenants with complete tenant-isolation
-  is in 0.1-2000s.
+  is in 0.1-2000s;
       \item Tactics provide considerable improvement over the
         baseline, making \Name practical.  We can synthesize the above
         workloads in 0.1-300s using the no edge tactic,
-        and under 12s using the valley-free routing tactic.
+        and under 12s using the valley-free routing tactic;
       \item \Name can effectively tackle real-world scenarios using
         optimistic synthesis, which provides a 2.0$\times$ speed-up
         over non-optimistic synthesis in 40\% of the workloads, in
-        addition to the tactic improvements.
+        addition to the tactic improvements;
+        \item Adding optimization objectives with SMT for TE and using
+        MaxSMT for network repair has high running times.
 \end{compactitemize}
 
 

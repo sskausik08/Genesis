@@ -47,7 +47,7 @@ We define the path-labelling function $\Phi : S^* \rightarrow Lb^*$,  which maps
 
 \subsection{Synthesis with Tactics}
 %We use regular expressions and finite automaton to prune the constraints and impose restrictions on the path. The natural way for operators to specify tactics are using \emph{blacklists}, which specify what the path should not be. To express this in a intuitive manner, we use regular expressions on the set of labels to specify blacklists. For example, to blacklist paths from a edge switch to edge switch to not go through another edge switch, we can describe the tactic as $\neg (e .^* e .^* e)$ where the label of all edge switches is $e$. Another tactic is of the form $\neg (e (.)^4 a c .* e)$ which specifies we have a path of length 4, we do not go in the direction towards the core (as to reach the edge, the path would have to then go downwards from the core). 
-Tactic are simple regular expressions over the set of labels and are used to blacklist certain path-patterns.
+Tactics are simple regular expressions over the set of labels and are used to blacklist certain path-patterns.
 Regular expressions have been previously used in tools like
 NetGen~\cite{netgen} to specify the paths for the packet class.
 While supporting full regular expressions is possible, it causes a blow-up in the solving time as further
@@ -69,8 +69,11 @@ C  &  :=  &  \varepsilon \mid l_1 \mid l_1 l_2\\
 where $l_i\in Lb$ and $l_{src}, l_{dst}$ are used to specify the labels of the source switch 
 and destination switch, respectively, of the packet classes to which we apply the tactic. 
 Since our goal is to black-list paths, we allow regular expressions to be negated at the outer level. 
-For example, $\neg (e .^i c .^* e)$ says that the path must not contain an core a switch at the $(i+1)^{th}$ step. 
-Similarly, $\neg (e .^i .^* e)$ says that the path connecting two edge switches should have a length $ < i + 1$. 
+\begin{example}
+ $\neg (e .^i c .^* e)$ says that the path must not contain an core a switch at the $(i+1)^{th}$ step. 
+ Similarly, $\neg (e .^i .^* e)$ says that the path connecting two edge switches should have a length $ < i + 1$. 
+\end{example}
+
 
 Let $\pi = sw_0\ldots sw_k$ be a path and 
 let its labeling be $\Phi(\pi)= a_0\ldots a_k$.
@@ -90,12 +93,19 @@ $\neg (e .^* e .^* e)\equiv \bigwedge \limits_{i=0}^{i=\mu-2} \neg (e .^i e .^* 
 In \Name, operators can specify conjunctions of tactics which adhere to the restricted syntax and the synthesis algorithm is modified to enforce the tactics. 
 Since tactics are path-related restrictions, operators can also apply tactics selectively to the paths for certain packet classes, and also different tactics for different classes. 
 
-\subsubsection{Tactic Synthesis Algorithm}
+\subsubsection{Modified Synthesis Algorithm}
 In our synthesis algorithm, the backward reachability propagation constraints (\Cref{eq:bckprop}) 
 construct the path from destination to source. We use tactics to prune these constraints, so that
 the path synthesized satisfies the tactic regular expression.  
-We describe the tactic synthesis algorithm
-for a path $\pi = sw_0 \ldots sw_k$ and labelling $\Phi(\pi) = a_0 \ldots a_k$. 
+\begin{mydef}
+	Given a tactic $R$, we define $\Psi_R$ as the additional SMT constraints used for 
+	synthesis. 
+\end{mydef}
+We describe the additional SMT constraints $\Psi_R$
+for a path $\pi = sw_0 \ldots sw_k$ and labelling $\Phi(\pi) = a_0 \ldots a_k$
+for each type of tactic. Note that $\Psi_R$ is presented as additional SMT 
+constraints only for clarity. The modified synthesis algorithm will provide 
+$\Psi - \Psi_R$ as input to the SMT solver. 
 %In the first
 %two cases, we remove some of the reachability constraints by adding negated unit clauses, 
 %while we modify these constraints for the next two cases.
@@ -103,18 +113,19 @@ for a path $\pi = sw_0 \ldots sw_k$ and labelling $\Phi(\pi) = a_0 \ldots a_k$.
 %\loris{this part needs revision. Every time you say we remove constraints, but it actually looks like you are adding extra constraints
 %of the form not(..)}
 
-For a tactic of the form $\neg (l_{src} .^i .^* l_{dst})$ which restricts the path to a length $ < i + 1$ we have: 
+\noindent\textbf{Type 1.} For a tactic $R$ of the form $\neg (l_{src} .^i .^* l_{dst})$ which restricts the path to a length $ < i + 1$:
 \begin{equation}
-	\pi \models \neg (l_{src} .^i .^* l_{dst}) \Leftrightarrow \forall sw,k \geq i + 1. (sw,pc,k) \notin Reach
+	\Psi_R = \forall sw,k \geq i + 1. (sw,pc,k) \notin Reach
 \end{equation}
 Thus, we can remove the reachability constraints  of \Cref{eq:bckprop} 
 for all the tuples $(sw,pc,k) \notin Reach$
 as they cannot contribute to any path satisfying the tactic.  
 
-Similarly, we can remove constraints for tactics
+\noindent\textbf{Type 2.} For a tactic $R$
 of the form $\neg (l_{src}  .^i l .^* l_{dst})$ :
 \begin{multline} \label{eq:t1}
-\pi \models \neg (l_{src} .^i l .^* l_{dst}) \Leftrightarrow \\ \forall sw.~ \phi(sw) = l ~\wedge~ sw \not= dst \implies  (sw, pc, i + 1) \notin Reach
+\Psi_R = \forall sw.~ \phi(sw) = l ~\wedge~ sw \not= dst \implies \\ 
+(sw, pc, i + 1) \notin Reach
 \end{multline}
 The tactic ensures that a switch with label $l$ cannot be reached in $i+1$
 steps, except if $l = l_{dst}$. In that case,
@@ -122,11 +133,11 @@ only the destination switch with label $l$ can be reached in $i+1$ steps as
 the path with labelling $l_{src}.^i l_{dst}$ satisfies the tactic. If $l \not= l_{dst}$, then
 all switches with label $l$ cannot be reached in $i+1$. For all tuples
 $(sw, pc, i+1) \notin Reach$, we can remove the reachability constraints of \Cref{eq:bckprop}.
-\newline
-For tactics of the form $\neg (l_{src}  .^i l_1 l_2 .^* l_{dst})$ : 
+
+
+\noindent\textbf{Type 3.} For a tactic $R$ of the form $\neg (l_{src}  .^i l_1 l_2 .^* l_{dst})$ : 
 \begin{multline} \label{eq:t3}
-\pi \models \neg (l_{src} .^i l_1 l_2 .^* l_{dst}) \Leftrightarrow \\ 
-\forall n_1, n_2.~\phi(n_1) = l_1~\wedge~ \phi(n_2) = l_2 ~\wedge~ n_2 \not=dst  \implies \\ 
+\Psi_R = \forall n_1, n_2.~\phi(n_1) = l_1~\wedge~ \phi(n_2) = l_2 ~\wedge~ n_2 \not=dst  \implies \\ 
 \neg (Reach(n_1, pc, i + 1) \wedge Fwd(n_1, n_2, pc))
 \end{multline}
 This tactic ensures that a switch with label $l_1$ at $i+1$ in the path
@@ -136,31 +147,27 @@ edges at position $i+1$ in the path for which $l_2$ is different from the destin
 
 %-> if a path is solution of modified constraint it satisfies regex
 %<- if a path is solution of original constraints and satisfies regex, then it's a possible solution of modified constraints.
-We now prove the soundness and completeness of the tactic synthesis algorithm. 
-A path $\pi$ of the packet class $pc$ will be of the form $src \ldots dst$ due to the original synthesis
-constraints. 
 \begin{theorem}[Soundness]
-	If the path $\pi$ for class $pc$ is a solution of the modified constraints, 
-	then it satisfies the tactic regular expression.
+	For a packet class $pc$, if the path $\pi \models \Psi \wedge \Psi_R$, then $\pi \models R$.
 \end{theorem}
 \begin{proof}
 The proof of this theorem is by contradiction for each type of tactic. \newline
-\textbf{Type 1}:\\ $\forall sw,k \geq i + 1. (sw,pc,k) \notin Reach \implies \pi \models \neg (l_{src} .^i .^* l_{dst}) $ \newline
-Let us assume that $\pi \models l_{src} .^i .^* l_{dst}$. \\
+\textbf{Type 1}: R = $\neg (l_{src} .^i .^* l_{dst})$ \\
+%$\forall sw,k \geq i + 1. (sw,pc,k) \notin Reach \implies \pi \models \neg (l_{src} .^i .^* l_{dst}) $ \newline
+\textbf{Assume  $\pi \not\models R$}.  $\pi \models l_{src} .^i .^* l_{dst}$. \\
 Thus, $\pi = src\ sw_1 \ldots sw_i \ldots dst$. \\
 Therefore,  $(dst, pc, k_{dst}) \in Reach, k_{dst} \geq i + 1$. \\
-However,
-The modified constraints for this type of tactic are $ \forall sw,k \geq i + 1. (sw,pc,k) \notin Reach$,
-which is a contradiction, as $\exists sw, k \geq i + 1. (sw,pc,k) \in Reach$.
+However, $\pi \models \Psi_R \Leftrightarrow \pi \models\forall sw,k \geq i + 1. (sw,pc,k) \notin Reach$.
+Contradiction, as $\exists sw, k \geq i + 1. (sw,pc,k) \in Reach$.
 \newline
  \newline
-\textbf{Type 2}: $(\forall sw.~ \phi(sw) = l ~\wedge~ sw \not= dst \implies  (sw, pc, i + 1) \notin Reach) \implies \pi \models \neg (l_{src} .^i \ l \ .^* l_{dst})$ \newline
-Let us assume that $\pi \models l_{src} .^i \ l \ .^* l_{dst}$. \\
+\textbf{Type 2}: $R = \neg (l_{src} .^i \ l \ .^* l_{dst})$ \newline
+\textbf{Assume  $\pi \not\models R$}. $\pi \models l_{src} .^i \ l \ .^* l_{dst}$. \\
 Thus, $\pi = src\ sw_1 \ldots sw_i \ sw_{i+1} \ldots dst$ such that $\phi(sw_{i+1}) = l$. Also $sw_{i+1} \not=dst$ (dst has to be the last switch in $\pi$)\\
 Therefore,  $(sw_{i+1}, pc, i+1) \in Reach$. \\
 However,
-The modified constraints for this type of tactic are $\forall sw.~ \phi(sw) = l ~\wedge~ sw \not= dst \implies  (sw, pc, i + 1) \notin Reach$,
-which is a contradiction, as $\exists sw. ~ \phi(sw) = l ~\wedge~ sw \not= dst \wedge (sw,pc,i+1) \in Reach$.
+$\pi \models \Psi_R \Leftrightarrow \pi \models\forall sw.~ \phi(sw) = l ~\wedge~ sw \not= dst \implies  (sw, pc, i + 1) \notin Reach$. \\
+Contradiction, as $\exists sw. ~ \phi(sw) = l ~\wedge~ sw \not= dst \wedge (sw,pc,i+1) \in Reach$.
  \newline \newline
 \textbf{Type 3}: $(\forall n_1, n_2.~\phi(n_1) = l_1~\wedge~ \phi(n_2) = l_2 ~\wedge~ n_2 \not=dst  \implies \\ 
 \neg (Reach(n_1, pc, i + 1) \wedge Fwd(n_1, n_2, pc)))\implies \pi \models \neg (l_{src} .^i \ l_1 \ l_2 \ .^* l_{dst})$ \newline
@@ -175,7 +182,7 @@ which is a contradiction, as $\exists n_1. n_2. ~\phi(n_1) = l_1~\wedge~ \phi(n_
 \end{proof}
 
 \begin{theorem}[Completeness]
-If a path $\pi$ is a solution of original constraints for class $pc$ and satisfies the tactic regular expression, then it is a possible solution of modified constraints.
+For a packet class $pc$, if the path $\pi \models \Psi ~\wedge~ \pi \models R$, then $\pi \models \Psi_R$ 
 \end{theorem}
 \begin{proof}
 The proof of this theorem is by contradiction for each type of tactic. \newline
