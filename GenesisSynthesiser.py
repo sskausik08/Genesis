@@ -32,8 +32,8 @@ class GenesisSynthesiser(object) :
 		#self.delta = Function('delta', IntSort(), IntSort(), IntSort())
 		self.pc = Int('pc') # Generic variable for packet classes
 		
-		self.z3Solver = Optimize()
-		# self.z3Solver.set(unsat_core=True)
+		self.z3Solver = Solver()
+		self.z3Solver.set(unsat_core=True)
 		#self.z3Solver = Optimize()
 		
 		# #self.z3Solver.set("sat.phase", "always-false")

@@ -40,6 +40,7 @@ class ZeppelinSynthesiser(object) :
 		# ILP
 		self.ilpSolver = gb.Model("C3")
 
+		self.routefilters = dict()
 		# Resilience 
 		self.t_res = 1
 
@@ -55,22 +56,22 @@ class ZeppelinSynthesiser(object) :
 		dsts = self.pdb.getDestinations()
 
 		for sw1 in range(1,swCount+1):
-			for sw2 in range(1,swCount+1):
-				self.edgeWeights[sw1][sw2] = self.ilpSolver.addVar(lb=1.00, ub=10000, vtype=gb.GRB.CONTINUOUS, name=str(sw1)+"-"+str(sw2))
+			for sw2 in self.topology.getSwitchNeighbours(sw1) :
+				self.edgeWeights[sw1][sw2] = self.ilpSolver.addVar(lb=1.00, ub=10000, vtype=gb.GRB.CONTINUOUS, name="E-" + str(sw1)+"-"+str(sw2) + " ")
 
 		for sw1 in range(1,swCount+1):
 			for sw2 in range(1, swCount + 1) :
 				# dst = 0 is the default value 
-				self.distVars[sw1][sw2][0] = self.ilpSolver.addVar(lb=0.00, vtype=gb.GRB.CONTINUOUS, name=str(sw1)+":"+str(sw2))
+				self.distVars[sw1][sw2][0] = self.ilpSolver.addVar(lb=0.00, vtype=gb.GRB.CONTINUOUS, name="D-" + str(sw1)+"-"+str(sw2) + " ")
 				
-				for dst in dsts : 
-					self.distVars[sw1][sw2][dst] = self.ilpSolver.addVar(lb=0.00,vtype=gb.GRB.CONTINUOUS, name=str(sw1)+":"+str(sw2)+"#"+str(dst))
+				# for dst in dsts : 
+				# 	self.distVars[sw1][sw2][dst] = self.ilpSolver.addVar(lb=0.00,vtype=gb.GRB.CONTINUOUS, name="D-" + str(sw1)+"-"+str(sw2)+"-"+str(dst) + " ")
 
 
-		for sw1 in range(1,swCount+1):
-			for sw2 in range(1,swCount+1):
-				for dst in dsts:
-					self.routefiltersVars[sw1][sw2][dst] = self.ilpSolver.addVar(lb=0.00, ub=1.00, vtype=gb.GRB.BINARY, name="RF" + "-" + str(sw1)+":"+str(sw2)+"#"+str(dst))
+		# for sw1 in range(1,swCount+1):
+		# 	for sw2 in range(1,swCount+1):
+		# 		for dst in dsts:
+		# 			self.routefiltersVars[sw1][sw2][dst] = self.ilpSolver.addVar(lb=0.00, ub=1.00, vtype=gb.GRB.BINARY, name="RF" + "-" + str(sw1)+":"+str(sw2)+"-"+str(dst))
 		
 
 		self.ilpSolver.update()
@@ -101,25 +102,16 @@ class ZeppelinSynthesiser(object) :
 		self.overlay = dict()
 		self.destinationDAGs = copy.deepcopy(dags)
 		self.endpoints = copy.deepcopy(endpoints)
+		self.routefilters = dict()
+		for dst in self.pdb.getDestinations() :
+			self.routefilters[dst] = []
+
 		swCount = self.topology.getSwitchCount()
 		dsts = self.pdb.getDestinations()
 
-		#self.detectDiamonds() # Detect diamonds for route-filters
-		self.initializeSMTVariables()
-
-		for sw in range(1, swCount + 1) :
-			self.overlay[sw] = []
-
-		for dst in dsts : 
-			dag = self.destinationDAGs[dst]
-			for sw1 in dag :
-				sw2 = dag[sw1] # Edge sw1 -> sw2
-				if sw2 <> None : 
-					if sw2 not in self.overlay[sw1] : 
-						self.overlay[sw1].append(sw2)
-
+		self.constructOverlay()		
 		self.disableUnusedEdges()
-		#self.generateRouteFilters()
+		self.initializeSMTVariables()
 
 		self.addDjikstraShortestPathConstraints()
 
@@ -133,8 +125,6 @@ class ZeppelinSynthesiser(object) :
 		solvetime = time.time()
 		#modelsat = self.z3Solver.check()
 		self.ilpSolver.optimize()
-		#self.ilpSolver.computeIIS()
-		#self.ilpSolver.write("model.ilp")
 		self.z3solveTime += time.time() - solvetime
 		print "Time taken is", time.time() - solvetime
 
@@ -145,20 +135,24 @@ class ZeppelinSynthesiser(object) :
 		if status == gb.GRB.INFEASIBLE :
 			# Model infeasible (or unbounded?). Use routefilters to solve.
 			self.routeFilterMode = True
-
+			self.detectDiamonds() # Detect diamonds for route-filters
+			#self.generateTrivialRouteFilters()
 			self.ilpSolver = gb.Model("C3")
 			self.initializeSMTVariables()
 
 			self.addDjikstraShortestPathConstraints()
+
+			# Prompted by Gurobi? 
+			self.ilpSolver.setParam(gb.GRB.Param.BarHomogeneous, 1) 
 
 			# Adding constraints with routeFilters
 			for dst in dsts : 
 				dag = self.destinationDAGs[dst]
 				self.addDestinationDAGConstraints(dst, dag, True)
 
-			# Add max-flow end point constraints
-			for endpt in self.endpoints : 
-				self.addMaxFlowConstraints(endpt[0], endpt[1], self.t_res)  # Add t-resilience
+			# # Add max-flow end point constraints
+			# for endpt in self.endpoints : 
+			# 	self.addMaxFlowConstraints(endpt[0], endpt[1], self.t_res)  # Add t-resilience
 
 
 			print "Solving ILP with routefilters"
@@ -166,6 +160,45 @@ class ZeppelinSynthesiser(object) :
 			#modelsat = self.z3Solver.check()
 			#self.ilpSolver.setParam(gb.GRB.Param.Method, 2)
 			self.ilpSolver.optimize()
+
+			status = self.ilpSolver.status
+
+			if status == gb.GRB.INFEASIBLE :
+				print "modifying dags to remove diamonds"
+				self.modifyDAGs()
+				self.constructOverlay()
+				self.topology.enableAllEdges()
+				self.disableUnusedEdges()
+				self.ilpSolver = gb.Model("C3")
+				self.initializeSMTVariables()
+
+				self.addDjikstraShortestPathConstraints()
+
+				# Prompted by Gurobi? 
+				self.ilpSolver.setParam(gb.GRB.Param.BarHomogeneous, 1) 
+
+				# Adding constraints with routeFilters
+				for dst in dsts : 
+					dag = self.destinationDAGs[dst]
+					self.addDestinationDAGConstraints(dst, dag, True)
+
+				self.ilpSolver.optimize()
+
+				status = self.ilpSolver.status
+
+				if status == gb.GRB.INFEASIBLE :
+					print "computing iis"
+					self.ilpSolver.computeIIS()
+					self.ilpSolver.write("iismodel.ilp")
+
+				# for constr in self.ilpSolver.getConstrs() :
+				# 	if constr.getAttr(gb.GRB.Attr.IISConstr) > 0 :
+				# 		print constr
+				# 		self.ilpSolver.remove(constr)
+
+				self.ilpSolver.optimize()
+				status = self.ilpSolver.status
+
 			#self.ilpSolver.computeIIS()
 			#self.ilpSolver.write("model.ilp")
 			self.z3solveTime += time.time() - solvetime
@@ -181,6 +214,20 @@ class ZeppelinSynthesiser(object) :
 		self.pdb.validateControlPlane(self.topology, self.routefilters, self.distances, self.t_res)
 		#self.topology.printWeights()
 		self.printProfilingStats()
+
+	def constructOverlay(self) :
+		dsts = self.pdb.getDestinations()
+		swCount = self.topology.getSwitchCount()
+		for sw in range(1, swCount + 1) :
+			self.overlay[sw] = []
+
+		for dst in dsts : 
+			dag = self.destinationDAGs[dst]
+			for sw1 in dag :
+				sw2 = dag[sw1] # Edge sw1 -> sw2
+				if sw2 <> None : 
+					if sw2 not in self.overlay[sw1] : 
+						self.overlay[sw1].append(sw2)
 
 	def disableUnusedEdges(self) : 
 		swCount = self.topology.getSwitchCount()
@@ -239,6 +286,8 @@ class ZeppelinSynthesiser(object) :
 		swCount = self.topology.getSwitchCount()
 		dsts = self.pdb.getDestinations()
 
+		constraintIndex = 0
+
 		#print "number of destinations", len(dsts)
 		for s in range(1, swCount + 1):
 			if self.topology.isSwitchDisabled(s) :
@@ -261,7 +310,8 @@ class ZeppelinSynthesiser(object) :
 					if self.topology.isSwitchDisabled(sw) : 
 						continue
 
-					self.ilpSolver.addConstr(self.dist(s, t) <= self.dist(s, sw) + self.dist(sw, t))	
+					self.ilpSolver.addConstr(self.dist(s, t) <= self.dist(s, sw) + self.dist(sw, t), "D-" + str(constraintIndex) + " ")	
+					constraintIndex += 1
 
 
 	# def addDestinationDAGConstraints(self, dst, dag) :
@@ -288,31 +338,45 @@ class ZeppelinSynthesiser(object) :
 	def addDestinationDAGConstraints(self, dst, dag, routeFilterMode=True) :
 		""" Adds constraints such that dag weights are what we want them to be with route filtering disabled/enabled """
 		
-		if routeFilterMode :
-			for sw in dag : 
-				t = dag[sw]
-				while t <> None :				
-					self.ilpSolver.addConstr(self.dist(sw, t, dst) == self.ew(sw, dag[sw]) + self.dist(dag[sw], t, dst))
-					
-					self.ilpSolver.addConstr(self.dist(sw, t) <= self.dist(sw, t, dst))
-
-					neighbours = self.topology.getSwitchNeighbours(sw)
-					for n in neighbours : 
-						if n <> dag[sw] : 
-							self.ilpSolver.addConstr(self.dist(sw, t, dst) <= self.ew(sw, n) + 100000*self.rf(sw,n,dst) + self.dist(n, t) - 1)
-						
-					t = dag[t]
-		else:
+		if not routeFilterMode :
 			for sw in dag : 
 				t = dag[sw]
 				while t <> None :				
 					self.ilpSolver.addConstr(self.dist(sw, t) == self.ew(sw, dag[sw]) + self.dist(dag[sw], t))
-					
+
 					neighbours = self.topology.getSwitchNeighbours(sw)
 					for n in neighbours : 
 						if n <> dag[sw] : 
 							self.ilpSolver.addConstr(self.dist(sw, t) <= self.ew(sw, n) + self.dist(n, t) - 1)
 						
+					t = dag[t]
+		else:
+			constraintIndex = 0
+			for sw in dag : 
+				filterPresent = self.filterPresent(sw, dst)
+
+				t = dag[sw]
+				while t <> None :			
+					# if not filterPresent : 	
+					# 	self.ilpSolver.addConstr(self.dist(sw, t) == self.ew(sw, dag[sw]) + self.dist(dag[sw], t), "C-" + str(dst) + "-" + str(constraintIndex))
+					# 	constraintIndex += 1
+					
+					
+					nextsw = sw
+					totalDist = 0 # Store the distance from sw to t along dag.
+					while nextsw <> t : 
+						totalDist += self.ew(nextsw, dag[nextsw])
+						nextsw = dag[nextsw]
+
+					self.ilpSolver.addConstr(self.dist(sw, t) <= totalDist)
+
+					# if [sw, t] in self.endpoints : 
+					neighbours = self.topology.getSwitchNeighbours(sw)
+					for n in neighbours : 
+						if n <> dag[sw] and [sw, n] not in self.routefilters[dst] : 
+							self.ilpSolver.addConstr(totalDist <= self.ew(sw, n) + self.dist(n, t) - 1, "C-" + str(dst) + "-" + str(constraintIndex))
+							constraintIndex += 1
+					
 					t = dag[t]			
 
 
@@ -352,31 +416,6 @@ class ZeppelinSynthesiser(object) :
 				self.ilpSolver.addConstr(self.rf(sw1, sw2, dst) + flowVar[sw1][sw2] <= 1)
 
 
-	# def minimiseRouteFilters(self) : 
-	# 	""" Add minimization objective for route filters """
-	# 	dsts = self.pdb.getDestinations()
-
-	# 	totalRouteFilters = 0
-	# 	routefiltersCount = 0
-	# 	for dst in dsts : 
-	# 		if not self.diamondsInDAG(dst) : continue
-
-	# 		# Diamonds in dag. minimize route filters
-	# 		dag = self.destinationDAGs[dst]
-	# 		for sw in dag : 
-	# 			if not self.isOnDiamond(dst, sw) : continue
-	# 			neighbours = self.overlay[sw]
-	# 			for n in neighbours : 
-	# 				if n <> dag[sw] : 
-	# 					totalRouteFilters += self.rf(sw,n,dst)
-	# 					routefiltersCount += 1
-
-	# 	# self.ilpSolver.setParam(gb.GRB.Param.MIPGapAbs, routefiltersCount/2)
-	# 	# self.ilpSolver.setParam(gb.GRB.Param.TimeLimit, 400)
-	# 	#self.ilpSolver.setParam(gb.GRB.Param.Method, 2)
-	# 	self.ilpSolver.setObjective(totalRouteFilters, gb.GRB.MINIMIZE)
-
-
 	def getEdgeWeightModel(self, routeFilterMode=True) : 
 		self.topology.initializeWeights()
 		swCount = self.topology.getSwitchCount()
@@ -395,18 +434,12 @@ class ZeppelinSynthesiser(object) :
 					# if [sw,n] in self.hiddenEdges : 
 					# 	ew = 1000
 					self.topology.addWeight(sw, n, float(ew))
-					print sw, n, float(ew)
 
-		# for s in range(1, swCount + 1) :
-		# 	for t in range(1, swCount + 1) :
-		# 		if s == t : continue
-		# 		self.distances[s][t] = self.dist(s,t).x
+		for s in range(1, swCount + 1) :
+			for t in range(1, swCount + 1) :
+				if s == t : continue
+				self.distances[s][t] = self.dist(s,t).x
 		# 		#print s,t, self.distances[s][t]
-
-		self.routefilters = dict()
-		# Initialize route filters to the empty set
-		for dst in dsts : 
-			self.routefilters[dst] = []
 
 		if not routeFilterMode :
 			# Route filters not used. 
@@ -422,218 +455,216 @@ class ZeppelinSynthesiser(object) :
 				for n in neighbours : 
 					if n <> dag[sw] : 
 						totalRouteFilters += 1
-						rf = self.rf(sw, n, dst).x
-						# if float(rf) > 0 :
-						# 	print "routefilter val", sw, n, dst, float(rf)
-						if float(rf) > 0 :
-							self.routefilters[dst].append([sw, n])
+						if [sw, n] in self.routefilters[dst] :
 							setRouteFilters += 1
 		
 		print "Ratio of routefilters : ", setRouteFilters, totalRouteFilters 
 
-	# def detectDiamonds(self, onlyDetect=False) :
-	# 	""" Detecting diamonds in the different dags. A diamond is 
-	# 	defined as a subgraph of the overlay where there are two paths from s to t
-	# 	such that the two paths belong to different destination Dags. This implies that
-	# 	there are two shortest paths from s to t which is not enforceable with route filtering """
-	# 	swCount = self.topology.getSwitchCount()
-	# 	dsts = self.pdb.getDestinations()
+	def detectDiamonds(self, onlyDetect=False) :
+		""" Detecting diamonds in the different dags. A diamond is 
+		defined as a subgraph of the overlay where there are two paths from s to t
+		such that the two paths belong to different destination Dags. This implies that
+		there are two shortest paths from s to t which is not enforceable with route filtering """
+		swCount = self.topology.getSwitchCount()
+		dsts = self.pdb.getDestinations()
 		
-	# 	if not onlyDetect : 
-	# 		self.dstDiamonds = dict()
-	# 		self.switchRanks = [[dict() for x in range(swCount + 1)] for x in range(swCount + 1)]
-	# 		self.diamondPaths = [[dict() for x in range(swCount + 1)] for x in range(swCount + 1)]
+		if not onlyDetect : 
+			self.dstDiamonds = dict()
+			self.switchRanks = [[dict() for x in range(swCount + 1)] for x in range(swCount + 1)]
+			self.diamondPaths = [[dict() for x in range(swCount + 1)] for x in range(swCount + 1)]
 			
-	# 		# Diamond dependencies
-	# 		self.dependencyFlag = dict()
-	# 		self.dependencyList = dict()
-	# 		self.subsets = dict()
-	# 		self.supersets = dict()
+			# Diamond dependencies
+			self.dependencyFlag = dict()
+			self.dependencyList = dict()
+			self.subsets = dict()
+			self.supersets = dict()
 			
-	# 		for dst in dsts : 
-	# 			self.dstDiamonds[dst] = []
+			for dst in dsts : 
+				self.dstDiamonds[dst] = []
 
 
-	# 	for dst1 in dsts :
-	# 		for dst2 in dsts : 
-	# 			if dst1 >= dst2 : continue 
-	# 			dag1 = self.destinationDAGs[dst1]
-	# 			dag2 = self.destinationDAGs[dst2]
+		for dst1 in dsts :
+			for dst2 in dsts : 
+				if dst1 >= dst2 : continue 
+				dag1 = self.destinationDAGs[dst1]
+				dag2 = self.destinationDAGs[dst2]
 
-	# 			for swDiv in dag1 : 
-	# 				if dag1[swDiv] == None : continue 
-	# 				# Detect a diamond
-	# 				if swDiv in dag2 : 
-	# 					if dag2[swDiv] == None : continue
-	# 					# swDiv in the dag. Check if both dags diverge
-	# 					if dag1[swDiv] <> dag2[swDiv] : 
-	# 						# Diverging common switches, search for intersecting switch
-	# 						dstpath1 = [dag1[swDiv]] 
-	# 						nextsw = dag1[dag1[swDiv]]
-	# 						while nextsw <> None:
-	# 							dstpath1.append(nextsw)
-	# 							nextsw = dag1[nextsw]
-	# 						dstpath2 = [dag2[swDiv]]
-	# 						nextsw = dag2[dag2[swDiv]]
-	# 						while nextsw <> None:
-	# 							dstpath2.append(nextsw)
-	# 							nextsw = dag2[nextsw]
-	# 						# dstpath1 and dstpath2 are paths from sw to their respective destinations
-	# 						# Find intersection
+				for swDiv in dag1 : 
+					if dag1[swDiv] == None : continue 
+					# Detect a diamond
+					if swDiv in dag2 : 
+						if dag2[swDiv] == None : continue
+						# swDiv in the dag. Check if both dags diverge
+						if dag1[swDiv] <> dag2[swDiv] : 
+							# Diverging common switches, search for intersecting switch
+							dstpath1 = [dag1[swDiv]] 
+							nextsw = dag1[dag1[swDiv]]
+							while nextsw <> None:
+								dstpath1.append(nextsw)
+								nextsw = dag1[nextsw]
+							dstpath2 = [dag2[swDiv]]
+							nextsw = dag2[dag2[swDiv]]
+							while nextsw <> None:
+								dstpath2.append(nextsw)
+								nextsw = dag2[nextsw]
+							# dstpath1 and dstpath2 are paths from sw to their respective destinations
+							# Find intersection
 
-	# 						for swConv in dstpath1 : 
-	# 							if swConv in dstpath2 : 
-	# 								# Intersection! This is the smallest diamond starting at sw
+							for swConv in dstpath1 : 
+								if swConv in dstpath2 : 
+									# Intersection! This is the smallest diamond starting at sw
 									
-	# 								# If diamond detection mode, return True, as Diamond as been detected
-	# 								if onlyDetect :
-	# 									print dst1, dst2, swDiv, swConv
- # 										return True
+									# If diamond detection mode, return True, as Diamond as been detected
+									if onlyDetect :
+										print dst1, dst2, swDiv, swConv
+ 										return True
 
-	# 								in1 = dstpath1.index(swConv)
-	# 								dstpath1 = dstpath1[:in1+1]
-	# 								dstpath1.insert(0, swDiv)
-	# 								in2 = dstpath2.index(swConv)
-	# 								dstpath2 = dstpath2[:in2+1]
-	# 								dstpath2.insert(0, swDiv)
+									in1 = dstpath1.index(swConv)
+									dstpath1 = dstpath1[:in1+1]
+									dstpath1.insert(0, swDiv)
+									in2 = dstpath2.index(swConv)
+									dstpath2 = dstpath2[:in2+1]
+									dstpath2.insert(0, swDiv)
 
-	# 								exists = False
-	# 								for dst in self.diamondPaths[swDiv][swConv] :
-	# 									if self.diamondPaths[swDiv][swConv][dst] == dstpath1 and dst <> dst1 :
-	# 										# dstpath1's diamond already exists, ignore. 
-	# 										exists = True
-	# 										break
-	# 								if not exists : 
-	# 									self.diamondPaths[swDiv][swConv][dst1] = dstpath1 
+									exists = False
+									for dst in self.diamondPaths[swDiv][swConv] :
+										if self.diamondPaths[swDiv][swConv][dst] == dstpath1 and dst <> dst1 :
+											# dstpath1's diamond already exists, ignore. 
+											exists = True
+											break
+									if not exists : 
+										self.diamondPaths[swDiv][swConv][dst1] = dstpath1 
 
-	# 								if dstpath1 not in self.dstDiamonds[dst1] : 
-	# 									self.dstDiamonds[dst1].append(dstpath1)
+									if dstpath1 not in self.dstDiamonds[dst1] : 
+										self.dstDiamonds[dst1].append(dstpath1)
 
-	# 								exists = False
-	# 								for dst in self.diamondPaths[swDiv][swConv] :
-	# 									if self.diamondPaths[swDiv][swConv][dst] == dstpath2 and dst <> dst2 :
-	# 										# dstpath1's diamond already exists, ignore. 
-	# 										exists = True
-	# 										break
+									exists = False
+									for dst in self.diamondPaths[swDiv][swConv] :
+										if self.diamondPaths[swDiv][swConv][dst] == dstpath2 and dst <> dst2 :
+											# dstpath1's diamond already exists, ignore. 
+											exists = True
+											break
 
-	# 								if not exists : 
-	# 									self.diamondPaths[swDiv][swConv][dst2] = dstpath2
+									if not exists : 
+										self.diamondPaths[swDiv][swConv][dst2] = dstpath2
 
-	# 								if dstpath2 not in self.dstDiamonds[dst2] : 
-	# 									self.dstDiamonds[dst2].append(dstpath2)
-	# 								break
+									if dstpath2 not in self.dstDiamonds[dst2] : 
+										self.dstDiamonds[dst2].append(dstpath2)
+									break
 
-	# 	if onlyDetect : 
-	# 		return False # If diamond was detected, then return value would be inside the loop itself
+		if onlyDetect : 
+			return False # If diamond was detected, then return value would be inside the loop itself
 
-	# 	# Assign ranks
-	# 	for dst in self.dstDiamonds : 
-	# 		diamondpaths = self.dstDiamonds[dst]
-	# 		for dpath1 in diamondpaths : 
-	# 			for dpath2 in diamondpaths : 
-	# 				if dpath1 == dpath2 : continue
-	# 				if len(dpath1) >= len(dpath2) : continue 
-	# 				# check if dpath1 completely in dpath2
-	# 				start = dpath1[0]
-	# 				end = dpath1[len(dpath1) - 1]
-	# 				if start in dpath2 and end in dpath2 : 
-	# 					# From this and condition 2 (dpath1 < dpath2), dpath1 is strict subpath of dpath2
-	# 					self.addDependency(dpath1, dpath2, dst)
+		print self.dstDiamonds
 
-	# 	totalRanks = 0
-	# 	for s in range(1, swCount + 1) : 
-	# 		for t in range(1, swCount + 1) : 
-	# 			totalRanks += len(self.diamondPaths[s][t])
+		# # Assign ranks
+		# for dst in self.dstDiamonds : 
+		# 	diamondpaths = self.dstDiamonds[dst]
+		# 	for dpath1 in diamondpaths : 
+		# 		for dpath2 in diamondpaths : 
+		# 			if dpath1 == dpath2 : continue
+		# 			if len(dpath1) >= len(dpath2) : continue 
+		# 			# check if dpath1 completely in dpath2
+		# 			start = dpath1[0]
+		# 			end = dpath1[len(dpath1) - 1]
+		# 			if start in dpath2 and end in dpath2 : 
+		# 				# From this and condition 2 (dpath1 < dpath2), dpath1 is strict subpath of dpath2
+		# 				self.addDependency(dpath1, dpath2, dst)
 
-	# 	print "Finding ranks"
-	# 	assignedRanks = 0
-	# 	while assignedRanks < totalRanks :
-	# 		# Find a suitable source-dst pair to assign ranks
-	# 		for s in range(1, swCount + 1) : 
-	# 			for t in range(1, swCount + 1) : 
-	# 				if len(self.diamondPaths[s][t]) > 0 and len(self.switchRanks[s][t]) <> len(self.diamondPaths[s][t]): 
-	# 					subsetOnlyEdges = []
-	# 					supersetOnlyEdges = []
-	# 					unConstrainedEdges = []
-	# 					assignedEdges = []
-	# 					diamonds = self.diamondPaths[s][t]
-	# 					for dst in diamonds : 
-	# 						path = diamonds[dst]
-	# 						if self.isUnconstrained(path, dst) : 
-	# 							unConstrainedEdges.append(path[1])
-	# 						elif self.isSubsetOnly(path, dst) : 
-	# 							subsetOnlyEdges.append(path[1])
-	# 						elif path[1] in self.switchRanks[s][t] : 
-	# 							assignedEdges.append(path[1])
-	# 						elif self.isSupersetOnly(path, dst) : 
-	# 							supersetOnlyEdges.append(path[1])
+		# totalRanks = 0
+		# for s in range(1, swCount + 1) : 
+		# 	for t in range(1, swCount + 1) : 
+		# 		totalRanks += len(self.diamondPaths[s][t])
+
+		# print "Finding ranks"
+		# assignedRanks = 0
+		# while assignedRanks < totalRanks :
+		# 	# Find a suitable source-dst pair to assign ranks
+		# 	for s in range(1, swCount + 1) : 
+		# 		for t in range(1, swCount + 1) : 
+		# 			if len(self.diamondPaths[s][t]) > 0 and len(self.switchRanks[s][t]) <> len(self.diamondPaths[s][t]): 
+		# 				subsetOnlyEdges = []
+		# 				supersetOnlyEdges = []
+		# 				unConstrainedEdges = []
+		# 				assignedEdges = []
+		# 				diamonds = self.diamondPaths[s][t]
+		# 				for dst in diamonds : 
+		# 					path = diamonds[dst]
+		# 					if self.isUnconstrained(path, dst) : 
+		# 						unConstrainedEdges.append(path[1])
+		# 					elif self.isSubsetOnly(path, dst) : 
+		# 						subsetOnlyEdges.append(path[1])
+		# 					elif path[1] in self.switchRanks[s][t] : 
+		# 						assignedEdges.append(path[1])
+		# 					elif self.isSupersetOnly(path, dst) : 
+		# 						supersetOnlyEdges.append(path[1])
 							
-	# 					#print s,t, subsetOnlyEdges, supersetOnlyEdges, unConstrainedEdges, assignedEdges
-	# 					#print diamonds, self.switchRanks[s][t], len(self.switchRanks[s][t]), len(self.diamondPaths[s][t])
+		# 				#print s,t, subsetOnlyEdges, supersetOnlyEdges, unConstrainedEdges, assignedEdges
+		# 				#print diamonds, self.switchRanks[s][t], len(self.switchRanks[s][t]), len(self.diamondPaths[s][t])
 
-	# 					if len(subsetOnlyEdges) + len(unConstrainedEdges) + len(assignedEdges) == len(diamonds) : 
-	# 						# Largest Diamond. Set Ranks at will
-	# 						if len(assignedEdges) > 1 : 
-	# 							print "Not possible, error"
-	# 							exit(0)
-	# 						elif len(assignedEdges) == 1 : 
-	# 							currRank = 2
-	# 						else : 
-	# 							currRank = 1
-	# 						for n in unConstrainedEdges :
-	# 							self.switchRanks[s][t][n] = currRank
-	# 							currRank += 1
-	# 							assignedRanks += 1
-	# 						for n in subsetOnlyEdges : 
-	# 							self.switchRanks[s][t][n] = currRank
-	# 							if currRank == 1 : 
-	# 								# Need to make sure the subset paths are set to 1
-	# 								for dst in diamonds : 
-	# 									path = diamonds[dst]
-	# 									if path[1] == n : 
-	# 										dependencies = self.getDependencies(path, dst)
-	# 										for dpath in dependencies : 
-	# 											if dpath[1] not in self.switchRanks[dpath[0]][dpath[len(dpath) - 1]] : 
-	# 												self.switchRanks[dpath[0]][dpath[len(dpath) - 1]][dpath[1]] = 1 # Cannot be lower ranked 
-	# 												assignedRanks += 1
-	# 											elif dpath[1] in self.switchRanks[dpath[0]][dpath[len(dpath) - 1]] : 
-	# 												if self.switchRanks[dpath[0]][dpath[len(dpath) - 1]][dpath[1]] > 1 : 
-	# 													print "Violation of invariant!" 
-	# 													exit(0)
-	# 							if currRank > 1 : 
-	# 								# Can remove dependencies of smaller paths
-	# 								for dst in diamonds : 
-	# 									path = diamonds[dst]
-	# 									if path[1] == n : 
-	# 										self.removeDependencies(path, dst)
-	# 							currRank += 1
-	# 							assignedRanks += 1	
-	# 					if len(supersetOnlyEdges) + len(unConstrainedEdges) + len(subsetOnlyEdges) == len(diamonds) and len(supersetOnlyEdges) == 1 :
-	# 						# Set the superset Edge to rank 1 (no contradtictions)
-	# 						currRank = 1
-	# 						for n in supersetOnlyEdges : 
-	# 							self.switchRanks[s][t][n] = currRank 
-	# 							assignedRanks += 1
-	# 							currRank += 1
-	# 							for dst in diamonds : 
-	# 								path = diamonds[dst]
-	# 								if path[1] == n : 
-	# 									self.removeDependencies(path, dst)
-	# 						for n in subsetOnlyEdges : 
-	# 							self.switchRanks[s][t][n] = currRank 
-	# 							assignedRanks += 1
-	# 							currRank += 1
-	# 							for dst in diamonds : 
-	# 								path = diamonds[dst]
-	# 								if path[1] == n : 
-	# 									self.removeDependencies(path, dst)
-	# 						for n in unConstrainedEdges :
-	# 							self.switchRanks[s][t][n] = currRank
-	# 							currRank += 1
-	# 							assignedRanks += 1
+		# 				if len(subsetOnlyEdges) + len(unConstrainedEdges) + len(assignedEdges) == len(diamonds) : 
+		# 					# Largest Diamond. Set Ranks at will
+		# 					if len(assignedEdges) > 1 : 
+		# 						print "Not possible, error"
+		# 						exit(0)
+		# 					elif len(assignedEdges) == 1 : 
+		# 						currRank = 2
+		# 					else : 
+		# 						currRank = 1
+		# 					for n in unConstrainedEdges :
+		# 						self.switchRanks[s][t][n] = currRank
+		# 						currRank += 1
+		# 						assignedRanks += 1
+		# 					for n in subsetOnlyEdges : 
+		# 						self.switchRanks[s][t][n] = currRank
+		# 						if currRank == 1 : 
+		# 							# Need to make sure the subset paths are set to 1
+		# 							for dst in diamonds : 
+		# 								path = diamonds[dst]
+		# 								if path[1] == n : 
+		# 									dependencies = self.getDependencies(path, dst)
+		# 									for dpath in dependencies : 
+		# 										if dpath[1] not in self.switchRanks[dpath[0]][dpath[len(dpath) - 1]] : 
+		# 											self.switchRanks[dpath[0]][dpath[len(dpath) - 1]][dpath[1]] = 1 # Cannot be lower ranked 
+		# 											assignedRanks += 1
+		# 										elif dpath[1] in self.switchRanks[dpath[0]][dpath[len(dpath) - 1]] : 
+		# 											if self.switchRanks[dpath[0]][dpath[len(dpath) - 1]][dpath[1]] > 1 : 
+		# 												print "Violation of invariant!" 
+		# 												exit(0)
+		# 						if currRank > 1 : 
+		# 							# Can remove dependencies of smaller paths
+		# 							for dst in diamonds : 
+		# 								path = diamonds[dst]
+		# 								if path[1] == n : 
+		# 									self.removeDependencies(path, dst)
+		# 						currRank += 1
+		# 						assignedRanks += 1	
+		# 				if len(supersetOnlyEdges) + len(unConstrainedEdges) + len(subsetOnlyEdges) == len(diamonds) and len(supersetOnlyEdges) == 1 :
+		# 					# Set the superset Edge to rank 1 (no contradtictions)
+		# 					currRank = 1
+		# 					for n in supersetOnlyEdges : 
+		# 						self.switchRanks[s][t][n] = currRank 
+		# 						assignedRanks += 1
+		# 						currRank += 1
+		# 						for dst in diamonds : 
+		# 							path = diamonds[dst]
+		# 							if path[1] == n : 
+		# 								self.removeDependencies(path, dst)
+		# 					for n in subsetOnlyEdges : 
+		# 						self.switchRanks[s][t][n] = currRank 
+		# 						assignedRanks += 1
+		# 						currRank += 1
+		# 						for dst in diamonds : 
+		# 							path = diamonds[dst]
+		# 							if path[1] == n : 
+		# 								self.removeDependencies(path, dst)
+		# 					for n in unConstrainedEdges :
+		# 						self.switchRanks[s][t][n] = currRank
+		# 						currRank += 1
+		# 						assignedRanks += 1
 
-	# 	# Generate Route Filters
-	# 	self.generateRouteFilters()
+		# Generate Route Filters
+		self.generateRouteFilters()
 	
 	# def diamondsInDAG(self, dst) :
 	# 	""" returns if there are diamonds in the dag"""
@@ -927,53 +958,100 @@ class ZeppelinSynthesiser(object) :
 	# 		if rank == 1 : 
 	# 			return path
 
-	# def generateRouteFilters(self) :
-	# 	""" Generate the complete set of routefilters """
+	def generateRouteFilters(self) :
+		""" Generate the set of routefilters from diamonds"""
 
-	# 	swCount = self.topology.getSwitchCount()
-	# 	dsts = self.pdb.getDestinations()
+		swCount = self.topology.getSwitchCount()
+		dsts = self.pdb.getDestinations()
 
-	# 	# Rerouting process generates route filters for diamond paths. 
-	# 	# However, to ensure the path in the dag is followed, we need
-	# 	# to ensure it is the shortest path among the other paths.  
-	# 	for s in range(1, swCount + 1) :
-	# 		for t in range(1, swCount + 1) : 
-	# 			if len(self.diamondPaths[s][t]) > 0 : 
-	# 				diamonds = self.diamondPaths[s][t]
-	# 				for dst1 in diamonds : 
-	# 					path1 = diamonds[dst1]
+		# Rerouting process generates route filters for diamond paths. 
+		# However, to ensure the path in the dag is followed, we need
+		# to ensure it is the shortest path among the other paths.  
+		for s in range(1, swCount + 1) :
+			for t in range(1, swCount + 1) : 
+				if len(self.diamondPaths[s][t]) > 0 : 
+					diamonds = self.diamondPaths[s][t]
+					for dst1 in diamonds : 
+						path1 = diamonds[dst1]
 
-	# 					# Find other destinations sharing this path in the diamond
-	# 					filterDsts = []
-	# 					for dst in dsts : 
-	# 						if path1 in self.dstDiamonds[dst] : 
-	# 							filterDsts.append(dst)
+						# Find other destinations sharing this path in the diamond
+						filterDsts = []
+						for dst in dsts : 
+							if path1 in self.dstDiamonds[dst] : 
+								filterDsts.append(dst)
 
 						
-	# 					for dst in filterDsts : 
-	# 						# Disable other diamond paths
-	# 						for nextsw in self.switchRanks[s][t] :
+						for dst in filterDsts : 
+							""" Disable other diamond paths """
+							for diamond in diamonds.values() :
+								nextsw = diamond[1]
 
-	# 							# add s-path2[1] to dst1's route filter
-	# 							if [s, nextsw] not in self.routefilters[dst] and nextsw <> path1[1] : 
-	# 								self.routefilters[dst].append([s, nextsw])
+								# add s-nextsw to dst's route filters
+								if [s, nextsw] not in self.routefilters[dst] and nextsw <> path1[1] : 
+									self.routefilters[dst].append([s, nextsw])
 							
 							
-	# 						# dag = self.destinationDAGs[dst]
-	# 						# # Disable all edges in other diamond paths
-	# 						# for dst2 in diamonds : 
-	# 						# 	path2 = diamonds[dst2]
-	# 						# 	if path1 <> path2 : 
-	# 						# 		#print dst, path1, path2
-	# 						# 		for i in range(len(path2) - 1) :
-	# 						# 			if [path2[i], path2[i+1]] not in self.routefilters[dst] :
-	# 						# 				if path2[i] in dag and dag[path2[i]] == path2[i+1] : 
-	# 						# 					continue  
-	# 						# 				self.routefilters[dst].append([path2[i], path2[i+1]])
+							# dag = self.destinationDAGs[dst]
+							# # Disable all edges in other diamond paths
+							# for dst2 in diamonds : 
+							# 	path2 = diamonds[dst2]
+							# 	if path1 <> path2 : 
+							# 		#print dst, path1, path2
+							# 		for i in range(len(path2) - 1) :
+							# 			if [path2[i], path2[i+1]] not in self.routefilters[dst] :
+							# 				if path2[i] in dag and dag[path2[i]] == path2[i+1] : 
+							# 					continue  
+							# 				self.routefilters[dst].append([path2[i], path2[i+1]])
 	
 
-	# 	print self.routefilters
+		print self.routefilters
 	# 	print self.dstDiamonds
+
+	def filterPresent(self, sw, dst) :
+		""" Returns true if some filter present on switch sw for dst"""
+		routefilters = self.routefilters[dst]
+		for rf in routefilters : 
+			if rf[0] == sw : 
+				return True
+		return False
+
+	def generateTrivialRouteFilters(self) :
+		""" Generates trivial route filters """
+		dsts = self.pdb.getDestinations()
+		for dst in dsts : 
+			dag = self.destinationDAGs[dst]
+			for sw in dag : 
+				for n in self.topology.getSwitchNeighbours(sw) :
+					if n <> dag[sw] and [sw, n] not in self.routefilters[dst] : 
+						self.routefilters[dst].append([sw,n])
+
+	def modifyDAGs(self) :
+		self.origialDestinationDAGs = copy.deepcopy(self.destinationDAGs)
+		
+		swCount = self.topology.getSwitchCount()
+		dsts = self.pdb.getDestinations()
+
+		# Rerouting process generates route filters for diamond paths. 
+		# However, to ensure the path in the dag is followed, we need
+		# to ensure it is the shortest path among the other paths.  
+		for s in range(1, swCount + 1) :
+			for t in range(1, swCount + 1) : 
+				if len(self.diamondPaths[s][t]) > 0 : 
+					diamonds = self.diamondPaths[s][t]
+					for dst1 in diamonds : 
+						path1 = diamonds[dst1]
+
+						# Find other destinations sharing this path in the diamond
+						filterDsts = []
+						for dst in dsts : 
+							if path1 in self.dstDiamonds[dst] : 
+								filterDsts.append(dst)
+
+						
+						for dst in filterDsts : 
+							""" Disable the diamond path """
+							dag = self.destinationDAGs[dst]
+							dag[s] = None 
 
 	# def findRouteFilters(self) : 
 	# 	""" Generate the rest of the route filters """ 
