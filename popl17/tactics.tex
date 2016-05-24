@@ -150,61 +150,11 @@ edges at position $i+1$ in the path for which $l_2$ is different from the destin
 \begin{theorem}[Soundness]
 	For a packet class $pc$, if the path $\pi \models \Psi \wedge \Psi_R$, then $\pi \models R$.
 \end{theorem}
-\begin{proof}
-The proof of this theorem is by contradiction for each type of tactic. \newline
-\textbf{Type 1}: R = $\neg (l_{src} .^i .^* l_{dst})$ \\
-%$\forall sw,k \geq i + 1. (sw,pc,k) \notin Reach \implies \pi \models \neg (l_{src} .^i .^* l_{dst}) $ \newline
-\textbf{Assume  $\pi \not\models R$}.  $\pi \models l_{src} .^i .^* l_{dst}$. \\
-Thus, $\pi = src\ sw_1 \ldots sw_i \ldots dst$. \\
-Therefore,  $(dst, pc, k_{dst}) \in Reach, k_{dst} \geq i + 1$. \\
-However, $\pi \models \Psi_R \Leftrightarrow \pi \models\forall sw,k \geq i + 1. (sw,pc,k) \notin Reach$.
-Contradiction, as $\exists sw, k \geq i + 1. (sw,pc,k) \in Reach$.
-\newline
- \newline
-\textbf{Type 2}: $R = \neg (l_{src} .^i \ l \ .^* l_{dst})$ \newline
-\textbf{Assume  $\pi \not\models R$}. $\pi \models l_{src} .^i \ l \ .^* l_{dst}$. \\
-Thus, $\pi = src\ sw_1 \ldots sw_i \ sw_{i+1} \ldots dst$ such that $\phi(sw_{i+1}) = l$. Also $sw_{i+1} \not=dst$ (dst has to be the last switch in $\pi$)\\
-Therefore,  $(sw_{i+1}, pc, i+1) \in Reach$. \\
-However,
-$\pi \models \Psi_R \Leftrightarrow \pi \models\forall sw.~ \phi(sw) = l ~\wedge~ sw \not= dst \implies  (sw, pc, i + 1) \notin Reach$. \\
-Contradiction, as $\exists sw. ~ \phi(sw) = l ~\wedge~ sw \not= dst \wedge (sw,pc,i+1) \in Reach$.
- \newline \newline
-\textbf{Type 3}: $R = \neg (l_{src} .^i \ l_1 \ l_2 \ .^* l_{dst})$ \newline
-\textbf{Assume  $\pi \not\models R$}. $\pi \models l_{src} .^i \ l_1 \ l_2 \ .^* l_{dst}$. \\
-Thus, $\pi = src\ sw_1 \ldots sw_i \ sw_{i+1} \ sw_{i+2} \ldots dst$ such that $\phi(sw_{i+1}) = l_1, \phi(sw_{i+2}) = l_2$. Also $sw_{i+2} \not=dst$ (dst has to be the last switch in $\pi$)\\
-Therefore,  $(sw_{i+1}, pc, i+1) \in Reach \wedge (sw_{i+1}, sw_{i+2}, pc) \in Fwd$. \\
-However,
-$\pi \models \Psi_R \Leftrightarrow \pi \models \forall n_1, n_2.~\phi(n_1) = l_1~\wedge~ \phi(n_2) = l_2 ~\wedge~ n_2 \not=dst  \implies 
-\neg (Reach(n_1, pc, i + 1) \wedge Fwd(n_1, n_2, pc))$. \\
-Contradiction, as $\exists n_1. n_2. ~\phi(n_1) = l_1~\wedge~ \phi(n_2) = l_2 ~\wedge~ n_2 \not=dst \wedge Reach(n_1, pc, i + 1) \wedge Fwd(n_1, n_2, pc)$. 
-\end{proof}
 
 \begin{theorem}[Completeness]
 For a packet class $pc$, if the path $\pi \models \Psi ~\wedge~ \pi \models R$, then $\pi \models \Psi_R$.
 \end{theorem}
-\begin{proof}
-The proof of this theorem is by contradiction for each type of tactic. \newline
-\textbf{Type 1}: $R = \neg (l_{src} .^i .^* l_{dst})$ \newline
-\textbf{Assume  $\pi \not\models \Psi_R$}. $\pi \not\models \forall sw,k \geq i + 1. (sw,pc,k) \notin Reach$ \newline
-Therefore $\exists sw, k \geq i + 1. (sw,pc,k) \in Reach$. \\
-Therefore, $\pi \models l_{src}\ .^i \ .^* \ \phi(sw) \ .^* \ l_{dst} \implies \pi \models l_{src} .^i .^* l_{dst}$
-Contradiction, as $\pi \models R$.
- \newline 
-  \newline 
- \textbf{Type 2}: $R = \neg (l_{src} .^i \ l \ .^* l_{dst})$ \newline
- \textbf{Assume  $\pi \not\models \Psi_R$}.  $\pi \not\models\forall sw.~ \phi(sw) = l ~\wedge~ sw \not= dst \implies  (sw, pc, i + 1) \notin Reach$. \\
- Therefore $\exists sw. \ sw \not= dst \ \wedge \ \phi(sw) = l \ \wedge \ (sw,pc,i+1) \in Reach$. \\
- Therefore, $\pi \models l_{src}\ .^i \ l \ .^* \ l_{dst}$. \\
- Contradiction, as $\pi \models R$. 
-  \newline  
-  \newline
-  \textbf{Type 3}: $R = \neg (l_{src} .^i \ l_1 \ l_2 \ .^* l_{dst})$ \newline
- \textbf{Assume  $\pi \not\models \Psi_R$}.  $\pi \not\models \forall n_1, n_2.~\phi(n_1) = l_1~\wedge~ \phi(n_2) = l_2 ~\wedge~ n_2 \not=dst  \implies 
- \neg (Reach(n_1, pc, i + 1) \wedge Fwd(n_1, n_2, pc))$. 
-   Therefore $\exists n_1, n_2. ~\phi(n_1) = l_1~\wedge~ \phi(n_2) = l_2 ~\wedge~ n_2 \not=dst ~\wedge~ Reach(n_1, pc, i + 1) ~\wedge~ Fwd(n_1, n_2, pc)$. \\
-   Therefore, $\pi \models l_{src}\ .^i \ l_1~l_2 \ .^* \ l_{dst}$. \\
-   Contradiction, as $\pi \models R$.
-\end{proof}
+
 
 The intuition behind the restricted tactic syntax comes from the structure of the backward reachability propagation 
 constraints which construct the path for a packet class. Each constraint says that if a switch is reachable in $k$ steps in a path,

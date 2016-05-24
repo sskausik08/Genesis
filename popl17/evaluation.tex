@@ -146,10 +146,9 @@ unordered or waypoint sets of sizes 1 and 2.
 \begin{table}
 \begin{footnotesize}
 	\begin{center}
-		\begin{tabular}{||P{6em} | P{7em} ||} 
-			\hline
+		\begin{tabular}{P{6em} | P{7em}} 
 			Number of Waypoints & Avg. Synthesis time per Class (s) \\ [0.5ex] 
-			\hline\hline
+			\hline
 			1 & 0.0347\\ [0.5ex] 
 			\hline
 			2 & 0.1384\\ [0.5ex] 
@@ -159,7 +158,6 @@ unordered or waypoint sets of sizes 1 and 2.
 			4 & 15.41\\ [0.5ex] 
 			\hline
 			5 & 32.93\\ [0.5ex] 
-			\hline
 		\end{tabular}
 	\end{center}
 	\caption{Average synthesis time per class for waypoint policies with increasing number of waypoints } \label{tab:waypointeval} 
@@ -247,18 +245,16 @@ or without the divide-and-conquer approach.
 \begin{table}
 	\begin{footnotesize}
 		\begin{center}
-			\begin{tabular}{||P{7em} | P{13em} | P{4em} ||} 
-				\hline
+			\begin{tabular}{P{7em} | P{13em} | P{4em}} 
 				Workload Type & Description & Synthesis Time (s) \\ [0.5ex] 
-				\hline \hline \hline
-				minimize-avg-te & 100 packet classes & 425 \\ [0.5ex]
 				\hline 
-				minimize-avg-te & 200 packet classes & 2002 \\ [0.5ex]
+				\multirow{2}{*}{minimize-avg-te}& 100 packet classes & 425 \\ [0.5ex]
+				 & 200 packet classes & 2002 \\ [0.5ex]
 				\hline
-				minimize-max-te & 50 packet classes & 4192 \\ [0.5ex]
+					\multirow{2}{*}{minimize-max-te} & 50 packet classes & 4192 \\ [0.5ex]
+					& ? packet classes & ? \\ [0.5ex]
 				\hline
 				Network repair & 8 tenants, group size 10, tenant-isolation, one switch failure & 219 \\ [0.5ex]
-				\hline
 			\end{tabular}
 		\end{center}
 		\caption{Synthesis times for workloads on a 80-node fat-tree topology with different optimization objectives} \label{tab:optimizeval} 
