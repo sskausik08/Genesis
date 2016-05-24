@@ -23,12 +23,6 @@ class ZeppelinSynthesiser(object) :
 		# Route Filters
 		self.DISABLE_ROUTE_FILTERS = True
 
-		# Constraint Variables
-		self.fwdRulesMap = dict()
-
-		#SMT String file
-		self.TO_SMT = True
-
 		# Profiling Information.
 		self.z3constraintTime = 0 # Time taken to create the constraints.
 		self.z3addTime = 0 # Time taken to add the constraints.
@@ -41,8 +35,9 @@ class ZeppelinSynthesiser(object) :
 		self.ilpSolver = gb.Model("C3")
 
 		self.routefilters = dict()
+		
 		# Resilience 
-		self.t_res = 1
+		self.t_res = 2
 
 
 	def initializeSMTVariables(self) :
@@ -50,24 +45,31 @@ class ZeppelinSynthesiser(object) :
 
 		self.edgeWeights = [[0 for x in range(swCount + 1)] for x in range(swCount + 1)]
 		self.distVars = [[[0 for x in range(swCount + 1)] for x in range(swCount + 1)] for x in range(swCount + 1)] 
-		self.routefiltersVars = [[[0 for x in range(swCount+1)] for x in range(swCount + 1)] for x in range(swCount + 1)]
+		self.routefiltersVars = defaultdict(lambda:defaultdict(lambda:defaultdict(lambda:None)))
 		self.maxFlowVars = defaultdict(lambda:defaultdict(lambda:None))
 
 		dsts = self.pdb.getDestinations()
 
+		totVar = 0
 		for sw1 in range(1,swCount+1):
 			for sw2 in self.topology.getSwitchNeighbours(sw1) :
 				self.edgeWeights[sw1][sw2] = self.ilpSolver.addVar(lb=1.00, ub=10000, vtype=gb.GRB.CONTINUOUS, name="E-" + str(sw1)+"-"+str(sw2) + " ")
+				totVar += 1
 
 		for sw1 in range(1,swCount+1):
 			for sw2 in range(1, swCount + 1) :
 				# dst = 0 is the default value 
 				self.distVars[sw1][sw2][0] = self.ilpSolver.addVar(lb=0.00, vtype=gb.GRB.CONTINUOUS, name="D-" + str(sw1)+"-"+str(sw2) + " ")
-				
+				totVar += 1
 				# for dst in dsts : 
 				# 	self.distVars[sw1][sw2][dst] = self.ilpSolver.addVar(lb=0.00,vtype=gb.GRB.CONTINUOUS, name="D-" + str(sw1)+"-"+str(sw2)+"-"+str(dst) + " ")
 
+		for endpt in self.endpoints : 
+			for sw2 in self.topology.getSwitchNeighbours(endpt[0]) : 
+				self.routefiltersVars[endpt[0]][sw2][endpt[1]] = self.ilpSolver.addVar(lb=0.00, ub=1.00, vtype=gb.GRB.BINARY, name="RF" + "-" + str(endpt[0])+"-"+str(sw2)+"-"+str(endpt[1]))
+				totVar += 1
 
+		print "Total variables", totVar
 		# for sw1 in range(1,swCount+1):
 		# 	for sw2 in range(1,swCount+1):
 		# 		for dst in dsts:
@@ -85,6 +87,8 @@ class ZeppelinSynthesiser(object) :
 
 	def rf(self, sw1, sw2, dst) :
 		neighbours = self.topology.getSwitchNeighbours(sw1)
+		if [sw1, dst] not in self.endpoints : 
+			raise LookupError("Non existent Route Filter variable referred!")
 		if sw2 not in neighbours : 
 			raise LookupError("Route Filter for non-neighbours referred!")
 		else : 
@@ -132,39 +136,39 @@ class ZeppelinSynthesiser(object) :
 
 		status = self.ilpSolver.status
 
-		if status == gb.GRB.INFEASIBLE :
-			# Model infeasible (or unbounded?). Use routefilters to solve.
-			self.routeFilterMode = True
-			self.detectDiamonds() # Detect diamonds for route-filters
-			#self.generateTrivialRouteFilters()
-			self.ilpSolver = gb.Model("C3")
-			self.initializeSMTVariables()
+		# if status == gb.GRB.INFEASIBLE :
+		# 	# Model infeasible (or unbounded?). Use routefilters to solve.
+		# 	self.routeFilterMode = True
+		# 	self.detectDiamonds() # Detect diamonds for route-filters
+		# 	#self.generateTrivialRouteFilters()
+		# 	self.ilpSolver = gb.Model("C3")
+		# 	self.initializeSMTVariables()
 
-			self.addDjikstraShortestPathConstraints()
+		# 	self.addDjikstraShortestPathConstraints()
 
-			# Prompted by Gurobi? 
-			self.ilpSolver.setParam(gb.GRB.Param.BarHomogeneous, 1) 
+		# 	# Prompted by Gurobi? 
+		# 	self.ilpSolver.setParam(gb.GRB.Param.BarHomogeneous, 1) 
 
-			# Adding constraints with routeFilters
-			for dst in dsts : 
-				dag = self.destinationDAGs[dst]
-				self.addDestinationDAGConstraints(dst, dag, True)
+		# 	# Adding constraints with routeFilters
+		# 	for dst in dsts : 
+		# 		dag = self.destinationDAGs[dst]
+		# 		self.addDestinationDAGConstraints(dst, dag, True)
 
-			# # Add max-flow end point constraints
-			# for endpt in self.endpoints : 
-			# 	self.addMaxFlowConstraints(endpt[0], endpt[1], self.t_res)  # Add t-resilience
+		# 	# # Add max-flow end point constraints
 
 
-			print "Solving ILP with routefilters"
-			solvetime = time.time()
-			#modelsat = self.z3Solver.check()
-			#self.ilpSolver.setParam(gb.GRB.Param.Method, 2)
-			self.ilpSolver.optimize()
+		# 	print "Solving ILP with routefilters"
+		# 	solvetime = time.time()
+		# 	#modelsat = self.z3Solver.check()
+		# 	#self.ilpSolver.setParam(gb.GRB.Param.Method, 2)
+		# 	self.ilpSolver.optimize()
 
-			status = self.ilpSolver.status
-
+		# 	status = self.ilpSolver.status
+		if True: 
 			if status == gb.GRB.INFEASIBLE :
-				print "modifying dags to remove diamonds"
+				print "computing Source diamonds"
+				self.routeFilterMode = True
+				self.detectDiamonds()
 				self.generateResilientRouteFilters()
 				self.ilpSolver = gb.Model("C3")
 				self.initializeSMTVariables()
@@ -173,20 +177,23 @@ class ZeppelinSynthesiser(object) :
 
 				# Prompted by Gurobi? 
 				self.ilpSolver.setParam(gb.GRB.Param.BarHomogeneous, 1) 
+				self.ilpSolver.setParam(gb.GRB.Param.Method, 2) 
 
-				# Adding constraints with routeFilters
+				# Adding constraints with routeFilter variables at source
 				for dst in dsts : 
 					dag = self.destinationDAGs[dst]
-					self.addDestinationDAGConstraints(dst, dag, True)
+					self.addDestinationDAGConstraintsRF(dst, dag)
 
+				if self.t_res > 0 :
+					t_res = self.t_res
+					for endpt in self.endpoints : 
+						self.addResilienceConstraints(endpt[0], endpt[1], t_res)  # Add t-resilience
+
+				solvetime = time.time()
 				self.ilpSolver.optimize()
+				self.z3solveTime += time.time() - solvetime
 
 				status = self.ilpSolver.status
-
-				if status == gb.GRB.INFEASIBLE :
-					print "computing iis"
-					self.ilpSolver.computeIIS()
-					self.ilpSolver.write("iismodel.ilp")
 
 				# for constr in self.ilpSolver.getConstrs() :
 				# 	if constr.getAttr(gb.GRB.Attr.IISConstr) > 0 :
@@ -208,6 +215,7 @@ class ZeppelinSynthesiser(object) :
 		self.getEdgeWeightModel(self.routeFilterMode)		
 
 		#self.pdb.printPaths(self.topology)
+		print "Checking for t-resilience", self.t_res
 		self.pdb.validateControlPlane(self.topology, self.routefilters, self.distances, self.t_res)
 		#self.topology.printWeights()
 		self.printProfilingStats()
@@ -376,41 +384,91 @@ class ZeppelinSynthesiser(object) :
 					
 					t = dag[t]			
 
+	def addDestinationDAGConstraintsRF(self, dst, dag) :
+		""" Adds constraints such that dag weights are what we want them to be with route filtering disabled/enabled """
+		
+		constraintIndex = 0
+		for sw in dag : 
+			t = dag[sw]
+			while t <> None :			
+				nextsw = sw
+				totalDist = 0 # Store the distance from sw to t along dag.
+				while nextsw <> t : 
+					totalDist += self.ew(nextsw, dag[nextsw])
+					nextsw = dag[nextsw]
 
-	def addMaxFlowConstraints(self, src, dst, t_res) :
-		swCount = self.topology.getSwitchCount()
+				self.ilpSolver.addConstr(self.dist(sw, t) <= totalDist)
 
-		#self.maxFlowVars[src][dst] = self.ilpSolver.addVar(vtype=gb.GRB.CONTINUOUS, name="MaxF" + "-" + str(src)+":"+str(dst))
+				if [sw, dst] in self.endpoints : 
+					# Route filtering equations
+					neighbours = self.topology.getSwitchNeighbours(sw)
+					for n in neighbours : 
+						if n <> dag[sw] : 
+							self.ilpSolver.addConstr(totalDist <= 100000*self.rf(sw,n,dst) + self.ew(sw, n) + self.dist(n, t) - 1, "C-" + str(dst) + "-" + str(constraintIndex))
+							constraintIndex += 1
+				
+				t = dag[t]			
 
-		flowVar = defaultdict(lambda:defaultdict(lambda:None))
-		for sw1 in range(1, swCount + 1) :
-			for sw2 in self.topology.getAllSwitchNeighbours(sw1) :
-				flowVar[sw1][sw2] = self.ilpSolver.addVar(lb=0.00, ub=1.00, vtype=gb.GRB.CONTINUOUS, name="F" + "-" + str(sw1)+":"+str(sw2))
 
-		self.ilpSolver.update()
+	# def addMaxFlowConstraints(self, src, dst, t_res) :
+	# 	swCount = self.topology.getSwitchCount()
 
-		for sw1 in range(1, swCount + 1) :
-			inFlow = 0
-			outFlow = 0
-			for sw2 in self.topology.getAllSwitchNeighbours(sw1) :
-				inFlow += flowVar[sw2][sw1]
-				outFlow += flowVar[sw1][sw2]
+	# 	#self.maxFlowVars[src][dst] = self.ilpSolver.addVar(vtype=gb.GRB.CONTINUOUS, name="MaxF" + "-" + str(src)+":"+str(dst))
 
-			if sw1 == src : 
-				#self.ilpSolver.addConstr(outFlow - inFlow == self.maxFlowVars[src][dst])
-				self.ilpSolver.addConstr(outFlow - inFlow == t_res + 1)
-			elif sw1 == dst : 
-				self.ilpSolver.addConstr(inFlow - outFlow == t_res + 1)
-			else :
-				self.ilpSolver.addConstr(outFlow - inFlow == 0)				
+	# 	flowVar = defaultdict(lambda:defaultdict(lambda:None))
+	# 	for sw1 in range(1, swCount + 1) :
+	# 		for sw2 in self.topology.getAllSwitchNeighbours(sw1) :
+	# 			flowVar[sw1][sw2] = self.ilpSolver.addVar(lb=0.00, ub=1.00, vtype=gb.GRB.CONTINUOUS, name="F" + "-" + str(sw1)+":"+str(sw2))
 
-		# Add resilience constraint.
-		#self.ilpSolver.addConstr(self.maxFlowVars[src][dst] >= t_res + 1)
+	# 	self.ilpSolver.update()
 
-		# Add route filter semantic constraints
-		for sw1 in range(1, swCount + 1) :
-			for sw2 in self.topology.getSwitchNeighbours(sw1) : 
-				self.ilpSolver.addConstr(self.rf(sw1, sw2, dst) + flowVar[sw1][sw2] <= 1)
+	# 	for sw1 in range(1, swCount + 1) :
+	# 		inFlow = 0
+	# 		outFlow = 0
+	# 		for sw2 in self.topology.getAllSwitchNeighbours(sw1) :
+	# 			inFlow += flowVar[sw2][sw1]
+	# 			outFlow += flowVar[sw1][sw2]
+
+	# 		if sw1 == src : 
+	# 			#self.ilpSolver.addConstr(outFlow - inFlow == self.maxFlowVars[src][dst])
+	# 			self.ilpSolver.addConstr(outFlow - inFlow == t_res + 1)
+	# 		elif sw1 == dst : 
+	# 			self.ilpSolver.addConstr(inFlow - outFlow == t_res + 1)
+	# 		else :
+	# 			self.ilpSolver.addConstr(outFlow - inFlow == 0)				
+
+	# 	# Add resilience constraint.
+	# 	#self.ilpSolver.addConstr(self.maxFlowVars[src][dst] >= t_res + 1)
+
+	# 	# Add route filter semantic constraints
+	# 	for sw1 in range(1, swCount + 1) :
+	# 		for sw2 in self.topology.getSwitchNeighbours(sw1) : 
+	# 			self.ilpSolver.addConstr(self.rf(sw1, sw2, dst) + flowVar[sw1][sw2] <= 1)
+
+	def addResilienceConstraints(self, src, dst, t_res) :
+		""" Ensure that the route-filters at source do not reduce resilience"""
+		dag = self.destinationDAGs[dst]
+		rfs = 0
+		allNeighbours =  self.topology.getAllSwitchNeighbours(src)
+		neighbours =  self.topology.getSwitchNeighbours(src) 
+
+		if len(neighbours) == 1 : 
+			if len(allNeighbours) < t_res + 1 : 
+				print "Flow from ", src, " to ", dst, " cannot be ", t_res," resilient."
+			return # Resilient
+
+		t_res = t_res - (len(allNeighbours) - len(neighbours)) # Unused paths
+		if t_res <= 0 : 
+			return # Resilient
+
+		for n in neighbours :
+			print n, dag[src]
+			if n <> dag[src] :
+				print self.rf(src,n,dst) 
+				rfs += self.rf(src, n, dst)
+		
+		self.ilpSolver.addConstr(rfs <= len(neighbours) - (t_res + 1)) 
+
 
 
 	def getEdgeWeightModel(self, routeFilterMode=True) : 
@@ -452,9 +510,14 @@ class ZeppelinSynthesiser(object) :
 				for n in neighbours : 
 					if n <> dag[sw] : 
 						totalRouteFilters += 1
-						if [sw, n] in self.routefilters[dst] :
-							setRouteFilters += 1
+					if [sw,dst] in self.endpoints :
+						rf = self.rf(sw,n,dst).x
+						if rf > 0 and n <> dag[sw]:
+							if [sw, n] not in self.routefilters[dst] :
+								self.routefilters[dst].append([sw,n])
 		
+		for dst in dsts : 
+			setRouteFilters += len(self.routefilters[dst])
 		print "Ratio of routefilters : ", setRouteFilters, totalRouteFilters 
 
 	def detectDiamonds(self, onlyDetect=False) :
@@ -1029,6 +1092,7 @@ class ZeppelinSynthesiser(object) :
 		for dst in dsts : 
 			dag = self.destinationDAGs[dst]
 			for sw in dag : 
+				if sw == dst : continue
 				if [sw, dst] not in self.endpoints : 
 					for n in self.topology.getSwitchNeighbours(sw) :
 						if n <> dag[sw] and [sw, n] not in self.routefilters[dst] : 
