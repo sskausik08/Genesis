@@ -165,10 +165,7 @@ class ZeppelinSynthesiser(object) :
 
 			if status == gb.GRB.INFEASIBLE :
 				print "modifying dags to remove diamonds"
-				self.modifyDAGs()
-				self.constructOverlay()
-				self.topology.enableAllEdges()
-				self.disableUnusedEdges()
+				self.generateResilientRouteFilters()
 				self.ilpSolver = gb.Model("C3")
 				self.initializeSMTVariables()
 
@@ -196,8 +193,8 @@ class ZeppelinSynthesiser(object) :
 				# 		print constr
 				# 		self.ilpSolver.remove(constr)
 
-				self.ilpSolver.optimize()
-				status = self.ilpSolver.status
+				# self.ilpSolver.optimize()
+				# status = self.ilpSolver.status
 
 			#self.ilpSolver.computeIIS()
 			#self.ilpSolver.write("model.ilp")
@@ -557,6 +554,9 @@ class ZeppelinSynthesiser(object) :
 
 		print self.dstDiamonds
 
+		# Generate Route Filters
+		self.generateRouteFilters()
+
 		# # Assign ranks
 		# for dst in self.dstDiamonds : 
 		# 	diamondpaths = self.dstDiamonds[dst]
@@ -663,8 +663,6 @@ class ZeppelinSynthesiser(object) :
 		# 						currRank += 1
 		# 						assignedRanks += 1
 
-		# Generate Route Filters
-		self.generateRouteFilters()
 	
 	# def diamondsInDAG(self, dst) :
 	# 	""" returns if there are diamonds in the dag"""
@@ -1024,6 +1022,18 @@ class ZeppelinSynthesiser(object) :
 				for n in self.topology.getSwitchNeighbours(sw) :
 					if n <> dag[sw] and [sw, n] not in self.routefilters[dst] : 
 						self.routefilters[dst].append([sw,n])
+
+	def generateResilientRouteFilters(self) :
+		""" Only source routefilters will affect resilience: Edge disjointedness"""
+		dsts = self.pdb.getDestinations()
+		for dst in dsts : 
+			dag = self.destinationDAGs[dst]
+			for sw in dag : 
+				if [sw, dst] not in self.endpoints : 
+					for n in self.topology.getSwitchNeighbours(sw) :
+						if n <> dag[sw] and [sw, n] not in self.routefilters[dst] : 
+							self.routefilters[dst].append([sw,n])
+
 
 	def modifyDAGs(self) :
 		self.origialDestinationDAGs = copy.deepcopy(self.destinationDAGs)
