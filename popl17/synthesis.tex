@@ -190,14 +190,14 @@ For a link capacity policy on the link $sw_1 \rightarrow sw_2: \omega$, we use t
 each of packet classes, and the constraints must ensure that the traffic rate of $sw_1 \rightarrow sw_2$
 does not exceed $\omega$ :
 \begin{equation}
- \sum_{\forall pc} \text{IF}(Fwd(sw_1,sw_2, pc), T(pc), 0) \leq \omega 
+ \sum_{\forall pc} \texttt{ite}(Fwd(sw_1,sw_2, pc), T(pc), 0) \leq \omega 
 \end{equation}
 To enforce a switch table policy $sw : \gamma$ which specifies that the number of forwarding 
 rules on $sw$ must not exceed $\gamma$. Similar to the link capacity policy,
 the constraints need to ensure the count of all packet classes which traverse $sw$ (will require 
 a forwarding rule) is in the specified bound:
 \begin{equation}
-\sum_{\forall pc} \text{IF}(~\exists k. Reach(sw,pc,k), 1, 0)  \leq \gamma
+\sum_{\forall pc} \texttt{ite}(~\exists k. Reach(sw,pc,k), 1, 0)  \leq \gamma
 \end{equation}
 
 %In terms of our model, the link capacity policy translates to constraints that

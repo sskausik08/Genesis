@@ -23,16 +23,42 @@ policy violations.
 	$t$ link failures, there exists a synthesized path for the packet class which
 	satisfies the input policies. 
 \end{mydef}
-
-We leverage link-isolation where paths do not share a link in both directions 
-(different from traffic isolation)
- as a means to provide $t-resilience$ for a packet class. For a 
-packet class $pc$, we create $t$ replicas of the reachability policy with waypoints (if specified)
-to create a total of $t+1$ packet classes. For resilience, we add link-isolation policies among each
-of these packet classes so that we get $t+1$ edge disjoint paths from source to destination
-(passing through waypoints, if specified). Thus, in the event of arbitary $t$ link failures, the 
-controller can choose one of the $t+1$ paths unaffected by the link failures as the primary
-path for the packet class. 
+\begin{algorithm}[h]
+	\begin{footnotesize}
+		\caption{Resilience Transformation}
+		\label{restransform}
+		\begin{algorithmic}[1]
+			\State{[Input] $PC$: Packet classes (Reachability/Waypoint policies)}
+			\State{[Input] $I$: Isolation policies (Traffic and Link types)}
+			\State{[Input] $t$: Maximum number of arbitary link failures}
+			\State{[Output] $PC^R, I^R$: Transformed set of policies such that the synthesized data
+				plane is $t-resilient$}
+			\vspace*{0.25cm}
+			\State{$PC^R, I^R \leftarrow \emptyset$}
+			\For{$pc:\{src_{pc},dst_{pc},W_{pc}\} \in PC$} 
+			\State{// Create $t+1$ edge-disjoint paths of $pc$}
+			\State{$\hat{pc} = \{rc_1, rc_2, \ldots rc_{t+1}$\} s.t $\forall m. \ rc_m: \{src_{pc},dst_{pc},W_{pc}\}$}
+			\State{$PC^R = PC^R \cup \hat{pc}$} 
+			\State{$I_{pc} = \{rc_m <> rc_n\ |\ \forall m,n \leq t+1 \wedge m < n\}$} 
+			\State{$I^R = I^R \cup I_{pc}$}
+			\EndFor
+			\For{$i: pc_m <op> pc_n \in I$} 
+			\State{$\hat{i} = \{ rc_1 <op> rc_2\ | \ \forall rc_1 \in \hat{pc_m}, \forall rc_2 \in \hat{pc_n} \}$} 
+			\State{$I^R = I^R \cup \hat{i} $}
+			\EndFor \\
+			\Return{$PC^R, I^R$}
+		\end{algorithmic}
+	\end{footnotesize}
+\end{algorithm}
+%We leverage link-isolation where paths do not share a link in both directions 
+%(different from traffic isolation)
+% as a means to provide $t-resilience$ for a packet class. For a 
+%packet class $pc$, we create $t$ replicas of the reachability policy with waypoints (if specified)
+%to create a total of $t+1$ packet classes. For resilience, we add link-isolation policies among each
+%of these packet classes so that we get $t+1$ edge disjoint paths from source to destination
+%(passing through waypoints, if specified). Thus, in the event of arbitary $t$ link failures, the 
+%controller can choose one of the $t+1$ paths unaffected by the link failures as the primary
+%path for the packet class. 
 
 This transformation is sound and complete. The proof sketch for soundness
  is as follows: suppose a $t$ link failure
@@ -53,6 +79,8 @@ paths have to be edge-disjoint.
 		while the solid lines represent link isolation. (b) Example of a sufficient transformation
 		for 1-resilience in the case of a link-isolation policy.}
 \end{figure}
+
+
 
 To extend this transformation for isolation (traffic and link) policies, consider two packet class $pc_1$ 
 and $pc_2$. 

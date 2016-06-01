@@ -17,13 +17,13 @@ path for a packet class). The utilization
 of a link $U(sw_1, sw_2)$ is defined as the ratio of total traffic flowing through the link to the 
 link capacity, and encoded in Z3 using the theory of rational linear arithmetic as:
 \begin{equation}
-U(sw_1, sw_2) = \frac{\sum_{\forall pc} \text{IF}(Fwd(sw_1,sw_2, pc), T(pc), 0)} {C(sw_1, sw_2)}
+U(sw_1, sw_2) = \frac{\sum_{\forall pc} \texttt{ite}(Fwd(sw_1,sw_2, pc), T(pc), 0)} {C(sw_1, sw_2)}
 \end{equation}
 The TE objective of minimizing average link utilization is equivalent to minimizing
 the total link utilization (as average = total/constant). Thus, the minimization
 objective is:
 \begin{equation}
-	\text{minimize}\ \sum_{\forall sw_1, sw_2} U(sw_1, sw_2)
+	\texttt{minimize}\ \sum_{\forall sw_1, sw_2} U(sw_1, sw_2)
 \end{equation}
 To encode the TE objective of minimizing the maximum link utilization, we define
 a variable $maxU$, and constraints to ensure that $maxU$ is greater than or equal to all 
@@ -32,7 +32,7 @@ individual link utilisations, and the objective:
 \forall sw_1, sw_2.\ \ maxU \geq U(sw_1, sw_2)
 \end{equation} 
 \begin{equation}
-		\text{minimize}(maxU)
+		\texttt{minimize}\ maxU
 \end{equation}
 While $maxU$ can be set to a large value trivially to satisfy \Cref{eq:maxu}
 , since the objective is to minimize $maxU$, it will be set to the actual
