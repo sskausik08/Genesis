@@ -17,11 +17,36 @@ by synthesizing backup paths which satisfy the input policies, such that the SDN
 can choose an alternate path in the scenario of a link/switch failure with no
 policy violations.
 
+%\begin{mydef}
+%	$t-resilience$ synthesis for a packet class is defined as the
+%	synthesis of paths such that in the event of upto arbitary
+%	$t$ link failures, there exists a synthesized path for the packet class which
+%	satisfies the input policies. 
+%\end{mydef}
 \begin{mydef}
-	$t-resilience$ synthesis for a packet class is defined as the
-	synthesis of paths such that in the event of upto arbitary
-	$t$ link failures, there exists a synthesized path for the packet class which
-	satisfies the input policies. 
+Given the physical topology $T=(S,L)$, a link-failure
+scenario $\theta = \{l_1, l_2 \ldots ... l_n\},\ \forall i.\ l_i \in L$ 
+denotes the set of links failed. 
+\end{mydef}
+\begin{mydef}
+	We define $\Theta(t)$ as the set of all failure scenarios where not more than $t$
+	arbitary links fail, i.e $\Theta(t) = \{ \ \theta \ \ | \ \ |\theta| \leq t\}$
+\end{mydef}
+\begin{mydef}
+	We define
+	the projected topology $T^{\theta} = (S, L - \theta)$ as the active
+	physical topology under the failure scenario $\theta$.  
+\end{mydef}
+\noindent We construct a data plane graph $\xi = (S, L_{pc})$ for packet class from the set
+of paths obtained from the synthesis algorithm. 
+\begin{mydef}
+	A data plane $\xi = (S, L_{pc})$ for class $pc$ over a projected topology $T^\theta$ 
+	is resilient if the graph $(S, L_{pc} - \theta)$ has a path from $src$ to $dst$ 
+	for the packet class. 
+\end{mydef}
+\begin{mydef}
+	A data plane $\xi = (S, L_{pc})$ for class $pc$ is $t-resilient$ if and only if $\xi$ is 
+	resilient over projected topologies $T^\theta,\ \forall \theta \in \Theta(t)$.
 \end{mydef}
 \begin{algorithm}[h]
 	\begin{footnotesize}
