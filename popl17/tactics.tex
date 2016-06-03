@@ -56,7 +56,7 @@ constraints need to be added to the solver to ensure that the path satisfies the
 Instead, using the notion of switch labels, we use regular expressions to provide high-level path properties as a {\em search strategy} rather than a policy requirement. Instead of specifying how the path must look like, we can use regular expressions on switch labels to specify \emph{blacklists}--i.e.,
 what the path must \emph{not} look like. A tactic, for example, can blacklist paths from an edge switch to an edge switch that go through another edge switch. 
 %\loris{we need a plot for the full regex thing to compare with Madhu, it would be great to repeat some of their experiments}
- 
+ \kausik{Star-free language?}
 \subsubsection{Restricted tactic syntax} 
 For specifying tactics, we identified a restricted set of regular expressions
  that not only do not require extra constraints to be added,
@@ -164,15 +164,18 @@ constraints which construct the path for a packet class. Each constraint says th
   constraints on neighbours using $\neg (l_1  .^i c_1 c_2 .^* l_2)$.  
   
   Conversely, the structure of backward reachability propagation constraints 
-  prevents us from being able to specify unrestricted regular expressions. Supporting them
-  requires additional constraints to our algorithm which leads to increased synthesis times. 
-  Take the following regular expression for example, $\neg(e .^i a c a .*e)$. To enforce
-  these tactics, we need to have constraints which prevent the path reaching a aggregate switch in $i+3$
+  prevents us from being able to specify unrestricted regular expressions. 
+  \begin{example}
+  Consider a tactic $\neg(e .^i a c a .*e)$. To enforce
+  this tactic, we need to have constraints which prevent the path reaching a aggregate switch in $i+3$
   steps when the path traverses an aggregate and core switch at $i+1$ and $i+2$ steps
   respectively. This cannot be specified by modifying the backward reachability propagation 
   constraints in its current form, 
   because the constraints for reachability for a switch in $i + 3$ steps only depends on 
-  the constraints for reachability in $i+2$ steps. Thus, we only support a restricted tactic syntax.   
+  the constraints for reachability in $i+2$ steps. 
+   \end{example}
+   Supporting arbitary regular expressions
+   requires additional constraints to our synthesis algorithm which leads to increased synthesis times. Thus, we only support a restricted tactic syntax.   
 
  Since tactics artificially reduce the search space, the synthesis algorithm with tactics is incomplete (a solution satisfying the tactic may not exist). 
  In practice, tactics can be used to specify restrictions which would be not reduce the search space dramatically, 

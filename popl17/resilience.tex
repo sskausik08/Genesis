@@ -1,22 +1,26 @@
 \section{Policy-compliant Resiliency}
 Datacenter networks are highly prone to failures, 
 and it is crucial to ensure certain guarantees during such failure
-situations. For example, if the operator want to guarantee
-reachability amongst endpoints, the controller has to find a active
-path in the network to re-establish reachability. However
-satisfying tenant SLAs like isolation after a failure occurs
+situations. For example, if the operator wants to guarantee
+reachability amongst endpoints, the controller only has to find a active
+path in the network to re-establish reachability. 
+However, for satisfying tenant SLAs like isolation after a failure occurs,
+operators can use network repair present in the earlier section to
+transition to a policy-compliant configuration, but this
 can be prohibitively time-consuming due to the higher complexity
 of enforcing policies. 
 Thus, we propose a \emph{proactive} approach 
-to \emph{policy-compliant resiliency} to tackle network failures
+of \emph{policy-compliant resiliency} to tackle network failures
 by synthesizing resilient data planes such that in the event
-of certain failures, there exists a path for each class which satisfies
-all input policies. 
+of bounded number of failures, the data plane would consist of a 
+path which does not violate input policies. This eliminates the 
+need of \name to resynthesize the forwarding
+configuration for every network failure event.
 
 In the section, we describe the transformation of input 
 policies to provide $t-resilience$, i.e in the event of upto arbitary
-$t$ link failures, \name will synthesize a path for each
-packet class. We only consider reachability, waypoint
+$t$ link failures, the synthesized data plane will have a path
+for each packet class  satisfying all policies. We only consider reachability, waypoint
 and isolation policies in the input. 
 
 %\begin{mydef}
