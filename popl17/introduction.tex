@@ -94,15 +94,21 @@ this vision in the multi-tenant datacenter context.
 
 We present \Name, a framework for declaratively specifying and
 enforcing complex policies which are NP-complete
-in complexity like isolation, middlebox
-traversals, and traffic engineering 
+in complexity like isolation and middlebox
+traversals. 
 Thus, \Name 
 encodes the problem of enforcing various
 policies as a constraint solving problem and
 leverages recent advances in
 fast Satisfiability Modulo Theories (SMT) solvers
 to efficiently search for a solution to the constraints. 
-The solution is then translated into switch table rules. %% This
+The solution is then translated into switch table rules. 
+Using SMT solvers with 
+support for linear optimization, \name can perform traffic engineering, and
+minimal network repair. To tackle against network failures, we also
+present \emph{policy-compliant resilient} synthesis which uses \name's
+support for isolation policies. 
+%% This
 %% paper presents Genesis, a
 %% network management tool where the network operators can express the
 %% network-wide policies in a high-level declarative manner and Genesis
@@ -111,8 +117,7 @@ The solution is then translated into switch table rules. %% This
 %% switch-level behaviours. 
 By leveraging the formal guarantees of constraint solving, \Name
 eliminates the room for error in the enforcement of even the most
-complex collections of policies. \Name can be easily extended 
-to incorporate new policies over time.
+complex collections of policies. 
 
 %\kausik{Do we need to make the point of sacrificing performance for generality for POPL? }
 
