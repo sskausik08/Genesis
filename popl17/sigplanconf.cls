@@ -209,7 +209,7 @@
 %                       -------
 
 
-\@setflag \@authoryear = \@true
+\@setflag \@authoryear = \@false
 \@setflag \@blockstyle = \@false
 \@setflag \@copyrightwanted = \@true
 \@setflag \@explicitsize = \@false
