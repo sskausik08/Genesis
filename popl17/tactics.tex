@@ -58,7 +58,8 @@ what the path must \emph{not} look like. A tactic, for example, can blacklist pa
 %\loris{we need a plot for the full regex thing to compare with Madhu, it would be great to repeat some of their experiments}
  \kausik{Star-free language?}
 \subsubsection{Restricted tactic syntax} 
-For specifying tactics, we identified a restricted set of regular expressions
+For specifying tactics, we identified a restricted set of regular expressions\footnote{
+	It is a subset of star-free languages \cite{}.}
  that not only do not require extra constraints to be added,
 but actually allow us to reduce the number of constraints. 
 This set is defined using the following grammar:
@@ -85,15 +86,18 @@ holds:
 \item $\pi \models  l_{src} .^i l.^* l_{dst}$ iff $k\geq i+2$, $l_{src}= a_0$, $l_{dst}= a_k$, and $a_{i+1}=l$;
 \item $\pi \models  l_{src} .^i l_1 l_2.^* l_{dst}$ iff $k\geq i+3$, $l_{src}= a_0$, $l_{dst}= a_k$, $a_{i+1}=l_1$, and $a_{i+2}=l_2$.
 \end{compact2itemize}
-
-Notice that using these constraints we can express more complex forms 
-of tactics such as
+In \Name, operators can specify conjunctions of tactics which adhere to the restricted 
+syntax and the synthesis algorithm is modified to enforce the tactics. 
+Since tactics are path-related restrictions, 
+operators can also apply tactics selectively to the paths for certain packet classes, and also different tactics for different classes. 
+\begin{example}
+A complex form of tactic which ensures that a edge-edge path
+cannot traverse another edge switch can be expressed using conjunctions:
 $\neg (e .^* e .^* e)\equiv \bigwedge \limits_{i=0}^{i=\mu-2} \neg (e .^i e .^* e)$ where $\mu$ is the synthetic limit on path length. 
+\end{example}
 
-In \Name, operators can specify conjunctions of tactics which adhere to the restricted syntax and the synthesis algorithm is modified to enforce the tactics. 
-Since tactics are path-related restrictions, operators can also apply tactics selectively to the paths for certain packet classes, and also different tactics for different classes. 
 
-\subsubsection{Modified Synthesis Algorithm}
+\subsubsection{Modified Synthesis Algorithm with Tactics}
 In our synthesis algorithm, the backward reachability propagation constraints (\Cref{eq:bckprop}) 
 construct the path from destination to source. We use tactics to prune these constraints, so that
 the path synthesized satisfies the tactic regular expression.  
@@ -104,7 +108,7 @@ the path synthesized satisfies the tactic regular expression.
 We describe the additional SMT constraints $\Psi_R$
 for a path $\pi = sw_0 \ldots sw_k$ and labelling $\Phi(\pi) = a_0 \ldots a_k$
 for each type of tactic. Note that $\Psi_R$ is presented as additional SMT 
-constraints only for clarity. The modified synthesis algorithm will provide 
+constraints only for clarity. In practice, the modified synthesis algorithm will provide 
 $\Psi - \Psi_R$ as input to the SMT solver. 
 %In the first
 %two cases, we remove some of the reachability constraints by adding negated unit clauses, 
@@ -148,11 +152,11 @@ edges at position $i+1$ in the path for which $l_2$ is different from the destin
 %-> if a path is solution of modified constraint it satisfies regex
 %<- if a path is solution of original constraints and satisfies regex, then it's a possible solution of modified constraints.
 \begin{theorem}[Soundness]
-	For a packet class $pc$, if the path $\pi \models \Psi \wedge \Psi_R$, then $\pi \models R$.
+	For a packet class $pc$, if the path $\pi \models_{pc} \Psi \wedge \Psi_R$, then $\pi \models R$.
 \end{theorem}
 
 \begin{theorem}[Completeness]
-For a packet class $pc$, if the path $\pi \models \Psi ~\wedge~ \pi \models R$, then $\pi \models \Psi_R$.
+For a packet class $pc$, if the path $\pi \models_{pc} \Psi ~\wedge~ \pi \models R$, then $\pi \models_{pc} \Psi_R$.
 \end{theorem}
 
 
@@ -186,8 +190,8 @@ constraints which construct the path for a packet class. Each constraint says th
  can be used in conjuction with the different policies supported by \name (isolation, traffic engineering etc.).  
  Thus, we have provided a framework for the
  development of search strategies based on path properties, and we envision entities providing network
- management as a service to develop a \emph{repository} of tactics for various network topologies 
- (much like Z3's tactics), which can be used by network operators without writing tactics of their own. 
+ management as a service to develop a \emph{repository} of tactics for various network topologies, 
+ which can be used by network operators without writing tactics of their own. 
 %\loris{For that restricted set of regexes the algorithm is trivial you should write the first pass. 
 %See the simplified syntax.
 %I'll help you with the proof but essentially you have to show that
