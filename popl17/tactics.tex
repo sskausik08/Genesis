@@ -56,7 +56,7 @@ constraints need to be added to the solver to ensure that the path satisfies the
 Instead, using the notion of switch labels, we use regular expressions to provide high-level path properties as a {\em search strategy} rather than a policy requirement. Instead of specifying how the path must look like, we can use regular expressions on switch labels to specify \emph{blacklists}--i.e.,
 what the path must \emph{not} look like. A tactic, for example, can blacklist paths from an edge switch to an edge switch that go through another edge switch. 
 %\loris{we need a plot for the full regex thing to compare with Madhu, it would be great to repeat some of their experiments}
- \kausik{Star-free language?}
+
 \subsubsection{Restricted tactic syntax} 
 For specifying tactics, we identified a restricted set of regular expressions\footnote{
 	It is a subset of star-free languages \cite{}.}
