@@ -42,7 +42,7 @@ of $pc_1$ may be such that there is no way to place an isolated path for
 $pc_2$ but if they have been synthesized together, a
 solution might exist. To improve effectiveness, we integrate the 
 divide-and-conquer approach with recovery 
-mechanisms discussed in \Cref{sec:recovery}
+mechanisms discussed in \Cref{sec:recovery}.
 
 \begin{algorithm}[h]
 \begin{footnotesize}
@@ -153,13 +153,14 @@ component further.
 While in the best case divide-and-conquer synthesis  will lead to a great
 increase in performance, we need a recovery mechanism in case we cannot find
 compatible partial solutions.  We describe a bounded \emph{solution} recovery
-scheme in \Cref{dcsyn}(lines 17-19) integrated with the divide-and-conquer
-synthesis procedure.  The Z3 solver can track assertions and if it
-fails to find a solution, it can return a set of unsatisfiable cores
-which are the assertions due to which the solver could not find a
-solution\footnote{Z3 does not return the minimum set of unsatisfiable
-  cores.}.  This helps us track failed partial solutions so that we 
-don't resynthesize them again. 
+scheme in \Cref{dcsyn} \kausik{Add refs here}integrated with the divide-and-conquer
+synthesis procedure.  Many SMT solvers track constraints and return
+an unsatisfiable core~\cite{unsatcores} when synthesis fails. Informally,
+the unsatisfiable
+core is a set of tracked constraints\footnote{
+	Not necessarily a minimal set of constraints.}
+ that describe why there wasn't a feasible 
+solution. This helps us track failed partial solutions. 
 %  in the synthesis of $P_2$
 %by tracking the constraints added to ensure isolation with the paths
 %of $P_1$.  

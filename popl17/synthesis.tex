@@ -3,8 +3,8 @@ Given a set of policies, \Name creates a set of constraints
 that abstracts the forwarding and reachability rules. 
 These constraints are then given to an SMT Solver, which returns a model 
 for them--i.e., it assigns values to all the variables in the constraints. From these values, we extract the forwarding rules for each switch.
-To provide support for the policies in \Cref{tab:policysupport}, \name uses propositional logic (SAT) and linear rational arithmetic (LRA),
-and SMT with optimization objectives for traffic engineering.
+To provide support for the policies in \Cref{tab:policysupport}, \name uses propositional logic (SAT), linear rational arithmetic (LRA),
+and linear optimization objectives for traffic engineering.
 \subsection{Network Forwarding Model} \label{sec:fwdmodel}
 We define the physical switch topology as an undirected graph $T=(S, L)$,
 where $S$ is the set of switches and $L$ is the set of links. 
@@ -131,7 +131,7 @@ We extract the rules relevant to the shortest path from source to destination fr
 For a reachability policy with ordered set of waypoints $s >> W_1;\ldots;W_n >> d$ and packet class $pc$, we add all the constraints specified in \Cref{sec:reach} to ensure the existence of a path from source to destination. We then add constraints so that all waypoints $w$
 are traversed. 
 \begin{equation} \label{eq:waypoints}
-	\forall w \in W_1, W_2 \ldots W_n. \ \exists k.~Reach(w, pc, k).
+	\forall w \in W_1, \ldots, W_n. \ \exists k.~Reach(w, pc, k).
 \end{equation}
 For each set $W_i$ for $i>1$, we add the following constraints which ensure that all waypoints
 in $W_i$ are reached after all waypoints in $W_{i - 1}$ : 
