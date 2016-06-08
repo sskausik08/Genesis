@@ -40,7 +40,7 @@ workloads~\cite{mpa-imc15}.  The policies include:
   applications, or hosts. For example, the yellow tenant has defined a reachability
   policy for its VMs ($V1 >> V2$, which is translated  after 
   placement as $E2 >> E4$).
-\item \textbf{Middlebox traversals}. A tenant may wish that traffic
+\item \textbf{Middlebox Traversals}. A tenant may wish that traffic
   between two of her endpoints, or from another tenant, must traverse
    specific middleboxes %(locations, or logical descriptors) 
    for
@@ -113,11 +113,10 @@ workloads~\cite{mpa-imc15}.  The policies include:
 %\loris{is there a reason why this is not in the itemize?} 
 %\kausik{This is not a tenant policy, but an operator feature, so separate from itemize.}
 \item \textbf{Network Resource Management}. While support for the above
-policies can be used to satisfy tenant SLAs, network operators can
+policies can be used to satisfy tenant SLAs (service-level agreements), network operators 
 benefit from a fine-grained control of network resources, to enforce
-strict guarantees, or optimize an objective like average utilization of the network
-links. Support for
-resource management integrated with tenant specifications is useful.
+strict guarantees, or optimize an objective like total utilization of the network
+links. 
 For instance, the operator may want to minimize the average link utilization 
 of the network, or restrict traffic on certain links. For example, in \Cref{fig:architecture},
 the red links are low bandwidth, and the operator wants to ensure
@@ -138,12 +137,12 @@ traffic on these links do not exceed the link capacity of 100.
           %% more tenants such that their performance is affected and
           %% can be used to provide bandwidth guarantees to tenants.
   Likewise, to tackle hardware heterogeneity operators can specify
-  switch constraint policies, like the size of the rule table, to
+  switch constraint policies, like the maximum size of the rule table, to
   restrict the number of flows traversing a particular switch or set
   of switches.
  
- \item \textbf{Handling Failures}. Modern networks experience failures (link or switch) 
- frequently, and an essential requirement in network management systems to
+ \item \textbf{Handling Failures}. Modern networks experience link and switch failures
+ frequently and an essential requirement in network management systems is to
  provide certain guarantees during failure scenarios. \name addresses this by
  providing two mechanisms: minimal network repair and resilience synthesis. 
  Minimal network repair tries to minimize the overhead of transitioning from a
@@ -171,11 +170,11 @@ devices~\cite{benson:complexity:nsdi2009,mpa-imc15}. This process is also highly
 error prone.
 
 Providing support for realizing these policies using existing SDN
-programming languages like Pyretic and Frenetic is challenging,
+programming languages like Pyretic and Frenetic is challenging
 because these policies are global and cannot be enforced by
 programming individual behaviour of switches. Existing SDN-based
 network management systems~\cite{simple,merlin,oneswitch} are tailored
-to support specific policies such as middlebox placement, bandwidth
+to support specific policies such as middlebox placement or bandwidth
 and resource constraints. As such they lack generality and
 extensibility.
 
@@ -192,7 +191,7 @@ language GPL used to specify policies
 is shown in \Cref{tab:policysupport}.
 
 Unlike previous efforts in the synthesis space (see~\cite{netgen,merlin}), \Name is
-not tailored to specific formalisms such as regular expressions and
+not tailored to specific formalisms such as regular expressions; 
 this aspect makes it {\em modular} and {\em easy to extend}.
 %and allows to devise specific
 %techniques for each type of policies. 
@@ -205,7 +204,7 @@ optimizations based on the properties desired by
   Our work is motivated by recent advances in program synthesis, i.e.,
   the task of discovering an executable program from user intent
   expressed in the form of some constraints. There are three key
-  dimensions to synthesis: the kind of constraints that it accepts as
+  dimensions to a synthesis problem: the kind of constraints that it accepts as
   expression of user intent, the space of programs over which it
   searches, and the search technique it employs. Program synthesis has
   seen limited applications to networks~\cite{netegg,decentralize},
@@ -226,9 +225,8 @@ This approach is appealing for the following reasons:
 
 (1)
 Policies useful to operators are \emph{proactive} (i.e., they are not
-dependent on the actual packet flow), and our synthesis approach
-naturally aligns with such proactive policies.
-
+dependent on the actual packet flow) which can be satisfied by 
+correct switch tables, and does not require synthesis of controller programs.
 %  and this enables enforcing policies by synthesis
 % of switch-table rules, and using a skeleton SDN controller to deploy
 % the forwarding rules to the switches. In contrast, in trying to
@@ -255,7 +253,7 @@ by the network operator.
 For example, enforcing isolation policies
 is as hard as solving
 graph-coloring, a well-known
-NP-complete problem (proof has been omitted for brevity).
+NP-complete problem.
 %, which means
 %that any system solving this would need to exhaustively search the
 %space of all forwarding plane configurations. 
@@ -295,10 +293,7 @@ has, in the worst case, exponential time complexity in
 the number of policies.
 Moreover, since policies such as isolation affect
 the paths of many different flows, it is not possible to incrementally synthesize
-the forwarding rules corresponding to each flow. NetGen~\cite{netgen}
-synthesizes incremental changes to forwarding tables for individual
-flows, however 
-it does not support isolation.
+the forwarding rules corresponding to each flow. 
 Despite the recent advances in SMT solvers, to make
 the synthesis problem feasible in practice
 there is a need to improve the performance of the solver
@@ -324,13 +319,12 @@ datacenter topologies the large
 interconnect of links can lead to multiple solutions 
 to enforce the provided policies.  
 The divide-and-conquer
-synthesis approach(\Cref{sec:optimistic}) leverages the structure of
+synthesis approach (\Cref{sec:optimistic}) leverages the structure of
 isolation policy interactions among tenants to partition the input
 policies into components and synthesize these components separately and
 faster than the complete problem. To improve the effectiveness of the
 heuristic, whenever the SMT solver fails to find a solution we extract
 the unsatisfiability core produced by the SMT solver and 
 add it to our set of constraints to quickly converge to a correct solution.
-Informally, the unsatisfiability core can be viewed
-as a set of constraints that describes why there wasn't a feasible solution~\cite{unsatcores}.
+
 
