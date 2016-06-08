@@ -76,9 +76,9 @@ Since our goal is to black-list paths, we allow regular expressions to be negate
 \end{example}
 
 
-Let $\pi = sw_0\ldots sw_k$ be a path and 
-let its labeling be $\Phi(\pi)= a_0\ldots a_k$.
-We say that $\pi$ satisfies a tactic $R$, written $\pi\models R$, if the following
+Let $\pi = sw_0\ldots sw_k$ be a path for packet class $pc$
+and let its labeling be $\Phi(\pi)= a_0\ldots a_k$.
+We say that $\pi$ for packet class satisfies a tactic $(R, pc)$, written $\pi\models R$, if the following
 holds:
 \begin{compact2itemize}
 \item $\pi \models \neg R$ iff $\pi \not\models R$;
@@ -151,12 +151,21 @@ edges at position $i+1$ in the path for which $l_2$ is different from the destin
 
 %-> if a path is solution of modified constraint it satisfies regex
 %<- if a path is solution of original constraints and satisfies regex, then it's a possible solution of modified constraints.
+
+%Thm 6.1: Given a tactic R for the class pc, if \Pi |= \psi /\ Psi_R, then for every (\pi,pc)\in \Pi, \pi|=R (written a  bit better)
+%
+%Thm 6.2: Given a tactic R for the class pc, 
+%if \Pi |= \psi, 
+%and for every (\pi,pc)\in \Pi, \pi|=\psi_R,
+%\Pi |= Psi_R.
+Let $(Fwd, Reach)$ be the model of $\Psi$ and the set
+of induced paths (from Definition \ref{def:Pi}), $\Pi = \texttt{paths}$ $(Fwd, Reach)$.
 \begin{theorem}[Soundness]
-	For a packet class $pc$, if the path $\pi \models_{pc} \Psi \wedge \Psi_R$, then $\pi \models R$.
+	For a tactic R, if $(Fwd, Reach) \models \Psi \wedge \Psi_R$, then $\forall (\pi, pc) \in \Pi. \ \pi \models R$.
 \end{theorem}
 
 \begin{theorem}[Completeness]
-For a packet class $pc$, if the path $\pi \models_{pc} \Psi ~\wedge~ \pi \models R$, then $\pi \models_{pc} \Psi_R$.
+For a tactic R, if $~\Pi \models \Psi ~\wedge~$ $(\forall (\pi, pc) \in \Pi.~ \pi \models R)$, then $(Fwd, Reach) \models \Psi_R$.
 \end{theorem}
 
 
