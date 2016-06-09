@@ -62,7 +62,7 @@ The other direction of the proof is analogous.
 %P4 cimputes a simple path from $v$ to $n$ which passes through all the other vertices in the graph which is the Hamiltonian path problem. Since computing the Hamiltonian path is NP-hard, the problem of path computation for the waypoint policies as specified is NP-hard. 
 \section{Tactics}
 \begin{theorem}[Soundness]
-	For a packet class $pc$, if the path $\pi \models_{pc} \Psi \wedge \Psi_R$, then $\pi \models R$.
+	For a tactic R, if $(Fwd, Reach) \models \Psi \wedge \Psi_R$, then $\forall (\pi, pc) \in \Pi. \ \pi \models_{pc} R$.
 \end{theorem}
 \begin{proof}
 	The proof of this theorem is by contradiction for each type of tactic. \newline
@@ -93,12 +93,12 @@ The other direction of the proof is analogous.
 	Contradiction, as $\exists n_1. n_2. ~\phi(n_1) = l_1~\wedge~ \phi(n_2) = l_2 ~\wedge~ n_2 \not=dst \wedge Reach(n_1, pc, i + 1) \wedge Fwd(n_1, n_2, pc)$. 
 \end{proof}
 \begin{theorem}[Completeness]
-	For a packet class $pc$, if the path $\pi \models_{pc} \Psi ~\wedge~ \pi \models R$, then $\pi \models_{pc} \Psi_R$.
+For a tactic R, if $~\Pi \models \Psi ~\wedge~$ $(\forall (\pi, pc) \in \Pi.~ \pi \models_{pc} R)$, then $(Fwd, Reach) \models \Psi_R$.
 \end{theorem}
 \begin{proof}
 	The proof of this theorem is by contradiction for each type of tactic. \newline
 	\textbf{Type 1}: $R = \neg (l_{src} .^i .^* l_{dst})$ \newline
-	\textbf{Assume  $\pi \not\models_{pc} \Psi_R$}. $\pi \not\models_{pc} \forall sw,k \geq i + 1. (sw,pc,k) \notin Reach$ \newline
+	\textbf{Assume $\pi \not\models_{pc} \Psi_R$}. $\pi \not\models_{pc} \forall sw,k \geq i + 1. (sw,pc,k) \notin Reach$ \newline
 	Therefore $\exists sw, k \geq i + 1. (sw,pc,k) \in Reach$. \\
 	Therefore, $\pi \models l_{src}\ .^i \ .^* \ \phi(sw) \ .^* \ l_{dst} \implies \pi \models l_{src} .^i .^* l_{dst}$
 	Contradiction, as $\pi \models R$.
