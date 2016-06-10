@@ -58,7 +58,7 @@ mechanisms discussed in \Cref{sec:recovery}.
 		\If{interpartition edges $> E_{thres}$} \State{Apply normal synthesis on P} \EndIf
 		\State{F = []  \hspace{1cm} /* Failed solutions */}
 		\State{attempts = 0} 
-		\While{$attempts < RA_{max}$}
+		\While{$attempts < RA_{max}$} \label{lst:line:solrecstart}
 		\State{$sol_1$ = Apply  synthesis on $P_1$ such that $sol_1 \notin F$}
 		\If{synthesis($P_1$) fails} \State{\Return DCSyn failure} \EndIf
 		\State{$sol_2$ = Apply synthesis on $P_2$ such that \newline \hspace*{2cm} $sol_2 + sol_1$ is a solution for P}
@@ -68,7 +68,7 @@ mechanisms discussed in \Cref{sec:recovery}.
 		\Else
 		\State{\Return DCSyn success}
 		\EndIf
-		\EndWhile
+		\EndWhile \label{lst:line:solrecend}
 		\State{\Return DCSyn failure}
 		\EndIf
 		\EndProcedure
@@ -152,9 +152,7 @@ component further.
 \subsection{Solution Recovery} \label{sec:recovery}
 While in the best case divide-and-conquer synthesis  will lead to a great
 increase in performance, we need a recovery mechanism in case we cannot find
-compatible partial solutions.  We describe a bounded \emph{solution} recovery
-scheme in \Cref{dcsyn} \kausik{Add refs here}integrated with the divide-and-conquer
-synthesis procedure.  Many SMT solvers track constraints and return
+compatible partial solutions. Many SMT solvers track constraints and return
 an unsatisfiable core~\cite{unsatcores} when synthesis fails. Informally,
 the unsatisfiable
 core is a set of tracked constraints\footnote{
@@ -171,7 +169,9 @@ When performing synthesis of $P_1$
 again, we therefore ensure that we get \emph{different} paths from the
 unsatisfiable cores we extracted.  Basically, we perform a 
 \emph{solver-guided} enumeration of different solutions of $P_1$ to
-find a satisfying solution for $P_2$ for faster convergence.
+find a satisfying solution for $P_2$ for faster convergence. 
+The solution recovery procedure is described in lines \ref{lst:line:solrecstart}-
+\ref{lst:line:solrecend} in \Cref{dcsyn}.
 
 There are drawbacks to performing recovery. Since, recovery is a 
 form of enumeration, in cases where the graph is highly constrained

@@ -78,13 +78,13 @@ Since our goal is to black-list paths, we allow regular expressions to be negate
 
 Let $\pi = sw_0\ldots sw_k$ be a path for packet class $pc$
 and let its labeling be $\Phi(\pi)= a_0\ldots a_k$.
-We say that $\pi$ satisfies a tactic $R$, written $\pi\models_{pc} R$, if the following
+We say that $\pi$ satisfies a tactic $R$, written $\pi\models R$, if the following
 holds:
 \begin{compact2itemize}
-\item $\pi \models_{pc} \neg R$ iff $\pi \not\models_{pc} R$;
-\item $\pi \models_{pc}  l_{src} .^i .^* l_{dst}$ iff $k\geq i+1$, $l_{src}= a_0$, and $l_{dst}= a_k$; 
-\item $\pi \models_{pc}  l_{src} .^i l.^* l_{dst}$ iff $k\geq i+2$, $l_{src}= a_0$, $l_{dst}= a_k$, and $a_{i+1}=l$;
-\item $\pi \models_{pc}  l_{src} .^i l_1 l_2.^* l_{dst}$ iff $k\geq i+3$, $l_{src}= a_0$, $l_{dst}= a_k$, $a_{i+1}=l_1$, and $a_{i+2}=l_2$.
+\item $\pi \models \neg R$ iff $\pi \not\models R$;
+\item $\pi \models  l_{src} .^i .^* l_{dst}$ iff $k\geq i+1$, $l_{src}= a_0$, and $l_{dst}= a_k$; 
+\item $\pi \models  l_{src} .^i l.^* l_{dst}$ iff $k\geq i+2$, $l_{src}= a_0$, $l_{dst}= a_k$, and $a_{i+1}=l$;
+\item $\pi \models  l_{src} .^i l_1 l_2.^* l_{dst}$ iff $k\geq i+3$, $l_{src}= a_0$, $l_{dst}= a_k$, $a_{i+1}=l_1$, and $a_{i+2}=l_2$.
 \end{compact2itemize}
 In \Name, operators can specify conjunctions of tactics which adhere to the restricted 
 syntax and the synthesis algorithm is modified to enforce the tactics. 
@@ -101,15 +101,14 @@ $\neg (e .^* e .^* e)\equiv \bigwedge \limits_{i=0}^{i=\mu-2} \neg (e .^i e .^* 
 In our synthesis algorithm, the backward reachability propagation constraints (\Cref{eq:bckprop}) 
 construct the path from destination to source. We use tactics to prune these constraints, so that
 the path synthesized satisfies the tactic regular expression.  
-\begin{mydef}
-	Given a tactic $R$, we define $\Psi_R$ as the additional SMT constraints used for 
-	synthesis. 
-\end{mydef}
-We describe the additional SMT constraints $\Psi_R$ generated for all packet
-classes
-for each type of tactic. Note that $\Psi_R$ is presented as additional SMT 
-constraints only for clarity. In practice, the modified synthesis algorithm will provide 
-$\Psi - \Psi_R$ as input to the SMT solver. 
+
+Given a tactic $R_{pc}$ applied to packet class $pc$, 
+we define $\Psi_T(R_{pc},pc)$ as the additional SMT constraints used for 
+	synthesis. Note that $\Psi_T(R_{pc},pc)$ is presented as additional SMT 
+constraints only for clarity. 
+In practice, the modified synthesis algorithm will remove constraints 
+for each packet class based on the tactic applied and provide
+$(\Psi - \bigwedge\limits_{\forall pc} \Psi_T(R_{pc},pc))$ as input to the SMT solver. 
 %In the first
 %two cases, we remove some of the reachability constraints by adding negated unit clauses, 
 %while we modify these constraints for the next two cases.
@@ -117,18 +116,18 @@ $\Psi - \Psi_R$ as input to the SMT solver.
 %\loris{this part needs revision. Every time you say we remove constraints, but it actually looks like you are adding extra constraints
 %of the form not(..)}
 
-\noindent\textbf{Type 1.} For a tactic $R$ of the form $\neg (l_{src} .^i .^* l_{dst})$ which restricts the path to a length $ < i + 1$:
+\noindent\textbf{Type 1.} For a tactic $R_{pc}$ applied to $pc$ of the form $\neg (l_{src} .^i .^* l_{dst})$ which restricts the path to a length $ < i + 1$:
 \begin{equation}
-	\Psi_R = \forall pc~ \forall sw,k \geq i + 1. (sw,pc,k) \notin Reach
+	\Psi_T(R_{pc}, pc) = ~ \forall sw,k \geq i + 1. (sw,pc,k) \notin Reach
 \end{equation}
 Thus, we can remove the reachability constraints  of \Cref{eq:bckprop} 
 for all the tuples $(sw,pc,k) \notin Reach$
 as they cannot contribute to any path satisfying the tactic.  
 
-\noindent\textbf{Type 2.} For a tactic $R$
-of the form $\neg (l_{src}  .^i l .^* l_{dst})$ :
+\noindent\textbf{Type 2.} For a tactic $R_{pc}$ applied to $pc$ 
+of the form $\neg (l_{src}  .^i l .^* l_{dst})$:
 \begin{multline} \label{eq:t1}
-\Psi_R = \forall pc~ \forall sw.~ \phi(sw) = l ~\wedge~ sw \not= dst \implies \\ 
+\Psi_T(R_{pc},pc) = \forall sw.~ \phi(sw) = l ~\wedge~ sw \not= dst \implies \\ 
 (sw, pc, i + 1) \notin Reach
 \end{multline}
 The tactic ensures that a switch with label $l$ cannot be reached in $i+1$
@@ -139,9 +138,10 @@ all switches with label $l$ cannot be reached in $i+1$. For all tuples
 $(sw, pc, i+1) \notin Reach$, we can remove the reachability constraints of \Cref{eq:bckprop}.
 
 
-\noindent\textbf{Type 3.} For a tactic $R$ of the form $\neg (l_{src}  .^i l_1 l_2 .^* l_{dst})$ : 
+\noindent\textbf{Type 3.} For a tactic $R_{pc}$ applied to $pc$ 
+of the form $\neg (l_{src}  .^i l_1 l_2 .^* l_{dst})$: 
 \begin{multline} \label{eq:t3}
-\Psi_R = \forall pc~ \forall n_1, n_2.~\phi(n_1) = l_1~\wedge~ \phi(n_2) = l_2 ~\wedge~ n_2 \not=dst  \implies \\ 
+\Psi_T(R_{pc},pc) = \forall n_1, n_2.~\phi(n_1) = l_1~\wedge~ \phi(n_2) = l_2 ~\wedge~ n_2 \not=dst \\  \implies 
 \neg (Reach(n_1, pc, i + 1) \wedge Fwd(n_1, n_2, pc))
 \end{multline}
 This tactic ensures that a switch with label $l_1$ at $i+1$ in the path
@@ -158,14 +158,20 @@ edges at position $i+1$ in the path for which $l_2$ is different from the destin
 %if \Pi |= \psi, 
 %and for every (\pi,pc)\in \Pi, \pi|=\psi_R,
 %\Pi |= Psi_R.
-Let $(Fwd, Reach)$ be the model of $\Psi$ and the set
+Let $(Fwd, Reach)$ be a model of $\Psi$ and the set
 of induced paths (from Definition \ref{def:Pi}), $\Pi = \texttt{paths}$ $(Fwd, Reach)$.
+For each packet class $pc$, $R_{pc}$ is the tactic applied to the class. Note that the same
+tactic or different tactics can be applied to all the classes. Let us denote the
+set of tactics applied $\Gamma = \{(R_{pc},pc) ~| ~\forall pc\}$.
 \begin{theorem}[Soundness]
-	For a tactic R, if $(Fwd, Reach) \models \Psi \wedge \Psi_R$, then $\forall (\pi, pc) \in \Pi. \ \pi \models_{pc} R$.
+	For a tactic set $\Gamma$, if $(Fwd, Reach) \models \Psi \wedge \bigwedge\limits_{(R_{pc}, pc) \in \Gamma} \Psi_T(R_{pc},pc)) $, 
+	then $\forall (R_{pc}, pc) \in \Gamma. ~\forall(\pi', pc') \in \Pi. ~pc = pc' \implies \pi' \models R_{pc}$.
 \end{theorem}
 
 \begin{theorem}[Completeness]
-For a tactic R, if $~\Pi \models \Psi ~\wedge~$ $(\forall (\pi, pc) \in \Pi.~ \pi \models_{pc} R)$, then $(Fwd, Reach) \models \Psi_R$.
+For a tactic set $\Gamma$, if $~\Pi \models \Psi$ and 
+$\forall (R_{pc}, pc) \in \Gamma. ~\forall(\pi', pc') \in \Pi. ~pc = pc' \implies \pi' \models R_{pc}$
+then $\forall (R_{pc}, pc) \in \Gamma. (Fwd, Reach) \models \Psi_T(R_{pc}, pc)$.
 \end{theorem}
 
 
