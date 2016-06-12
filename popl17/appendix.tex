@@ -1,6 +1,9 @@
  \appendix
  
 \section{NP-completeness Proof of Enforcing Isolation Policies} \label{sec:isolationNP}
+ \begin{theorem}
+ 	Enforcing reachability and isolation policies is NP-Complete.
+ \end{theorem}
  We show that the graph 3-coloring problem, which is NP-complete reduces to the enforcement problem for
  reachability and isolation policies. The latter is also in NP, so after the reduction we 
  can conclude that it is also NP-complete.
@@ -40,6 +43,7 @@ For each edge $(v1,v2)\in E$ we add an isolation policy $v_1||v_2$.
 	\caption{The switch topology $T$. All circles represent switches and all reachability policies are $s$ to $d$}
 	\label{fig:swtopo}
 \end{figure}
+
 We now prove that if the policies can enforced then $G$ admits 3-coloring.
 If the policy is enforced, we have a path from $s$ to $d$ for each flow/vertex $v$.
 We can set $f(v)$ to the color of the corresponding middle-switch being crossed.
@@ -65,20 +69,22 @@ The tactic set $\Gamma = \{(R_1, pc_1), \ldots (R_n, pc_n)\}$
 specifies that tactic $R_i$ is applied on packet class $pc_i$.
 Let $(Fwd, Reach)$ be a model of $\Psi$ 
 and $\Pi = \texttt{paths}$ $(Fwd, Reach)$
-be the set of induced paths.
+be the set of induced paths. For a given path $\pi$,
+$\Phi(\pi)$ is a string where each switch of $\pi$ is replaced
+by its label. 
 
 \begin{theorem}[Soundness]
 	For a tactic set $\Gamma$, if $(Fwd, Reach) \models \Psi \wedge \bigwedge\limits_{(R, pc) \in \Gamma} \Psi_T(R,pc)) $, 
 	then $\forall (R, pc) \in \Gamma. ~\forall(\pi', pc') \in \Pi. ~pc = pc' \implies \Phi(\pi') \in L(R)$.
 \end{theorem}
 \begin{proof}
-	\textbf{Assume} $\exists (R,pc) \in \Gamma$ and $(\pi, pc) \in \Pi$ and $\Phi(\pi) \not\in L(R)$
+	\textbf{Assume} $\exists (R,pc) \in \Gamma$ such that $(\pi, pc) \in \Pi$ and $\Phi(\pi) \not\in L(R)$.
 	Consider the three types of tactics for $R$: \newline
 	\textbf{Type 1}: $R = \neg (l_{src} .^i .^* l_{dst})$ \\
 	$\Phi(\pi) \not\in L(R)$ $\implies$ $\Phi(\pi) \in L(l_{src} .^i .^* l_{dst})$. \\
 	Thus, $\pi = src\ sw_1 \ldots sw_i \ldots dst$. \\
 	Therefore,  $(dst, pc, k_{dst}) \in Reach, k_{dst} \geq i + 1$. \\
-	However, $(Fwd, Reach) \models \Psi_T(R, pc) \Leftrightarrow (Fwd, Reach) \models \forall sw,k \geq i + 1. (sw,pc,k) \notin Reach$.\\
+	However, $(Fwd, Reach) \models \Psi_T(R, pc) \implies (Fwd, Reach) \models \forall sw,k \geq i + 1. (sw,pc,k) \notin Reach$.\\
 	Contradiction, as $\exists sw, k \geq i + 1. (sw,pc,k) \in Reach$.
 	\newline
 	\newline
@@ -87,7 +93,7 @@ be the set of induced paths.
 	Thus, $\pi = src\ sw_1 \ldots sw_i \ sw_{i+1} \ldots dst$ such that $\phi(sw_{i+1}) = l$. Also $sw_{i+1} \not=dst$ (dst has to be the last switch in $\pi$)\\
 	Therefore,  $(sw_{i+1}, pc, i+1) \in Reach$. \\
 	However,
-	$(Fwd, Reach) \models \Psi_T(R, pc) \Leftrightarrow (Fwd, Reach) \models \forall sw.~ \phi(sw) = l ~\wedge~ sw \not= dst \implies  (sw, pc, i + 1) \notin Reach$. \\
+	$(Fwd, Reach) \models \Psi_T(R, pc) \implies (Fwd, Reach) \models \forall sw.~ \phi(sw) = l ~\wedge~ sw \not= dst \implies  (sw, pc, i + 1) \notin Reach$. \\
 	Contradiction, as $\exists sw. ~ \phi(sw) = l ~\wedge~ sw \not= dst \wedge (sw,pc,i+1) \in Reach$.
 	\newline \newline
 	\textbf{Type 3}: $R = \neg (l_{src} .^i \ l_1 \ l_2 \ .^* l_{dst})$ \newline
@@ -95,7 +101,7 @@ be the set of induced paths.
 	Thus, $\pi = src\ sw_1 \ldots sw_i \ sw_{i+1} \ sw_{i+2} \ldots dst$ such that $\phi(sw_{i+1}) = l_1, \phi(sw_{i+2}) = l_2$. Also $sw_{i+2} \not=dst$ (dst has to be the last switch in $\pi$)\\
 	Therefore,  $(sw_{i+1}, pc, i+1) \in Reach \wedge (sw_{i+1}, sw_{i+2}, pc) \in Fwd$. \\
 	However,
-	$(Fwd, Reach) \models \Psi_T(R, pc) \Leftrightarrow (Fwd, Reach) \models \forall n_1, n_2.~\phi(n_1) = l_1~\wedge~ \phi(n_2) = l_2 ~\wedge~ n_2 \not=dst  \implies 
+	$(Fwd, Reach) \models \Psi_T(R, pc) \implies (Fwd, Reach) \models \forall n_1, n_2.~\phi(n_1) = l_1~\wedge~ \phi(n_2) = l_2 ~\wedge~ n_2 \not=dst  \implies 
 	\neg (Reach(n_1, pc, i + 1) \wedge Fwd(n_1, n_2, pc))$. \\
 	Contradiction, as $\exists n_1. n_2. ~\phi(n_1) = l_1~\wedge~ \phi(n_2) = l_2 ~\wedge~ n_2 \not=dst \wedge Reach(n_1, pc, i + 1) \wedge Fwd(n_1, n_2, pc)$. 
 \end{proof}
@@ -105,26 +111,27 @@ $\forall (R, pc) \in \Gamma. ~\forall(\pi', pc') \in \Pi. ~pc = pc' \implies \Ph
 then $\forall (R, pc) \in \Gamma. (Fwd, Reach) \models \Psi_T(R, pc)$.
 \end{theorem}
 \begin{proof}
-	\textbf{Assume} $\exists (R, pc) \in \Gamma$ such that $(Fwd, Reach) \not\models \Psi_T(R,pc)$.
+	\textbf{Assume} $\exists (R, pc) \in \Gamma$ such that $(\pi, pc) \in \Pi$ and  
+	$(Fwd, Reach) \not\models \Psi_T(R,pc)$.
 	Consider the three types of tactics for $R$: \newline
 	\textbf{Type 1}: $R = \neg (l_{src} .^i .^* l_{dst})$ \newline
-	$(Fwd, Reach) \not\models \Psi_T(R, pc)$ $(Fwd, Reach) \not\models \forall sw,k \geq i + 1. (sw,pc,k) \notin Reach$ \newline
+	$(Fwd, Reach) \not\models \Psi_T(R, pc) \implies (Fwd, Reach) \not\models \forall sw,k \geq i + 1. (sw,pc,k) \notin Reach$ \newline
 	Therefore $\exists sw, k \geq i + 1. (sw,pc,k) \in Reach$. \\
 	Therefore, $\Phi(\pi) \in L(l_{src}\ .^i \ .^* \ \phi(sw) \ .^* \ l_{dst}) \implies \Phi(\pi) \in L(l_{src} .^i .^* l_{dst}).$\\
-	Contradiction, as $\Phi(\pi') \in L(R)$.
+	Contradiction, as $\Phi(\pi) \in L(R)$.
 	\newline 
 	\newline 
 	\textbf{Type 2}: $R = \neg (l_{src} .^i \ l \ .^* l_{dst})$ \newline
 	$(Fwd, Reach) \not\models \Psi_T(R, pc)$ $\implies$ $(Fwd, Reach) \not\models \forall sw.~ \phi(sw) = l ~\wedge~ sw \not= dst \implies  (sw, pc, i + 1) \notin Reach$. \\
 	Therefore $\exists sw. \ sw \not= dst \ \wedge \ \phi(sw) = l \ \wedge \ (sw,pc,i+1) \in Reach$. \\
 	Therefore, $\Phi(\pi) \in L( l_{src}\ .^i \ l \ .^* \ l_{dst})$. \\
-	Contradiction, as $\Phi(\pi') \in L(R)$. 
+	Contradiction, as $\Phi(\pi) \in L(R)$. 
 	\newline  
 	\newline
 	\textbf{Type 3}: $R = \neg (l_{src} .^i \ l_1 \ l_2 \ .^* l_{dst})$ \newline
-	$(Fwd, Reach) \not\models \Psi_T(R, pc)$ $\implies$ $\pi \not\models_{pc} \forall n_1, n_2.~\phi(n_1) = l_1~\wedge~ \phi(n_2) = l_2 ~\wedge~ n_2 \not=dst  \implies 
-	\neg (Reach(n_1, pc, i + 1) \wedge Fwd(n_1, n_2, pc))$. 
+	$(Fwd, Reach) \not\models \Psi_T(R, pc)$ $\implies$ $(Fwd, Reach) \not\models \forall n_1, n_2.~\phi(n_1) = l_1~\wedge~ \phi(n_2) = l_2 ~\wedge~ n_2 \not=dst  \implies 
+	\neg (Reach(n_1, pc, i + 1) \wedge Fwd(n_1, n_2, pc))$. \\
 	Therefore $\exists n_1, n_2. ~\phi(n_1) = l_1~\wedge~ \phi(n_2) = l_2 ~\wedge~ n_2 \not=dst ~\wedge~ Reach(n_1, pc, i + 1) ~\wedge~ Fwd(n_1, n_2, pc)$. \\
-	Therefore, $\pi \models l_{src}\ .^i \ l_1~l_2 \ .^* \ l_{dst}$. \\
-	Contradiction, as $\Phi(\pi') \in L(R)$.
+	Therefore, $\Phi(\pi) \in L(l_{src}\ .^i \ l_1~l_2 \ .^* \ l_{dst})$. \\
+	Contradiction, as $\Phi(\pi) \in L(R)$.
 \end{proof}

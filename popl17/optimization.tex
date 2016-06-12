@@ -1,7 +1,7 @@
 \section{Synthesis with Optimization Objectives}
 We describe two applications paramount to network management:
 traffic engineering and network repair, which can be tackled using
-extensions of solvers: SMT with linear optimization objectives and MaxSMT ~\cite{}.
+extensions of solvers: SMT with linear optimization objectives and MaxSMT ~\cite{maxsmt}.
 \subsection{Traffic Engineering}
 While the link capacity policies described in \Cref{sec:linkcap} can
 be used to perform a strict form of traffic engineering(TE) in terms of 
@@ -83,13 +83,14 @@ objective is to find new $Fwd$ which satisfies $\Psi_0$ such that the number of 
 is maximized. If the rules on switch $sw_i$ is preserved, then $Fwd$ and $\overline{Fwd}$ have the same forwarding rules for all packet classes which
 traverse through $sw_i$. The MaxSMT constraints are described as follows:
 \begin{equation}
-	\Psi_i =  
+	\Psi_{sw_i} =  
 	  \bigvee_{\mathclap{\substack{\forall sw_j, pc \\
 			  		(sw_i, sw_j, pc) \in \overline{Fwd}}}} Fwd(sw_i, sw_j, pc) 
 			~~~~~~~~~~~ 
-			w_i = 1
+			w_{sw_i}= 1
 \end{equation}
-With $\Psi_0, \Psi_1, \ldots \Psi_n$ and associated weights $w_1, \ldots w_n$
+With $\Psi_0, \Psi_{sw_1}, \ldots, \Psi_{sw_n}$  and associated weights 
+$w_{sw_1}, \ldots w_{sw_n}$
 to a MaxSMT solver, we can synthesize a new forwarding configuration 
 which \emph{minimizes} the number of switches which have to be changed.
 The weights can be altered for different priorities for different switches. Alternate
