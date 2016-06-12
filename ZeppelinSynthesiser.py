@@ -36,6 +36,7 @@ class ZeppelinSynthesiser(object) :
 
 		self.routefilters = dict()
 		
+		self.sums = []
 		# Resilience 
 		self.t_res = 2
 
@@ -50,26 +51,21 @@ class ZeppelinSynthesiser(object) :
 
 		dsts = self.pdb.getDestinations()
 
-		totVar = 0
 		for sw1 in range(1,swCount+1):
 			for sw2 in self.topology.getSwitchNeighbours(sw1) :
 				self.edgeWeights[sw1][sw2] = self.ilpSolver.addVar(lb=1.00, ub=10000, vtype=gb.GRB.CONTINUOUS, name="E-" + str(sw1)+"-"+str(sw2) + " ")
-				totVar += 1
 
 		for sw1 in range(1,swCount+1):
 			for sw2 in range(1, swCount + 1) :
 				# dst = 0 is the default value 
 				self.distVars[sw1][sw2][0] = self.ilpSolver.addVar(lb=0.00, vtype=gb.GRB.CONTINUOUS, name="D-" + str(sw1)+"-"+str(sw2) + " ")
-				totVar += 1
 				# for dst in dsts : 
 				# 	self.distVars[sw1][sw2][dst] = self.ilpSolver.addVar(lb=0.00,vtype=gb.GRB.CONTINUOUS, name="D-" + str(sw1)+"-"+str(sw2)+"-"+str(dst) + " ")
 
 		for endpt in self.endpoints : 
 			for sw2 in self.topology.getSwitchNeighbours(endpt[0]) : 
-				self.routefiltersVars[endpt[0]][sw2][endpt[1]] = self.ilpSolver.addVar(lb=0.00, ub=1.00, vtype=gb.GRB.BINARY, name="RF" + "-" + str(endpt[0])+"-"+str(sw2)+"-"+str(endpt[1]))
-				totVar += 1
+				self.routefiltersVars[endpt[0]][sw2][endpt[1]] = self.ilpSolver.addVar(lb=0.00, ub=1.00, vtype=gb.GRB.CONTINUOUS, name="RF" + "-" + str(endpt[0])+"-"+str(sw2)+"-"+str(endpt[1]))
 
-		print "Total variables", totVar
 		# for sw1 in range(1,swCount+1):
 		# 	for sw2 in range(1,swCount+1):
 		# 		for dst in dsts:
@@ -136,6 +132,7 @@ class ZeppelinSynthesiser(object) :
 
 		status = self.ilpSolver.status
 
+
 		# if status == gb.GRB.INFEASIBLE :
 		# 	# Model infeasible (or unbounded?). Use routefilters to solve.
 		# 	self.routeFilterMode = True
@@ -168,32 +165,36 @@ class ZeppelinSynthesiser(object) :
 			if status == gb.GRB.INFEASIBLE :
 				print "computing Source diamonds"
 				self.routeFilterMode = True
-				self.detectDiamonds()
 				self.generateResilientRouteFilters()
+				self.detectDiamonds()
 				self.ilpSolver = gb.Model("C3")
 				self.initializeSMTVariables()
 
 				self.addDjikstraShortestPathConstraints()
 
 				# Prompted by Gurobi? 
-				self.ilpSolver.setParam(gb.GRB.Param.BarHomogeneous, 1) 
-				self.ilpSolver.setParam(gb.GRB.Param.Method, 2) 
+				# self.ilpSolver.setParam(gb.GRB.Param.BarHomogeneous, 1) 
+				# self.ilpSolver.setParam(gb.GRB.Param.Method, 2) 
 
 				# Adding constraints with routeFilter variables at source
 				for dst in dsts : 
 					dag = self.destinationDAGs[dst]
-					self.addDestinationDAGConstraintsRF(dst, dag)
+					self.addDestinationDAGConstraints(dst, dag)
 
-				if self.t_res > 0 :
-					t_res = self.t_res
-					for endpt in self.endpoints : 
-						self.addResilienceConstraints(endpt[0], endpt[1], t_res)  # Add t-resilience
+				# if self.t_res > 0 :
+				# 	t_res = self.t_res
+				# 	for endpt in self.endpoints : 
+				# 		self.addResilienceConstraints(endpt[0], endpt[1], t_res)  # Add t-resilience
 
 				solvetime = time.time()
 				self.ilpSolver.optimize()
 				self.z3solveTime += time.time() - solvetime
 
 				status = self.ilpSolver.status
+
+				# if status == gb.GRB.INFEASIBLE :
+				# 	self.ilpSolver.computeIIS()
+				# 	self.ilpSolver.write("model.ilp")
 
 				# for constr in self.ilpSolver.getConstrs() :
 				# 	if constr.getAttr(gb.GRB.Attr.IISConstr) > 0 :
@@ -353,7 +354,7 @@ class ZeppelinSynthesiser(object) :
 					for n in neighbours : 
 						if n <> dag[sw] : 
 							self.ilpSolver.addConstr(self.dist(sw, t) <= self.ew(sw, n) + self.dist(n, t) - 1)
-						
+							
 					t = dag[t]
 		else:
 			constraintIndex = 0
@@ -445,30 +446,28 @@ class ZeppelinSynthesiser(object) :
 	# 		for sw2 in self.topology.getSwitchNeighbours(sw1) : 
 	# 			self.ilpSolver.addConstr(self.rf(sw1, sw2, dst) + flowVar[sw1][sw2] <= 1)
 
-	def addResilienceConstraints(self, src, dst, t_res) :
-		""" Ensure that the route-filters at source do not reduce resilience"""
-		dag = self.destinationDAGs[dst]
-		rfs = 0
-		allNeighbours =  self.topology.getAllSwitchNeighbours(src)
-		neighbours =  self.topology.getSwitchNeighbours(src) 
+	# def addResilienceConstraints(self, src, dst, t_res) :
+	# 	""" Ensure that the route-filters at source do not reduce resilience"""
+	# 	dag = self.destinationDAGs[dst]
+	# 	rfs = 0
+	# 	allNeighbours =  self.topology.getAllSwitchNeighbours(src)
+	# 	neighbours =  self.topology.getSwitchNeighbours(src) 
 
-		if len(neighbours) == 1 : 
-			if len(allNeighbours) < t_res + 1 : 
-				print "Flow from ", src, " to ", dst, " cannot be ", t_res," resilient."
-			return # Resilient
+	# 	if len(neighbours) == 1 : 
+	# 		if len(allNeighbours) < t_res + 1 : 
+	# 			print "Flow from ", src, " to ", dst, " cannot be ", t_res," resilient."
+	# 		return # Resilient
 
-		t_res = t_res - (len(allNeighbours) - len(neighbours)) # Unused paths
-		if t_res <= 0 : 
-			return # Resilient
+	# 	t_res = t_res - (len(allNeighbours) - len(neighbours)) # Unused paths
+	# 	if t_res <= 0 : 
+	# 		return # Resilient
 
-		for n in neighbours :
-			print n, dag[src]
-			if n <> dag[src] :
-				print self.rf(src,n,dst) 
-				rfs += self.rf(src, n, dst)
+	# 	filters = []
+	# 	for n in neighbours :
+	# 		if n <> dag[src] :
+	# 			filters.append(self.rf(src, n, dst))
 		
-		self.ilpSolver.addConstr(rfs <= len(neighbours) - (t_res + 1)) 
-
+	# 	self.leastSubsetFilters(filters, t_res) # Atleast t_res filters must be zero for t_res + 1 paths (one through dag).
 
 
 	def getEdgeWeightModel(self, routeFilterMode=True) : 
@@ -500,25 +499,56 @@ class ZeppelinSynthesiser(object) :
 			# Route filters not used. 
 			return 
 
-		totalRouteFilters = 0
-		setRouteFilters = 0
-		for dst in dsts : 
-			dag = self.destinationDAGs[dst]
-			for sw in dag : 
-				if sw == dst : continue
-				neighbours = self.overlay[sw]
-				for n in neighbours : 
-					if n <> dag[sw] : 
-						totalRouteFilters += 1
-					if [sw,dst] in self.endpoints :
-						rf = self.rf(sw,n,dst).x
-						if rf > 0 and n <> dag[sw]:
-							if [sw, n] not in self.routefilters[dst] :
-								self.routefilters[dst].append([sw,n])
+		# totalRouteFilters = 0
+		# setRouteFilters = 0
+		# for dst in dsts : 
+		# 	dag = self.destinationDAGs[dst]
+		# 	#self.findRouteFilters(dst, dag)
+		# 	for sw in dag : 
+		# 		if sw == dst : continue
+		# 		neighbours = self.overlay[sw]
+		# 		for n in neighbours : 
+		# 			if n <> dag[sw] : 
+		# 				totalRouteFilters += 1
+		# 			if [sw,dst] in self.endpoints :
+		# 				rf = self.rf(sw,n,dst).x
+		# 				if rf > 0 and n <> dag[sw]:
+		# 					if [sw, n] not in self.routefilters[dst] :
+		# 						self.routefilters[dst].append([sw,n])
 		
-		for dst in dsts : 
-			setRouteFilters += len(self.routefilters[dst])
-		print "Ratio of routefilters : ", setRouteFilters, totalRouteFilters 
+		# for dst in dsts : 
+		# 	setRouteFilters += len(self.routefilters[dst])
+		# print "Ratio of routefilters : ", setRouteFilters, totalRouteFilters 
+
+	# def findRouteFilters(self, dst, dag) :
+	# 	""" Finds the required route filters for dst from model """
+	
+	# 	for sw in dag : 
+	# 		t = dag[sw]
+	# 		while t <> None :			
+	# 			nextsw = sw
+	# 			totalDist = 0 # Store the distance from sw to t along dag.
+	# 			while nextsw <> t : 
+	# 				totalDist += self.ew(nextsw, dag[nextsw]).x
+	# 				nextsw = dag[nextsw]
+
+	# 			if [sw, dst] in self.endpoints : 
+	# 				# Route filtering equations
+	# 				neighbours = self.overlay[sw]
+	# 				for n in neighbours : 
+	# 					if n <> dag[sw] : 
+	# 						if n == t : 
+	# 							distvar = 0
+	# 						else : 
+	# 							distvar = self.dist(n, t).x
+	# 						if totalDist <= self.ew(sw, n).x + distvar - 1 : 
+	# 							# Route filter not required
+	# 							pass
+	# 						else :
+	# 							if [sw, n] not in self.routefilters[dst] :
+	# 								self.routefilters[dst].append([sw,n])
+				
+	# 			t = dag[t]			
 
 	def detectDiamonds(self, onlyDetect=False) :
 		""" Detecting diamonds in the different dags. A diamond is 
@@ -1099,33 +1129,33 @@ class ZeppelinSynthesiser(object) :
 							self.routefilters[dst].append([sw,n])
 
 
-	def modifyDAGs(self) :
-		self.origialDestinationDAGs = copy.deepcopy(self.destinationDAGs)
+	# def modifyDAGs(self) :
+	# 	self.origialDestinationDAGs = copy.deepcopy(self.destinationDAGs)
 		
-		swCount = self.topology.getSwitchCount()
-		dsts = self.pdb.getDestinations()
+	# 	swCount = self.topology.getSwitchCount()
+	# 	dsts = self.pdb.getDestinations()
 
-		# Rerouting process generates route filters for diamond paths. 
-		# However, to ensure the path in the dag is followed, we need
-		# to ensure it is the shortest path among the other paths.  
-		for s in range(1, swCount + 1) :
-			for t in range(1, swCount + 1) : 
-				if len(self.diamondPaths[s][t]) > 0 : 
-					diamonds = self.diamondPaths[s][t]
-					for dst1 in diamonds : 
-						path1 = diamonds[dst1]
+	# 	# Rerouting process generates route filters for diamond paths. 
+	# 	# However, to ensure the path in the dag is followed, we need
+	# 	# to ensure it is the shortest path among the other paths.  
+	# 	for s in range(1, swCount + 1) :
+	# 		for t in range(1, swCount + 1) : 
+	# 			if len(self.diamondPaths[s][t]) > 0 : 
+	# 				diamonds = self.diamondPaths[s][t]
+	# 				for dst1 in diamonds : 
+	# 					path1 = diamonds[dst1]
 
-						# Find other destinations sharing this path in the diamond
-						filterDsts = []
-						for dst in dsts : 
-							if path1 in self.dstDiamonds[dst] : 
-								filterDsts.append(dst)
+	# 					# Find other destinations sharing this path in the diamond
+	# 					filterDsts = []
+	# 					for dst in dsts : 
+	# 						if path1 in self.dstDiamonds[dst] : 
+	# 							filterDsts.append(dst)
 
 						
-						for dst in filterDsts : 
-							""" Disable the diamond path """
-							dag = self.destinationDAGs[dst]
-							dag[s] = None 
+	# 					for dst in filterDsts : 
+	# 						""" Disable the diamond path """
+	# 						dag = self.destinationDAGs[dst]
+	# 						dag[s] = None 
 
 	# def findRouteFilters(self) : 
 	# 	""" Generate the rest of the route filters """ 
@@ -1161,6 +1191,44 @@ class ZeppelinSynthesiser(object) :
 	# 				diamonds = self.diamondPaths[s][t]
 	# 				for dst1 in diamonds : 
 
+	def leastSubsetFilters(self, routefilters, N) :
+		""" Add constraints such that the smallest N elements in the set routefilters
+		are equal to 0 """
+		T = len(routefilters)
+		sortedFilters = []
+		while len(sortedFilters) < T : 
+			[maxF, routefilters] = self.bubbleMax(routefilters)
+			sortedFilters.append(maxF)
+
+		sumFilters = 0
+		for i in range(N) : 
+			sumFilters += sortedFilters[T - N + i]
+
+		self.ilpSolver.addConstr(sumFilters == 0)
+	
+
+	def bubbleMax(self, filters) :
+		""" Returns the smallest filter, and the rest of the filter set """
+
+		newFilters = []
+		maxX = filters.pop()
+		while len(filters) <> 0 :
+			x = filters.pop()
+			xmax = self.ilpSolver.addVar(lb=0.00, ub=1.00, vtype=gb.GRB.CONTINUOUS)
+			xmin = self.ilpSolver.addVar(lb=0.00, ub=1.00, vtype=gb.GRB.CONTINUOUS)
+			absdiff = self.ilpSolver.addVar(lb=0.00, ub=1.00, vtype=gb.GRB.CONTINUOUS)
+			self.ilpSolver.update()
+
+			self.ilpSolver.addConstr(2*xmax == maxX + x + absdiff)
+			self.ilpSolver.addConstr(2*xmin == maxX + x - absdiff)
+			self.ilpSolver.addConstr(maxX - x <= absdiff)
+			self.ilpSolver.addConstr(maxX - x >= -1 * absdiff)
+
+			maxX = xmax
+			newFilters.append(xmin)
+
+		return [maxX, newFilters]
+
 
 	# Profiling Statistics : 
 	def printProfilingStats(self) :
@@ -1180,181 +1248,6 @@ class ZeppelinSynthesiser(object) :
 
 
 
-
-		# for each src-dst pair diamond, ranks all paths according to length (shortest length has min rank)
-		# for s in range(1, swCount + 1) :
-		# 	diamondDsts = []
-		# 	for t in range(1, swCount + 1) : 
-		# 		if len(self.diamondPaths[s][t]) > 0 : 
-		# 			diamondDsts.append(t)
-		# 	if len(diamondDsts) == 0 : continue # No diamonds starting at source
-		# 	else : 
-		# 		# Rank all neighbours of s randomly
-		# 		neighbours = self.topology.getSwitchNeighbours(s)
-		# 		sRanks = dict()
-		# 		currRank = 1
-		# 		for n in neighbours : 
-		# 			sRanks[n] = currRank
-		# 			currRank += 1
-
-		# 		# Number of diamonds from s is greater than 1
-		# 		# If two diamonds with same source share a edge, if edge is ranked one
-		# 		# in one of the diamonds, it has to be ranked one in the other as well.
-				
-		# 		for t in diamondDsts : 
-		# 			diamonds = self.diamondPaths[s][t]
-		# 			ranks = dict()
-		# 			currRank = 1
-		# 			while len(ranks) < len(diamonds):
-		# 				minRank = 100000
-		# 				minNeighbour = None 
-		# 				for dst in diamonds : 
-		# 					path = diamonds[dst]
-		# 					if path[1] not in ranks and sRanks[path[1]] < minRank : 
-		# 						minNeighbour = path[1]
-		# 						minRank = sRanks[minNeighbour]
-		# 				ranks[minNeighbour] = currRank
-		# 				currRank += 1					
-		# 			for n in ranks : 
-		# 				self.switchRanks[s][t][n] = ranks[n]
-
-		# for t in range(1, swCount + 1) :
-		# 	diamondSrcs = []
-		# 	for s in range(1, swCount + 1) :
-		# 		if len(self.diamondPaths[s][t]) > 0 : 
-		# 			diamondSrcs.append(s)
-		# 	if len(diamondSrcs)	 > 0 : 
-		# 		print t, diamondSrcs	
-
-	# def addForwardingRuleConstraints(self, src, dst) :
-	# 	""" This function is only to be called if the flow src >> dst has other policies 
-	# 	like waypoints or isolation. For reachabilty, this is not required """
-	# 	if str(src) + ":" + str(dst) in self.fwdRulesMap : 
-	# 		return
-
-	# 	#print "Add Fwd rules for", src, dst
-
-	# 	swCount = self.topology.getSwitchCount()
-	# 	if str(src) + ":" + str(dst) not in self.resiliencevars : 
-	# 		return LookupError("Resilience variables not instantiated")
-	# 	resfwdvars = self.resiliencevars[str(src) + ":" + str(dst)][0]
-
-	# 	for sw1 in range(1, swCount + 1):
-	# 		if sw1 == dst : continue
-	# 		neighbours = self.topology.getSwitchNeighbours(sw1)
-
-	# 		for n in neighbours : 
-	# 			# Shortest Dist => Fwd(pc = 0)
-	# 			# PC = 0 is shortest path for src >> dst 
-	# 			self.z3Solver.add(Implies((self.dist(sw1, dst) == self.ew(sw1, n) + self.dist(n, dst)),
-	# 				resfwdvars[sw1][n][0]))
-	# 			self.z3Solver.add(Implies(resfwdvars[sw1][n][0], 
-	# 				(self.dist(sw1, dst) == self.ew(sw1, n) + self.dist(n, dst))))
-	# 			# Fwd(pc = 0) => Dist is implicitly implied by, but adding this make
-	# 			# synthesis faster though! : 
-	# 			# 1) rf => not fwd <=> fwd => not rf
-	# 			# 2) not rf => Path (from function addDjikstraShortestPathConstraints)
-
-	# 	self.fwdRulesMap[str(src) + ":" + str(dst)] = True
-
-	# def addResilienceConstraints(self, src, dst, t_res) : 
-	# 	swCount = self.topology.getSwitchCount()
-	# 	maxPathLen = self.topology.getMaxPathLength()
-	# 	resfwdvars = [[[0 for x in range(t_res)] for x in range(swCount + 1)] for x in range(swCount + 1)]
-	# 	resreachvars = [[[0 for x in range(maxPathLen + 1)] for x in range(t_res)] for x in range(swCount + 1)]
-
-	# 	self.resiliencevars[str(src) + ":" + str(dst)] = [resfwdvars, resreachvars]
-	# 	for sw1 in range(1,swCount+1):
-	# 		for sw2 in range(1, swCount + 1) :
-	# 			for pc in range(t_res) :
-	# 				resfwdvars[sw1][sw2][pc] = Bool("res" + str(src) + "->" + str(dst) + ":" + str(sw1) + "-" + str(sw2) + ":" + str(pc))
-
-	# 	for sw1 in range(1,swCount+1):
-	# 		for pc in range(t_res) :
-	# 			for k in range(maxPathLen + 1) : 
-	# 				resreachvars[sw1][pc][k] = Bool("res" + str(src) + "->" + str(dst) + ":" + str(sw1) + ":" + str(pc) + ";" + str(k))
-
-	# 	# Route Filters disable forwarding.
-	# 	if not self.DISABLE_ROUTE_FILTERS : 
-	# 		for sw in range(1, swCount + 1):
-	# 			neighbours = self.topology.getSwitchNeighbours(sw)
-	# 			for n in neighbours :
-	# 				for pc in range(t_res) :
-	# 					self.z3Solver.add(Implies(self.rf(sw,n,dst), Not(resfwdvars[sw][n][pc])))
-
-	# 	self.addForwardingRuleConstraints(src,dst)
-	# 	# Path constraints for all the pcs. 
-		
-	# 	for pc in range(t_res) :
-	# 		# Add constraints relating fwd to reach.
-	# 		for sw in range(1, swCount + 1): 
-	# 			if sw == src : continue
-	# 			for k in range(1, maxPathLen + 1) : 
-	# 				neighbours = self.topology.getSwitchNeighbours(sw)
-
-	# 				beforeHopAssertions = []
-	# 				for n in neighbours : 
-	# 					beforeHopAssert = And(resreachvars[n][pc][k-1], resfwdvars[n][sw][pc])
-	# 					beforeHopAssertions.append(beforeHopAssert)
-
-	# 				self.z3Solver.add(Implies(resreachvars[sw][pc][k], Or(*beforeHopAssertions)))
-
-	# 		# Distance 0 : 
-	# 		for sw in range(1, swCount + 1) : 
-	# 			if sw == src : 
-	# 				self.z3Solver.add(resreachvars[sw][pc][0])
-	# 			else : 
-	# 				self.z3Solver.add(Not(resreachvars[sw][pc][0]))
-
-	# 		# Destination is reachable.
-	# 		destAssertions = []
-	# 		for k in range(1, maxPathLen + 1) : 
-	# 			destAssertions.append(resreachvars[dst][pc][k])
-	# 		self.z3Solver.add(Or(*destAssertions))
-
-	# 		for n in self.topology.getSwitchNeighbours(dst) : 
-	# 			self.z3Solver.add(Not(resfwdvars[dst][n][pc]))
-
-	# 	# For k-resilience, k-edge disjoint paths required. 
-	# 	if t_res == 1 : 
-	# 		# No Resilience required.
-	# 		return
-	# 	for pc1 in range(t_res) : 
-	# 		for pc2 in range(pc1 + 1, t_res) : 
-	# 			for sw in range(1, swCount + 1):
-	# 				neighbours = self.topology.getSwitchNeighbours(sw)
-	# 				for n in neighbours : 
-	# 					self.z3Solver.add( Not( And (resfwdvars[sw][n][pc1], resfwdvars[sw][n][pc2])) )
-	# 					self.z3Solver.add( Not( And (resfwdvars[sw][n][pc1], resfwdvars[n][sw][pc2])) )
-
-		
-	# def addTrafficIsolationConstraints(self, pc1, pc2) : 
-	# 	""" Adding constraints for Isolation Policy enforcement of traffic for packet classes pc1 and pc2 """
-	# 	policy1 = self.pdb.getReachabilityPolicy(pc1)
-	# 	policy2 = self.pdb.getReachabilityPolicy(pc2)
-
-	# 	src1 = policy1[0][2]
-	# 	dst1 = policy1[0][3]
-	# 	src2 = policy2[0][2]
-	# 	dst2 = policy2[0][3]
-
-	# 	self.addForwardingRuleConstraints(src1,dst1)
-	# 	self.addForwardingRuleConstraints(src2,dst2)
-	# 	resfwdvars1 = self.resiliencevars[str(src1) + ":" + str(dst1)][0]
-	# 	resfwdvars2 = self.resiliencevars[str(src2) + ":" + str(dst2)][0]
-
-	# 	swCount = self.topology.getSwitchCount()
-	# 	for sw in range(1, swCount + 1):
-	# 		neighbours = self.topology.getSwitchNeighbours(sw)
-	# 		for n in neighbours : 
-	# 			isolateAssert = Not( And (resfwdvars1[sw][n][0], resfwdvars2[sw][n][0]))
-	# 			self.z3Solver.add(isolateAssert)	
-
-	# def addPathConstraints(self, src, dst, path) :
-	# 	""" Add constraints to ensure path from <src> to <dst> is <path> """
-	# 	for i in range(len(path) - 1) :
-	# 		self.z3Solver.add(Not(self.rf(path[i], path[i+1], dst)))
-	# 		self.z3Solver(self.dist(path[i], dst) == self.ew(path[i], path[i+1]) + self.dist(path[i+1], dst))
 
 
 

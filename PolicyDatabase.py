@@ -517,9 +517,11 @@ class PolicyDatabase(object) :
 				print "Path is not uniquely shortest for PC", pc
 				violationCount += 1
 			if not topology.checkResilience(src, dst, t_res, copy.deepcopy(routefilters[dst])) : 
-				print "Not resilient", pc
+				print "Not resilient", pc, self.getSourceSwitch(pc)
 				violationCount += 1
 		print "Number of Violations is", violationCount
+
+	# def removeRedundantFilters(self, topology, routefilters) : 
 
 
 	def addTrafficEngineeringObjective(self, minavg=False, minmax=False) :
