@@ -25,28 +25,34 @@ exist together in the network (backup paths will be deployed during
 a failure event). 
 
 Given the physical topology $T=(S,L)$, a link-failure
-scenario $\theta = \{l_1, l_2 \ldots ... l_n\},\ \forall i.\ l_i \in L$ 
-denotes the set of links failed. For $t-resilience$, we need to
+scenario $\theta$ is defined as a set of failed links: $\theta = \{l_1, l_2 \ldots ... l_n\},\ \forall i.\ l_i \in L$. For $t-resilience$, we need to
 consider synthesis under any set of $t$ or less arbitary link failures.
 \begin{mydef}
 	We define $\Theta(t)$ as the set of all failure scenarios where not more than $t$
 	arbitary links fail, i.e $\Theta(t) = \{ \ \theta \ \ | \ \ |\theta| \leq t\}$
 \end{mydef}
-We define the projected topology $T^{\theta} = (S, L - \theta)$ as the active 
-physical topology under the failure scenario $\theta$. 	For each class $pc$,
+%We define the projected topology $T^{\theta} = (S, L - \theta)$ as the active 
+%physical topology under the failure scenario $\theta$. 	For each class $pc$,
+%we construct a data plane graph $\xi = (S, L_{pc})$ for packet class $pc$ from the set
+%of paths obtained from the synthesis algorithm. $\xi$
+%for class $pc$ over a projected topology $T^\theta$ 
+%is resilient if the graph $(S, L_{pc} - \theta)$ has a path from $src$ to $dst$ 
+%for the packet class. 
+For each class $pc$,
 we construct a data plane graph $\xi = (S, L_{pc})$ for packet class $pc$ from the set
-of paths obtained from the synthesis algorithm. $\xi$
-for class $pc$ over a projected topology $T^\theta$ 
-is resilient if the graph $(S, L_{pc} - \theta)$ has a path from $src$ to $dst$ 
-for the packet class. 
+of paths obtained from the synthesis algorithm. For a failure scenario
+$\theta$, the active data plane $\xi_\theta = (S, L_{pc} \setminus \theta)$ represents
+all the links used by $\xi$ which are unaffected by the failure scenario. A data
+plane $\xi$ is {\em resilient} to $\theta$ if there contains a path from the source to 
+destination for the packet class in the active data plane $\xi_\theta$.
 \begin{mydef}[Resilience]
 	A data plane $\xi = (S, L_{pc})$ for class $pc$ is $t-resilient$ if $\xi$ is 
-	resilient over projected topologies $T^\theta,\ \forall \theta \in \Theta(t)$.
+	resilient to all $\theta \in \Theta(t)$.
 \end{mydef}
 \begin{mydef}[Policy-compliance]
-	A data plane $\xi = (S, L_{pc})$ for class $pc$ is policy-complaint if $\xi$ has 
-	a path over projected topologies $T^\theta,\ \forall \theta \in \Theta(t)$ which
-	satisfies the input policies for $pc$. 
+	A data plane $\xi = (S, L_{pc})$ for class $pc$ is policy-complaint if under
+	any failure scenario $\theta \in \Theta(t)$, the path for $pc$ in 
+	$\xi_\theta=(S, L_{pc} \setminus \theta)$ satisfies the input policies. 
 \end{mydef}
 \begin{algorithm}[h]
 	\begin{footnotesize}
@@ -89,22 +95,6 @@ would satisfy the isolation policy $pc_1 || \ pc_2$.
 	For all packet classes $pc \in PC$, the data plane $\hat{\xi}$ is $t-resilient$ 
 	and policy-compliant. 
 \end{theorem}
-\begin{proof}
-	Assume a data plane $\hat{\xi} = (S, L_{pc})$ of packet class $pc$ is not $t-resilient$. 
-	Therefore, there exists a failure scenario $\theta$ such that $|\theta| \leq t$ 
-	and  the $\hat{\xi}$ over the projected topology $T^\theta$ 
-	is not resilient, i.e there is no path from the source to destination for
-	$pc$ in $(S,L_{pc} - \theta)$.
-	Thus, $\theta$ disabled all the paths in $\hat{pc}$. \\
-	However, the paths are
-	edge-disjoint as each class in $\hat{pc}$ has a link-isolation policy with each 
-	other. This is a contradiction, as $t$ link failures cannot affect $t+1$ 
-	edge-disjoint paths of $\hat{pc}$. \\
-	Let us consider policy-compliance. Given a failure scenario $\theta \in \Theta(t)$, each data plane $\xi$ of class $pc$ has an active path. Consider a isolation policy in $I$: $pc_1 || \ pc_2$. In line~\ref{lst:line:respolicy} of \Cref{restransform}, each class of $\hat{pc_1}$ will be isolated to
-	each class of $\hat{pc_2}$, thus any path of the data planes of $pc_1$ and
-	$pc_2$ will satisfy the input policy $pc_1 || \ pc_2$. Hence, the data planes 
-	are policy-compliant. 
-\end{proof}
 \noindent If there are no isolation policies in the input, the resilience transformation in lines 
 \ref{lst:line:respc}-\ref{lst:line:respcend} of \Cref{restransform} is complete.
 \begin{theorem}[Completeness]
@@ -112,26 +102,7 @@ If there are no isolation policies $I = \emptyset$,
 	for a packet classes $pc$, the data plane is $t-resilient$ only if it 
 	contains $t + 1$ edge-disjoint paths for $pc$.
 \end{theorem}
-\begin{proof}
-	Let us assume the data-plane $\xi$ for $pc$ is $t-resilient$ such 
-	that less than $t+1$ instances of $pc$ are required for resilience i.e. 
-	$|\hat{pc}| < t+1$. Let us consider a 
-	t-link failure scenario $\theta, |\theta| = t$ where a link is picked from
-	each path of $\hat{pc}$. There is no path in $\xi$ in the projected
-	topology $T^\theta$. This is a contradiction since $\xi$ is $t-resilient$. 
-	Therefore, we need atleast $t+1$ instances of $pc$ to ensure $t-resilience$.
-	
-	Now let us assume there are $t+1$ paths in a $t-resilient$ $\xi$ for $pc$,
-	and not all of them are edge-disjoint. Consider two paths $\pi_1$ and $\pi_2$
-	in $\xi$ which share a link. We can choose $t-1$ links from the other $t-1$ paths 
-	and construct a failure scenario $\theta$, $|\theta| = t$. 
-	There is no path in $\xi$ in the projected
-	topology $T^\theta$. This is a contradiction since $\xi$ is $t-resilient$. Therefore,
-	the $t+1$ paths of $pc$ must be edge-disjoint. 
-	
-	\noindent Thus, the resilience transformation is complete for a  
-	packet class if there are no isolation policies.
-\end{proof}
+
 \noindent The transformation demonstrated in \Cref{restransform} is not \emph{complete}
  if the original policies contain link-isolation policies i.e if the transformed policies
  is unsatisfiable, that does not imply the non-existence of resilient data planes. 

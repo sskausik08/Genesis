@@ -64,6 +64,55 @@ The other direction of the proof is analogous.
 % 	\item \textbf{P4} : $v >> W >> n$ where $W = V - \{v,n\} $ 
 % \end{itemize}
 %P4 cimputes a simple path from $v$ to $n$ which passes through all the other vertices in the graph which is the Hamiltonian path problem. Since computing the Hamiltonian path is NP-hard, the problem of path computation for the waypoint policies as specified is NP-hard. 
+\section{Policy-compliant Resiliency}
+\begin{theorem}[Soundness]
+	For all packet classes $pc \in PC$, the data plane $\hat{\xi}$ is $t-resilient$ 
+	and policy-compliant. 
+	\end{theorem}
+	\begin{proof}
+		Assume a data plane $\hat{\xi} = (S, L_{pc})$ of packet class $pc$ is not $t-resilient$. 
+		Therefore, there exists a failure scenario $\theta$ such that $|\theta| \leq t$ 
+		and  the $\hat{\xi}$ over the projected topology $T^\theta$ 
+		is not resilient, i.e there is no path from the source to destination for
+		$pc$ in $(S,L_{pc} - \theta)$.
+		Thus, $\theta$ disabled all the paths in $\hat{pc}$. \\
+		However, the paths are
+		edge-disjoint as each class in $\hat{pc}$ has a link-isolation policy with each 
+		other. This is a contradiction, as $t$ link failures cannot affect $t+1$ 
+		edge-disjoint paths of $\hat{pc}$. \\
+		Let us consider policy-compliance. Given a failure scenario $\theta \in \Theta(t)$, each data plane $\xi$ of class $pc$ has an active path. Consider a isolation policy in $I$: $pc_1 || \ pc_2$. In line~\ref{lst:line:respolicy} of \Cref{restransform}, each class of $\hat{pc_1}$ will be isolated to
+		each class of $\hat{pc_2}$, thus any path of the data planes of $pc_1$ and
+		$pc_2$ will satisfy the input policy $pc_1 || \ pc_2$. Hence, the data planes 
+		are policy-compliant. 
+		\end{proof}
+
+\begin{theorem}[Completeness]
+	If there are no isolation policies $I = \emptyset$, 
+	for a packet classes $pc$, the data plane is $t-resilient$ only if it 
+	contains $t + 1$ edge-disjoint paths for $pc$.
+	\end{theorem}
+	\begin{proof}
+		Let us assume the data-plane $\xi$ for $pc$ is $t-resilient$ such 
+		that less than $t+1$ instances of $pc$ are required for resilience i.e. 
+		$|\hat{pc}| < t+1$. Let us consider a 
+		t-link failure scenario $\theta, |\theta| = t$ where a link is picked from
+		each path of $\hat{pc}$. There is no path in $\xi$ in the projected
+		topology $T^\theta$. This is a contradiction since $\xi$ is $t-resilient$. 
+		Therefore, we need atleast $t+1$ instances of $pc$ to ensure $t-resilience$.
+		
+		Now let us assume there are $t+1$ paths in a $t-resilient$ $\xi$ for $pc$,
+		and not all of them are edge-disjoint. Consider two paths $\pi_1$ and $\pi_2$
+		in $\xi$ which share a link. We can choose $t-1$ links from the other $t-1$ paths 
+		and construct a failure scenario $\theta$, $|\theta| = t$. 
+		There is no path in $\xi$ in the projected
+		topology $T^\theta$. This is a contradiction since $\xi$ is $t-resilient$. Therefore,
+		the $t+1$ paths of $pc$ must be edge-disjoint. 
+		
+		\noindent Thus, the resilience transformation is complete for a  
+		packet class if there are no isolation policies.
+		\end{proof}
+
+
 \section{Tactics} \label{app:tactics}
 The tactic set $\Gamma = \{(R_1, pc_1), \ldots (R_n, pc_n)\}$
 specifies that tactic $R_i$ is applied on packet class $pc_i$.
