@@ -101,6 +101,15 @@ class ZeppelinSynthesiser(object) :
 		start_t = time.time()
 		self.overlay = dict()
 		self.destinationDAGs = copy.deepcopy(dags)
+		self.spGraphs = []
+
+		# Create list of dags 
+		for dag in self.destinationDAGs.values() : 
+			print dag
+			self.spGraphs.append(dag)
+
+		self.findValidCycles(self.spGraphs)
+
 		self.endpoints = copy.deepcopy(endpoints)
 		self.routefilters = dict()
 		for dst in self.pdb.getDestinations() :
@@ -1127,6 +1136,48 @@ class ZeppelinSynthesiser(object) :
 					for n in self.topology.getSwitchNeighbours(sw) :
 						if n <> dag[sw] and [sw, n] not in self.routefilters[dst] : 
 							self.routefilters[dst].append([sw,n])
+
+	def findValidCycles(self, spList) :
+		""" Find valid cycles for sp with rest of spList """
+
+		for sp1 in spList :
+			for sp2 in spList : 
+				if sp1 == sp2 :
+					continue
+
+			self.findCycle(sp1, sp2)
+
+	def findCycle(self, sp1, sp2) :
+		""" sp1 forward, sp2 backward """ 
+		print sp1
+		graph = nx.DiGraph()
+		for sw in sp1 : 
+			graph.add_node(sw)
+
+		for sw in sp2 : 
+			graph.add_node(sw)
+
+		for sw in sp1 : 
+			if type(sp1[sw]) == int : 
+				graph.add_edge(sw, sp1[sw])
+			elif hasattr(sp1[sw], '__iter__') :
+				for n in sp1[sw] : 
+					graph.add_edge(sw, n)
+
+		for sw in sp2 :
+			if type(sp2[sw]) == int : 
+				graph.add_edge(sp2[sw], sw)
+			elif hasattr(sp2[sw], '__iter__') :
+				for n in sp2[sw] :
+					graph.add_edge(n, sw)
+
+		# Graph constructed. For every node in sp1, find cycle basis
+		for sw in sp1 : 
+			try :
+				print nx.find_cycle(graph, sw, orientation='original')
+			except :
+				pass
+
 
 
 	# def modifyDAGs(self) :
