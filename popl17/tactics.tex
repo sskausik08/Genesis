@@ -112,8 +112,8 @@ synthesis such that  $(\Psi \wedge\ \bigwedge\limits_{(R, pc) \in \Gamma} \Psi_T
 is provided as input to the SMT solver.
 	Note that $\Psi_T(R,pc)$ is presented as additional SMT 
 constraints only for clarity. 
-In practice, the modified synthesis algorithm will remove constraints 
-for each packet class based on the tactic applied.
+In practice, the modified synthesis algorithm will remove constraints for each 
+$(R,pc)\in \Gamma$.
 %In the first
 %two cases, we remove some of the reachability constraints by adding negated unit clauses, 
 %while we modify these constraints for the next two cases.
@@ -170,13 +170,69 @@ of induced paths (from Definition \ref{def:Pi}).
 	For a tactic set $\Gamma$, if $(Fwd, Reach) \models \Psi \wedge \bigwedge\limits_{(R, pc) \in \Gamma} \Psi_T(R,pc)) $, 
 	then $\forall (R, pc) \in \Gamma. ~\forall(\pi', pc') \in \Pi. ~pc = pc' \implies \Phi(\pi') \in L(R)$.
 \end{theorem}
+\iffull
+\begin{proof}
+	\textbf{Assume} $\exists (R,pc) \in \Gamma$ such that $(\pi, pc) \in \Pi$ and $\Phi(\pi) \not\in L(R)$.
+	Consider the three types of tactics for $R$: \newline
+	\textbf{Type 1}: $R = \neg (l_{src} .^i .^* l_{dst})$ \\
+	$\Phi(\pi) \not\in L(R)$ $\implies$ $\Phi(\pi) \in L(l_{src} .^i .^* l_{dst})$. \\
+	Thus, $\pi = src\ sw_1 \ldots sw_i \ldots dst$. \\
+	Therefore,  $(dst, pc, k_{dst}) \in Reach, k_{dst} \geq i + 1$. \\
+	However, $(Fwd, Reach) \models \Psi_T(R, pc) \implies (Fwd, Reach) \models \forall sw,k \geq i + 1. (sw,pc,k) \notin Reach$.\\
+	Contradiction, as $\exists sw, k \geq i + 1. (sw,pc,k) \in Reach$.
+	\newline
+	\newline
+	\textbf{Type 2}: $R = \neg (l_{src} .^i \ l \ .^* l_{dst})$ \newline
+	$\Phi(\pi) \not\in L(R)$ $\implies$ $\Phi(\pi) \in L (l_{src} .^i \ l \ .^* l_{dst})$. \\
+	Thus, $\pi = src\ sw_1 \ldots sw_i \ sw_{i+1} \ldots dst$ such that $\phi(sw_{i+1}) = l$. Also $sw_{i+1} \not=dst$ (dst has to be the last switch in $\pi$)\\
+	Therefore,  $(sw_{i+1}, pc, i+1) \in Reach$. \\
+	However,
+	$(Fwd, Reach) \models \Psi_T(R, pc) \implies (Fwd, Reach) \models \forall sw.~ \phi(sw) = l ~\wedge~ sw \not= dst \implies  (sw, pc, i + 1) \notin Reach$. \\
+	Contradiction, as $\exists sw. ~ \phi(sw) = l ~\wedge~ sw \not= dst \wedge (sw,pc,i+1) \in Reach$.
+	\newline \newline
+	\textbf{Type 3}: $R = \neg (l_{src} .^i \ l_1 \ l_2 \ .^* l_{dst})$ \newline
+	$\Phi(\pi) \not\in L(R)$ $\implies$ $\Phi(\pi) \in L (l_{src} .^i \ l_1 \ l_2 \ .^* l_{dst})$. \\
+	Thus, $\pi = src\ sw_1 \ldots sw_i \ sw_{i+1} \ sw_{i+2} \ldots dst$ such that $\phi(sw_{i+1}) = l_1, \phi(sw_{i+2}) = l_2$. Also $sw_{i+2} \not=dst$ (dst has to be the last switch in $\pi$)\\
+	Therefore,  $(sw_{i+1}, pc, i+1) \in Reach \wedge (sw_{i+1}, sw_{i+2}, pc) \in Fwd$. \\
+	However,
+	$(Fwd, Reach) \models \Psi_T(R, pc) \implies (Fwd, Reach) \models \forall n_1, n_2.~\phi(n_1) = l_1~\wedge~ \phi(n_2) = l_2 ~\wedge~ n_2 \not=dst  \implies 
+	\neg (Reach(n_1, pc, i + 1) \wedge Fwd(n_1, n_2, pc))$. \\
+	Contradiction, as $\exists n_1. n_2. ~\phi(n_1) = l_1~\wedge~ \phi(n_2) = l_2 ~\wedge~ n_2 \not=dst \wedge Reach(n_1, pc, i + 1) \wedge Fwd(n_1, n_2, pc)$. 
+\end{proof}
+\fi
 
 \begin{theorem}[Completeness]
 For a tactic set $\Gamma$, if $~\Pi \models \Psi$ and 
 $\forall (R, pc) \in \Gamma. ~\forall(\pi', pc') \in \Pi. ~pc = pc' \implies \Phi(\pi') \in L(R)$
 then $\forall (R, pc) \in \Gamma. (Fwd, Reach) \models \Psi_T(R, pc)$.
 \end{theorem}
-\noindent The proofs are included in \Cref{app:tactics}.
+\iffull
+\begin{proof}
+	\textbf{Assume} $\exists (R, pc) \in \Gamma$ such that $(\pi, pc) \in \Pi$ and  
+	$(Fwd, Reach) \not\models \Psi_T(R,pc)$.
+	Consider the three types of tactics for $R$: \newline
+	\textbf{Type 1}: $R = \neg (l_{src} .^i .^* l_{dst})$ \newline
+	$(Fwd, Reach) \not\models \Psi_T(R, pc) \implies (Fwd, Reach) \not\models \forall sw,k \geq i + 1. (sw,pc,k) \notin Reach$ \newline
+	Therefore $\exists sw, k \geq i + 1. (sw,pc,k) \in Reach$. \\
+	Therefore, $\Phi(\pi) \in L(l_{src}\ .^i \ .^* \ \phi(sw) \ .^* \ l_{dst}) \implies \Phi(\pi) \in L(l_{src} .^i .^* l_{dst}).$\\
+	Contradiction, as $\Phi(\pi) \in L(R)$.
+	\newline 
+	\newline 
+	\textbf{Type 2}: $R = \neg (l_{src} .^i \ l \ .^* l_{dst})$ \newline
+	$(Fwd, Reach) \not\models \Psi_T(R, pc)$ $\implies$ $(Fwd, Reach) \not\models \forall sw.~ \phi(sw) = l ~\wedge~ sw \not= dst \implies  (sw, pc, i + 1) \notin Reach$. \\
+	Therefore $\exists sw. \ sw \not= dst \ \wedge \ \phi(sw) = l \ \wedge \ (sw,pc,i+1) \in Reach$. \\
+	Therefore, $\Phi(\pi) \in L( l_{src}\ .^i \ l \ .^* \ l_{dst})$. \\
+	Contradiction, as $\Phi(\pi) \in L(R)$. 
+	\newline  
+	\newline
+	\textbf{Type 3}: $R = \neg (l_{src} .^i \ l_1 \ l_2 \ .^* l_{dst})$ \newline
+	$(Fwd, Reach) \not\models \Psi_T(R, pc)$ $\implies$ $(Fwd, Reach) \not\models \forall n_1, n_2.~\phi(n_1) = l_1~\wedge~ \phi(n_2) = l_2 ~\wedge~ n_2 \not=dst  \implies 
+	\neg (Reach(n_1, pc, i + 1) \wedge Fwd(n_1, n_2, pc))$. \\
+	Therefore $\exists n_1, n_2. ~\phi(n_1) = l_1~\wedge~ \phi(n_2) = l_2 ~\wedge~ n_2 \not=dst ~\wedge~ Reach(n_1, pc, i + 1) ~\wedge~ Fwd(n_1, n_2, pc)$. \\
+	Therefore, $\Phi(\pi) \in L(l_{src}\ .^i \ l_1~l_2 \ .^* \ l_{dst})$. \\
+	Contradiction, as $\Phi(\pi) \in L(R)$.
+\end{proof}
+\fi
 
 The intuition behind the restricted tactic syntax comes from the structure of the backward reachability propagation 
 constraints which construct the path for a packet class. Each constraint says that if a switch is reachable in $k$ steps in a path,
@@ -184,7 +240,6 @@ constraints which construct the path for a packet class. Each constraint says th
   on this, providing restrictions on the lengths of the path using $\neg (l_1 .^i .^* l_2)$, or specifying if we cannot 
   reach certain switches at specific positions in the path using  $\neg (l_1 .^i c .^* l_2)$. or specifying local 
   constraints on neighbours using $\neg (l_1  .^i c_1 c_2 .^* l_2)$.  
-  
   Conversely, the structure of backward reachability propagation constraints 
   prevents us from being able to specify unrestricted regular expressions. 
   \begin{example}

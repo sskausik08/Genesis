@@ -117,7 +117,6 @@ classes of $\hat{pc_1}$ and $\hat{pc_2}$ (line \ref{lst:line:respolicy}). This e
 chosen in the data planes of $pc_1$ and $pc_2$ will be isolated from one 
 another, thus providing policy-compliance under any arbitary $t-link$ failure
 scenario. \Cref{fig:restransform}(a) demonstrates an example transformation for providing $1-resilience$. 
-
 \begin{theorem}[Soundness]
 Given input policies $(PC, I)$, 
 the data plane $\hat{\xi}_{pc}$ for every packet class $pc \in PC$
@@ -125,6 +124,25 @@ the data plane $\hat{\xi}_{pc}$ for every packet class $pc \in PC$
 transformed policies $(PC^R, I^R)$  is $t-resilient$ 
 	and policy-compliant. 
 \end{theorem}
+\iffull
+\begin{proof}
+		Assume, $\exists pc$ such that the data plane $\hat{\xi} = (S, L_{pc})$
+		is not $t-resilient$. 
+		Therefore, there exists a failure scenario $\theta$ such that $|\theta| \leq t$ 
+		and $\hat{\xi}_\theta = (S, L_{pc} \setminus \theta)$ 
+		is not resilient, i.e there is no path from the source to destination. 
+		Thus, $\theta$ disabled all the paths of $\hat{pc}$. \\
+		However, the paths are
+		edge-disjoint as each class in $\hat{pc}$ has a link-isolation policy with each 
+		other. Thus, $t$ link failures cannot affect $t+1$ 
+		edge-disjoint paths of $\hat{pc}$. Thus, $\theta$ disabling all paths of
+		$\hat{pc}$ is a contradiction. \\
+		Let us consider policy-compliance. Given a failure scenario $\theta \in \Theta(t)$, each data plane $\xi$ of class $pc$ has an active path. Consider a isolation policy in $I$: $pc_1 || \ pc_2$. In line~\ref{lst:line:respolicy} of \Cref{restransform}, each class of $\hat{pc_1}$ will be isolated to
+		each class of $\hat{pc_2}$, thus any path of the data planes of $pc_1$ and
+		$pc_2$ will satisfy the input policy $pc_1 || \ pc_2$. Hence, the data planes 
+		are policy-compliant. 
+	\end{proof}
+	\fi
 \noindent If there are no isolation policies in the input, the resilience transformation in lines 
 \ref{lst:line:respc}-\ref{lst:line:respcend} of \Cref{restransform} is complete.
 \begin{theorem}[Completeness]
@@ -139,7 +157,34 @@ for $pc$.
 %	for a packet classes $pc$, the data plane \loris{what dataplane?} is $t-resilient$ only if it 
 %	contains $t + 1$ edge-disjoint paths for $pc$.
 \end{theorem}
-
+\iffull
+	\begin{proof}
+		We have proved the soundness of the result in \Cref{resiliencesoundness}. 
+		Now, let us assume the data-plane $\hat{\xi}$ for $pc$ is $t-resilient$ such 
+		that less than $t+1$ instances of $pc$ are required for resilience i.e. 
+		$|\hat{pc}| < t+1$. Let us consider a 
+		t-link failure scenario $\theta, |\theta| = t$ where a link is picked from
+		each path of $\hat{pc}$. The active data plane
+		$\hat{\xi}_\theta = (S, L_{pc} \setminus \theta)$ will not contain a
+		path from source to destination as all paths of $\hat{pc}$ would be disabled.  
+		This is a contradiction since $\hat{\xi}$ is $t-resilient$. 
+		Therefore, we need atleast $t+1$ instances of $pc$ to ensure $t-resilience$.
+		
+		Now let us assume there are $t+1$ paths in a $t-resilient$ $\hat{\xi}$ for $pc$,
+		and not all of them are edge-disjoint. Consider two paths $\pi_1$ and $\pi_2$
+		in $\hat{\xi}$ which share a link. We can choose the shared link 
+		of $\pi_1$ and $\pi_2$ and $t-1$ links from the other $t-1$ paths 
+		and construct a failure scenario $\theta$, $|\theta| = t$.
+		The active data plane
+		$\hat{\xi}_\theta = (S, L_{pc} \setminus \theta)$ will not contain a
+		path from source to destination as all paths of $\hat{pc}$ would be disabled.  
+		This is a contradiction since $\xi$ is $t-resilient$. Therefore,
+		the $t+1$ paths of $pc$ must be edge-disjoint. 
+		
+		\noindent Thus, the resilience transformation is sound and complete for a  
+		packet class if there are no isolation policies.
+	\end{proof}
+\fi
 \noindent The transformation demonstrated in \Cref{restransform} is not \emph{complete}
  if the original policies contain link-isolation policies i.e if the transformed policies
  is unsatisfiable, that does not imply the non-existence of resilient data planes. 
@@ -170,5 +215,4 @@ for $pc$.
 We presented a sound transformation of policies to provide $t-resilience$ in
 the case of reachability, waypoint and isolation policies. Future directions of 
 research involve incorporating capacity constraints and traffic engineering
-for synthesis of resilient data planes, and finding a complete transformation of
-link-isolation policies. 
+for synthesis of resilient data planes and devising a complete transformation for isolation.
