@@ -16,14 +16,24 @@ configuration for every network failure event.
 In this section, we describe the transformation of input 
 policies to provide $t-resilience$, i.e in the event of upto arbitary
 $t$ link failures, the synthesized data plane still has a path
-for each packet class  satisfying all policies. We only consider reachability, waypoint,
+for each packet class  satisfying all policies. This is achieved
+by synthesizing backup paths satisfying input policies.
+We only consider reachability, waypoint,
 and isolation policies in the input. 
-Global policies like capacity constraints
-and traffic engineering pose a difficulty as the synthesis will consider
-all backup paths in consideration, while all backup paths will not 
-exist together in the network (backup paths will be deployed during
-a failure event).
-\loris{don't understand previous sentence} \kausik{Have to think!}
+Global policies like capacity policies
+and traffic engineering pose a difficulty in synthesis. For example,
+consider a packet class $pc$ with a traffic rate of $T(pc)$. By considering
+the backup paths with the same traffic characteristics for synthesis, 
+the total traffic 
+accounted for $pc$ would be $c\times T(pc)$ (for some constant $c$), leading
+to under-provisioning of resources. Presently, \name's resilience
+transformation has no provisions to avoid or minimize 
+the under-provisioning of resources which affect capacity policies
+and traffic engineering objectives. 
+%all backup paths in consideration, while all backup paths will not 
+%exist together in the network (backup paths will be deployed during
+%a failure event).
+%\loris{don't understand previous sentence} \kausik{Have to think!}
 
 Given the physical topology $T=(S,L)$, a link-failure
 scenario $\theta$ is defined as a set of failed links $\theta = \{l_1, l_2 \ldots ... l_n\}$,
