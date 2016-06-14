@@ -508,11 +508,15 @@ class PolicyDatabase(object) :
 				nextsw = dag[nextsw] 
 
 			if zpath <> gpath : 
-				print "G", gpath, "Z", zpath, "shortest path is", topology.getShortestPath(src,dst)
-				print "Not Shortest Path in control plane for class", pc
-				print "Genesis path distance:", topology.getPathDistance(gpath), " Zeppelin: ", topology.getPathDistance(zpath)
-				print "Zeppelin Model distance:", distances[src][dst]
-				violationCount += 1
+				if topology.getPathDistance(gpath) == topology.getPathDistance(zpath) :
+					print "Path is not uniquely shortest for PC", pc
+					violationCount += 1
+				else :
+					print "G", gpath, "Z", zpath, "shortest path is", topology.getShortestPath(src,dst)
+					print "Not Shortest Path in control plane for class", pc
+					print "Genesis path distance:", topology.getPathDistance(gpath), " Zeppelin: ", topology.getPathDistance(zpath)
+					print "Zeppelin Model distance:", distances[src][dst]
+					violationCount += 1
 			if not topology.checkUniquenessShortestPath(zpath, routefilters[dst]) :
 				print "Path is not uniquely shortest for PC", pc
 				violationCount += 1
