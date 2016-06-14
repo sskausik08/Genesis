@@ -66,7 +66,10 @@ The other direction of the proof is analogous.
 %P4 cimputes a simple path from $v$ to $n$ which passes through all the other vertices in the graph which is the Hamiltonian path problem. Since computing the Hamiltonian path is NP-hard, the problem of path computation for the waypoint policies as specified is NP-hard. 
 \section{Policy-compliant Resiliency}
 \begin{theorem}[Soundness]
-	For all packet classes $pc \in PC$, the data plane $\hat{\xi}$ is $t-resilient$ 
+	Given input policies $(PC, I)$, 
+	the data plane $\hat{\xi}_{pc}$ for every packet class $pc \in PC$
+	synthesized from
+	transformed policies $(PC^R, I^R)$  is $t-resilient$ 
 	and policy-compliant. 
 	\end{theorem}
 	\begin{proof}
@@ -87,9 +90,11 @@ The other direction of the proof is analogous.
 		\end{proof}
 
 \begin{theorem}[Completeness]
-	If there are no isolation policies $I = \emptyset$, 
-	for a packet classes $pc$, the data plane is $t-resilient$ only if it 
-	contains $t + 1$ edge-disjoint paths for $pc$.
+Given input policies $(PC,I)$ such that $I=\emptyset$,
+the synthesized data plane $\xi$ for a packet class $pc$  
+is $t-resilient$ if and only if it 
+contains $t + 1$ edge-disjoint paths from source to destination
+for $pc$.
 	\end{theorem}
 	\begin{proof}
 		Let us assume the data-plane $\xi$ for $pc$ is $t-resilient$ such 

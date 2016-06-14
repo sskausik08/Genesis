@@ -10,9 +10,9 @@ flow in the network  (called the routing policy) as an input. %  and place rules
 for which it cannot determine the path of the flow
 beforehand. % Our solution can support enforcement of policies which
 % require different routing policies.
-Zhang et. al \cite{distfirewall} build on the
-\cite{oneswitch} abstraction to optimize for the specific case of
-distributed firewall policy enforcement using ILP.  PGA \cite{pga} provides
+Zhang et. al~\cite{distfirewall} build on the~\cite{oneswitch} 
+abstraction to optimize for the specific case of
+distributed firewall policy enforcement using ILP.  PGA~\cite{pga} provides
 a graph-level abstraction for specifying network policies like ACLs and
 middlebox service chaining. However, PGA abstracts the underlying
 network as "one big switch" and cannot be used to compose policies like
@@ -80,7 +80,7 @@ re-synthesizing other paths.
 % forwarding behaviour of switches, and cannot be extended to satisfy
 % network-wide policies.
 Synthesis has been also used for generating consistent network
-updates \cite{updates, customconsistency}. But this problem is orthogonal to 
+updates~\cite{updates, customconsistency}. But this problem is orthogonal to 
 policy enforcement in \Name.
 
 % Write about PGA, NetGen, and efficient update synthesis.
@@ -95,7 +95,7 @@ to support fine-grained traffic engineering. Also, the performance
 of SMT solvers with optimization objectives is quite slow, and calls for 
 domain-specific techniques to speed up the synthesis. Also, datacenter
 networks are highly symmetrical, and this symmetry can be leveraged
-to speed up synthesis (similar to the work of Plotkin et. al ~\cite{symmetry} to
+to speed up synthesis (similar to the work of Plotkin et. al~\cite{symmetry} to
 speed up network verification using symmetry). The main challenges of
 using symmetry in synthesis is considering two aspects of symmetry: network
 symmetry and policy symmetry. Also, our treatment of resilience synthesis
