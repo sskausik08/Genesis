@@ -1,11 +1,11 @@
 
-  {\bf Abstract---} Operators in multi-tenant cloud data centers require support for
+  {\bf Abstract---} Operators in multi-tenant cloud datacenters require support for
   diverse and complex end-to-end policies like reachability, middlebox
   traversals, isolation, traffic engineering and
    network resource management. We present
-  \Name, a network management system which allows these policies to be
+  \Name, a network management system which allows policies to be
   specified in a declarative manner without explicitly programming the
-  data-plane behavior.  \name tackles the problem of enforcing the
+  data-plane.  \name tackles the problem of enforcing the
   policies by synthesizing switch forwarding tables. In doing so, it
   uses the formal reasoning foundations of constraint solving in
   combination with fast off-the-shelf SMT solvers.  To improve
@@ -13,7 +13,7 @@
   uses regular expressions to specify properties that leverage the
   structure of datacenter networks,
 %topologies to specify properties of the path 
-  and a heuristic synthesis procedure which exploits the structure of
+  and a divide-and-conquer synthesis procedure which exploits the structure of
   policy interactions.  Experiments demonstrate the performance of
   \Name with different workloads on real-world topologies. Overall,
   the approach used by \Name is general and instrumental to building a

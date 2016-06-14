@@ -128,12 +128,12 @@ A directed edge $n_1 \rightarrow n_2$ appears in the reachability-graph if there
 We extract the rules relevant to the shortest path from source to destination from the model, and the additional rules obtained in the solution (extra paths, forwarding loops) are ignored.  
 
 \subsection{Waypoint Constraints} 
-For a reachability policy with ordered set of waypoints $s >> W_1;\ldots;W_n >> d$ and packet class $pc$, we add all the constraints specified in \Cref{sec:reach} to ensure the existence of a path from source to destination. We then add constraints so that all waypoints $w$
+For a reachability policy with ordered set of waypoints $s >> W_1;\ldots;W_n >> d$ and packet class $pc$, we add all the constraints specified in \Cref{sec:reach} to ensure the existence of a path from $s$ to $d$. We then add constraints so that all waypoints $w$
 are traversed. 
 \begin{equation} \label{eq:waypoints}
 	\forall w \in W_1, \ldots, W_n. \ \exists k.~Reach(w, pc, k).
 \end{equation}
-For each set $W_i$ for $i>1$, we add the following constraints which ensure that all waypoints
+For each set $W_i$ for $i>1$, we add constraints to ensure that all waypoints
 in $W_i$ are reached after all waypoints in $W_{i - 1}$ : 
 \begin{multline}
 \forall w_{i} \in W_{i}, \forall k_i.~Reach(w_i, pc, k_i) \implies 
@@ -169,13 +169,11 @@ waypoints in the right order.
 %There would have to 
 %be more than one rule at a switch for multiple paths from the source to exist. 
 
-
 \subsection{Isolation Constraints}
 A traffic isolation policy $pc_1 || \ pc_2$ states that the paths for
 $pc_1$ and $pc_2$ do not share any link in the same direction.  We
 enforce this policy by adding constraints that states that at every
-switch the forwarding rules for $pc_1$ and $pc_2$ must not forward to
-the same switch:
+switch, $pc_1$ and $pc_2$ must not forward to the same switch:
 \begin{equation}
 	\forall n_1.~\neg ( \exists n_2. Fwd(n_1,n_2,pc_1) \wedge Fwd(n_1,n_2,pc_2)). \label{eq:isolation}
 \end{equation}
@@ -210,8 +208,8 @@ does not exceed $\omega$ :
 \end{equation}
 A switch table policy $sw : \gamma$ specifies that the number of forwarding 
 rules on $sw$ must not exceed $\gamma$. Similar to the link capacity policy,
-the constraints need to ensure the count of all packet classes which traverse $sw$ (will require 
-a forwarding rule) is in the specified bound:
+the constraints ensure the count of all packet classes which traverse $sw$ (each 
+will require a forwarding rule) is $\leq \gamma$ :
 \begin{equation}
 \sum_{\forall pc} \texttt{ite}(~\exists k. Reach(sw,pc,k), 1, 0)  \leq \gamma.
 \end{equation}

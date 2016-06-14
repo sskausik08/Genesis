@@ -53,10 +53,10 @@ one which satisfies a set of policies.
 
 We extend \name's synthesis algorithm for performing
 minimal network repair using MaxSMT.  
-Formally, the weighted MaxSMT problem is as follows: given a set
+Formally, the MaxSMT problem is as follows: given a set
 of formulas $\Psi_0, \Psi_1, \ldots \Psi_n$ with associated 
 weights $w_1, \ldots w_n$, find a subset $M \subseteq \{1, \ldots n\}$
-such that 
+s.t: 
 \begin{enumerate}
 	\item $\Psi_0 \wedge \bigwedge_{i \in M} \Psi_i$ is satisfiable.
 	\item The \emph{award} $\sum_{i \in M} w_i$  is maximized.
@@ -91,11 +91,11 @@ traverse through $sw_i$. The MaxSMT constraints are described as follows:
 \end{equation}
 With $\Psi_0, \Psi_{sw_1}, \ldots, \Psi_{sw_n}$  and associated weights 
 $w_{sw_1}, \ldots w_{sw_n}$
-to a MaxSMT solver, we can synthesize a new forwarding configuration 
-which \emph{minimizes} the number of switches which have to be changed.
-The weights can be altered for different priorities for different switches. Alternate
-repair objectives like minimizing number of changed forwarding rules (instead of 
-switches) can be expressed similarly.
+to a MaxSMT solver, we can synthesize new forwarding rules 
+which \emph{minimizes} the number of switches whose rules have to be changed. 
+Alternate
+repair objectives like minimizing number of changed forwarding rules 
+can be expressed similarly.
 
 %\name is provided the policies
 %and the current forwarding rules $(\overline{Fwd})$ as input. The policy constraints are added as hard

@@ -117,7 +117,7 @@ policies can be used to satisfy tenant SLAs (service-level agreements), network 
 benefit from a fine-grained control of network resources, to enforce
 strict guarantees, or optimize an objective like total utilization of the network
 links. 
-For instance, the operator may want to minimize the average link utilization 
+For instance, the operator may want to minimize the total link utilization 
 of the network, or restrict traffic on certain links. For example, in \Cref{fig:architecture},
 the red links are low bandwidth, and the operator wants to ensure
 traffic on these links do not exceed the link capacity of 100.
@@ -185,10 +185,9 @@ extensibility.
 
 We design \name, a general network management system that 
 by performs {\em synthesis} of switch forwarding
-rules to enforce the above set of end-to-end policies . The architecture of \name
-is shown in \Cref{fig:architecture} and the 
-language GPL used to specify policies
-is shown in \Cref{tab:policysupport}.
+rules to enforce the above set of end-to-end policies (specified using 
+GPL as shown in \Cref{tab:policysupport}). The architecture of \name
+is shown in \Cref{fig:architecture}.
 
 Unlike previous efforts in the synthesis space (see~\cite{netgen,merlin}), \Name is
 not tailored to specific formalisms such as regular expressions; 
@@ -224,9 +223,9 @@ is SAT/SMT solving. The solution is translated to switch rules installed via a s
 This approach is appealing for the following reasons: 
 
 (1)
-Policies useful to operators are \emph{proactive} (i.e., they are not
-dependent on the actual packet flow) which can be satisfied by 
-correct switch tables, and does not require synthesis of controller programs.
+Policies useful to operators are \emph{proactive} i.e. they are not
+dependent on the actual packet flow and can be enforced by 
+correct switch tables, and do not require synthesis of controller programs.
 %  and this enables enforcing policies by synthesis
 % of switch-table rules, and using a skeleton SDN controller to deploy
 % the forwarding rules to the switches. In contrast, in trying to
@@ -253,14 +252,14 @@ by the network operator.
 For example, enforcing isolation policies
 is as hard as solving
 graph-coloring, a well-known
-NP-complete problem.
+NP-complete problem (Proof in \Cref{sec:isolationNP}).
 %, which means
 %that any system solving this would need to exhaustively search the
 %space of all forwarding plane configurations. 
 Many search techniques can be used to find the forwarding rules when
 handling a particular class of policies, but when multiple types of
-policies are combined (isolation, middlebox traversal, traffic
-engineering), devising good search techniques becomes challenging.
+policies are combined like isolation, middlebox traversal, and traffic
+engineering, devising good search techniques becomes challenging.
 Thanks to the many engineering efforts, SMT solvers abstract away most
 of this complexity and allow us to unify the search objectives for
 every policy into a generalized search technique.
@@ -309,8 +308,8 @@ of datacenter topologies.
 Tactics allow network operators to provide a high-level description on
 the set of paths allowed for reachability policies.  Tactics are
 expressed as simplified forms of regular expressions, which can be
-used to simplify the set of constraints provided to the solver.  In
-particular, one can eliminate constraints that cannot be true for any
+used to reduce the set of constraints provided to the solver.  In
+particular, we eliminate constraints that cannot be true for any
 of the paths accepted by the language of the regular expression. We
 find that this can result in 1.5x-400x speedup in various settings.
 
