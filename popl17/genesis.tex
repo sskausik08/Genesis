@@ -29,6 +29,9 @@
 % 11pt          To set in 11-point type instead of 9-point.
 % numbers       To obtain numeric citation style instead of author/year.
 
+\newif\iffull
+\fulltrue
+
 \usepackage{times}
 \usepackage{graphicx}
 \usepackage{mathtools}
@@ -99,28 +102,36 @@
 
 \begin{document}
 
-\special{papersize=8.5in,11in}
-\setlength{\pdfpageheight}{\paperheight}
-\setlength{\pdfpagewidth}{\paperwidth}
-
-\conferenceinfo{CONF 'yy}{Month d--d, 20yy, City, ST, Country}
-\copyrightyear{20yy}
-\copyrightdata{978-1-nnnn-nnnn-n/yy/mm}
-\copyrightdoi{nnnnnnn.nnnnnnn}
+%\special{papersize=8.5in,11in}
+%\setlength{\pdfpageheight}{\paperheight}
+%\setlength{\pdfpagewidth}{\paperwidth}
+%
+%\conferenceinfo{CONF 'yy}{Month d--d, 20yy, City, ST, Country}
+%\copyrightyear{20yy}
+%\copyrightdata{978-1-nnnn-nnnn-n/yy/mm}
+%\copyrightdoi{nnnnnnn.nnnnnnn}
 
 % Uncomment the publication rights you want to use.
 %\publicationrights{transferred}
 %\publicationrights{licensed}     % this is the default
 %\publicationrights{author-pays}
 
-\titlebanner{}        % These are ignored unless
-\preprintfooter{}   % 'preprint' option specified.
+%\titlebanner{}        % These are ignored unless
+%\preprintfooter{}   % 'preprint' option specified.
 
+\iffull
 \title{Genesis: Automatic Switch Table Synthesis in Multi-Tenant Networks}
-%\subtitle{POPL 2017 Submission}
+\else
+\title{Genesis: Automatic Switch Table Synthesis in Multi-Tenant Networks
+%\thanks{The long version
+%of this paper containing all the proofs has been submitted as supplementary material.}
+}
+\fi
 
-\authorinfo{}
-     {}
+
+\authorinfo{Omitted for double blind}
+{...}
+{...}
 
 \maketitle
 
@@ -158,7 +169,8 @@
 
 % The bibliography should be embedded for final submission.
 \bibliography{references}
+\iffull
 \input{appendix}
-
+\fi
 
 \end{document}
