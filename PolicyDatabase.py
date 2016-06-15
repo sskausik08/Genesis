@@ -494,7 +494,7 @@ class PolicyDatabase(object) :
 	def getDestinationDAGs(self) : 
 		return self.dags
 
-	def validateControlPlane(self, topology, routefilters, distances, t_res) :
+	def validateControlPlane(self, topology, routefilters, t_res) :
 		violationCount = 0
 		for pc in range(self.getPacketClassRange()) :
 			src = self.getSourceSwitch(pc)
@@ -515,14 +515,15 @@ class PolicyDatabase(object) :
 					print "G", gpath, "Z", zpath, "shortest path is", topology.getShortestPath(src,dst)
 					print "Not Shortest Path in control plane for class", pc
 					print "Genesis path distance:", topology.getPathDistance(gpath), " Zeppelin: ", topology.getPathDistance(zpath)
-					print "Zeppelin Model distance:", distances[src][dst]
 					violationCount += 1
 			if not topology.checkUniquenessShortestPath(zpath, routefilters[dst]) :
 				print "Path is not uniquely shortest for PC", pc
+				print zpath, 
 				violationCount += 1
-			if not topology.checkResilience(src, dst, t_res, copy.deepcopy(routefilters[dst])) : 
-				print "Not resilient", pc, self.getSourceSwitch(pc)
-				violationCount += 1
+			if t_res > 0 :
+				if not topology.checkResilience(src, dst, t_res, copy.deepcopy(routefilters[dst])) : 
+					print "Not resilient", pc, self.getSourceSwitch(pc)
+					violationCount += 1
 		print "Number of Violations is", violationCount
 
 	# def removeRedundantFilters(self, topology, routefilters) : 

@@ -38,7 +38,13 @@ class ZeppelinSynthesiser(object) :
 		
 		self.sums = []
 		# Resilience 
-		self.t_res = 2
+		self.t_res = 0
+
+		# Constants
+		self.MAX_GUROBI_ITERATIONS = 100
+		self.minimalFilterSolveFlag = True
+
+		self.inconsistentRFs = 0
 
 
 	def initializeSMTVariables(self) :
@@ -53,23 +59,24 @@ class ZeppelinSynthesiser(object) :
 
 		for sw1 in range(1,swCount+1):
 			for sw2 in self.topology.getSwitchNeighbours(sw1) :
-				self.edgeWeights[sw1][sw2] = self.ilpSolver.addVar(lb=1.00, ub=10000, vtype=gb.GRB.CONTINUOUS, name="E-" + str(sw1)+"-"+str(sw2) + " ")
+				self.edgeWeights[sw1][sw2] = self.ilpSolver.addVar(lb=1.00, ub=10000, vtype=gb.GRB.CONTINUOUS, name="E-" + str(sw1)+"-"+str(sw2) + "_")
 
 		for sw1 in range(1,swCount+1):
 			for sw2 in range(1, swCount + 1) :
 				# dst = 0 is the default value 
-				self.distVars[sw1][sw2][0] = self.ilpSolver.addVar(lb=0.00, vtype=gb.GRB.CONTINUOUS, name="D-" + str(sw1)+"-"+str(sw2) + " ")
+				self.distVars[sw1][sw2][0] = self.ilpSolver.addVar(lb=0.00, vtype=gb.GRB.CONTINUOUS, name="D-" + str(sw1)+"-"+str(sw2) + "_")
 				# for dst in dsts : 
 				# 	self.distVars[sw1][sw2][dst] = self.ilpSolver.addVar(lb=0.00,vtype=gb.GRB.CONTINUOUS, name="D-" + str(sw1)+"-"+str(sw2)+"-"+str(dst) + " ")
 
-		for endpt in self.endpoints : 
-			for sw2 in self.topology.getSwitchNeighbours(endpt[0]) : 
-				self.routefiltersVars[endpt[0]][sw2][endpt[1]] = self.ilpSolver.addVar(lb=0.00, ub=1.00, vtype=gb.GRB.CONTINUOUS, name="RF" + "-" + str(endpt[0])+"-"+str(sw2)+"-"+str(endpt[1]))
+		# for endpt in self.endpoints : 
+		# 	for sw2 in self.topology.getSwitchNeighbours(endpt[0]) : 
+		# 		self.routefiltersVars[endpt[0]][sw2][endpt[1]] = self.ilpSolver.addVar(lb=0.00, ub=1.00, vtype=gb.GRB.CONTINUOUS, name="RF" + "-" + str(endpt[0])+"-"+str(sw2)+"-"+str(endpt[1])+"_")
 
-		# for sw1 in range(1,swCount+1):
-		# 	for sw2 in range(1,swCount+1):
-		# 		for dst in dsts:
-		# 			self.routefiltersVars[sw1][sw2][dst] = self.ilpSolver.addVar(lb=0.00, ub=1.00, vtype=gb.GRB.BINARY, name="RF" + "-" + str(sw1)+":"+str(sw2)+"-"+str(dst))
+		for dst in dsts:
+			dag = self.destinationDAGs[dst]
+			for sw1 in dag : 
+				for sw2 in self.topology.getSwitchNeighbours(sw1) : 
+					self.routefiltersVars[sw1][sw2][dst] = self.ilpSolver.addVar(lb=0.00, ub=1.00, vtype=gb.GRB.BINARY, name="RF" + "-" + str(sw1)+":"+str(sw2)+"-"+str(dst))
 		
 
 		self.ilpSolver.update()
@@ -83,8 +90,6 @@ class ZeppelinSynthesiser(object) :
 
 	def rf(self, sw1, sw2, dst) :
 		neighbours = self.topology.getSwitchNeighbours(sw1)
-		if [sw1, dst] not in self.endpoints : 
-			raise LookupError("Non existent Route Filter variable referred!")
 		if sw2 not in neighbours : 
 			raise LookupError("Route Filter for non-neighbours referred!")
 		else : 
@@ -105,7 +110,7 @@ class ZeppelinSynthesiser(object) :
 
 		# Create list of dags 
 		for dag in self.destinationDAGs.values() : 
-			print dag
+			# print dag
 			self.spGraphs.append(dag)
 
 		self.findValidCycles(self.spGraphs)
@@ -118,7 +123,8 @@ class ZeppelinSynthesiser(object) :
 		swCount = self.topology.getSwitchCount()
 		dsts = self.pdb.getDestinations()
 
-		self.constructOverlay()		
+		self.constructOverlay()	
+		#self.overlayConnectivity()	
 		self.disableUnusedEdges()
 		self.initializeSMTVariables()
 
@@ -135,46 +141,16 @@ class ZeppelinSynthesiser(object) :
 		#modelsat = self.z3Solver.check()
 		self.ilpSolver.optimize()
 		self.z3solveTime += time.time() - solvetime
-		print "Time taken is", time.time() - solvetime
-
+	
 		self.routeFilterMode = False
-
 		status = self.ilpSolver.status
 
-
-		# if status == gb.GRB.INFEASIBLE :
-		# 	# Model infeasible (or unbounded?). Use routefilters to solve.
-		# 	self.routeFilterMode = True
-		# 	self.detectDiamonds() # Detect diamonds for route-filters
-		# 	#self.generateTrivialRouteFilters()
-		# 	self.ilpSolver = gb.Model("C3")
-		# 	self.initializeSMTVariables()
-
-		# 	self.addDjikstraShortestPathConstraints()
-
-		# 	# Prompted by Gurobi? 
-		# 	self.ilpSolver.setParam(gb.GRB.Param.BarHomogeneous, 1) 
-
-		# 	# Adding constraints with routeFilters
-		# 	for dst in dsts : 
-		# 		dag = self.destinationDAGs[dst]
-		# 		self.addDestinationDAGConstraints(dst, dag, True)
-
-		# 	# # Add max-flow end point constraints
-
-
-		# 	print "Solving ILP with routefilters"
-		# 	solvetime = time.time()
-		# 	#modelsat = self.z3Solver.check()
-		# 	#self.ilpSolver.setParam(gb.GRB.Param.Method, 2)
-		# 	self.ilpSolver.optimize()
-
-		# 	status = self.ilpSolver.status
-		if True: 
-			if status == gb.GRB.INFEASIBLE :
-				print "computing Source diamonds"
+		if status == gb.GRB.INFEASIBLE :
+			if self.minimalFilterSolveFlag : 
+				self.minimalFilterSolve()
+			else : 
+				print "solving ILP with routefilters"
 				self.routeFilterMode = True
-				self.generateResilientRouteFilters()
 				self.detectDiamonds()
 				self.ilpSolver = gb.Model("C3")
 				self.initializeSMTVariables()
@@ -201,20 +177,16 @@ class ZeppelinSynthesiser(object) :
 
 				status = self.ilpSolver.status
 
-				# if status == gb.GRB.INFEASIBLE :
-				# 	self.ilpSolver.computeIIS()
-				# 	self.ilpSolver.write("model.ilp")
-
-				# for constr in self.ilpSolver.getConstrs() :
-				# 	if constr.getAttr(gb.GRB.Attr.IISConstr) > 0 :
-				# 		print constr
-				# 		self.ilpSolver.remove(constr)
-
-				# self.ilpSolver.optimize()
-				# status = self.ilpSolver.status
-
-			#self.ilpSolver.computeIIS()
-			#self.ilpSolver.write("model.ilp")
+				if status == gb.GRB.INFEASIBLE :
+					# Perform inconsistency analysis using Gurobi
+					attempts = 1
+					inconsistencyVal = self.findInconsistency()
+					while inconsistencyVal:
+						inconsistencyVal = self.findInconsistency()
+						attempts += 1
+						if attempts > self.MAX_GUROBI_ITERATIONS :
+							break
+				
 			self.z3solveTime += time.time() - solvetime
 			print "Time taken is", time.time() - solvetime
 
@@ -225,10 +197,70 @@ class ZeppelinSynthesiser(object) :
 		self.getEdgeWeightModel(self.routeFilterMode)		
 
 		#self.pdb.printPaths(self.topology)
-		print "Checking for t-resilience", self.t_res
-		self.pdb.validateControlPlane(self.topology, self.routefilters, self.distances, self.t_res)
+		self.pdb.validateControlPlane(self.topology, self.routefilters, self.t_res)
 		#self.topology.printWeights()
 		self.printProfilingStats()
+
+	def findInconsistency(self) :
+		""" Find inconsistent set of equations """
+		self.ilpSolver = gb.Model("C3")
+		self.initializeSMTVariables()
+		dsts = self.pdb.getDestinations()
+
+		# Prompted by Gurobi? 
+		# self.ilpSolver.setParam(gb.GRB.Param.BarHomogeneous, 1) 
+		# self.ilpSolver.setParam(gb.GRB.Param.Method, 2) 
+
+		self.addDjikstraShortestPathConstraints()
+		# Adding constraints with routeFilter variables at source
+		for dst in dsts : 
+			dag = self.destinationDAGs[dst]
+			self.addDestinationDAGConstraints(dst, dag)
+
+		solvetime = time.time()
+		self.ilpSolver.optimize()
+		self.z3solveTime += time.time() - solvetime
+
+		status = self.ilpSolver.status
+		if status == gb.GRB.INFEASIBLE :
+			self.ilpSolver.computeIIS()
+			#self.ilpSolver.write("model.ilp")
+
+			for constr in self.ilpSolver.getConstrs() :
+				if constr.getAttr(gb.GRB.Attr.IISConstr) > 0 :
+					name = constr.getAttr(gb.GRB.Attr.ConstrName) 
+					fields = name.split("-")
+					if fields[0] == "RF" :
+						# Route filter constraint
+						self.addRouteFilter(int(fields[1]), int(fields[2]), int(fields[3]))
+						break
+
+			return True
+		else :
+			print "Consistent!!!"
+			return False
+
+	def minimalFilterSolve(self) :
+		""" Find inconsistent set of equations """
+		self.ilpSolver = gb.Model("C3")
+		self.initializeSMTVariables()
+		dsts = self.pdb.getDestinations()
+
+		# Prompted by Gurobi? 
+		# self.ilpSolver.setParam(gb.GRB.Param.BarHomogeneous, 1) 
+		# self.ilpSolver.setParam(gb.GRB.Param.Method, 2) 
+
+		self.addDjikstraShortestPathConstraints()
+		# Adding constraints with routeFilter variables at source
+		for dst in dsts : 
+			dag = self.destinationDAGs[dst]
+			self.addDestinationDAGConstraintsRF(dst, dag)
+
+		self.addMinimalFilterObjective()
+		solvetime = time.time()
+		self.ilpSolver.optimize()
+		self.z3solveTime += time.time() - solvetime
+
 
 	def constructOverlay(self) :
 		dsts = self.pdb.getDestinations()
@@ -320,12 +352,8 @@ class ZeppelinSynthesiser(object) :
 				# 	if [s, n] not in self.routefilters[dst] :  
 				# 		self.ilpSolver.addConstr(self.dist(s, t, dst) <= self.ew(s, n) + self.dist(n, t, dst))
 
-				for sw in range(1, swCount + 1) :
-					if sw == s or sw == t : continue 
-					if self.topology.isSwitchDisabled(sw) : 
-						continue
-
-					self.ilpSolver.addConstr(self.dist(s, t) <= self.dist(s, sw) + self.dist(sw, t), "D-" + str(constraintIndex) + " ")	
+				for sw in self.topology.getSwitchNeighbours(s) :
+					self.ilpSolver.addConstr(self.dist(s, t) <= self.ew(s, sw) + self.dist(sw, t), "D-" + str(constraintIndex) + " ")	
 					constraintIndex += 1
 
 
@@ -367,16 +395,9 @@ class ZeppelinSynthesiser(object) :
 					t = dag[t]
 		else:
 			constraintIndex = 0
-			for sw in dag : 
-				filterPresent = self.filterPresent(sw, dst)
-
+			for sw in dag :
 				t = dag[sw]
-				while t <> None :			
-					# if not filterPresent : 	
-					# 	self.ilpSolver.addConstr(self.dist(sw, t) == self.ew(sw, dag[sw]) + self.dist(dag[sw], t), "C-" + str(dst) + "-" + str(constraintIndex))
-					# 	constraintIndex += 1
-					
-					
+				while t <> None :							
 					nextsw = sw
 					totalDist = 0 # Store the distance from sw to t along dag.
 					while nextsw <> t : 
@@ -384,12 +405,12 @@ class ZeppelinSynthesiser(object) :
 						nextsw = dag[nextsw]
 
 					self.ilpSolver.addConstr(self.dist(sw, t) <= totalDist)
-
-					# if [sw, t] in self.endpoints : 
+ 
 					neighbours = self.topology.getSwitchNeighbours(sw)
 					for n in neighbours : 
 						if n <> dag[sw] and [sw, n] not in self.routefilters[dst] : 
-							self.ilpSolver.addConstr(totalDist <= self.ew(sw, n) + self.dist(n, t) - 1, "C-" + str(dst) + "-" + str(constraintIndex))
+							self.ilpSolver.addConstr(totalDist <= self.ew(sw, n) + self.dist(n, t) - 1, "RF-" + str(sw) + "-" 
+								+ str(n) + "-" + str(dst) + "-" + str(constraintIndex))
 							constraintIndex += 1
 					
 					t = dag[t]			
@@ -409,16 +430,35 @@ class ZeppelinSynthesiser(object) :
 
 				self.ilpSolver.addConstr(self.dist(sw, t) <= totalDist)
 
-				if [sw, dst] in self.endpoints : 
-					# Route filtering equations
-					neighbours = self.topology.getSwitchNeighbours(sw)
-					for n in neighbours : 
-						if n <> dag[sw] : 
-							self.ilpSolver.addConstr(totalDist <= 100000*self.rf(sw,n,dst) + self.ew(sw, n) + self.dist(n, t) - 1, "C-" + str(dst) + "-" + str(constraintIndex))
-							constraintIndex += 1
+				# Route filtering equations
+				neighbours = self.topology.getSwitchNeighbours(sw)
+				for n in neighbours : 
+					if n <> dag[sw] : 
+						self.ilpSolver.addConstr(totalDist <= 100000*self.rf(sw,n,dst) + self.ew(sw, n) + self.dist(n, t) - 1, "C-" + str(dst) + "-" + str(constraintIndex))
+						constraintIndex += 1
 				
 				t = dag[t]			
 
+	def addMinimalFilterObjective(self) : 
+		totalRouteFilters = 0
+		dsts = self.pdb.getDestinations()
+		for dst in dsts:
+			dag = self.destinationDAGs[dst]
+			for sw1 in dag : 
+				for sw2 in self.topology.getSwitchNeighbours(sw1) : 
+					if sw2 == dag[sw1] : continue
+					else : totalRouteFilters += self.rf(sw1,sw2,dst)
+
+		self.ilpSolver.setObjective(totalRouteFilters, gb.GRB.MINIMIZE)
+
+
+
+	def addRouteFilter(self, sw1, sw2, dst) :
+		""" Add rf at sw1 -> sw2 for dst """
+		if [sw1, sw2] not in self.routefilters[dst] :
+			self.routefilters[dst].append([sw1, sw2]) 
+			self.inconsistentRFs += 1
+		print "RF",sw1, sw2, dst
 
 	# def addMaxFlowConstraints(self, src, dst, t_res) :
 	# 	swCount = self.topology.getSwitchCount()
@@ -508,26 +548,26 @@ class ZeppelinSynthesiser(object) :
 			# Route filters not used. 
 			return 
 
-		# totalRouteFilters = 0
-		# setRouteFilters = 0
-		# for dst in dsts : 
-		# 	dag = self.destinationDAGs[dst]
-		# 	#self.findRouteFilters(dst, dag)
-		# 	for sw in dag : 
-		# 		if sw == dst : continue
-		# 		neighbours = self.overlay[sw]
-		# 		for n in neighbours : 
-		# 			if n <> dag[sw] : 
-		# 				totalRouteFilters += 1
-		# 			if [sw,dst] in self.endpoints :
-		# 				rf = self.rf(sw,n,dst).x
-		# 				if rf > 0 and n <> dag[sw]:
-		# 					if [sw, n] not in self.routefilters[dst] :
-		# 						self.routefilters[dst].append([sw,n])
+		totalRouteFilters = 0
+		setRouteFilters = 0
+		for dst in dsts : 
+			dag = self.destinationDAGs[dst]
+			for sw in dag : 
+				if sw == dst : continue
+				neighbours = self.overlay[sw]
+				for n in neighbours : 
+					if n <> dag[sw] : 
+						totalRouteFilters += 1
+					# if [sw,dst] in self.endpoints :
+					# 	rf = self.rf(sw,n,dst).x
+					# 	if rf > 0 and n <> dag[sw]:
+					# 		if [sw, n] not in self.routefilters[dst] :
+					# 			self.routefilters[dst].append([sw,n])
 		
-		# for dst in dsts : 
-		# 	setRouteFilters += len(self.routefilters[dst])
-		# print "Ratio of routefilters : ", setRouteFilters, totalRouteFilters 
+		for dst in dsts : 
+			setRouteFilters += len(self.routefilters[dst])
+		print "Ratio of routefilters : ", setRouteFilters, totalRouteFilters 
+		print "inconsistent RFs", self.inconsistentRFs
 
 	# def findRouteFilters(self, dst, dag) :
 	# 	""" Finds the required route filters for dst from model """
@@ -1166,7 +1206,11 @@ class ZeppelinSynthesiser(object) :
 
 		for sw in sp2 :
 			if type(sp2[sw]) == int : 
-				graph.add_edge(sp2[sw], sw)
+				if sw in sp1 and sp1[sw] == sp2[sw] :
+					# Same edge, dont add
+					pass
+				else :
+					graph.add_edge(sp2[sw], sw)
 			elif hasattr(sp2[sw], '__iter__') :
 				for n in sp2[sw] :
 					graph.add_edge(n, sw)
