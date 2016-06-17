@@ -1257,6 +1257,7 @@ class ZeppelinSynthesiser(object) :
 	def findCycle(self, sp1, sp2, disabledEdges) :
 		""" sp1 forward, sp2 backward """ 
 		#print "finding cycles between", sp1, sp2
+		dsts = self.pdb.getDestinations()
 		graph = nx.DiGraph()
 		for sw in sp1 : 
 			graph.add_node(sw)
@@ -1278,31 +1279,36 @@ class ZeppelinSynthesiser(object) :
 					# Add backward edge to graph 
 					graph.add_edge(n, sw)
 
-		# Graph constructed. For every node in sp1, find cycle basis
-		for sw in sp1 : 
+		# Graph constructed. For every node in sp1, 
+		# find and break cycles till all are removed.
+		while True : 
 			try :
 				cycle = nx.find_cycle(graph, orientation='original')
 			except :
 				cycle = []
-			# find edge to disable
 			if cycle == [] :
 				break
 			print "CYCLE ======== ", cycle, cycle[0], len(cycle) 
+			# find edge to disable
 			prevEdge = cycle[0]
-			if prevEdge[1] in sp1[prevEdge[0]] :	
+			if prevEdge[0] in sp1 and prevEdge[1] in sp1[prevEdge[0]] :	
 				inSp1 = True 
 			else :
 				inSp1 = False
 			edgeRemoved = False
 			for i in range(1, len(cycle) - 1) :
 				edge = cycle[i]
-				#print edge
 				if edge[0] in sp1 and edge[1] in sp1[edge[0]] and not inSp1 : 
 					# backward edge in sp2 entering sp1. Can disable this for route-filtering.
-					disabledEdges.append([prevEdge[1], prevEdge[0]]) # disable the forward egde while creating the directed combined graph
+					disabledEdges.append([prevEdge[1], prevEdge[0]]) # disable the forward edge while creating the directed combined graph
 					graph.remove_edge(prevEdge[0], prevEdge[1]) # Remove backward edge from graph
 					print "Removing edge", prevEdge[0], prevEdge[1]
 					edgeRemoved = True
+
+					# Find route-filter corresponding to this edge disable
+					for dst in dsts :
+						# trace cycle 
+
 					break
 
 				prevEdge = [edge[0], edge[1]]
@@ -1315,8 +1321,15 @@ class ZeppelinSynthesiser(object) :
 				#print "Edge removed status", edgeRemoved
 
 			if not edgeRemoved : 
-				print "Edge not removed"
-				exit(0)
+				# No transition from sp2 to sp1 seen. 
+				# Cycle[0] in sp1, last edge will be disabled
+				if cycle[0][0] in sp1 and cycle[0][1] in sp1[cycle[0][0]] :
+					disabledEdges.append([prevEdge[1], prevEdge[0]]) # disable the forward edge while creating the directed combined graph
+					graph.remove_edge(prevEdge[0], prevEdge[1]) # Remove backward edge from graph
+					print "Removing edge", prevEdge[0], prevEdge[1]
+				else :
+					print "Problemo"
+					exit(0)
 
 
 
