@@ -42,7 +42,7 @@ class ZeppelinSynthesiser(object) :
 
 		# Constants
 		self.MAX_GUROBI_ITERATIONS = 100
-		self.minimalFilterSolveFlag = True
+		self.minimalFilterSolveFlag = False
 
 		self.inconsistentRFs = 0
 
@@ -109,11 +109,15 @@ class ZeppelinSynthesiser(object) :
 		self.spGraphs = []
 
 		# Create list of dags 
-		for dag in self.destinationDAGs.values() : 
-			# print dag
-			self.spGraphs.append(dag)
+		# for dag in self.destinationDAGs.values() : 
+		# 	# print dag
+		# 	spGraph = dict()
+		# 	for sw in dag :
+		# 		spGraph[sw] = []
+		# 		if dag[sw] <> None : 
+		# 			spGraph[sw].append(dag[sw])
 
-		self.findValidCycles(self.spGraphs)
+		# 	self.spGraphs.append(spGraph)
 
 		self.endpoints = copy.deepcopy(endpoints)
 		self.routefilters = dict()
@@ -152,6 +156,9 @@ class ZeppelinSynthesiser(object) :
 				print "solving ILP with routefilters"
 				self.routeFilterMode = True
 				self.detectDiamonds()
+
+				self.findValidCycles()
+				exit(0)
 				self.ilpSolver = gb.Model("C3")
 				self.initializeSMTVariables()
 
@@ -1177,19 +1184,79 @@ class ZeppelinSynthesiser(object) :
 						if n <> dag[sw] and [sw, n] not in self.routefilters[dst] : 
 							self.routefilters[dst].append([sw,n])
 
-	def findValidCycles(self, spList) :
-		""" Find valid cycles for sp with rest of spList """
+	def createDestinationSPGraphs(self, t) :
+		""" Find all shortest paths ending in t """
 
-		for sp1 in spList :
-			for sp2 in spList : 
+		spGraph = dict()
+		spGraph[t] = [] # No neighbours for dst
+		
+		dsts = self.pdb.getDestinations()
+		for dst in dsts :
+			dstGraph = dict()
+			dstGraph[t] = []
+			dag = self.destinationDAGs[dst]
+
+			while True:
+				changeFlag = False
+				for sw in dag :
+					if dag[sw] in spGraph and sw not in spGraph: 
+						spGraph[sw] = [dag[sw]]
+						changeFlag = True
+				if not changeFlag :
+					# All paths added to spGraph.
+					break
+
+			# combine dstGraph with spGraph
+			for sw in dstGraph :
+				if sw in spGraph :
+					for n in dstGraph[sw] :
+						if n not in spGraph[sw] :
+							spGraph[sw].append(n)
+				else :
+					spGraph[sw] = dstGraph[sw]
+
+		# Check if target is still empty
+		if spGraph[t] <> [] :
+			print "Some error!"
+
+		return spGraph
+
+	def findValidCycles(self) :
+		""" Find valid cycles"""
+
+		swCount = self.topology.getSwitchCount()
+		dstSPGraphs = []
+
+		# Create destination SPGraphs
+		for sw in range(1, swCount + 1) :
+			dstSPGraphs.append(self.createDestinationSPGraphs(sw))
+
+		for sp1 in dstSPGraphs :
+			# Something with route filters!
+			if len(sp1) <= 1 : 
+				continue
+
+			# Initialize disabled Edges to the requisite route filters
+			disabledEdges = [] 
+			dsts = self.pdb.getDestinations()
+			for dst in dsts :
+				dag = self.destinationDAGs[dst]
+				filters = self.routefilters[dst]
+				for rf in filters :
+					if rf[0] in sp1 and dag[rf[0]] in sp1[rf[0]] :
+						# path corresponding to filter is in sp1
+						disabledEdges.append(rf)
+			
+			for sp2 in dstSPGraphs :
 				if sp1 == sp2 :
 					continue
+				self.findCycle(sp1, sp2, disabledEdges)
+				#print "Edges disabled are", disabledEdges
 
-			self.findCycle(sp1, sp2)
 
-	def findCycle(self, sp1, sp2) :
+	def findCycle(self, sp1, sp2, disabledEdges) :
 		""" sp1 forward, sp2 backward """ 
-		print sp1
+		#print "finding cycles between", sp1, sp2
 		graph = nx.DiGraph()
 		for sw in sp1 : 
 			graph.add_node(sw)
@@ -1198,29 +1265,58 @@ class ZeppelinSynthesiser(object) :
 			graph.add_node(sw)
 
 		for sw in sp1 : 
-			if type(sp1[sw]) == int : 
-				graph.add_edge(sw, sp1[sw])
-			elif hasattr(sp1[sw], '__iter__') :
-				for n in sp1[sw] : 
-					graph.add_edge(sw, n)
+			for n in sp1[sw] : 
+				graph.add_edge(sw, n)
 
 		for sw in sp2 :
-			if type(sp2[sw]) == int : 
-				if sw in sp1 and sp1[sw] == sp2[sw] :
-					# Same edge, dont add
-					pass
+			for n in sp2[sw] :
+				if sw in sp1 and n in sp1[sw] : 
+					continue
+				elif [sw, n] in disabledEdges : 
+					continue
 				else :
-					graph.add_edge(sp2[sw], sw)
-			elif hasattr(sp2[sw], '__iter__') :
-				for n in sp2[sw] :
+					# Add backward edge to graph 
 					graph.add_edge(n, sw)
 
 		# Graph constructed. For every node in sp1, find cycle basis
 		for sw in sp1 : 
 			try :
-				print nx.find_cycle(graph, sw, orientation='original')
+				cycle = nx.find_cycle(graph, orientation='original')
 			except :
-				pass
+				cycle = []
+			# find edge to disable
+			if cycle == [] :
+				break
+			print "CYCLE ======== ", cycle, cycle[0], len(cycle) 
+			prevEdge = cycle[0]
+			if prevEdge[1] in sp1[prevEdge[0]] :	
+				inSp1 = True 
+			else :
+				inSp1 = False
+			edgeRemoved = False
+			for i in range(1, len(cycle) - 1) :
+				edge = cycle[i]
+				#print edge
+				if edge[0] in sp1 and edge[1] in sp1[edge[0]] and not inSp1 : 
+					# backward edge in sp2 entering sp1. Can disable this for route-filtering.
+					disabledEdges.append([prevEdge[1], prevEdge[0]]) # disable the forward egde while creating the directed combined graph
+					graph.remove_edge(prevEdge[0], prevEdge[1]) # Remove backward edge from graph
+					print "Removing edge", prevEdge[0], prevEdge[1]
+					edgeRemoved = True
+					break
+
+				prevEdge = [edge[0], edge[1]]
+				if edge[0] in sp1 and edge[1] in sp1[edge[0]] :
+					inSp1 = True
+					#print edge, "True"
+				else :
+					#print edge, "False"
+					inSp1 = False
+				#print "Edge removed status", edgeRemoved
+
+			if not edgeRemoved : 
+				print "Edge not removed"
+				exit(0)
 
 
 
