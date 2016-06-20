@@ -71,7 +71,7 @@ given a class $pc$,  $(sw_0 \ldots sw_k, pc) \in \Pi$ iff :
 \begin{mydef}
 Given the set of constraints $\Psi$ corresponding to the input policies,
 a set of paths $\Pi$ is a solution to $\Psi$, $\Pi \models \Psi$, 
-if there exists $Fwd, Reach$ such that $(Fwd, Reach) \models \psi$ and $\ \Pi=\texttt{paths}(Fwd,Reach)$.
+if there exists $Fwd, Reach$ such that $(Fwd, Reach) \models \Psi$ and $\ \Pi=\texttt{paths}(Fwd,Reach)$.
 
 \end{mydef}
 %An example network forwarding model is shown in \cref{fig:model}. 
@@ -80,12 +80,12 @@ if there exists $Fwd, Reach$ such that $(Fwd, Reach) \models \psi$ and $\ \Pi=\t
 
 One of the decisions oriented towards performance is modelling the forwarding and reachability relations using propositions, so that we can reduce enforcement of policies like reachability, waypoints and isolation to a Boolean Satisfiability Problem (SAT) problem\footnote{An earlier iteration of our model used \emph{uninterpreted functions} and modeled reachability using recursive constraints, 
 	which was slower with a greater number of constraints.}. 
-The two relations for forwarding and reachability ensure we can write the constraints in a concise and intuitive manner.
+The relations for forwarding and reachability ensure we can write the constraints in a concise and intuitive manner.
 
 \subsection{Reachability Constraints} \label{sec:reach}
 We first discuss the constraints generated for reachability policies without waypoints.
 For a reachability policy $s >> d$ and packet class $pc$, the added constraints must ensure that 
-every solution model represents a path 
+the solution model represents a path 
 from source to destination. 
 The base constraint states that $(s, pc,0) \in Reach$ meaning
 that $s$ can be reached in $0$ steps. 
@@ -117,7 +117,7 @@ However, since there is no restriction on number of $Fwd$ values that can be tru
 also multiple paths to the destination. 
 These can also create forwarding loops. 
 Concretely, this is not a problem: as long as there is  at least one path from $s$ to $d$ we can recover it from the solution of the constraints. 
-Moreover, this representation is quite efficient, as forcing all paths to be unique would
+Moreover, this representation is quite efficient, as forcing a singular path would
 require to add further constraints.
 % we are able to extract a path from the solution without 
 %adding additional constraints to ensure the semantics of \emph{unicast} forwarding. 
@@ -142,9 +142,9 @@ in $W_i$ are reached after all waypoints in $W_{i - 1}$ :
 \end{multline}
 %TODO
 Previously, we imposed no restriction on the number of paths 
-from $s$ to $d$. In the case of waypoints, the constraints satisfy
+from $s$ to $d$. In the case of waypoints, this can result in 
 a solution with multiple paths, with each individual path traversing
-some of the waypoints, which is not correct for a waypoint policy.
+some of the waypoints, which is not the correct enforcement for a waypoint policy.
 Thus, we need to ensure the solver returns a single path traversing
 all the waypoints. To achieve this, we limit the number of
 forwarding rules for $pc$ at a switch to 0 or 1. 
@@ -158,13 +158,14 @@ We then add constraints stating that the size of the forwarding set must not exc
 \begin{equation}
 		\forall sw,pc .\ |FwdSet(sw,pc)| \leq 1 \label{eq:fwdset}.
 \end{equation}
-Here $|A|$ denotes the size of set $A$. The above constraints are expressed as follows: 
+Here $|A|$ denotes the size of set $A$. The above constraints are expressed in SAT 
+as follows: 
 \begin{equation}
 \bigvee_{\mathclap{k_1 \in N(sw)}} Fwd(sw, k_1, pc) \wedge (\bigwedge_{\mathclap{k_2 \in N(sw), k_2 \not= k_1}} \neg Fwd(sw, k_2, pc))
 \end{equation}
 %The forwarding set constraints ensure that the forwarding rules exist only on the path from source to destination, and no other rules exist in the solution. If a switch has a forwarding rule to  elsewhere, then it would not have a rule for the path, and the destination will not be reachable. These restrictions will also ensure there are no forwarding loops in the path. 
 Since, there cannot exist multiple rules at a switch, the model will contain a 
-single path from source to destination for each packet class traversing the
+single path from source to destination for $pc$ traversing the
 waypoints in the right order.
 %There would have to 
 %be more than one rule at a switch for multiple paths from the source to exist. 
@@ -177,8 +178,8 @@ switch, $pc_1$ and $pc_2$ must not forward to the same switch:
 \begin{equation}
 	\forall n_1.~\neg ( \exists n_2. Fwd(n_1,n_2,pc_1) \wedge Fwd(n_1,n_2,pc_2)). \label{eq:isolation}
 \end{equation}
-For a link isolation policy $pc_1 <> \ pc_2$, the following constraints are 
-added to $\Psi$:
+For a link isolation policy $pc_1 <> \ pc_2$ which prevents sharing a link
+in both direction, the constraints added are:
 \begin{multline}
 \forall n_1.~\neg ( \exists n_2. Fwd(n_1,n_2,pc_1) ~~\wedge \\ (Fwd(n_1,n_2,pc_2) \vee Fwd(n_2,n_1,pc_2))). \label{eq:linkisolation}
 \end{multline}
@@ -200,13 +201,17 @@ the additional rules conflicting with another packet class.
 
 \subsection{Capacity Constraints} \label{sec:linkcap}
 %%\subsubsection{Link Capacity Constraints} 
-For a link capacity policy on the link $sw_1 \rightarrow sw_2: \omega$, we use the theory of rational linear arithmetic to add constraints on the link so that capacity used by the flows traversing the link does not exceed $\omega$. As input, we have the traffic rates $T(pc)$ of
-each of packet classes, and the constraints must ensure that the traffic rate of $sw_1 \rightarrow sw_2$
+For a link capacity policy on the link $sw_1 \rightarrow sw_2: \omega$, 
+we use the theory of linear rational arithmetic 
+to add constraints on the link. As input, we have the traffic rates $T(pc)$ of
+each of packet classes, and the constraints must ensure that the traffic rate on $sw_1 \rightarrow sw_2$
 does not exceed $\omega$ :
 \begin{equation}
  \sum_{\forall pc} \texttt{ite}(Fwd(sw_1,sw_2, pc), T(pc), 0) \leq \omega .
 \end{equation}
-A switch table policy $sw : \gamma$ specifies that the number of forwarding 
+If a class $pc$ uses link $sw_1 \rightarrow sw_2$, then $(sw_1,sw_2, pc) \in Fwd$
+and $T(pc)$ is considered in the utilization of the link. \\
+\noindent A switch table policy $sw : \gamma$ specifies that the number of forwarding 
 rules on $sw$ must not exceed $\gamma$. Similar to the link capacity policy,
 the constraints ensure the count of all packet classes which traverse $sw$ (each 
 will require a forwarding rule) is $\leq \gamma$ :

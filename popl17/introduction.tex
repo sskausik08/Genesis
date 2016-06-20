@@ -11,7 +11,8 @@ to basic reachability among her hosts or applications --- that traffic
 attempting to reach some of her applications be examined by a set of
 middleboxes for auditing and access controls. Another tenant may
 additionally desire (a subset of) her flows to be isolated from
-others' flows for strong security or QoS reasons. On top of this,
+others' flows for strong security or QoS (Quality-of-Service) considerations.
+ Additionally,
 cloud operators may need to optimize traffic engineering objectives
 like minimizing maximum load 
 and deal with heterogeneous resource demands like switch table 
@@ -20,7 +21,7 @@ sizes.
 Today, configuring network devices to implement these diverse
 and complex policies in aggregate is manual, ad-hoc, and error-prone. 
 This can lead to mis-configurations and violations of tenant
-service-level agreements which can have a severe performance and
+service-level agreements (SLAs) which can have a severe performance and
 security impact.
 
 %%  However, in real-life, the
@@ -95,7 +96,7 @@ this vision in the multi-tenant datacenter context.
 We present \Name, a framework for declaratively specifying and
 enforcing complex policies 
 like isolation, capacity policies, and middlebox
-traversals, and enforcing some of these are
+traversals, where enforcing some of these are
 NP-complete in complexity. 
 Thus, \Name 
 encodes the problem of enforcing various
@@ -149,7 +150,7 @@ a 1.5$\times - $400$\times$ speedup.
 
  Secondly, we develop a \emph{divide-and-conquer}
  synthesis
- procedure, that leverages the structure of tenants'
+ procedure that leverages the structure of tenants'
  isolation policy interactions to improve synthesis performance. The
   procedure partitions the input policies
   into effective components to synthesize these

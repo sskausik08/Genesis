@@ -4,7 +4,7 @@ traffic engineering and network repair, which can be tackled using
 extensions of solvers: SMT with linear optimization objectives and MaxSMT~\cite{maxsmt}.
 \subsection{Traffic Engineering}
 While the link capacity policies described in \Cref{sec:linkcap} can
-be used to perform a strict form of traffic engineering(TE) in terms of 
+be used to perform a strict form of traffic engineering (TE) in terms of 
 adhering to link bandwidths, support for objectives
 like minimizing the maximum link utilization and minimizing total link utilization
 is highly \emph{desirable}.
@@ -57,10 +57,10 @@ Formally, the MaxSMT problem is as follows: given a set
 of formulas $\Psi_0, \Psi_1, \ldots \Psi_n$ with associated 
 weights $w_1, \ldots w_n$, find a subset $M \subseteq \{1, \ldots n\}$
 s.t: 
-\begin{enumerate}
+\begin{compactenumerate}
 	\item $\Psi_0 \wedge \bigwedge_{i \in M} \Psi_i$ is satisfiable.
 	\item The \emph{award} $\sum_{i \in M} w_i$  is maximized.
-\end{enumerate}
+\end{compactenumerate}
 The constraints $\Psi_1, \ldots \Psi_n$ denote \emph{soft} constraints, and
 the weights $w_i$ encodes the award for including $\Psi_i$ in the satisfying
 assignment. 
