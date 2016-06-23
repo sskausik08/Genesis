@@ -93,6 +93,7 @@ class ZeppelinSynthesiser(object) :
 		for dst in self.pdb.getDestinations() :
 			self.routefilters[dst] = []
 
+
 	def initializeEndpointResilience(self) : 
 		# Without filters, all sources have maximum resilience = number of source neighbours.
 		for endpt in self.endpoints :
@@ -174,6 +175,8 @@ class ZeppelinSynthesiser(object) :
 				self.routeFilterMode = True
 				self.initializeRouteFilters()
 				self.detectDiamonds()
+
+				self.branchingFilters()
 				diamondLoss = self.calculateResilienceLoss()
 
 				#self.findValidCycles()
@@ -261,7 +264,7 @@ class ZeppelinSynthesiser(object) :
 
 			#self.plotUnsatCore()
 			# Pick filters greedily?
-			self.maximizeResilienceRouteFilter()
+			#self.maximizeResilienceRouteFilter()
 			return True
 		else :
 			print "Consistent!!!"
@@ -972,7 +975,7 @@ class ZeppelinSynthesiser(object) :
 								assignedRanks += 1
 
 		# Generate Route Filters
-		self.generateRouteFilters()
+		self.generateDiamondRouteFilters()
 	
 	def diamondsInDAG(self, dst) :
 		""" returns if there are diamonds in the dag"""
@@ -1110,7 +1113,7 @@ class ZeppelinSynthesiser(object) :
 			nextsw = dag[nextsw]
 		return False
 
-	def generateRouteFilters(self) :
+	def generateDiamondRouteFilters(self) :
 		""" Generate the set of routefilters from diamonds"""
 
 		swCount = self.topology.getSwitchCount()
@@ -1144,8 +1147,10 @@ class ZeppelinSynthesiser(object) :
 								if rank2 < rank1 : 
 									# add s-nextsw2 to dst's route filters
 									self.addRouteFilter(s, nextsw2, dst)
-	
 
+	
+		# Creating a copy of diamond route-filters.
+		self.diamondRouteFilters = copy.deepcopy(self.routefilters)
 		# print self.routefilters
 	# 	print self.dstDiamonds
 
@@ -1178,6 +1183,79 @@ class ZeppelinSynthesiser(object) :
 					for n in self.topology.getSwitchNeighbours(sw) :
 						if n <> dag[sw] and [sw, n] not in self.routefilters[dst] : 
 							self.routefilters[dst].append([sw,n])
+
+	def branchingFilters(self) :
+		""" Perform a BFS branching on route-filter to find optimal """
+
+		self.routefilterSetQueue = [[]]
+
+		while len(self.routefilterSetQueue) > 0 :
+			rfSet = self.routefilterSetQueue.pop(0)
+			rfBranchs = self.branch(rfSet)
+			if rfBranchs <> None :
+				self.routefilterSetQueue.extend(rfBranchs)
+			else :
+				# Consistent
+				return
+
+
+	def branch(self, rfs) :
+		""" Find inconsistent set of equations """
+		print "Branching at ", len(rfs)
+		self.ilpSolver = gb.Model("C3")
+		self.initializeSMTVariables()
+		dsts = self.pdb.getDestinations()
+
+		self.routefilters = copy.deepcopy(self.diamondRouteFilters)
+
+		for rf in rfs :
+			self.addRouteFilter(rf[0], rf[1], rf[2])
+
+		# Prompted by Gurobi? 
+		# self.ilpSolver.setParam(gb.GRB.Param.BarHomogeneous, 1) 
+		# self.ilpSolver.setParam(gb.GRB.Param.Method, 2) 
+
+		self.addDjikstraShortestPathConstraints()
+		# Adding constraints with routeFilter variables at source
+		for dst in dsts : 
+			dag = self.destinationDAGs[dst]
+			self.addDestinationDAGConstraints(dst, dag)
+
+		solvetime = time.time()
+		self.ilpSolver.optimize()
+		self.z3solveTime += time.time() - solvetime
+
+		status = self.ilpSolver.status
+		if status == gb.GRB.INFEASIBLE :
+			solvetime = time.time()
+			self.ilpSolver.computeIIS()
+			self.z3solveTime += time.time() - solvetime
+
+			rfBranchs = []
+			for constr in self.ilpSolver.getConstrs() :
+				if constr.getAttr(gb.GRB.Attr.IISConstr) > 0 :
+					name = constr.getAttr(gb.GRB.Attr.ConstrName) 
+					fields = name.split("-")
+					if fields[0] == "RF" :
+						# Route filter constraint
+						rfs1 = copy.deepcopy(rfs)
+						rfs1.append([int(fields[1]), int(fields[2]), int(fields[4])])
+						rfBranchs.append(rfs1)
+
+			return rfBranchs
+		else :
+			print "Consistent!!! Optimal!!!"
+			# swCount = self.topology.getSwitchCount()
+			# for i in range(1, swCount + 1) :
+			# 	for j in range(1, swCount + 1) :
+			# 		for k in range(1, swCount + 1) :
+			# 			if k in self.filterDependencies[i][j] :
+			# 				print i,j,k, self.filterDependencies[i][j][k]
+			# 				if k in self.routefilters :
+			# 					print [i,j] in self.routefilters[k]
+			return None
+
+
 
 	def createDestinationSPGraphs(self, t) :
 		""" Find all shortest paths ending in t """
@@ -1461,43 +1539,43 @@ class ZeppelinSynthesiser(object) :
 	# 				diamonds = self.diamondPaths[s][t]
 	# 				for dst1 in diamonds : 
 
-	def leastSubsetFilters(self, routefilters, N) :
-		""" Add constraints such that the smallest N elements in the set routefilters
-		are equal to 0 """
-		T = len(routefilters)
-		sortedFilters = []
-		while len(sortedFilters) < T : 
-			[maxF, routefilters] = self.bubbleMax(routefilters)
-			sortedFilters.append(maxF)
+	# def leastSubsetFilters(self, routefilters, N) :
+	# 	""" Add constraints such that the smallest N elements in the set routefilters
+	# 	are equal to 0 """
+	# 	T = len(routefilters)
+	# 	sortedFilters = []
+	# 	while len(sortedFilters) < T : 
+	# 		[maxF, routefilters] = self.bubbleMax(routefilters)
+	# 		sortedFilters.append(maxF)
 
-		sumFilters = 0
-		for i in range(N) : 
-			sumFilters += sortedFilters[T - N + i]
+	# 	sumFilters = 0
+	# 	for i in range(N) : 
+	# 		sumFilters += sortedFilters[T - N + i]
 
-		self.ilpSolver.addConstr(sumFilters == 0)
+	# 	self.ilpSolver.addConstr(sumFilters == 0)
 	
 
-	def bubbleMax(self, filters) :
-		""" Returns the smallest filter, and the rest of the filter set """
+	# def bubbleMax(self, filters) :
+	# 	""" Returns the smallest filter, and the rest of the filter set """
 
-		newFilters = []
-		maxX = filters.pop()
-		while len(filters) <> 0 :
-			x = filters.pop()
-			xmax = self.ilpSolver.addVar(lb=0.00, ub=1.00, vtype=gb.GRB.CONTINUOUS)
-			xmin = self.ilpSolver.addVar(lb=0.00, ub=1.00, vtype=gb.GRB.CONTINUOUS)
-			absdiff = self.ilpSolver.addVar(lb=0.00, ub=1.00, vtype=gb.GRB.CONTINUOUS)
-			self.ilpSolver.update()
+	# 	newFilters = []
+	# 	maxX = filters.pop()
+	# 	while len(filters) <> 0 :
+	# 		x = filters.pop()
+	# 		xmax = self.ilpSolver.addVar(lb=0.00, ub=1.00, vtype=gb.GRB.CONTINUOUS)
+	# 		xmin = self.ilpSolver.addVar(lb=0.00, ub=1.00, vtype=gb.GRB.CONTINUOUS)
+	# 		absdiff = self.ilpSolver.addVar(lb=0.00, ub=1.00, vtype=gb.GRB.CONTINUOUS)
+	# 		self.ilpSolver.update()
 
-			self.ilpSolver.addConstr(2*xmax == maxX + x + absdiff)
-			self.ilpSolver.addConstr(2*xmin == maxX + x - absdiff)
-			self.ilpSolver.addConstr(maxX - x <= absdiff)
-			self.ilpSolver.addConstr(maxX - x >= -1 * absdiff)
+	# 		self.ilpSolver.addConstr(2*xmax == maxX + x + absdiff)
+	# 		self.ilpSolver.addConstr(2*xmin == maxX + x - absdiff)
+	# 		self.ilpSolver.addConstr(maxX - x <= absdiff)
+	# 		self.ilpSolver.addConstr(maxX - x >= -1 * absdiff)
 
-			maxX = xmax
-			newFilters.append(xmin)
+	# 		maxX = xmax
+	# 		newFilters.append(xmin)
 
-		return [maxX, newFilters]
+	# 	return [maxX, newFilters]
 
 
 	# Profiling Statistics : 
