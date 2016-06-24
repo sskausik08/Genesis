@@ -9,13 +9,13 @@ all input policies can be prohibitively expensive.
 Thus, we propose 
 \emph{policy-compliant resiliency} to tackle network failures
 by \emph{proactively} synthesizing resilient data planes that, even in the event
-of bounded number of link failures, do not violate input policies. This eliminates the 
+of a bounded number of link failures, do not violate input policies. This eliminates the 
 need to resynthesize the forwarding
 configuration for every network failure event.
 
 In this section, we describe the transformation of input 
-policies to provide $t-resilience$, i.e in the event of upto arbitary
-$t$ link failures, the synthesized data plane still has a path
+policies to provide $t-resilience$~\cite{plinko}, i.e in the event of upto $t$
+arbitrary link failures, the synthesized data plane still has a path
 for each packet class  satisfying all policies. This is achieved
 by synthesizing backup paths satisfying input policies.
 We only consider reachability, waypoint,
@@ -39,10 +39,10 @@ Given the physical topology $T=(S,L)$, a link-failure
 scenario $\theta$ is defined as a set of failed links $\theta = \{l_1, l_2 \ldots ... l_n\}$,
 such that $\forall i.\ l_i \in L$.
 % For $t-resilience$, we need to
-%consider synthesis under any set of $t$ or less arbitary link failures.
+%consider synthesis under any set of $t$ or less arbitrary link failures.
 %\begin{mydef}
 	We define $\Theta(t)$ as the set of all failure scenarios where no more than $t$
-	arbitary links fail, i.e $\Theta(t) = \{ \ \theta \ \ | \ \ |\theta| \leq t\}$.
+	arbitrary links fail, i.e $\Theta(t) = \{ \ \theta \ \ | \ \ |\theta| \leq t\}$.
 %\end{mydef}
 %We define the projected topology $T^{\theta} = (S, L - \theta)$ as the active 
 %physical topology under the failure scenario $\theta$. 	For each class $pc$,
@@ -74,7 +74,7 @@ destination for the packet class in the active data plane $\xi_\theta$.
 		\begin{algorithmic}[1]
 			\State{[Input] $PC$: Packet classes (Reachability/Waypoint policies)}
 			\State{[Input] $I$: Isolation policies (Traffic and Link types)}
-			\State{[Input] $t$: Maximum number of arbitary link failures}
+			\State{[Input] $t$: Maximum number of arbitrary link failures}
 			\State{[Output] $PC^R, I^R$: Transformed set of policies such that the synthesized data
 				plane is $t-resilient$}
 			\vspace*{0.25cm}
@@ -108,14 +108,14 @@ The synthesized data plane $\hat{\xi} = (S, L_{pc})$ for class $pc$ is construct
 paths in the resilient packet class set $\hat{pc} = \{rc_1,\ldots,rc_{t+1}\}$
 i.e $L_{pc} = \sum\limits_{rc \in \hat{pc}} L_{rc}$.  
 Each path of $\hat{pc}$ satisfies the reachability/waypoint policy, 
-and any arbitary $t$ link failure scenario cannot affect all $t+1$ paths of $\hat{pc}$.
+and any arbitrary $t$ link failure scenario cannot affect all $t+1$ paths of $\hat{pc}$.
 
 However, the resilient paths need to satisfy the input isolation policies with other 
 packet classes (which themselves have $t+1$ paths for resilience). Thus, for a 
 given policy $pc_1 || ~pc_2$, we add isolation policies to every pair of 
 classes of $\hat{pc_1}$ and $\hat{pc_2}$ (line \ref{lst:line:respolicy}). This ensures that any path 
 chosen in the data planes of $pc_1$ and $pc_2$ will be isolated from one 
-another, thus providing policy-compliance under any arbitary $t-link$ failure
+another, thus providing policy-compliance under any arbitrary $t-link$ failure
 scenario. \Cref{fig:restransform}(a) demonstrates an example transformation for providing $1-resilience$. 
 \begin{theorem}[Soundness]
 Given input policies $(PC, I)$, 
