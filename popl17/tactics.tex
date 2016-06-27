@@ -38,22 +38,24 @@ to create search strategies which can be used for majority
 of the packet classes instead of individual switch-level patterns which
 lack generality.
 
- Let $Lb$ be the set of labels and $S$ be the set of switches in the topology. Let $\phi : S \rightarrow Lb$ be the labelling function that maps each switch to a label in $Lb$. One example for $\phi$ in the fat-tree topology in \Cref{fig:fattree} can be that we map all switches in the same level (core, aggregate or edge) to the same label,
+ Let $Lb$ be the set of labels and $S$ be the set of switches in the topology. Let $\phi : S \rightarrow Lb$ be the labeling function that maps each switch to a label in $Lb$. One example for $\phi$ in the fat-tree topology in \Cref{fig:fattree} can be that we map all switches in the same level (core, aggregate or edge) to the same label,
 therefore leveraging the hierarchical structure of the topology. A path $p$ is a word over the alphabet $S$. 
-We define the path-labelling function $\Phi : S^* \rightarrow Lb^*$,  which maps each switch in the path to its corresponding 
+We define the path-labeling function $\Phi : S^* \rightarrow Lb^*$,  which maps each switch in the path to its corresponding 
  label. 
- For example, given the path $p = e1\ a2\ c3\ a4\ e2$, the path-labeling function function produces $\Phi(p) = eacae$--map each switch to its corresponding label.
+ For example, given the path $p = e1\ a2\ c3\ a4\ e2$, the path-labeling function function produces $\Phi(p) = eacae$ -- map each switch to its corresponding label.
  Here, $e$, $a$, and $c$ stand for edge, aggregate, and core respectively.
 
 \subsection{Synthesis with Tactics}
 %We use regular expressions and finite automaton to prune the constraints and impose restrictions on the path. The natural way for operators to specify tactics are using \emph{blacklists}, which specify what the path should not be. To express this in a intuitive manner, we use regular expressions on the set of labels to specify blacklists. For example, to blacklist paths from a edge switch to edge switch to not go through another edge switch, we can describe the tactic as $\neg (e .^* e .^* e)$ where the label of all edge switches is $e$. Another tactic is of the form $\neg (e (.)^4 a c .* e)$ which specifies we have a path of length 4, we do not go in the direction towards the core (as to reach the edge, the path would have to then go downwards from the core). 
-Tactics are simple regular expressions over the set of labels and are used to blacklist certain path-patterns.
+Tactics are simple regular expressions over the set
+ of labels and are used to blacklist certain path patterns.
 Regular expressions have been previously used in tools like
 NetGen~\cite{netgen} to specify the paths for the packet class.
 While supporting full regular expressions is possible, it causes a blow-up in the solving time as further
 constraints need to be added to the solver to ensure that the path satisfies the regular expression. 
 %TODO \loris{is this true?}. % : Cross-check with Aditya. 
-Instead, using the notion of switch labels, we use regular expressions to provide high-level path properties as a {\em search strategy} rather than a policy requirement. Instead of specifying how the path must look like, we can use regular expressions on switch labels to specify \emph{blacklists}--i.e.,
+Instead, using the notion of switch labels, we use regular expressions to provide high-level path properties as a {\em search strategy} rather than a policy requirement. 
+Instead of specifying how the path must look like, we use regular expressions on switch labels to specify \emph{blacklists}--i.e.,
 what the path must \emph{not} look like. A tactic, for example, can blacklist paths from an edge switch to an edge switch that go through another edge switch. 
 %\loris{we need a plot for the full regex thing to compare with Madhu, it would be great to repeat some of their experiments}
 
@@ -81,7 +83,7 @@ and let its labeling be $\Phi(\pi)= a_0\ldots a_k$.
 We say that $\pi$ satisfies a tactic $R$,  $\Phi(\pi) \in L(R)$, if the following
 holds:
 \begin{compact2itemize}
-\item $\Phi(\pi) \in L(\neg R)$ iff $\pi \not\in L(R)$;`
+\item $\Phi(\pi) \in L(\neg R)$ iff $\Phi(\pi) \not\in L(R)$;
 \item $\Phi(\pi) \in L( l_{src} .^i .^* l_{dst})$ iff $k\geq i+1$, $l_{src}= a_0$, and $l_{dst}= a_k$; 
 \item $\Phi(\pi)  \in L (l_{src} .^i l.^* l_{dst})$ iff $k\geq i+2$, $l_{src}= a_0$, $l_{dst}= a_k$, and $a_{i+1}=l$;
 \item $\Phi(\pi)  \in L( l_{src} .^i l_1 l_2.^* l_{dst})$ iff $k\geq i+3$, $l_{src}= a_0$, $l_{dst}= a_k$, $a_{i+1}=l_1$, and $a_{i+2}=l_2$.
@@ -98,7 +100,7 @@ $\neg (e .^* e .^* e)\equiv \bigwedge \limits_{i=0}^{i=\mu-2} \neg (e .^i e .^* 
 
 
 \subsubsection{Modified Synthesis Algorithm with Tactics}
-In our synthesis algorithm, the backward reachability propagation constraints (\Cref{eq:bckprop}) 
+In our synthesis algorithm, the reachability propagation constraints (\Cref{eq:bckprop}) 
 construct the path from destination to source. We use tactics to prune these constraints, so that
 the path synthesized satisfies the tactic regular expression.  
 
@@ -117,7 +119,7 @@ $(R,pc)\in \Gamma$.
 %In the first
 %two cases, we remove some of the reachability constraints by adding negated unit clauses, 
 %while we modify these constraints for the next two cases.
-%To incorporate tactics in the path for packet class $pc$, we need to modify these constraints. For a path $\pi = sw_0 \ldots sw_k$ and labelling $\Phi(\pi) = a_0 \ldots a_k$, we describe the modifications of the constraints for each type of tactic.
+%To incorporate tactics in the path for packet class $pc$, we need to modify these constraints. For a path $\pi = sw_0 \ldots sw_k$ and labeling $\Phi(\pi) = a_0 \ldots a_k$, we describe the modifications of the constraints for each type of tactic.
 %\loris{this part needs revision. Every time you say we remove constraints, but it actually looks like you are adding extra constraints
 %of the form not(..)}
 
@@ -138,8 +140,8 @@ of the form $\neg (l_{src}  .^i l .^* l_{dst})$:
 The tactic ensures that a switch with label $l$ cannot be reached in $i+1$
 steps, except if $l = l_{dst}$. In that case,
 only the destination switch with label $l$ can be reached in $i+1$ steps as 
-the path with labelling $l_{src}.^i l_{dst}$ satisfies the tactic. If $l \not= l_{dst}$, then
-all switches with label $l$ cannot be reached in $i+1$. For all tuples
+the path with labeling $l_{src}.^i l_{dst}$ satisfies the tactic. If $l \not= l_{dst}$, then
+all switches with label $l$ cannot be reached in $i+1$ steps. For all tuples
 $(sw, pc, i+1) \notin Reach$, we can remove the reachability constraints of \Cref{eq:bckprop}.
 
 
@@ -152,7 +154,7 @@ of the form $\neg (l_{src}  .^i l_1 l_2 .^* l_{dst})$:
 This tactic ensures that a switch with label $l_1$ at $i+1$ in the path
 will not forward the packet to a switch with label $l_2$ (unless $n_2$ is the destination). 
 To enforce this, we modify the \Cref{eq:bckprop} and remove all $l_1\rightarrow l_2$
-edges at position $i+1$ in the path for which $l_2$ is different from the destination.  
+edges at position $i+1$ in the path for which the switch with label $l_2$  is not the destination.  
 
 %-> if a path is solution of modified constraint it satisfies regex
 %<- if a path is solution of original constraints and satisfies regex, then it's a possible solution of modified constraints.
@@ -234,19 +236,19 @@ then $\forall (R, pc) \in \Gamma. (Fwd, Reach) \models \Psi_T(R, pc)$.
 \end{proof}
 \fi
 
-The intuition behind the restricted tactic syntax comes from the structure of the backward reachability propagation 
-constraints which construct the path for a packet class. Each constraint says that if a switch is reachable in $k$ steps in a path,
+The intuition behind the restricted tactic syntax comes from the structure of the reachability propagation 
+constraints (\Cref{eq:bckprop}) which construct the path for a packet class. Each constraint says that if a switch is reachable in $k$ steps in a path,
  there must a neighbour switch in the path reachable at $k-1$ steps. We design the restricted tactic syntax based
   on this, providing restrictions on the lengths of the path using $\neg (l_1 .^i .^* l_2)$, or specifying if we cannot 
   reach certain switches at specific positions in the path using  $\neg (l_1 .^i c .^* l_2)$. or specifying local 
   constraints on neighbours using $\neg (l_1  .^i c_1 c_2 .^* l_2)$.  
-  Conversely, the structure of backward reachability propagation constraints 
+  Conversely, the structure of these constraints 
   prevents us from being able to specify unrestricted regular expressions. 
   \begin{example}
   Consider a tactic $\neg(e .^i a c a .*e)$. To enforce
   this tactic, we need to have constraints which prevent the path reaching a aggregate switch in $i+3$
   steps when the path traverses an aggregate and core switch at $i+1$ and $i+2$ steps
-  respectively. This cannot be specified by modifying the backward reachability propagation 
+  respectively. This cannot be specified by modifying the reachability propagation 
   constraints in its current form, 
   because the constraints for reachability for a switch in $i + 3$ steps only depends on 
   the constraints for reachability in $i+2$ steps. 
@@ -259,8 +261,8 @@ constraints which construct the path for a packet class. Each constraint says th
  and speed up the synthesis, especially in datacenter topologies which are hierarchical 
  and can be used to specify interesting tactics. Some examples are: an edge to edge path must not
  traverse another edge, and valley-free routing ($eacae$). One of the biggest advantages
- of tactics is that it is \emph{policy-agnostic}, since it enforces condition on the path, and
- can be used in conjuction with the different policies supported by \name (isolation, traffic engineering etc.).  
+ of tactics is that it is \emph{policy-agnostic}, since it enforces conditions on the path, and
+ can be used in conjunction with the different policies supported by \name (isolation, traffic engineering etc.).  
  Thus, we have provided a framework for the
  development of search strategies based on path properties, and we envision entities providing network
  management as a service to develop a \emph{repository} of tactics for various network topologies, 
@@ -280,7 +282,7 @@ constraints which construct the path for a packet class. Each constraint says th
 %\subsection{Label Pruning}
 %Tactics are an intuitive way to express path properties leveraging the network structure using regular expressions. However, not every permutation of the label alphabet is a valid path in the topology, for example $eaae$ as the aggregate switches are only connected to edge or core switches. Under closer inspection, for a path from an edge switch to another edge switch, we can see that aggregate switches can only occur at odd path length. We describe a label automaton and the algorithm to prune constraints using switch label adjacencies. 
 %
-%To pruning the constraints using network labels, we construct a label automaton for the topology. The label automaton $A^L$ is an automaton which accepts all words over the alphabet $Lb$ which are a labelling of a valid path in the topology in the topology and rejects all other words. The label automaton has state for each label and transitions for those labels which are connected to that label. We construct the label automaton for the fat-tree topology(\cref{fig:fattree}) in \cref{fig:labelauto}.  
+%To pruning the constraints using network labels, we construct a label automaton for the topology. The label automaton $A^L$ is an automaton which accepts all words over the alphabet $Lb$ which are a labeling of a valid path in the topology in the topology and rejects all other words. The label automaton has state for each label and transitions for those labels which are connected to that label. We construct the label automaton for the fat-tree topology(\cref{fig:fattree}) in \cref{fig:labelauto}.  
 %
 %\begin{figure}[h!]
 %	\centering
