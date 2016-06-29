@@ -128,7 +128,7 @@ A directed edge $n_1 \rightarrow n_2$ appears in the reachability-graph if there
 We extract the rules relevant to the shortest path from source to destination from the model, and the additional rules obtained in the solution (extra paths, forwarding loops) are ignored.  
 
 \subsection{Waypoint Constraints} 
-For a reachability policy with ordered set of waypoints $s >> W_1;\ldots;W_n >> d$ and packet class $pc$, we add all the constraints specified in \Cref{sec:reach} to ensure the existence of a path from $s$ to $d$. We then add constraints so that all waypoints $w$
+For a reachability policy with ordered set of waypoints $s >> W_1;\ldots;W_n >> d$ and packet class $pc$, we add all the constraints specified in \secref{sec:reach} to ensure the existence of a path from $s$ to $d$. We then add constraints so that all waypoints $w$
 are traversed. 
 \begin{equation} \label{eq:waypoints}
 	\forall w \in W_1, \ldots, W_n. \ \exists k.~Reach(w, pc, k).
