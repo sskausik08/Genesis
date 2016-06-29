@@ -1,19 +1,20 @@
 \section{Introduction}
 
 Operators of multi-tenant datacenters deal with a multitude of
-flows traversing many heterogeneous devices. With growing
+machines' communications (flows) traversing many heterogeneous devices. With growing
 diversity of tenant applications, need for security and compliance,
-and the advent of cloud computing, these may be subject to
-increasingly complex policies.
+and the advent of cloud computing, the pathways of communication
+through the network are subject to
+increasingly complex network-based policies.
 
 Consider a tenant in such a data center. She may desire --- in addition
 to basic reachability among her hosts or applications --- that traffic
 attempting to reach some of her applications be examined by a set of
-middleboxes for auditing and access controls. Another tenant may
+"middleboxes" for auditing and access controls. Another tenant may
 additionally desire (a subset of) her flows to be isolated from
 others' flows for strong security or QoS (Quality-of-Service) considerations.
  Additionally,
-cloud operators may need to optimize traffic engineering objectives
+cloud operators may need to optimize network traffic engineering objectives
 like minimizing maximum load 
 and deal with heterogeneous resource demands like switch table 
 sizes. Today, configuring network devices to implement these diverse
@@ -39,8 +40,13 @@ security impact.
 %% specifying resource constraints like link bandwidth and switch table
 %% sizes to perform traffic engineering and network resource management.
 
-Though Software Defined Networking (SDN) has allowed operators
-to program networks in a more intuitive manner, many existing SDN
+The rise of \emph{software-defined networking} (SDN) has allowed operators
+to program networks in a more intuitive manner. In SDN, a general-purpose
+centralized controller machine (control plane) manages a collection of
+programmable switches (data plane). Using the global view of the 
+topology, the controller can program forwarding rules on switches
+based on the applications' requirements. 
+However, many existing SDN
 frameworks are too low-level, making it challenging
 %for providing the needed functionality}. 
 to write controller applications that generate the
@@ -94,9 +100,10 @@ this vision in the multi-tenant datacenter context.
 We present \Name, a framework for declaratively specifying and
 enforcing complex policies 
 like isolation, capacity policies, and middlebox
-traversals, where enforcing some of these are
-NP-complete in complexity. 
-Thus, \Name 
+traversals. To tackle the high complexity of enforcing
+some of these policies (enforcing isolation
+is NP-complete),
+\Name 
 encodes the problem of enforcing various
 policies as a constraint solving problem and
 leverages recent advances in
@@ -132,8 +139,8 @@ end, \Name leverages domain-specific properties to simplify the
 constraints handled by the SMT solver.  Specifically, \Name allows the
 network operator to write 
 restricted forms of regular expressions, called \emph{tactics}, 
-that blacklist certain
-forwarding plane configurations based on the path patterns   
+that blacklist
+paths based on certain patterns   
 that are not desired in a datacenter network. 
 %\loris{how about: ...based on path patterns that are not desired...}
 These tactics are used to discard several constraints, 
@@ -149,9 +156,10 @@ a 1.5$\times - $400$\times$ speedup.
  Secondly, we develop a \emph{divide-and-conquer}
  synthesis
  procedure that leverages the structure of tenants'
- isolation policy interactions to improve synthesis performance. The
+ isolation policy graph to improve synthesis performance. The
   procedure partitions the input policies
-  into effective components to synthesize these
+  into effective components such that \name can 
+  synthesize these components 
   separately and faster than the complete problem. 
  Divide-and-conquer synthesis can halve the
  synthesis time for 40\% of isolation workloads  

@@ -215,7 +215,7 @@ optimizations based on the properties desired by
   employ). Such switch-centric approaches are too constraining and
   cannot be applied to realize network-wide objectives.
 
-\Name\ leverages synthesis at a high level: given a set of
+\Name\ leverages synthesis as follows: given a set of
 policies which describe user intent, the search space is the space of
 all forwarding plane configurations and the search technique involved
 is SAT/SMT solving. The solution is translated to switch rules installed via a skeleton controller.
@@ -223,7 +223,7 @@ is SAT/SMT solving. The solution is translated to switch rules installed via a s
 This approach is appealing for the following reasons: 
 
 (1)
-Policies useful to operators are \emph{proactive} i.e. they are not
+Policies useful to operators are \emph{proactive} i.e., they are not
 dependent on the actual packet flow and can be enforced by 
 correct switch tables, and do not require synthesis of controller programs.
 %  and this enables enforcing policies by synthesis
@@ -294,8 +294,7 @@ Despite the recent advances in SMT solvers, to make
 the synthesis problem feasible in practice
 there is a need to improve the performance of the solver
 using techniques that are specific to policy enforcement in networks.
-We propose various techniques leveraging
-\emph{domain-specific} knowledge to improve synthesis performance. 
+We propose two such tecnhiques.
 
 First, we propose the idea of \emph{tactics} (\secref{sec:tactic}),
 which are search strategies that leverage the tiered network structure
