@@ -124,11 +124,11 @@ $(R,pc)\in \Gamma$.
 %of the form not(..)}
 
 \noindent\textbf{Type 1.} For a tactic $R$ applied to $pc$ of the form $\neg (l_{src} .^i .^* l_{dst})$ which restricts the path to a length $ < i + 1$:
-\begin{equation}
+\begin{equation} \label{eq:type1}
 	\Psi_T(R, pc) = ~ \forall sw,k \geq i + 1. (sw,pc,k) \notin Reach
 \end{equation}
 Thus, we can remove the reachability constraints  of \Cref{eq:bckprop} 
-for all the tuples $(sw,pc,k) \notin Reach$
+for all the tuples $(sw,pc,k) \notin Reach$ satisfying \Cref{eq:type1}
 as they cannot contribute to any path satisfying the tactic.  
 
 \noindent\textbf{Type 2.} For a tactic $R$ applied to $pc$ 
@@ -142,7 +142,7 @@ steps, except if $l = l_{dst}$. In that case,
 only the destination switch with label $l$ can be reached in $i+1$ steps as 
 the path with labeling $l_{src}.^i l_{dst}$ satisfies the tactic. If $l \not= l_{dst}$, then
 all switches with label $l$ cannot be reached in $i+1$ steps. For all tuples
-$(sw, pc, i+1) \notin Reach$, we can remove the reachability constraints of \Cref{eq:bckprop}.
+$(sw, pc, i+1) \notin Reach$ satisfying \Cref{eq:t1}, we can remove the reachability constraints of \Cref{eq:bckprop}.
 
 
 \noindent\textbf{Type 3.} For a tactic $R$ applied to $pc$ 
@@ -165,6 +165,8 @@ edges at position $i+1$ in the path for which the switch with label $l_2$  is no
 %if \Pi |= \psi, 
 %and for every (\pi,pc)\in \Pi, \pi|=\psi_R,
 %\Pi |= Psi_R.
+We state the soundness and completeness theorems 
+of the synthesis algorithm with tactics. 
 Let $(Fwd, Reach)$ be a model of $\Psi$ and 
 $\Pi = \texttt{paths}$ $(Fwd,$ $Reach)$ be the set
 of induced paths (from Definition \ref{def:Pi}).

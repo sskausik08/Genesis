@@ -1,7 +1,12 @@
 \section{Synthesis with Optimization Objectives}
-We describe two applications paramount to network management:
-traffic engineering and network repair, which can be tackled using
-extensions of solvers: SMT with linear optimization objectives and MaxSMT~\cite{maxsmt}.
+While SMT solvers provide support for different theories like SAT and
+LRA to express various policies as seen in \secref{sec:synthesisalgo}, 
+operators also require support for optimizing different metrics of the network. Using extensions of solvers with support
+ for linear optimization objectives and MaxSMT~\cite{maxsmt}, 
+ \name has support for two applications important to network
+ management: 
+ traffic engineering and network repair.
+
 \subsection{Traffic Engineering}
 While the link capacity policies described in \secref{sec:linkcap} can
 be used to perform a strict form of traffic engineering (TE) in terms of 
@@ -34,8 +39,9 @@ individual link utilisations, and the objective:
 \end{equation}
 While $maxU$ can be set to a large value trivially to satisfy \Cref{eq:maxu}, 
 since the objective is to minimize $maxU$, it will be set to the actual
-minimized maximum link utilization. Using an encoding similar to the one presented in this section, \name can be used for other objectives like minimizing total latency and load balancing
-traffic across the network middleboxes.
+minimized maximum link utilization. Using an encoding similar to the one presented in this section, \name can be used for other
+quantitative objectives like minimizing total latency and load balancing
+traffic across middleboxes.
 
 \subsection{Network Repair}
 While policy-compliance is a major requirement in a network management system,
@@ -47,9 +53,6 @@ large overhead of installing the new configuration~\cite{sdnlatency,updateschedu
 need a \emph{network repair} mechanism which can transition with minimal
 overhead from the current
 forwarding configuration to a policy-compliant one. 
-\name can also be used to
-port existing non-policy compliant configurations deployed in a network to
-one which satisfies a set of policies.
 
 We extend \name's synthesis algorithm for performing
 minimal network repair using MaxSMT.  
@@ -95,7 +98,9 @@ to a MaxSMT solver, we can synthesize new forwarding rules
 \emph{minimizing} the number of switches whose rules have to be changed. 
 Alternate
 repair objectives like minimizing the number of changed forwarding rules 
-can be expressed similarly.
+can be expressed similarly. \name's network repair mechanism
+ can be used to
+port existing non-policy compliant configurations deployed in a network  to one which satisfies a set of policies.
 
 %\name is provided the policies
 %and the current forwarding rules $(\overline{Fwd})$ as input. The policy constraints are added as hard

@@ -15,9 +15,10 @@ the Genesis Programming Language using PLY~\cite{ply} and the synthesizer using
 the SMT solver Z3~\cite{z3} and its $\nu Z$ extension for MaxSMT and linear
  optimization~\cite{nuz3}; this outputs the
 forwarding rules for the switches, which can be provided as input to a
-SDN controller (POX, Floodlight etc.) to install over the
+SDN controller (for e.g., Floodlight~\cite{floodlight}) to install over the
 network. \Name uses the Metis graph-partitioning library~\cite{metis}
-to perform equi-sized partitioning.  The prototype contains ~5K Python lines of code.  
+to perform equi-sized partitioning 
+used by divide-and-conquer synthesis.  The prototype contains 5K Python lines of code.  
 We plan to make the code for \Name publicly available.
 
 In this section, we evaluate \Name using
@@ -264,7 +265,7 @@ or without the divide-and-conquer approach.
 \Cref{tab:optimizeval} shows the synthesis time for workloads on a 80-node fat-tree topology
 with different optimization objectives like traffic engineering and network repair. \name can
  do traffic engineering with minimizing average utilization for 200 packet classes in ~2000 seconds. However,
- for minimizing the max link utilization, \name can only synthesize 50 packet classes in ~4000 seconds. For both
+ for minimizing the maximum link utilization, \name can only synthesize 50 packet classes in ~4000 seconds. For both
  objectives, the synthesis time increases exponentially to increasing number of packet classes. SMT with
  optimization objectives is an emerging field of research, and we envision that solvers in the future will become fast
  to handle larger workloads. 
@@ -274,7 +275,7 @@ with different optimization objectives like traffic engineering and network repa
  flows are isolated from one another. Now, we disable the switch with the largest number 
  of rules, and try to find a new configuration from the old one with maximum number of switches
 unaffected, and the new configuration satisfies the original tenant isolation policies, and we can
-synthesize the new configuration in ~200 seconds. 
+synthesize the minimal repair in ~200 seconds. 
 \subsection{Summary}
 To summarize, the key points of our evaluation are:
 \begin{compactitemize}
