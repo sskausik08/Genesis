@@ -11,7 +11,10 @@ Genesis. %% For simplicity, we assume a
 %% these policies, and our framework, are applicable to other settings,
 %% e.g., enterprise networks with different departments imposing
 %% different sets of policies.
-We use \Cref{fig:architecture} as a running example. This figure shows several
+We use \Cref{fig:architecture} as a running example. A tenant is an
+entity which controls a number of host machines running some applications,
+and specifies policies about the paths among it's hosts which need to be enforced
+by the network operator. \Cref{fig:architecture} shows several
 tenants who differ in the nature of policies they wish to realize. 
 Notice that these policies reflect and, in some cases, extend the
 policies that today's enterprises realize in their on-site networks, as
@@ -41,7 +44,7 @@ workloads~\cite{mpa-imc15}.  The policies include:
   policy for its VMs ($V1 >> V2$, which is translated  after 
   placement as $E2 >> E4$).
 \item \textbf{Middlebox Traversals}. A tenant may wish that traffic
-  between two of her endpoints, or from another tenant, must traverse
+  between two of her end hosts, or from another tenant, must traverse
    specific middleboxes %(locations, or logical descriptors) 
    for
   security, access control, or performance reasons. For specific
@@ -141,40 +144,31 @@ traffic on these links do not exceed the link capacity of 100.
  
  \item \textbf{Handling Failures}. Modern networks experience link and switch failures
  frequently and an essential requirement in network management systems is to
- provide certain guarantees during failure scenarios. \name addresses this by
- providing two mechanisms: minimal network repair and resilience synthesis. 
+ provide certain guarantees during failure scenarios. 
+ %\name addresses this by
+ %providing two mechanisms: minimal network repair and resilience synthesis. 
  Minimal network repair tries to minimize the overhead of transitioning from a
  old forwarding configuration to a new policy-compliant one. Resilience synthesis
  tries to provide guarantees during failure events by synthesizing policy-compliant
  backup paths \emph{proactively} to tackle failures.
 \end{compactitemize}
-%\item \textbf{Network Maintenance}: \aditya{this whole para does not
-%    parse and needs updating} Operators on a regular basis perform link and
-%  switch maintenances, and need to ensure that during maintenance, the network still
-%  conforms to the SLAs of the tenants and resource capacity
-%  policies.   \aditya{the following sentence does not make sense} Using Genesis, the operator
-%  can specify the links and switches that will be down for maintenance, and Genesis can synthesize 
-%  the rules for the updated network with all policies satisfies, which then can be pushed to 
-%  the network before maintenance. 
-%\end{itemize}
 
-The above set of policies may evolve over time as operators attempt to
-meet new objectives, or tenants impose new kinds of
-requirements. Today, realizing these policies requires painstaking,
-often manual configuration in network devices. This is incredibly
+
+\noindent Today, realizing these policies requires painstaking,
+often requiring manual configuration of network devices. This is incredibly
 tedious---the configuration files can run into 1000s of lines, and
 intricate dependencies may have to be configured across
 devices~\cite{benson:complexity:nsdi2009,mpa-imc15}. This process is also highly 
-error prone.
-
-Providing support for realizing these policies using existing SDN
-programming languages like Pyretic and Frenetic is challenging
-because these policies are global and cannot be enforced by
-programming individual behaviour of switches. Existing SDN-based
+error prone. Programming with SDN languages like 
+Pyretic and Frenetic is challenging as well as 
+these policies are global and cannot be
+enforced by programming individual behavior of switches.
+ Existing SDN-based
 network management systems~\cite{simple,merlin,oneswitch} are tailored
 to support specific policies such as middlebox placement or bandwidth
 and resource constraints. As such they lack generality and
-extensibility.
+extensibility required to enforce the complex collection of policies
+required by the operator. 
 
   
 \subsection{Synthesis} \label{sec:synthesis} 
@@ -203,27 +197,33 @@ optimizations based on the properties desired by
   expressed in the form of some constraints. There are three key
   dimensions to a synthesis problem: the kind of constraints that it accepts as
   expression of user intent, the space of programs over which it
-  searches, and the search technique it employs. Program synthesis has
-  seen limited applications to networks~\cite{netegg,decentralize},
-  specifically to controller synthesis. These systems synthesize the
-  behavior of individual switches (e.g., learning switches or
-  firewalls); furthermore, these techniques apply to networks
-  operating in a reactive mode (where the first packet of a connection
-  is processed by the controller to determine the actions to
-  employ). Such switch-centric approaches are too constraining and
-  cannot be applied to realize network-wide objectives.
+  searches, and the search technique it employs. 
 
 \Name\ leverages synthesis as follows: given a set of
 policies which describe user intent, the search space is the space of
-all forwarding plane configurations and the search technique involved
-is SAT/SMT solving. The solution is translated to switch rules installed via a skeleton controller.
+all data planes (the set of forwarding rules is the data plane) 
+and the search technique involved
+is SAT/SMT solving. 
 
 This approach is appealing for the following reasons: 
 
 (1)
-Policies useful to operators are \emph{proactive} i.e., they are not
-dependent on the actual packet flow and can be enforced by 
-correct switch tables, and do not require synthesis of controller programs.
+Enforcement of the different policies useful to operators 
+can be translated to 
+the following problem: Given a set of node pairs 
+(derived from the reachability policies) in the graph 
+(network topology), find paths in the graph for each
+of the node pairs satisfying certain properties (derived
+from the rest of the policies). Given these paths, the SDN
+controller adds the forwarding rules accordingly
+in the network, and no extra functionality is required from
+the controller. 
+%Policies useful to operators are \emph{proactive} i.e., 
+%for packets matching 
+
+%they are not
+%dependent on the actual packet flow and can be enforced by 
+%correct switch tables, and do not require synthesis of controller programs.
 %  and this enables enforcing policies by synthesis
 % of switch-table rules, and using a skeleton SDN controller to deploy
 % the forwarding rules to the switches. In contrast, in trying to
@@ -234,13 +234,13 @@ correct switch tables, and do not require synthesis of controller programs.
 % approach.
 
 (2) Correct policy enforcement is challenging due to different
-objectives for each of the policies - ensuring isolation between flows
+objectives for each of the policies - ensuring isolation between paths
 may lead to overshooting traffic objectives and vice-versa - and is a common
 cause of incorrect configurations in networks.  Our approach removes
 the need for a verification step in which the operator has to
-``check'' whether an attempted configuration meets the desired
+``check'' whether the forwarding rules satisfy the desired
 policies.  By using a formal reasoning technique, we are able to
-consider the space of all forwarding configurations and find a
+consider the space of all data planes and find a
 solution which is \emph{correct by construction}, i.e., it adheres to
 satisfying a diverse set of policies, eliminating the room for error
 by the network operator.

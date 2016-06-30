@@ -18,6 +18,18 @@ middlebox service chaining. However, PGA abstracts the underlying
 network as "one big switch" and cannot be used to compose policies like
 tenant isolation or traffic engineering.
 
+ \noindent {\bf Controller synthesis:}
+ Program synthesis has
+ seen limited applications to SDN controllers~\cite{netegg,decentralize}.
+These systems synthesize the
+ behavior of individual switches (e.g., learning switches or
+ firewalls); furthermore, these techniques apply to networks
+ operating in a reactive mode (where the first packet of a connection
+ is processed by the controller to determine the actions to
+ employ). Such switch-centric approaches are too constraining and
+ cannot be applied to realize network-wide objectives considered 
+ in \name.
+ 
 \noindent {\bf Policy languages:}
 The closest approaches to ours are Merlin~\cite{merlin} and
 NetGen~\cite{netgen}.  In Merlin data planes that adhere to policies

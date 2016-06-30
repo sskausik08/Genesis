@@ -1,7 +1,7 @@
 \section{Synthesis Algorithm} \label{sec:synthesisalgo}
 Given a set of policies, \Name creates constraints 
-that abstract the forwarding and reachability rules such that the paths
-satisfy the input policies.  
+that abstract the forwarding and reachability rules pertaining to the paths such 
+that they satisfy the input policies.  
 These constraints are then given to an SMT Solver, which returns a model 
 for them--i.e., it assigns values to all the variables in the constraints. From these values, we extract the forwarding rules for each switch.
 To provide support for the policies in \Cref{tab:policysupport}, \name uses propositional logic (SAT), linear rational arithmetic (LRA),
