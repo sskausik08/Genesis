@@ -160,7 +160,7 @@ traffic on these links do not exceed the link capacity of 100.
  failures can be expensive. Instead, configuring switches proactively
  with resilient backup paths which comply with the policies 
  can reduce the time spent by the network in a state with policy violations,
- and operators can provide stricter guarantees during failures. 
+ and operators can provide stricter guarantees during failures.
 \end{compactitemize}
 
 
@@ -228,7 +228,7 @@ from the rest of the policies).
 Thus, the different policies can be enforced by 
 a correct set of forwarding rules at the switches. 
 No extra functionality is required from the controller,
-it's only role is to install the forwarding rules to the switches.
+its only role is to install the forwarding rules to the switches.
 
 %Given these paths, the SDN
 %controller adds the forwarding rules accordingly
@@ -293,10 +293,13 @@ techniques.
 %% } 
 %% \kausik{I think "enforce policies" would be better? The title explains the rest.}
 
-\kausik{Does a point about resilience fit in the context? We are 
-	trying to motivate why we use synthesis, resilience can 
-	be considered as a special policy.}
+
 \subsection{Performance Challenges} \label{sec:performance}
+
+\loris{I feel like this section is a repeat of the end of the intro.
+If you need a place to cut this is the one.
+I have a bit of the same feeling about 2.1 but that one at least motivates something.
+}
 
 One of the key challenges of \Name is the synthesis
 performance. 

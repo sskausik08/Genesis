@@ -87,10 +87,10 @@ this aspect requires the design of efficient custom heuristics.
 % careful
 %%   not to bin all SDN languages into this switch-by-switch model}
 %% \kausik{Do you want to make changes here?}
-Other research on network-wide policy enforcement, for e.g.,
+Other research on network-wide policy enforcement, e.g.,
 Merlin~\cite{merlin} and SIMPLE~\cite{simple} are tailor-made to
 specific sets of policies, and thus, difficult to extend to support
-other kinds of policies such as isolation.
+other kinds of policies such as traffic isolation.
 
 %%  like
 %% joint bandwidth provisioning and waypoint routing in Merlin
@@ -200,7 +200,8 @@ a 1.5$\times - $400$\times$ speedup.
 \begin{compactitemize}
 \item An extensible declarative framework for describing
   complex policies and a modular SMT-based algorithm for enforcing policies
-  like isolation, waypoints, and traffic engineering (\secref{sec:synthesisalgo});
+  like isolation, waypoints (\secref{sec:synthesisalgo}), traffic engineering~(\secref{sec:optimization}), and 
+  failure resiliency (\secref{sec:resiliency});
 \item A modified synthesis algorithm based on tactics, which leverages data center network structure
   to blacklist undesirable path patterns (\secref{sec:tactic});
 \item A divide-and-conquer procedure for speeding up synthesis by leveraging the 
