@@ -116,8 +116,8 @@ workloads~\cite{mpa-imc15}.  The policies include:
 %\kausik{This is not a tenant policy, but an operator feature, so separate from itemize.}
 \item \textbf{Network Resource Management}. While support for the above
 policies can be used to satisfy tenant SLAs (service-level agreements), network operators 
-benefit from a fine-grained control of network resources, to enforce
-strict guarantees, or optimize an objective like total utilization of the network
+benefit from a fine-grained control of network resources to enforce
+strict resource constraints, or optimize an objective like total utilization of the network
 links. 
 For instance, the operator may want to minimize the total link utilization 
 of the network, or restrict traffic on certain links. For example, in \Cref{fig:architecture},
@@ -138,8 +138,8 @@ traffic on these links do not exceed the link capacity of 100.
           %% useful to ensure the low bandwidth links are not used by
           %% more tenants such that their performance is affected and
           %% can be used to provide bandwidth guarantees to tenants.
-  Likewise, to tackle hardware heterogeneity operators can specify
-  switch constraint policies, like the maximum size of the rule table, to
+  Likewise, to tackle hardware heterogeneity, operators can specify
+  switch constraint policies like the maximum size of the rule table to
   restrict the number of flows traversing a particular switch or set
   of switches.
  
@@ -149,20 +149,18 @@ traffic on these links do not exceed the link capacity of 100.
  %\name addresses this by
  %providing two mechanisms: minimal network repair and resilience synthesis. 
  When the current state of the network violates any policy, the 
- operator requires to find new forwarding rules such that policies are
+ operator requires to find new forwarding rules such that the policies are
  satisfied. Naively performing this process can result in a solution
  which incurs a large overhead of installing the new rules (controller
- sets up connections with switches and sends the new rules). Thus,
- minimal network repair tries to minimize 
- the overhead of transitioning from a
+ has to set up connections with switches and send the new rules). Thus,
+ minimal network repair aims to minimize 
+ the overhead of transitioning from an
  old data-plane to a new policy-compliant one. While repair
- is a reactive approach to failures, configuring switches proactively
+ is a reactive approach to failures, the response time to
+ failures can be expensive. Instead, configuring switches proactively
  with resilient backup paths which comply with the policies 
- can reduce the time spent by the network in a state with policy violations
+ can reduce the time spent by the network in a state with policy violations,
  and operators can provide stricter guarantees during failures. 
- Resilience synthesis
- tries to provide guarantees during failure events by synthesizing policy-compliant
- backup paths \emph{proactively} to tackle failures.
 \end{compactitemize}
 
 

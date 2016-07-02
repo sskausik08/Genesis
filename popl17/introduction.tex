@@ -1,9 +1,9 @@
 \section{Introduction}
 Conventionally, a network primarily acted as a backbone for 
 communication among machines, and these communications
-used the "shortest" path in the network based on certain metrics
+used the ``shortest" path in the network based on certain metrics
 for deciding the path between two machines. 
-However, there is a rising trend of datacenters where
+In recent times, there is a rising trend of cloud datacenters where
 different entities (tenants) share different resources like compute
 machines running their applications and 
 the network infrastructure used for communication 
@@ -28,9 +28,9 @@ cloud operators may need to optimize network traffic engineering objectives
 like minimizing maximum load 
 and deal with heterogeneous resource demands like switch table 
 sizes. Also, these networks are highly prone to failures,
-and operators require a functionality to "repair" the network
+and operators require a functionality to ``repair" the network
  in case of  policy 
-violations. For very strict guarantees during failure scenarios,
+violations. For stricter guarantees during failure scenarios,
 operators need a mechanism to proactively configure devices to 
 prevent violations under a bounded number of failures. 
 Today, configuring network devices to implement these diverse
@@ -87,8 +87,8 @@ this aspect requires the design of efficient custom heuristics.
 % careful
 %%   not to bin all SDN languages into this switch-by-switch model}
 %% \kausik{Do you want to make changes here?}
-Other research on network-wide policy enforcement, e.g.,
-Merlin~\cite{merlin} and SIMPLE~\cite{simple}, are tailor-made to
+Other research on network-wide policy enforcement, for e.g.,
+Merlin~\cite{merlin} and SIMPLE~\cite{simple} are tailor-made to
 specific sets of policies, and thus, difficult to extend to support
 other kinds of policies such as isolation.
 
@@ -108,8 +108,8 @@ worrying about {\em how} the network must be configured.
 %% important feature is \emph{generality} of the approach of policy
 %% enforcement, so that it can be extended to enforce custom policies
 %% required by the operator.
-This paper makes a case for using \emph{synthesis} of switch table
-forwarding rules as an effective and practical approach to realizing
+This paper makes a case for using \emph{synthesis} of switch
+forwarding rule tables as an effective and practical approach to realizing
 this vision in the multi-tenant datacenter context.
 %% switch
 %% table forwarding rules to the solve the problem of policy enforcement
