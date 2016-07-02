@@ -18,7 +18,8 @@ by the network operator. \Cref{fig:architecture} shows several
 tenants who differ in the nature of policies they wish to realize. 
 Notice that these policies reflect and, in some cases, extend the
 policies that today's enterprises realize in their on-site networks, as
-well as the policies that data center operators support for the different hosted
+well as the policies that data center operators support for the different 
+tenant 
 workloads~\cite{mpa-imc15}.  The policies include:
 
 %\aditya{explain the figure here}.
@@ -147,8 +148,19 @@ traffic on these links do not exceed the link capacity of 100.
  provide certain guarantees during failure scenarios. 
  %\name addresses this by
  %providing two mechanisms: minimal network repair and resilience synthesis. 
- Minimal network repair tries to minimize the overhead of transitioning from a
- old forwarding configuration to a new policy-compliant one. Resilience synthesis
+ When the current state of the network violates any policy, the 
+ operator requires to find new forwarding rules such that policies are
+ satisfied. Naively performing this process can result in a solution
+ which incurs a large overhead of installing the new rules (controller
+ sets up connections with switches and sends the new rules). Thus,
+ minimal network repair tries to minimize 
+ the overhead of transitioning from a
+ old data-plane to a new policy-compliant one. While repair
+ is a reactive approach to failures, configuring switches proactively
+ with resilient backup paths which comply with the policies 
+ can reduce the time spent by the network in a state with policy violations
+ and operators can provide stricter guarantees during failures. 
+ Resilience synthesis
  tries to provide guarantees during failure events by synthesizing policy-compliant
  backup paths \emph{proactively} to tackle failures.
 \end{compactitemize}
@@ -159,12 +171,13 @@ often requiring manual configuration of network devices. This is incredibly
 tedious---the configuration files can run into 1000s of lines, and
 intricate dependencies may have to be configured across
 devices~\cite{benson:complexity:nsdi2009,mpa-imc15}. This process is also highly 
-error prone. Programming with SDN languages like 
-Pyretic and Frenetic is challenging as well as 
+error prone. Even programming with SDN languages like 
+Pyretic and Frenetic is challenging as 
 these policies are global and cannot be
 enforced by programming individual behavior of switches.
- Existing SDN-based
-network management systems~\cite{simple,merlin,oneswitch} are tailored
+ While existing SDN-based
+network management systems~\cite{simple,merlin,oneswitch} 
+overcome these limitations, they are tailored
 to support specific policies such as middlebox placement or bandwidth
 and resource constraints. As such they lack generality and
 extensibility required to enforce the complex collection of policies
@@ -181,7 +194,7 @@ rules to enforce the above set of end-to-end policies (specified using
 GPL as shown in \Cref{tab:policysupport}). The architecture of \name
 is shown in \Cref{fig:architecture}.
 
-Unlike previous efforts in the synthesis space (see~\cite{netgen,merlin}), \Name is
+Unlike previous efforts in the network synthesis space ~\cite{netgen,merlin}, \Name is
 not tailored to specific formalisms such as regular expressions; 
 this aspect makes it {\em modular} and {\em easy to extend}.
 %and allows to devise specific
@@ -198,7 +211,6 @@ optimizations based on the properties desired by
   dimensions to a synthesis problem: the kind of constraints that it accepts as
   expression of user intent, the space of programs over which it
   searches, and the search technique it employs. 
-
 \Name\ leverages synthesis as follows: given a set of
 policies which describe user intent, the search space is the space of
 all data planes (the set of forwarding rules is the data plane) 
@@ -214,10 +226,16 @@ the following problem: Given a set of node pairs
 (derived from the reachability policies) in the graph 
 (network topology), find paths in the graph for each
 of the node pairs satisfying certain properties (derived
-from the rest of the policies). Given these paths, the SDN
-controller adds the forwarding rules accordingly
-in the network, and no extra functionality is required from
-the controller. 
+from the rest of the policies). 
+Thus, the different policies can be enforced by 
+a correct set of forwarding rules at the switches. 
+No extra functionality is required from the controller,
+it's only role is to install the forwarding rules to the switches.
+
+%Given these paths, the SDN
+%controller adds the forwarding rules accordingly
+%in the network, and no extra functionality is required from
+%the controller. 
 %Policies useful to operators are \emph{proactive} i.e., 
 %for packets matching 
 
@@ -277,6 +295,9 @@ techniques.
 %% } 
 %% \kausik{I think "enforce policies" would be better? The title explains the rest.}
 
+\kausik{Does a point about resilience fit in the context? We are 
+	trying to motivate why we use synthesis, resilience can 
+	be considered as a special policy.}
 \subsection{Performance Challenges} \label{sec:performance}
 
 One of the key challenges of \Name is the synthesis
