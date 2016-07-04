@@ -31,10 +31,10 @@ Operators can leverage the network structure of topologies
 We introduce \emph{tactics} (the name is inspired from the usage in SMT solvers, not 
 proof assistants)
 on labels, abstractions that allow the 
-operator to impose a high-level restriction on the paths. 
-We use the notion of mapping set of switches to labels to 
+operator to impose restrictions on the paths. 
+We use the notion of mapping the set of switches to labels to 
 have a coarse-grained way for specifying path patterns. This helps
-to create search strategies which can be used for majority 
+to create search strategies which can be used for a majority 
 of the packet classes instead of individual switch-level patterns which
 lack generality.
 
@@ -53,7 +53,6 @@ Regular expressions have been previously used in tools like
 NetGen~\cite{netgen} to specify the paths for the packet class.
 While supporting full regular expressions is possible, it causes a blow-up in the solving time as further
 constraints need to be added to the solver to ensure that the path satisfies the regular expression. 
-%TODO \loris{is this true?}. % : Cross-check with Aditya. 
 Instead, using the notion of switch labels, we use regular expressions to provide high-level path properties as a {\em search strategy} rather than a policy requirement. 
 Instead of specifying how the path must look like, we use regular expressions on switch labels to specify \emph{blacklists}--i.e.,
 what the path must \emph{not} look like. A tactic, for example, can blacklist paths from an edge switch to an edge switch that go through another edge switch. 
@@ -63,7 +62,7 @@ what the path must \emph{not} look like. A tactic, for example, can blacklist pa
 For specifying tactics, we identified a restricted set of regular expressions\footnote{
 	It is a subset of star-free languages~\cite{starfree}.}
  that not only do not require extra constraints to be added,
-but actually allow us to reduce the number of constraints. 
+but actually allow us to reduce them.
 This set is defined using the following grammar:
 $$\begin{array}{rcl}
 R  &  :=  &  \neg (l_{src} .^i C .^* l_{dst}) \\
@@ -73,8 +72,8 @@ where $l_i\in Lb$ and $l_{src}, l_{dst}$ are used to specify the labels of the s
 and destination switch, respectively, of the packet classes to which we apply the tactic. 
 Since our goal is to black-list paths, we allow regular expressions to be negated at the outer level. 
 \begin{example}
- $\neg (e .^i c .^* e)$ says that the path must not contain an core a switch at the $(i+1)^{th}$ step. 
- Similarly, $\neg (e .^i .^* e)$ says that the path connecting two edge switches should have a length $ < i + 1$. 
+ $\neg (e .^i c .^* e)$ indicates that the path must not contain an core a switch at the $(i+1)^{th}$ step. 
+ Similarly, $\neg (e .^i .^* e)$ indicates that the path connecting two edge switches should have a length $ < i + 1$. 
 \end{example}
 
 
@@ -93,9 +92,14 @@ syntax and the synthesis algorithm is modified to enforce the tactics.
 Since tactics are path-related restrictions, 
 operators can also apply tactics selectively to the paths for certain packet classes, and also different tactics for different classes. 
 \begin{example}
-A complex form of tactic which ensures that a edge-edge path
-cannot traverse another edge switch can be expressed using conjunctions:
-$\neg (e .^* e .^* e)\equiv \bigwedge \limits_{i=0}^{i=\mu-2} \neg (e .^i e .^* e)$ where $\mu$ is the synthetic limit on path length. 
+No Edge Tactic is a complex form of tactic which ensures that a edge-edge path
+cannot traverse another edge switch that is expressed using conjunctions:
+$\neg (e .^* e .^* e)\equiv \bigwedge \limits_{i=0}^{i=\mu-2} \neg (e .^i e .^* e)$ where $\mu$ is the upper limit on path length. 
+\end{example}
+\begin{example}
+Valley-free Tactic ensures
+that a edge-edge path is of the form $e-a-c-a-e$ is expressed as
+ $\neg (e .^5 .^* e)$ $\wedge \neg (e .^* e .^* e)$. 
 \end{example}
 
 
@@ -239,7 +243,7 @@ then $\forall (R, pc) \in \Gamma. (Fwd, Reach) \models \Psi_T(R, pc)$.
 \fi
 
 The intuition behind the restricted tactic syntax comes from the structure of the reachability propagation 
-constraints (\Cref{eq:bckprop}) which construct the path for a packet class. Each constraint says that if a switch is reachable in $k$ steps in a path,
+constraints (\Cref{eq:bckprop}) which construct the path for a packet class. Each constraint enforces that if a switch is reachable in $k$ steps in a path,
  there must a neighbour switch in the path reachable at $k-1$ steps. We design the restricted tactic syntax based
   on this, providing restrictions on the lengths of the path using $\neg (l_1 .^i .^* l_2)$, or specifying if we cannot 
   reach certain switches at specific positions in the path using  $\neg (l_1 .^i c .^* l_2)$. or specifying local 
@@ -263,11 +267,11 @@ constraints (\Cref{eq:bckprop}) which construct the path for a packet class. Eac
  and speed up the synthesis, especially in datacenter topologies which are hierarchical 
  and can be used to specify interesting tactics. Some examples are: an edge to edge path must not
  traverse another edge, and valley-free routing ($eacae$). One of the biggest advantages
- of tactics is that it is \emph{policy-agnostic}, since it enforces conditions on the path, and
+ of tactics is that it is \emph{policy-agnostic} since it enforces conditions on the path, and
  can be used in conjunction with the different policies supported by \name (isolation, traffic engineering etc.).  
  Thus, we have provided a framework for the
  development of search strategies based on path properties, and we envision entities providing network
- management as a service to develop a \emph{repository} of tactics for various network topologies, 
+ management to develop a \emph{repository} of tactics for various network topologies, 
  which can be used by network operators without writing tactics of their own. 
 %\loris{For that restricted set of regexes the algorithm is trivial you should write the first pass. 
 %See the simplified syntax.

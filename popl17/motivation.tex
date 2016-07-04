@@ -4,6 +4,9 @@
 	\compactcaption{\Name in a multi-tenant datacenter setting.}
 	\label{fig:architecture}
 \end{figure}
+
+\input{policy}
+
 In this section, we describe the type of policies supported by
 Genesis. %% For simplicity, we assume a
 %% multi-tenant cloud set up, where both the tenants and the provider
@@ -181,10 +184,9 @@ and resource constraints. As such they lack generality and
 extensibility required to enforce the complex collection of policies
 required by the operator. 
 
-  
+
 \subsection{Synthesis} \label{sec:synthesis} 
 
-\input{policy}
 
 We design \name, a general network management system that 
  performs {\em synthesis} of switch forwarding
@@ -280,7 +282,10 @@ every policy into a generalized search technique.
 %network operators. 
 Crucially, \Name can be extended with ease to
 support new policies without requiring changes to the underlying search
-techniques.
+techniques. To improve the synthesis performance,
+ \name uses two techniques specific to policy enforcement
+ to speed up synthesis: tactics (\secref{sec:tactic}) and 
+ divide-and-conquer synthesis (\secref{sec:optimistic}). 
 %% \loris{I would like to convey that we are in some sense a Network solver module policy,
 %% in the sense that we support theories (the policies) and now people can work on engineering
 %% the solver for different classes of policies.
@@ -294,51 +299,51 @@ techniques.
 %% \kausik{I think "enforce policies" would be better? The title explains the rest.}
 
 
-\subsection{Performance Challenges} \label{sec:performance}
-
-\loris{I feel like this section is a repeat of the end of the intro.
-If you need a place to cut this is the one.
-I have a bit of the same feeling about 2.1 but that one at least motivates something.
-}
-
-One of the key challenges of \Name is the synthesis
-performance. 
-Due to the rich set of policies supported by \Name,
-finding a consistent set of switch forwarding rules 
-has, in the worst case, exponential time complexity in
-the number of policies.
-Moreover, since policies such as isolation affect
-the paths of many different flows, it is not possible to incrementally synthesize
-the forwarding rules corresponding to each flow. 
-Despite the recent advances in SMT solvers, to make
-the synthesis problem feasible in practice
-there is a need to improve the performance of the solver
-using techniques that are specific to policy enforcement in networks.
-We propose two such tecnhiques.
-
-First, we propose the idea of \emph{tactics} (\secref{sec:tactic}),
-which are search strategies that leverage the tiered network structure
-of datacenter topologies.
-%, to specify properties of the paths for the reachability
-%policies.  
-Tactics allow network operators to provide a high-level description on
-the set of paths allowed for reachability policies.  Tactics are
-expressed as simplified forms of regular expressions, which can be
-used to reduce the set of constraints provided to the solver.  In
-particular, we eliminate constraints that cannot be true for any
-of the paths accepted by the language of the regular expression. We
-find that this can result in 1.5x-400x speedup in various settings.
-
-Second, we propose a divide-and-conquer procedure that takes advantage of the fact that in 
-datacenter topologies, the large
-interconnect of links can lead to multiple solutions 
-to enforce the provided policies.  
-The divide-and-conquer
-synthesis approach (\secref{sec:optimistic}) leverages the structure of
-isolation policy graph among tenants to partition the input
-policies into components and synthesize these components separately and
-faster than the complete problem. This approach uses
- unsatisfiability cores provided by the solver
-to converge faster to the correct solution. 
+%\subsection{Performance Challenges} \label{sec:performance}
+%
+%\loris{I feel like this section is a repeat of the end of the intro.
+%If you need a place to cut this is the one.
+%I have a bit of the same feeling about 2.1 but that one at least motivates something.
+%}
+%
+%One of the key challenges of \Name is the synthesis
+%performance. 
+%Due to the rich set of policies supported by \Name,
+%finding a consistent set of switch forwarding rules 
+%has, in the worst case, exponential time complexity in
+%the number of policies.
+%Moreover, since policies such as isolation affect
+%the paths of many different flows, it is not possible to incrementally synthesize
+%the forwarding rules corresponding to each flow. 
+%Despite the recent advances in SMT solvers, to make
+%the synthesis problem feasible in practice
+%there is a need to improve the performance of the solver
+%using techniques that are specific to policy enforcement in networks.
+%We propose two such tecnhiques.
+%
+%First, we propose the idea of \emph{tactics} (\secref{sec:tactic}),
+%which are search strategies that leverage the tiered network structure
+%of datacenter topologies.
+%%, to specify properties of the paths for the reachability
+%%policies.  
+%Tactics allow network operators to provide a high-level description on
+%the set of paths allowed for reachability policies.  Tactics are
+%expressed as simplified forms of regular expressions, which can be
+%used to reduce the set of constraints provided to the solver.  In
+%particular, we eliminate constraints that cannot be true for any
+%of the paths accepted by the language of the regular expression. We
+%find that this can result in 1.5x-400x speedup in various settings.
+%
+%Second, we propose a divide-and-conquer procedure that takes advantage of the fact that in 
+%datacenter topologies, the large
+%interconnect of links can lead to multiple solutions 
+%to enforce the provided policies.  
+%The divide-and-conquer
+%synthesis approach (\secref{sec:optimistic}) leverages the structure of
+%isolation policy graph among tenants to partition the input
+%policies into components and synthesize these components separately and
+%faster than the complete problem. This approach uses
+% unsatisfiability cores provided by the solver
+%to converge faster to the correct solution. 
 
 

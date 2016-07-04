@@ -1,12 +1,16 @@
 \section{Synthesis Algorithm} \label{sec:synthesisalgo}
 The problem fomulation is as follows: Given the network topology graph
 and the set of policies
-written in GPL, \name generates paths in the network such that all the policies
-are satisfied. To achieve this, \Name creates constraints 
+written in GPL, \name generates paths in the network for
+every source-destination pair specified in the policies 
+such that all the policies
+are satisfied. 
+To achieve this, \Name creates constraints 
 that encodes the forwarding and reachability rules pertaining to the paths such 
 that they satisfy the input policies.  
-These constraints are then given to an SMT Solver, which returns a model 
-for them--i.e., it assigns values to all the variables in the constraints. From these values, we extract the forwarding rules for each switch.
+The synthesized solution of paths obtained from the constraints 
+are then translated to 
+switch forwarding rules. 
 To provide support for the policies in \Cref{tab:policysupport}, \name uses propositional logic (SAT), linear rational arithmetic (LRA),
 and linear optimization objectives for traffic engineering.
 \subsection{Network Forwarding Model} \label{sec:fwdmodel}
@@ -14,7 +18,9 @@ We define the physical switch topology as an undirected graph $T=(S, L)$,
 where $S$ is the set of switches and $L$ is the set of links. 
 We use the neighbour function $N(s) = \{s'\ | \ (s,s') \in L \}$ to denote 
 the set of neighbour switches of $s$. 
-We define a set of packet classes $PC : [0,\lambda]$ and map each reachability/waypoint policy to a unique integer in $PC$.
+We define a set of packet classes $PC : [0,\lambda]$ and map each reachability policy to a unique integer in $PC$. In the rest of the paper, 
+we often use the term packet class to identify the corresponding reachability policy. 
+Other policies are not mapped to packet classes as they do not produce a path, but specify restrictions on paths of packet classes. 
 The set of reachability policies is denoted as $R$ and each reachability policy $r \in R$ is
 a pair
 $(predicate :\newline src >> W_1;W_2; \ldots W_n >> dst, pc)$
@@ -25,8 +31,6 @@ where:
 \item $W_1, W_2, \ldots, W_n \subseteq S$ are the (potentially empty) ordered sets of waypoints; 
 \item $pc \in PC$ is the packet class and is a unique integer used to identify the variables associated to $r$
 \end{compactitemize} 
-In the rest of the paper, we often use the term packet class to identify the corresponding reachability/waypoint policy. 
-Other policies are not mapped to packet classes as they do not produce a path, but specify restrictions on paths of packet classes. 
 %Assuming that the intersection of predicates is empty for policies in $R$, we create a mapping $\gamma : R \rightarrow PC$ to associate each reachability policy with a unique integer called packet class in the set $PC$. Switches $src, dst \in S$ denote the ingress and egress switches respectively for the packet class $pc = \gamma(r)$ and Genesis finds a path from $src$ to $dst$ for $pc$. If a waypoint policy is specified, $W$ is the set of switches the path from $src$ to $dst$ must traverse through in no particular order.
 We define a static integer $\mu$ to be the synthetic limit for path length for any packet class, and define the set $K = [0, \mu]$ to be the set of all permissible path lengths.
 
@@ -121,8 +125,8 @@ However, since there is no restriction on number of $Fwd$ values that can be tru
 also multiple paths to the destination. 
 These can also create forwarding loops. 
 Concretely, this is not a problem: as long as there is  at least one path from $s$ to $d$ we can recover it from the solution of the constraints. 
-Moreover, this representation is quite efficient, as forcing a singular path would
-require to add further constraints.
+Moreover, this representation is quite efficient, as forcing a single path would
+require adding further constraints.
 % we are able to extract a path from the solution without 
 %adding additional constraints to ensure the semantics of \emph{unicast} forwarding. 
 
