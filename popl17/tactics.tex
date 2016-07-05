@@ -5,33 +5,35 @@
 %- algorithm
 %- brief comparison with netgen
 \section{Tactics} \label{sec:tactic}
-Synthesis for a reachability policy translates to choosing a path from the 
-solution space of all paths from the source to destination such that the 
-chosen path satisfies all policies like waypoints and isolation. Datacenter 
-topologies like fat-trees~\cite{fattree} have numerous paths between 
-edge switches to provide full bisection bandwidth. 
-Thus, the solution space of paths for a pair of endpoints is large. 
-For example, consider the fat-tree topology in \Cref{fig:fattree}. 
-The number of paths under length 10 between two edge  switches 
-in the same pod is 242 and two edge switches in different pods is 272. 
-If we consider the synthesis of $n$ packet classes, the problem 
-roughly translates to finding a solution in the space of size $n \times 242$.
+Synthesis for a reachability policy translates to choosing a path from
+the solution space of all paths from the source to destination such
+that the chosen path satisfies all policies, e.g., waypoint traversal
+and isolation. Datacenter topologies, e.g., fat-trees~\cite{fattree},
+have numerous paths between edge switches to provide full bisection
+bandwidth.  Thus, the solution space of paths for a pair of endpoints
+is large.  For example, consider the fat-tree topology in
+\Cref{fig:fattree}.  The number of paths under length 10 between two
+edge switches in the same pod is 242 and two edge switches in
+different pods is 272.  If we consider the synthesis of $n$ packet
+classes, the problem roughly translates to finding a solution in the
+space of size $n \times 242$.
 \begin{figure}[h]
 	\includegraphics[width=\columnwidth]{figures/fattree.png}
 	\caption{Fat Tree Topology}
 	\label{fig:fattree}
 \end{figure}
-Operators can leverage the network structure of topologies
- to reduce the solution space by specifying undesirable path patterns. 
- For example, a path from edge to edge in a fat-tree must not traverse another edge switch.
- This pattern will not drastically reduce the solution space of paths 
- due to the dense interconnect between aggregate and core switches,
- ensuring that synthesis most likely will not fail. 
+Operators can leverage the network structure of topologies to reduce
+the solution space by specifying undesirable path patterns.  For
+example, a path between two edge switches in a fat-tree must not
+traverse another edge switch.  This pattern will not drastically
+reduce the solution space of paths due to the dense interconnect
+between aggregate and core switches, ensuring that synthesis most
+likely will not fail.
 
 We introduce \emph{tactics} (the name is inspired from the usage in SMT solvers, not 
 proof assistants)
-on labels, abstractions that allow the 
-operator to impose restrictions on the paths. 
+on labels, abstractions that allow a
+network operator to impose restrictions on the paths. 
 We use the notion of mapping the set of switches to labels to 
 have a coarse-grained way for specifying path patterns. This helps
 to create search strategies which can be used for a majority 
@@ -50,7 +52,7 @@ We define the path-labeling function $\Phi : S^* \rightarrow Lb^*$,  which maps 
 Tactics are simple regular expressions over the set
  of labels and are used to blacklist certain path patterns.
 Regular expressions have been previously used in tools like
-NetGen~\cite{netgen} to specify the paths for the packet class.
+NetGen~\cite{netgen} to specify the paths for a packet class.
 While supporting full regular expressions is possible, it causes a blow-up in the solving time as further
 constraints need to be added to the solver to ensure that the path satisfies the regular expression. 
 Instead, using the notion of switch labels, we use regular expressions to provide high-level path properties as a {\em search strategy} rather than a policy requirement. 
@@ -92,16 +94,17 @@ syntax and the synthesis algorithm is modified to enforce the tactics.
 Since tactics are path-related restrictions, 
 operators can also apply tactics selectively to the paths for certain packet classes, and also different tactics for different classes. 
 \begin{example}
-No Edge Tactic is a complex form of tactic which ensures that a edge-edge path
-cannot traverse another edge switch that is expressed using conjunctions:
+``No Edge'' Tactic is a complex form of tactic which ensures that a edge-edge path
+cannot traverse another edge switch. It is expressed using conjunctions:
 $\neg (e .^* e .^* e)\equiv \bigwedge \limits_{i=0}^{i=\mu-2} \neg (e .^i e .^* e)$ where $\mu$ is the upper limit on path length. 
 \end{example}
 \begin{example}
-Valley-free Tactic ensures
+``Valley-free'' Tactic ensures
 that a edge-edge path is of the form $e-a-c-a-e$ is expressed as
  $\neg (e .^5 .^* e)$ $\wedge \neg (e .^* e .^* e)$. 
 \end{example}
-
+Paths used in production datacenter networks adhere to both these
+tactics~\cite{vl2-sigcomm09,jupiterrising-sigcomm15}
 
 \subsubsection{Modified Synthesis Algorithm with Tactics}
 In our synthesis algorithm, the reachability propagation constraints (\Cref{eq:bckprop}) 
