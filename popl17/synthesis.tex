@@ -136,7 +136,7 @@ A directed edge $n_1 \rightarrow n_2$ appears in the reachability-graph if there
 We extract the rules relevant to the shortest path from source to destination from the model, and the additional rules obtained in the solution (extra paths, forwarding loops) are ignored.  
 
 \subsection{Waypoint Constraints} 
-For a reachability policy with ordered set of waypoints $s >> W_1;\ldots;W_n >> d$ and packet class $pc$, we add all the constraints specified in \secref{sec:reach} to ensure the existence of a path from $s$ to $d$. We then add constraints so that all waypoints $w$
+For a reachability policy with a sequence of waypoint sets $s >> W_1;\ldots;W_n >> d$ and packet class $pc$, we add all the constraints specified in \secref{sec:reach} to ensure the existence of a path from $s$ to $d$. We then add constraints so that all waypoints $w$
 are traversed. 
 \begin{equation} \label{eq:waypoints}
 	\forall w \in W_1, \ldots, W_n. \ \exists k.~Reach(w, pc, k).
@@ -181,13 +181,13 @@ waypoints in the right order.
 \subsection{Isolation Constraints}
 A traffic isolation policy $pc_1 || \ pc_2$ states that the paths for
 $pc_1$ and $pc_2$ do not share any link in the same direction.  We
-enforce this policy by adding constraints that states that at every
+enforce this policy by adding constraints that state that at every
 switch, $pc_1$ and $pc_2$ must not forward to the same switch:
 \begin{equation}
 	\forall n_1.~\neg ( \exists n_2. Fwd(n_1,n_2,pc_1) \wedge Fwd(n_1,n_2,pc_2)). \label{eq:isolation}
 \end{equation}
 For a link isolation policy $pc_1 <> \ pc_2$ which prevents sharing a link
-in both direction, the constraints added are:
+in both directions, the constraints added are:
 \begin{multline}
 \forall n_1.~\neg ( \exists n_2. Fwd(n_1,n_2,pc_1) ~~\wedge \\ (Fwd(n_1,n_2,pc_2) \vee Fwd(n_2,n_1,pc_2))). \label{eq:linkisolation}
 \end{multline}
@@ -200,14 +200,14 @@ Interestingly, for a reachability policy without waypoints,
 the constraints in \Cref{eq:fwdset} are not required to enforce isolation. 
 Even though the solver could produce multiple forwarding rules which induce multiple paths, 
 the constraints in \Cref{eq:isolation} or \Cref{eq:linkisolation} guarantee isolation as the solver would discard
-the additional rules conflicting with another packet class.
+the rules conflicting with another packet class.
 
 %reachability policy. Thus, the solver would remove the additional rules which conflict with
 %the other class while still ensuring a path exists from source to destination. 
 
 %The isolation constraints is intuitive when coupled with the forwarding set constraints (\cref{eq:fwdset}) as the model only has forwarding rules for the path from source to destination. However, for a reachability policy without waypoints, we argue that the forwarding set constraints are not required when coupled with the isolation constraints. The reasoning behind this is that the solver would simply remove the extra forwarding rules of a packet class in the model which conflict with the other packet class, as there are no constraints which require the need of these extra forwarding rules for correctness, but are one particular solution model in the space of solutions. 
 
-\subsection{Capacity Constraints} \label{sec:linkcap}
+\subsection{Link and Switch Table Capacity Constraints} \label{sec:linkcap}
 %%\subsubsection{Link Capacity Constraints} 
 For a link capacity policy on the link $sw_1 \rightarrow sw_2: \omega$, 
 we use the theory of linear rational arithmetic 
