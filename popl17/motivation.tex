@@ -15,15 +15,14 @@ that \Name supports.
 %% are applicable to other settings, e.g., enterprise networks with
 %% different departments imposing different sets of policies.
 We use \Cref{fig:architecture} as a running example. A tenant is an
-entity which controls a number of host machines running some applications,
-and specifies policies about the paths among it's hosts which need to be enforced
-by the network operator. \Cref{fig:architecture} shows several
-tenants who differ in the nature of policies they wish to realize. 
-Notice that these policies reflect and, in some cases, extend the
-policies that today's enterprises realize in their on-site networks, as
-well as the policies that data center operators support for the different 
-tenant 
-workloads~\cite{mpa-imc15}.  The policies include:
+entity (e.g., an enterprise or a department thereof) which controls a
+number of host machines running some applications, and specifies
+policies about the paths among it's hosts. \Cref{fig:architecture} shows several tenants
+who differ in the nature of policies they wish to realize.  Notice
+that these policies reflect and, in some cases, extend the policies
+that today's enterprises realize in their on-site networks, as well as
+the policies that data center operators support for different
+tenant workloads~\cite{mpa-imc15}.  The policies include:
 
 %\aditya{explain the figure here}.
 %\kausik{Will do this now}
@@ -49,20 +48,21 @@ workloads~\cite{mpa-imc15}.  The policies include:
   after VM placement as $E2 >> E4$).
 \item \textbf{Middlebox Traversals}. A tenant may wish that traffic
   between two of her end hosts, or from another tenant, must traverse
-  specific middleboxes %(locations, or logical descriptors) for
+  specific middleboxes for %(locations, or logical descriptors) for
   security, access control, or performance reasons. For specific
   flows, tenants can provide a sequence of unordered sets of
   middleboxes
-  %\loris{flow group is not defined, group of flows or set of flows?} 
-  to traverse. The flows must traverse these sets in order,
-  while in a set, all middleboxes must be traversed
-  and the order is irrelevant.  The
-  unordered set abstraction leverages the fact that middleboxes
-  without dependencies in their traffic processing behavior can be
-  placed in any order relative to each other~\cite{pga}. For example, the grey tenant in \Cref{fig:architecture}
-  defines a waypoint policy $V1 >> FW; [IDS,BC] >> V2$
-   which specifies that traffic must first pass through the firewall (FW),
-  and then through the IDS and the byte counter (BC) in any order. 
+  %\loris{flow group is not defined, group of flows or set of flows?}
+  to traverse. The flows must traverse these sets in order, while in a
+  set, all middleboxes must be traversed and the order is
+  irrelevant.\footnote{The unordered set abstraction leverages the
+    fact that middleboxes without dependencies in their traffic
+    processing behavior can be placed in any order relative to each
+    other~\cite{pga}.} For example, the grey tenant in
+  \Cref{fig:architecture} defines a waypoint policy $V1 >> FW;
+       [IDS,BC] >> V2$ which specifies that traffic must first pass
+       through the firewall (FW), and then through the IDS and the
+       byte counter (BC) in any order.
 
   %% \aditya{refer here to an example in
   %%   the figure} In several cases \loris{how true is this?} the order
@@ -120,10 +120,10 @@ workloads~\cite{mpa-imc15}.  The policies include:
   above policies can be used to satisfy tenant SLAs (service-level
   agreements), network operators benefit from being able to enforce
   strict network resource constraints, or optimizing an objective such
-  as total utilization of the network links or restricting traffic on
+  as total utilization of network links or restricting traffic on
   certain links. For example, in \Cref{fig:architecture}, the red
-  links are of low bandwidth, and the operator wants to ensure traffic
-  on these links do not exceed the link capacity of 100.
+  links are of low bandwidth, and the operator wants to ensure that
+  total traffic on these links does not exceed the link capacity of 100.
 %For instance, to aid traffic engineering, the network
 %operator may specify policies constraining the maximum number of
 %tenant flows that can traverse a given link or sets of links in the
@@ -140,9 +140,10 @@ workloads~\cite{mpa-imc15}.  The policies include:
           %% more tenants such that their performance is affected and
           %% can be used to provide bandwidth guarantees to tenants.
   Likewise, to tackle hardware heterogeneity, operators can specify
-  switch constraints, e.g., the maximum size of the rule table to
-  restrict the number of flows traversing a particular switch or set
-  of switches.
+  switch constraints, e.g., restrict the number of flows traversing a
+  particular switch or set of switches to adhere to switches'
+  ruletable size limits.
+  
  
  \item \textbf{Handling Failures}. Modern networks experience link and switch failures
  frequently and an essential requirement in network management systems is to
@@ -154,7 +155,7 @@ workloads~\cite{mpa-imc15}.  The policies include:
  process can result in a solution which incurs a large time overhead
  of installing the new rules (controller has to set up connections
  with alive switches and send new rules). It is therefore desirable to
- have minimal network repair which aims to minimize the overhead of
+ have {\em minimal network repair} which aims to minimize the overhead of
  transitioning from an old data-plane to a new policy-compliant
  one. While repair is a reactive approach to failures, the transition
  under failures can be expensive. Thus, as an alternative to minimal
@@ -165,19 +166,18 @@ workloads~\cite{mpa-imc15}.  The policies include:
 
 
 \noindent Realizing these policies requires painstaking, often
-manual configuration of diverese network devices. This is incredibly
-tedious---the configuration files can run into 1000s of lines, and
+manual configuration of diverse network devices. This is incredibly
+tedious---device configuration files can run into 1000s of lines, and
 intricate dependencies may have to be configured across
 devices~\cite{benson:complexity:nsdi2009,mpa-imc15}. This process is
 also highly error prone~\cite{mpa-imc15}. Even programming with SDN
-languages like Pyretic and Frenetic is challenging as these policies
+languages like Pyretic and Frenetic is challenging as the above policies
 are global and cannot be enforced by programming individual behavior
 of switches.  While some existing SDN-based network management
 systems~\cite{simple,merlin,oneswitch} overcome these limitations,
 they are tailored to support specific policies such as middlebox
-placement or bandwidth and resource constraints. As such they lack
-generality and extensibility required to enforce the complex
-collection of policies.
+placement or bandwidth and resource constraints. As such they cannot
+enforce several commonly desired policies.
 
 
 \subsection{Data Plane Synthesis} \label{sec:synthesis} 
@@ -187,7 +187,7 @@ We design \name, a general network management system that
  performs {\em synthesis} of switch forwarding
 rules to enforce the above set of end-to-end policies (specified using 
 GPL as shown in \Cref{tab:policysupport}). The architecture of \name
-is shown in \Cref{fig:architecture}.
+is shown in \Cref{fig:architecture}. \aditya{DEFINE GPL in the table}
 
 Unlike previous efforts in the network synthesis space ~\cite{netgen,merlin}, \Name is
 not tailored to specific formalisms such as regular expressions; 
@@ -197,7 +197,7 @@ this aspect makes it {\em modular} and {\em easy to extend}.
 To draw an analogy with SMT solvers, \Name can be seen as a constraint
 solver that allows the addition of different types of policies
 (respectively, theories in SMT) and that allows the design of
-optimizations based on the properties desired by 
+optimizations based on the properties desired by network
   operators using \Name. 
   
   Our work is motivated by recent advances in program synthesis, i.e.,
@@ -224,7 +224,7 @@ of the node pairs satisfying certain properties (derived
 from the rest of the policies). 
 Thus, the different policies can be enforced by 
 a correct set of forwarding rules at the switches. 
-No extra functionality is required from the controller,
+No extra functionality is required from the controller;
 its only role is to install the forwarding rules on switches.
 
 %Given these paths, the SDN
