@@ -1,21 +1,19 @@
 \section{Policy-compliant Resiliency}
 \label{sec:resiliency}
-Datacenter networks are highly prone to failures~\cite{datacenterfailures}, 
-and it is crucial to provide certain guarantees during failure
-scenarios. For example, if the operator wants to guarantee
-reachability amongst endpoints, the controller only has to find an active
-path in the network to re-establish reachability. 
-However, upon the failure of a link, {\em reactively} synthesizing 
-a new data plane which satisfies
-all input policies can be time-consuming, during which
-the network resides in a non-compliant state and can result 
-in deteriorated performance and security violations. 
-Thus, we propose 
-\emph{policy-compliant resiliency} to tackle network failures
-by \emph{proactively} synthesizing resilient data planes that even in the event
-of a bounded number of link failures, do not violate input policies. This eliminates the 
-need to resynthesize the forwarding
-rules for every network failure event.
+Datacenter networks are highly prone to
+failures~\cite{datacenterfailures}, and it is crucial to provide
+certain guarantees during failure scenarios. For example, if the
+operator wants to guarantee reachability amongst a pair of endpoints,
+the controller only has to find an active path in the network to
+re-establish reachability.  However, upon the failure of a link, {\em
+  reactively} synthesizing a new data plane which satisfies all input
+policies can be time-consuming, and during this period multiple
+tenants can suffer from lack of reachability and/or performance
+issues.  Thus, we propose \emph{policy-compliant resiliency} to tackle
+network failures by \emph{proactively} synthesizing resilient data
+planes that even in the event of a bounded number of link failures,
+continue to satisfy input policies. This eliminates the need to
+resynthesize the forwarding rules for every network failure event.
 
 In this section, we describe the transformation of input 
 policies to provide $t-resilience$~\cite{plinko}, i.e in the event of upto $t$
