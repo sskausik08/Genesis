@@ -20,7 +20,7 @@ policies to provide $t-resilience$~\cite{plinko}, i.e in the event of upto $t$
 arbitrary link failures, the synthesized data plane still has a path
 for each packet class  satisfying all policies which is achieved
  by synthesizing
-backup paths satisfying input policies.
+backup paths that satisfy input policies.
 We only consider reachability, waypoint,
 and isolation policies in the input. 
 Global policies like capacity policies
@@ -104,7 +104,7 @@ Intuitively, this  is done by modifying the input policies so that  multiple dis
 policies are synthesized for each packet class.
 \noindent The transformation of input policies $(PC, I) \xRightarrow{res} (PC^R, I^R)$
 to provide $t-resilience$ to the packet classes is described in \Cref{restransform}. 
-For $t-resilience$, a packet class $pc$ needs atleast $t+1$ edge-disjoint paths from
+For $t-resilience$, a packet class $pc$ needs at least $t+1$ edge-disjoint paths from
 source to destination. For this, we create $t+1$ new packet classes ($\hat{pc}$ in line~\ref{lst:line:respc})
 and use {\em link-isolation policies} amongst all pairs in $\hat{pc}$ (line \ref{lst:line:respcisolate})
 to create $t+1$ edge-disjoint paths for $pc$.

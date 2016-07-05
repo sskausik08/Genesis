@@ -32,7 +32,7 @@ likely will not fail.
 
 We introduce \emph{tactics} (the name is inspired from the usage in SMT solvers, not 
 proof assistants)
-on labels, abstractions that allow a
+on labels; abstractions that allow a
 network operator to impose restrictions on the paths. 
 We use the notion of mapping the set of switches to labels to 
 have a coarse-grained way for specifying path patterns. This helps
@@ -56,7 +56,7 @@ NetGen~\cite{netgen} to specify the paths for a packet class.
 While supporting full regular expressions is possible, it causes a blow-up in the solving time as further
 constraints need to be added to the solver to ensure that the path satisfies the regular expression. 
 Instead, using the notion of switch labels, we use regular expressions to provide high-level path properties as a {\em search strategy} rather than a policy requirement. 
-Instead of specifying how the path must look like, we use regular expressions on switch labels to specify \emph{blacklists}--i.e.,
+Rather than specifying how the path must look like, we use regular expressions on switch labels to specify \emph{blacklists} i.e.,
 what the path must \emph{not} look like. A tactic, for example, can blacklist paths from an edge switch to an edge switch that go through another edge switch. 
 %\loris{we need a plot for the full regex thing to compare with Madhu, it would be great to repeat some of their experiments}
 
@@ -72,7 +72,7 @@ C  &  :=  &  \varepsilon \mid l_1 \mid l_1 l_2\\
 \end{array}$$
 where $l_i\in Lb$ and $l_{src}, l_{dst}$ are used to specify the labels of the source switch 
 and destination switch, respectively, of the packet classes to which we apply the tactic. 
-Since our goal is to black-list paths, we allow regular expressions to be negated at the outer level. 
+Since our goal is to blacklist paths, we allow regular expressions to be negated at the outer level. 
 \begin{example}
  $\neg (e .^i c .^* e)$ indicates that the path must not contain an core a switch at the $(i+1)^{th}$ step. 
  Similarly, $\neg (e .^i .^* e)$ indicates that the path connecting two edge switches should have a length $ < i + 1$. 
@@ -266,8 +266,8 @@ constraints (\Cref{eq:bckprop}) which construct the path for a packet class. Eac
    requires additional constraints to our synthesis algorithm which leads to increased synthesis times. Thus, we only support a restricted tactic syntax.   
 
  Since tactics artificially reduce the search space, the synthesis algorithm with tactics is incomplete (a solution satisfying the tactic may not exist). 
- In practice, tactics can be used to specify restrictions which would be not reduce the search space dramatically, 
- and speed up the synthesis, especially in datacenter topologies which are hierarchical 
+ In practice, tactics can be used to specify restrictions which would not reduce the search space dramatically, 
+ and also speed up the synthesis, especially in datacenter topologies which are hierarchical 
  and can be used to specify interesting tactics. Some examples are: an edge to edge path must not
  traverse another edge, and valley-free routing ($eacae$). One of the biggest advantages
  of tactics is that it is \emph{policy-agnostic} since it enforces conditions on the path, and
