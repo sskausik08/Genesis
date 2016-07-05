@@ -1,43 +1,46 @@
 \section{Introduction}
-Conventionally, a network primarily acted as a backbone for 
-communication among machines, and these communications
-used the ``shortest" path in the network based on certain metrics
-for deciding the path between two machines. 
-In recent times, there is a rising trend of cloud datacenters where
-different entities (tenants) share different resources like compute
-machines running their applications and 
-the network infrastructure used for communication 
-among these applications.  
-Operators of multi-tenant datacenters deal with a multitude of
-machines communicating (flows) on the network 
-with many heterogeneous devices. With growing
-diversity of tenant applications and the 
-need for security and compliance, 
-these pathways of communication
-through the network are subject to
+%% Conventionally, a network primarily acted as a backbone for
+%% communication among machines, and these communications used the
+%% ``shortest" path in the network based on certain metrics for deciding
+%% the path between two machines.  Today,
+
+Many enterprises are increasingly migrating their on-premise
+deployments to cloud data centers. In such environments, the different
+entities (tenants) share different resources, such as, compute
+machines running their applications and network infrastructure used
+for communication among these applications.  Operators of such
+multi-tenant datacenters deal with a multitude of machines
+communicating with each other (flows) over a network that is composed
+of many tens to hundreds of devices (routers or
+switches)~\cite{mpa-imc15}. With growing diversity of tenant
+applications and the need for security and compliance, these pathways
+of communication through the datacenter network are subject to
 increasingly complex network-based policies.
 
-Consider a tenant in such a data center. She may desire --- in addition
-to basic reachability among her hosts or applications --- that traffic
-attempting to reach some of her applications be examined by a set of
-"middleboxes" for auditing and access controls. Another tenant may
-additionally desire (a subset of) her flows to be isolated from
-others' flows for strong security or QoS (Quality-of-Service) considerations.
- Additionally,
-cloud operators may need to optimize network traffic engineering objectives
-like minimizing maximum load 
-and deal with heterogeneous resource demands like switch table 
-sizes. Also, these networks are highly prone to failures,
-and operators require a functionality to ``repair" the network
- in case of  policy 
-violations. For stricter guarantees during failure scenarios,
-operators need a mechanism to proactively configure devices to 
-prevent violations under a bounded number of failures. 
-Today, configuring network devices to implement these diverse
-and complex policies in aggregate is manual, ad-hoc, and error-prone. 
+Consider a tenant in such a data center. She may desire --- in
+addition to basic communication among her hosts or applications
+(reachability) along shortest paths based on certain metrics --- that
+traffic attempting to reach some of her applications be examined by a
+set of ``middleboxes'' for auditing and access controls. Another
+tenant may additionally desire (a subset of) her flows to be isolated
+from others' flows for strong security or QoS (Quality-of-Service)
+considerations.  In parallel, cloud operators must meet other
+operational requirements. For instance, they often need to optimize
+network traffic engineering objectives, e.g., minimizing maximum load
+imposed by all tenants on network links, and deal with heterogeneous
+resource constraints such as switch table sizes. Also, since
+datacenter networks are highly prone to link/switch
+failures~\cite{gill-sigcomm11}, operators often need to ``repair" the
+network data plane to re-enforce policies. For stricter guarantees
+during failure scenarios, operators additionally desire a mechanism to
+proactively configure devices to enforce policies under a bounded
+number of failures.
+
+Today, configuring network devices to implement these diverse and
+complex policies in aggregate is manual, ad-hoc, and error-prone.
 This can lead to mis-configurations and violations of tenant
-service-level agreements (SLAs) which can have a severe performance and
-security impact.
+service-level agreements (SLAs) which can have a severe performance
+and security impact.
 
 %%  However, in real-life, the
 %% process of policy enforcement by network operators is manual and
@@ -56,13 +59,13 @@ security impact.
 %% specifying resource constraints like link bandwidth and switch table
 %% sizes to perform traffic engineering and network resource management.
 
-The rise of \emph{software-defined networking} (SDN) has allowed operators
-to program networks in a more intuitive manner. In SDN, a general-purpose
-centralized controller machine (control plane) manages the forwarding
-rules on a collection of 
-programmable switches (data plane). Using the global view of the 
-topology, the controller can program forwarding rules on switches
-based on the applications' requirements. 
+The rise of \emph{software-defined networking} (SDN) has allowed
+operators to program networks in a more intuitive manner. In SDN, a
+general-purpose centralized controller machine (control plane) manages
+the forwarding rules on a collection of programmable switches (data
+plane). Using a global view of current network topology, the
+controller can program forwarding rules on switches based on 
+application requirements.
 %However, many existing SDN
 %frameworks are too low-level, 
 %making it challenging 
@@ -71,65 +74,68 @@ based on the applications' requirements.
 %% of the policies, generating the data plane is an NP-complete problem
 %% and requires the design of efficient custom heuristics; combining
 %% different policies' heuristics together is non-trivial.
-However, existing
-SDN programming languages like Frenetic~\cite{frenetic} and Pyretic~\cite{pyretic} are
-too constraining: operators would ideally want to specify
-and realize policies network-wide, whereas these languages focus on
-programming individual switch behaviors.
-Moreover, for many types of
-  policies, generating a data plane 
-  that enforces them is a
+Unfortunately, existing SDN programming languages like
+Frenetic~\cite{frenetic} and Pyretic~\cite{pyretic} are too
+constraining: operators would ideally want to specify and realize
+policies network-wide, whereas these languages focus on programming
+{\em individual} switch behaviors.  Moreover, for many types of
+policies, generating a data plane that enforces them is a
 %  an NP-complete 
-computationally hard problem and
-this aspect requires the design of efficient custom heuristics.
+computationally hard problem, requiring the design of efficient custom
+heuristics per policy type. Other recent work on network-wide policy
+enforcement, e.g., Merlin~\cite{merlin} and SIMPLE~\cite{simple}, go
+beyond the single-switch model, but they target specific types of
+policies and thus are difficult to extend to other commonly desired
+policy types (e.g., isolation).
 %; combining  different policies' heuristics together is non-trivial. 
  %% \aditya{we need to be
 % careful
 %%   not to bin all SDN languages into this switch-by-switch model}
 %% \kausik{Do you want to make changes here?}
-Other research on network-wide policy enforcement, e.g.,
-Merlin~\cite{merlin} and SIMPLE~\cite{simple} are tailor-made to
-specific sets of policies, and thus, difficult to extend to support
-other kinds of policies such as traffic isolation.
+
+
+
+
+
+
+
+%% support
+%% other kinds of policies such as traffic isolation.
 
 %%  like
 %% joint bandwidth provisioning and waypoint routing in Merlin
 %% \cite{merlin}, and middlebox policy enforcement in SIMPLE
 %% \cite{simple} or FlowTags~\cite{flowtags}. However, these approaches
 
-In this paper, we seek a {\em general} and {\em automated}  
-approach that allows a variety
-of rich policies to be specified in a simple and declarative way as the input,
-and the output is the set of switch forwarding rules such 
-that the complexities of correctly realizing the policies in the data
-plane are hidden from the operators. This is an important
-initial step toward {\em intent-based networking}~\cite{intent}, where
-operators specify {\em what} they want the network to do instead of
-worrying about {\em how} the network must be configured.
+In this paper, we seek a {\em general} and {\em automated} approach
+that allows a variety of rich policies to be specified in a simple and
+declarative way as the input, and the output is the set of switch
+forwarding rules such that the complexities of correctly realizing the
+policies in the data plane are hidden from operators. This is an
+important initial step toward {\em intent-based
+  networking}~\cite{intent}, where operators specify {\em what} they
+want the network to do instead of worrying about {\em how} the network
+must be configured.
 %their networks. %% To support a cornucopia of policies, an
 %% important feature is \emph{generality} of the approach of policy
 %% enforcement, so that it can be extended to enforce custom policies
 %% required by the operator.
 This paper makes a case for using \emph{synthesis} of switch
-forwarding rule tables as an effective and practical approach to realizing
-this vision in the multi-tenant datacenter context.
+forwarding rule tables as a practical approach to realizing this
+vision in the multi-tenant datacenter context.
 %% switch
 %% table forwarding rules to the solve the problem of policy enforcement
 %% by use of off-the-shelf SMT-solvers.
 
 We present \Name, a framework for declaratively specifying and
-enforcing complex policies 
-like isolation, capacity policies, and middlebox
-traversals. To tackle the high complexity of enforcing
-some of these policies (for e.g., enforcing isolation
-is NP-complete),
-\Name 
-encodes the problem of enforcing various
-policies as a constraint solving problem and
-leverages recent advances in
-fast Satisfiability Modulo Theories (SMT) solvers
-to efficiently search for a solution to the constraints. 
-The solution is then translated into switch forwarding rules. 
+enforcing complex policies, such as, isolation, capacity constraints,
+middlebox traversals and failure resilience. To tackle the high
+complexity of enforcing some of these policies (for e.g., enforcing
+isolation is NP-complete), \Name encodes the problem as that of
+constraint solving and leverages recent advances in
+fast Satisfiability Modulo Theories (SMT) solvers to efficiently
+search for a solution to the constraints.  The solution is then
+translated into switch forwarding rules.
 %Using SMT solvers with 
 %support for linear optimization, \name can perform traffic engineering, and
 %minimal network repair. We extend \name to synthesize
@@ -142,28 +148,26 @@ The solution is then translated into switch forwarding rules.
 %% will synthesize the lower-level switch forwarding rules for realising
 %% these policies, eliminating the need for operators to work on
 %% switch-level behaviours. 
-Thus, by leveraging the formal guarantees of constraint solving, \Name
-eliminates the room for error in the enforcement of 
-a complex collections of policies. 
+By leveraging the formal guarantees of constraint solving, \Name
+eliminates the room for error in the enforcement of complex
+policies.
 
 %\kausik{Do we need to make the point of sacrificing performance for generality for POPL? }
 
 Unfortunately, due to the the large space of forwarding plane
 configurations, naively encoding policies using SMT solvers results in
-synthesis speeds that don't match the scale of operations of today's
-multi-tenant networks. \kausik{One of the reviewers had a problem
-	here, I dont know what concrete data to put, as tactics do not
-	reduce the order of synthesis time.}
+poor synthesis speeds (up to 100s or even 1000s of seconds in the
+median case; \secref{xxx}). \kausik{One of the reviewers had a problem
+  here, I dont know what concrete data to put, as tactics do not
+  reduce the order of synthesis time.}
 %enterprise networks today because the space of forwarding plane configurations
 %is huge. 
-To this
-end, \Name leverages domain-specific properties to simplify the
-constraints handled by the SMT solver.  Specifically, \Name allows the
-network operator to write 
-restricted forms of regular expressions, called \emph{tactics}, 
-that blacklist
-paths based on certain patterns   
-that are not desired in a datacenter network. 
+To make synthesis more practical, \Name leverages domain-specific
+properties to simplify the constraints handled by the SMT solver.
+We allow the network operator to write restricted
+forms of regular expressions, called \emph{tactics}, that blacklist
+paths based on certain patterns that are not desired in a datacenter
+network.
 %\loris{how about: ...based on path patterns that are not desired...}
 These tactics are used to discard several constraints, 
 acting as a search strategy for the solver.
@@ -173,19 +177,18 @@ acting as a search strategy for the solver.
 Tactics can improve the synthesis procedure and achieve
 %constraints added to the solver without additional constraints
 %required to ensure the solution satisfies the tactic and achieve
-a 1.5$\times - $400$\times$ speedup. 
+a 1.5$\times - $400$\times$ speedup (median speedup:
+XXXX).\aditya{fix me}
 
- Secondly, we develop a \emph{divide-and-conquer}
- synthesis
- procedure that leverages the structure of tenants'
- isolation policy graph to improve synthesis performance. The
-  procedure partitions the input policies
-  into effective components such that \name can 
-  synthesize these components 
-  separately and faster than the complete problem. 
- Divide-and-conquer synthesis can halve the
- synthesis time for 40\% of isolation workloads  
- which vary in size and complexity of isolation.
+ Secondly, we develop a \emph{divide-and-conquer} synthesis procedure
+ that leverages the structure of tenants' isolation policy graph to
+ improve synthesis performance. The procedure partitions the input
+ policies into effective components such that \name can synthesize
+ these components separately and faster than the complete problem.
+ Divide-and-conquer synthesis can halve the synthesis time for 40\% of
+ workloads with isolation policies.
+ %% which vary in size and complexity
+ %% of isolation.
  %\aditya{is this statement correct? what is 40\% of scenarios?}
  %\aditya{the
    %previous sentence is vague} 
