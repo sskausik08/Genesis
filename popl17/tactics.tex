@@ -252,9 +252,9 @@ constraints (\Cref{eq:bckprop}) which construct the path for a packet class. Eac
   prevents us from being able to specify unrestricted regular expressions. 
   \begin{example}
   Consider a tactic $\neg(e .^i a c a .*e)$. To enforce
-  this tactic, we need to have constraints which prevent the path reaching a aggregate switch in $i+3$
+  this tactic, we need to have constraints which prevent the path reaching an aggregate switch in $i+3$
   steps when the path traverses an aggregate and core switch at $i+1$ and $i+2$ steps
-  respectively. This cannot be specified by modifying the reachability propagation 
+  respectively. This cannot be specified by modifying the reachability 
   constraints in its current form, 
   because the constraints for reachability for a switch in $i + 3$ steps only depends on 
   the constraints for reachability in $i+2$ steps. 

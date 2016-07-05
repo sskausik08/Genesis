@@ -5,7 +5,8 @@ and it is crucial to provide certain guarantees during failure
 scenarios. For example, if the operator wants to guarantee
 reachability amongst endpoints, the controller only has to find an active
 path in the network to re-establish reachability. 
-However, upon the failure of a link, {\em reactively} synthesizing a new configuration which satisfies
+However, upon the failure of a link, {\em reactively} synthesizing 
+a new data plane which satisfies
 all input policies can be time-consuming, during which
 the network resides in a non-compliant state and can result 
 in deteriorated performance and security violations. 
@@ -14,7 +15,7 @@ Thus, we propose
 by \emph{proactively} synthesizing resilient data planes that even in the event
 of a bounded number of link failures, do not violate input policies. This eliminates the 
 need to resynthesize the forwarding
-configuration for every network failure event.
+rules for every network failure event.
 
 In this section, we describe the transformation of input 
 policies to provide $t-resilience$~\cite{plinko}, i.e in the event of upto $t$
@@ -30,10 +31,10 @@ consider a packet class $pc$ with a traffic rate of $\sigma(pc)$. By considering
 the backup paths with the same traffic characteristics for synthesis, 
 the total traffic 
 accounted for $pc$ would be $c\times \sigma(pc)$ (for some constant $c$), leading
-to under-provisioning of resources. Presently, \name's resilience
+to under-provisioning of resources. Presently, the resilience
 transformation has no provisions to avoid or minimize 
 the under-provisioning of resources which affect capacity policies
-and traffic engineering objectives. 
+and TE objectives. 
 %all backup paths in consideration, while all backup paths will not 
 %exist together in the network (backup paths will be deployed during
 %a failure event).
@@ -113,7 +114,7 @@ The synthesized data plane $\hat{\xi} = (S, L_{pc})$ for class $pc$ is construct
 paths in the resilient packet class set $\hat{pc} = \{rc_1,\ldots,rc_{t+1}\}$
 i.e. $L_{pc} = \bigcup\limits_{rc \in \hat{pc}} L_{rc}$.  
 Each path of $\hat{pc}$ satisfies the reachability policy, 
-and any arbitrary $t$ link failure scenario cannot affect all $t+1$ paths of $\hat{pc}$.
+and any arbitrary $t$ link failure scenario cannot affect all $t+1$ paths.
 
 However, the resilient paths need to satisfy the input isolation policies with other 
 packet classes (which themselves have $t+1$ paths for resilience). Thus, for a 
@@ -225,7 +226,7 @@ for $pc$.
 		for 1-resilience in the case of a link-isolation policy.}
 \end{figure}
 
-We presented a sound transformation of policies to provide $t-resilience$ in
-the case of reachability, waypoint and isolation policies. Future directions of 
-research involve incorporating capacity constraints and traffic engineering
-for synthesis of resilient data planes and devising a complete transformation for isolation.
+%We presented a sound transformation of policies to provide $t-resilience$ in
+%the case of reachability, waypoint and isolation policies. Future directions of 
+%research involve incorporating capacity constraints and traffic engineering
+%for synthesis of resilient data planes and devising a complete transformation for isolation.

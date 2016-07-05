@@ -127,8 +127,8 @@ paths obtained in $P_1$.
 %  we do}
 %\aditya{I did not look at the pseducode}
 
-We use two schemes to partition the policy graph connected component into two: the
-first one is \emph{min-cut} partitioning, which partitions the graph
+We use the following scheme to partition the policy graph connected component into two: 
+\emph{min-cut} partitioning, which partitions the graph
 such that inter-partition edge count is minimized. The
 rationale behind the heuristic is that since we intend to perform the
 synthesis of both partitions separately, the partition should maximize
@@ -137,7 +137,7 @@ components. By maximizing isolation policies during synthesis of the
 component, the partial solution is more likely to be compatible with a
 complete solution. However, if the min-cut partitioning produces a
 component smaller than a threshold size, we perform partitioning of
-the graph into two equal sized partitions and minimizing the cut edges
+the graph into two \emph{equal sized} partitions and minimizing the cut edges
 between the partitions. We need to ensure that we don't partition the
 graph smaller than a threshold, as the partial solutions obtained by
 synthesis of very small partitions are more likely to conflict with
@@ -159,7 +159,7 @@ solution. This helps us track failed partial solutions.
 %by tracking the constraints added to ensure isolation with the paths
 %of $P_1$.  
 Thus, if synthesis of $P_2$ fails, the unsatisfiable cores
-obtained from Z3 will be the paths of the solution of $P_1$ which are
+obtained will be the paths of the solution of $P_1$ which are
 causing the synthesis of $P_2$ to fail. 
 When performing synthesis of $P_1$
 again, we therefore ensure that we get \emph{different} paths from the
@@ -167,7 +167,7 @@ unsatisfiable cores we extracted.  Basically, we perform a
 \emph{solver-guided} enumeration of different solutions of $P_1$ to
 find a satisfying solution for $P_2$ for faster convergence. 
 The solution recovery procedure is described in lines \ref{lst:line:solrecstart}-
-\ref{lst:line:solrecend} in \Cref{dcsyn}.
+\ref{lst:line:solrecend}.
 
 There are drawbacks to performing recovery. Since, recovery is a 
 form of enumeration, in cases where the graph is highly constrained
