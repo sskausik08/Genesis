@@ -1,8 +1,16 @@
+# Color Scheme
+#e41a1c
+#377eb8
+#4daf4a
+#984ea3
+#ff7f00
+#ffff33
+#f781bf
+
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 
-# evenly sampled time at 200ms intervals
 x = [10,20,30,40,50,60,70,80]
 
 noTacticFig = plt.figure(1)
@@ -13,11 +21,11 @@ noTactic5 = [0.14,0.6872601509,1.693818092,2.794470072,43.64237714,190.4395521,2
 noTactic10 = [0.13,0.4372241497,1.165225983,2.570262909,4.928798914,6.639307022,453,2353.869107]
 
 markersize = 11
-# red dashes, blue squares and green triangles
-plt.plot(x, noTactic1, 'r', marker="o", markersize=markersize, label="Group Size:1")
-plt.plot(x, noTactic2, 'g', marker="^", markersize=markersize, label="Group Size:2")
-plt.plot(x, noTactic5, 'b', marker="h", markersize=markersize, label="Group Size:5")
-plt.plot(x, noTactic10, 'm', marker="s", markersize=markersize, label="Group Size:10")
+
+plt.plot(x, noTactic1, '#ff7f00', marker="o", markersize=markersize, label="Group Size:1")
+plt.plot(x, noTactic2, '#377eb8', marker="^", markersize=markersize, label="Group Size:2")
+plt.plot(x, noTactic5, '#4daf4a', marker="D", markersize=markersize, label="Group Size:5")
+plt.plot(x, noTactic10, '#984ea3', marker="s", markersize=markersize, label="Group Size:10")
 
 
 plt.yscale('log')
@@ -38,10 +46,10 @@ edgeTactic5 = [0.13,0.63,1.57,3.26,22.6,71,647,1506]
 edgeTactic10 = [0.13,0.42,1.37,2.48,6.58,8.23,54,292]
 
 # red dashes, blue squares and green triangles
-plt.plot(x, edgeTactic1, 'r', marker="o", markersize=markersize, label="Group Size:1")
-plt.plot(x, edgeTactic2, 'g', marker="^", markersize=markersize, label="Group Size:2")
-plt.plot(x, edgeTactic5, 'b', marker="h", markersize=markersize, label="Group Size:5")
-plt.plot(x, edgeTactic10, 'm', marker="s", markersize=markersize, label="Group Size:10")
+plt.plot(x, edgeTactic1, '#ff7f00', marker="o", markersize=markersize, label="Group Size:1")
+plt.plot(x, edgeTactic2, '#377eb8', marker="^", markersize=markersize, label="Group Size:2")
+plt.plot(x, edgeTactic5, '#4daf4a', marker="D", markersize=markersize, label="Group Size:5")
+plt.plot(x, edgeTactic10, '#984ea3', marker="s", markersize=markersize, label="Group Size:10")
 
 
 plt.yscale('log')
@@ -63,11 +71,10 @@ noValleyTactic10 = [0.07,0.3,0.9,1.96,3.45,5.5,8.6,12.97]
 
 
 # red dashes, blue squares and green triangles
-plt.plot(x, noValleyTactic1, 'r', marker="o", markersize=markersize, label="Group Size:1")
-plt.plot(x, noValleyTactic2, 'g', marker="^", markersize=markersize, label="Group Size:2")
-plt.plot(x, noValleyTactic5, 'b', marker="h", markersize=markersize, label="Group Size:5")
-plt.plot(x, noValleyTactic10, 'm', marker="s", markersize=markersize, label="Group Size:10")
-
+plt.plot(x, noValleyTactic1, '#ff7f00', marker="o", markersize=markersize, label="Group Size:1")
+plt.plot(x, noValleyTactic2, '#377eb8', marker="^", markersize=markersize, label="Group Size:2")
+plt.plot(x, noValleyTactic5, '#4daf4a', marker="D", markersize=markersize, label="Group Size:5")
+plt.plot(x, noValleyTactic10, '#984ea3', marker="s", markersize=markersize, label="Group Size:10")
 
 plt.yscale('log')
 plt.ylim(ymax=5000)
@@ -91,12 +98,11 @@ len7 = [0.007133333333,0.043,0.2188333333,1.0793]
 len7noEdge = [0.007133333333,0.044,0.2468333333,1.0075]
 noValley = [0.004666666667,0.03766666667,0.2056666667,0.7277]
 
-# # red dashes, blue squares and green triangles
-plt.plot(x, noTactic, 'r', marker="o", markersize=markersize, label="Baseline")
-plt.plot(x, noEdge, 'g', marker="^", markersize=markersize, label="No Edge")
-plt.plot(x, len7, 'b', marker="h", markersize=markersize, label="Len <= 7")
-plt.plot(x, len7noEdge, 'm', marker="s", markersize=markersize, label="No Edge and Len <= 7")
-plt.plot(x, noValley, 'k', marker="D", markersize=markersize, label="Valley-Free")
+plt.plot(x, noTactic, '#ff7f00', marker="o", markersize=markersize, label="Baseline")
+plt.plot(x, noEdge, '#e41a1c', marker="^", markersize=markersize, label="No Edge")
+plt.plot(x, len7, '#4daf4a', marker="h", markersize=markersize, label="Len <= 7")
+plt.plot(x, len7noEdge, '#984ea3', marker="s", markersize=markersize, label="No Edge and Len <= 7")
+plt.plot(x, noValley, '#377eb8', marker="D", markersize=markersize, label="Valley-Free")
 
 plt.legend(loc='upper left', frameon=False, fontsize=18)
 
@@ -111,8 +117,8 @@ linkFig = plt.figure(5)
 noTactic = [0.01686666667,0.1216433333,6.945813333,28.40629807]
 edgeTactic = [0.01706573168,0.09974876245,0.4901337981,5.841367469]
 
-plt.plot(x, noTactic, 'r', marker="o", markersize=markersize, label="Baseline")
-plt.plot(x, noEdge, 'g', marker="s", markersize=markersize, label="No Edge")
+plt.plot(x, noTactic, '#ff7f00', marker="o", markersize=markersize, label="Baseline")
+plt.plot(x, noEdge, '#377eb8', marker="s", markersize=markersize, label="No Edge")
 
 plt.legend(loc='upper left', frameon=False, fontsize=18)
 
@@ -128,7 +134,7 @@ speedup = [0.1976315682, 0.4577009344, 0.5377335584, 0.5669575579, 0.6591664453,
 frequency = [0.01219512195, 0.0243902439, 0.03658536585, 0.0487804878, 0.06097560976, 0.07317073171, 0.08536585366, 0.09756097561, 0.1097560976, 0.1219512195, 0.1341463415, 0.1463414634, 0.1585365854, 0.1707317073, 0.1829268293, 0.1951219512, 0.2073170732, 0.2195121951, 0.2317073171, 0.243902439, 0.256097561, 0.2682926829, 0.2804878049, 0.2926829268, 0.3048780488, 0.3170731707, 0.3292682927, 0.3414634146, 0.3536585366, 0.3658536585, 0.3780487805, 0.3902439024, 0.4024390244, 0.4146341463, 0.4268292683, 0.4390243902, 0.4512195122, 0.4634146341, 0.4756097561, 0.487804878, 0.5, 0.512195122, 0.5243902439, 0.5365853659, 0.5487804878, 0.5609756098, 0.5731707317, 0.5853658537, 0.5975609756, 0.6097560976, 0.6219512195, 0.6341463415, 0.6463414634, 0.6585365854, 0.6707317073, 0.6829268293, 0.6951219512, 0.7073170732, 0.7195121951, 0.7317073171, 0.743902439, 0.756097561, 0.7682926829, 0.7804878049, 0.7926829268, 0.8048780488, 0.8170731707, 0.8292682927, 0.8414634146, 0.8536585366, 0.8658536585, 0.8780487805, 0.8902439024, 0.9024390244, 0.9146341463, 0.9268292683, 0.9390243902, 0.9512195122, 0.9634146341, 0.9756097561, 0.987804878, 1]
 
 
-plt.plot(speedup, frequency, 'b')
+plt.plot(speedup, frequency, '#377eb8')
 plt.xlabel('Non-DC / DC Synthesis Time', fontsize=20)
 plt.ylabel('Cumulative Frequency', fontsize=20)
 
