@@ -1,8 +1,8 @@
 \begin{figure*}
 	\centering
-	\subfloat[Baseline]{\includegraphics[width=0.66\columnwidth]{figures/no-tactic-isolation-plot.eps}}
-	\subfloat[No Edge Tactic]{\includegraphics[width=0.66\columnwidth]{figures/no-edge-tactic-isolation-plot.eps}}
-	\subfloat[Valley-free Routing Tactic]{\includegraphics[width=0.66\columnwidth]{figures/eacae-isolation-plot.eps}}
+	\subfloat[Baseline]{\includegraphics[width=0.66\columnwidth]{figures/noTacticIsolation.eps}}
+	\subfloat[No Edge Tactic]{\includegraphics[width=0.66\columnwidth]{figures/edgeTacticIsolation.eps}}
+	\subfloat[Valley-free Routing Tactic]{\includegraphics[width=0.66\columnwidth]{figures/noValleyTacticIsolation.eps}}
 	\caption{\label{fig:isolation}
 		Total synthesis time (log scale) for isolation workloads over range of packet classes and different tenant-group sizes.}
 \end{figure*}
@@ -184,8 +184,9 @@ For the same isolation workloads as above, we use the tactic $\neg (e .^5 .^* e)
  and can achieve a best-case reduction of 400$\times$ compared to synthesis without tactics. 
  
  \begin{figure}[h]
- 	\includegraphics[width=\columnwidth]{figures/tactic-topo.eps}
- 	\caption{Average synthesis time per packet class versus topology size for isolation workloads 
+ 		\centering
+ 	\includegraphics[width=0.75\columnwidth]{figures/isolationTopology.eps}
+ 	\compactcaption{Average synthesis time per packet class versus topology size for isolation workloads 
  		w/o different tactics with the ratio of packet classes to number of edge-aggregate links 0.25.}
  	\label{fig:tactic-topo}
  \end{figure}
@@ -212,7 +213,7 @@ In \Cref{fig:tactic-topo},
  
 \begin{figure}[h]
 	\centering
-	\includegraphics[width=0.75\columnwidth]{figures/link-capacity-plot.eps}
+	\includegraphics[width=0.75\columnwidth]{figures/linkTopology.eps}
 	\caption{Average synthesis time per packet class versus topology size for isolation workloads 
 		with the ratio of packet classes to number of edge-aggregate links 0.25 and 10 low bandwidth links in the topology 
 		have capacity policies.}
@@ -221,13 +222,13 @@ In \Cref{fig:tactic-topo},
 
 \begin{figure}
 	\centering
-	\includegraphics[width=0.75\columnwidth]{figures/dcsyn-cdf.eps}
+	\includegraphics[width=0.75\columnwidth]{figures/dcSynthesis.eps}
 	\caption{CDF for speedup achieved by divide-and-conquer synthesis.}
 	\label{fig:dcsyn-cdf}
 \end{figure}
 \subsection{Divide-and-Conquer (DC) Synthesis Performance} \label{sec:optimisticeval} 
 To evaluate the heuristic
-divide-and-conquersynthesis procedure, we perform 100 runs of non-heuristic
+divide-and-conquer synthesis procedure, we perform 100 runs of non-heuristic
 synthesis and divde-and-conquer synthesis (with the no edge tactic in both cases) on
 isolation workloads with varying number of tenants and different group
 sizes we used in the \Cref{fig:isolation} experiment. We compute the
