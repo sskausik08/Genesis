@@ -29,7 +29,7 @@ consider a packet class $pc$ with a traffic rate of $\sigma(pc)$. By considering
 the backup paths with the same traffic characteristics for synthesis, 
 the total traffic 
 accounted for $pc$ would be $c\times \sigma(pc)$ (for some constant $c$), leading
-to under-provisioning of resources. Presently, the resilience
+to under-provisioning of resources. Our current resilience
 transformation has no provisions to avoid or minimize 
 the under-provisioning of resources which affect capacity policies
 and TE objectives. 
@@ -56,7 +56,7 @@ where $\forall i.\ l_i \in L$.
 %for the packet class. 
 Given a packet class $pc$,
 let $\xi = (S, L_{pc})$ be the induced data plane graph constructed from the links
-of the paths returned by the synthesis algorithm for class $pc$ .
+of the paths returned by the synthesis algorithm for class $pc$.
  For a failure scenario
 $\theta$, the active data plane $\xi_\theta = (S, L_{pc} \setminus \theta)$ represents
 all the links used by $\xi$ which are unaffected by the failure scenario. A data
@@ -109,8 +109,8 @@ source to destination. For this, we create $t+1$ new packet classes ($\hat{pc}$ 
 and use {\em link-isolation policies} amongst all pairs in $\hat{pc}$ (line \ref{lst:line:respcisolate})
 to create $t+1$ edge-disjoint paths for $pc$.
 The synthesized data plane $\hat{\xi} = (S, L_{pc})$ for class $pc$ is constructed from the 
-paths in the resilient packet class set $\hat{pc} = \{rc_1,\ldots,rc_{t+1}\}$
-i.e. $L_{pc} = \bigcup\limits_{rc \in \hat{pc}} L_{rc}$.  
+paths in the resilient packet class set $\hat{pc} = \{rc_1,\ldots,rc_{t+1}\}$,
+i.e., $L_{pc} = \bigcup\limits_{rc \in \hat{pc}} L_{rc}$.  
 Each path of $\hat{pc}$ satisfies the reachability policy, 
 and any arbitrary $t$ link failure scenario cannot affect all $t+1$ paths.
 
@@ -137,7 +137,7 @@ transformed policies $(PC^R, I^R)$  is $t-resilient$
 		is not $t-resilient$. 
 		Therefore, there exists a failure scenario $\theta$ such that $|\theta| \leq t$ 
 		and $\hat{\xi}_\theta = (S, L_{pc} \setminus \theta)$ 
-		is not resilient, i.e. there is no path from the source to destination. 
+		is not resilient, i.e., there is no path from the source to destination. 
 		Thus, $\theta$ disabled all the paths of $\hat{pc}$. \\
 		However, the paths are
 		edge-disjoint as each class in $\hat{pc}$ has a link-isolation policy with each 
@@ -211,7 +211,7 @@ for $pc$.
  for $pc_2$, and thus the resilience transformation can be achieved without
  adding link-isolation policies amongst all the packet classes. Therefore,
  the resilience transformation proposed in \Cref{restransform} is sound but not
- complete when the input policies contain isolation policies. 
+ complete when the input policies contain link-isolation policies. 
  
 \begin{figure}
 	\centering
