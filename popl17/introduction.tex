@@ -4,37 +4,38 @@
 %% ``shortest" path in the network based on certain metrics for deciding
 %% the path between two machines.  Today,
 
-Many enterprises are increasingly migrating their on-premise
-deployments to cloud datacenters. In such environments, the different
-entities (i.e., tenants) share different resources, such as, compute
-machines running their applications and network infrastructure used
-for communication among these applications.  Operators of such
-multi-tenant datacenters thus have to deal with a multitude of
-machines communicating with each other (flows) over a network that is
-composed of many tens to hundreds of devices (routers or
-switches)~\cite{mpa-imc15}. With growing diversity of tenant
-applications and the need for security and compliance, these pathways
-of communication through the datacenter network are subject to
-increasingly complex network-based policies.
+Many enterprises are increasingly migrating their on-premise IT
+infrastructure to cloud datacenters. In such environments, the
+different enterprises (tenants) share different resources, such as,
+the compute machines that run their applications and network
+infrastructure used for communication among these applications.
+Operators of such multi-tenant datacenters thus have to deal with a
+multitude of machines communicating with each other (flows) over a
+network that is composed of many tens to hundreds of routers or
+switches (devices)~\cite{mpa-imc15}. With growing diversity of
+enterprise applications and the need for security and compliance,
+these pathways of communication through the datacenter network are
+subject to increasingly complex network-based policies.
 
-Consider a tenant in such a datacenter. She may desire basic
-communication among her applicaitons along shortest paths based on
-certain metrics (reachability). In addition, she may wish that traffic
-attempting to reach some of her applications be examined by a set of
-``middleboxes'' for auditing and access control (traversal). Another
-tenant may additionally desire a subset of her flows to be isolated
-from others' flows for strong security or QoS (Quality-of-Service)
-considerations.  In parallel, cloud operators must meet key
-operational requirements. For instance, they often need to optimize
-network traffic engineering objectives, e.g., minimizing the maximum
-load imposed by all tenants on network links, and deal with
-heterogeneous resource constraints such as switch table sizes. Also,
-since datacenter networks are highly prone to link/switch
+Consider an enterprise tenant in such a datacenter. She may desire
+basic communication among her applications along shortest paths based
+on certain metrics (reachability). In addition, she may wish that
+traffic attempting to reach some of her applications be examined by a
+set of ``middleboxes'' for auditing and access control
+(traversal). Another tenant may additionally desire a subset of her
+flows not share any infrastructure with others' flows for strong
+security or Quality-of-Service considerations (isolation).  In
+parallel, cloud operators must meet key operational requirements. For
+instance, they often need to optimize network performance objectives
+(traffic engineering), e.g., minimizing the maximum load imposed by
+all tenants on network links, and deal with heterogeneous resource
+constraints such as switch table sizes. Also, since datacenter
+networks are highly prone to link/switch
 failures~\cite{gill-sigcomm11}, operators often need to ``repair" the
 network data plane to re-enforce policies. For stricter guarantees
 during failure scenarios, operators additionally desire a mechanism to
 proactively configure devices to enforce policies under a bounded
-number of failures.
+number of failures (failure resilience).
 
 Today, configuring network devices to implement these diverse and
 complex policies in aggregate is manual, ad-hoc, and error-prone.
@@ -83,11 +84,11 @@ policies network-wide, whereas these languages focus on programming
 policies, generating a data plane that enforces them is a
 %  an NP-complete 
 computationally hard problem, requiring the design of efficient custom
-heuristics per policy type. Other recent works on network-wide policy
-enforcement, e.g., Merlin~\cite{merlin} and SIMPLE~\cite{simple}, go
-beyond the single-switch model, but they target specific types of
-policies and thus are difficult to extend to other commonly desired
-policy types (e.g., isolation).
+heuristics {\em per policy type}. Other recent works on network-wide
+policy enforcement~\cite{merlin,simple} go beyond the single-switch
+model, but they target specific types of policies and thus are
+difficult to extend to other commonly desired policy types (e.g.,
+isolation).
 %; combining  different policies' heuristics together is non-trivial. 
  %% \aditya{we need to be
 % careful
@@ -129,7 +130,7 @@ datacenter context.
 
 We present \Name, a framework for {\em declaratively} specifying and
 enforcing complex policies, such as, isolation, capacity constraints,
-middlebox traversals and failure resilience. To tackle the high
+middlebox traversals, and failure resilience. To tackle the high
 complexity of enforcing some of these policies (for e.g., enforcing
 isolation is NP-complete), \Name encodes the problem as that of
 constraint solving and leverages recent advances in fast
@@ -179,7 +180,7 @@ a 1.5$\times - $400$\times$ speedup (median speedup:
 XXXX).\aditya{fix me}
 
  Secondly, we develop a \emph{divide-and-conquer} synthesis procedure
- that leverages the structure of tenants' isolation policy graph to
+ that leverages the relationships among tenants' isolation policies to
  improve synthesis performance. The procedure partitions the input
  policies into effective components such that \name can synthesize
  these components separately and faster than the complete problem.
@@ -205,7 +206,7 @@ XXXX).\aditya{fix me}
   complex policies and a modular SMT-based algorithm for enforcing policies
   like isolation, waypoints (\secref{sec:synthesisalgo}), traffic engineering~(\secref{sec:optimization}), and 
   failure resiliency (\secref{sec:resiliency});
-\item A modified synthesis algorithm based on tactics, which leverages data center network structure
+\item A modified synthesis algorithm based on tactics, which leverages datacenter network structure
   to blacklist undesirable path patterns (\secref{sec:tactic});
 \item A divide-and-conquer procedure for speeding up synthesis by leveraging the 
 structure of policy interactions (\secref{sec:optimistic});
