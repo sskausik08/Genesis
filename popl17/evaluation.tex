@@ -19,7 +19,7 @@ SDN controller (for e.g., Floodlight~\cite{floodlight}) to install over the
 network. \Name uses the Metis graph-partitioning library~\cite{metis}
 to perform equi-sized partitioning 
 used by divide-and-conquer synthesis.  The prototype contains 5K Python lines of code.  
-We plan to make the code for \Name publicly available.
+%We plan to make the code for \Name publicly available.
 
 In this section, we evaluate \Name using
 %\loris{really don't like the word realistic}
@@ -29,8 +29,8 @@ Specifically, we ask:
 \begin{compactitemize}
 
 \item What is the performance of \Name's baseline synthesis
-  algorithms? How does the performance vary with the size of the
-  network, number of policies, and the nature of policies in use? (\secref{sec:baselineeval})
+  algorithm? How does the performance vary with size of the
+  network, number and the nature of policies in use? (\secref{sec:baselineeval})
 %  \loris{I usually write points like the following, but I'm not sure what's the standard
 %  in systems conferences.
 %We evaluate the performance using X with no optimization and consider
@@ -82,12 +82,12 @@ one rack to another to a single reachability policy and establish
 pathways for communication amongst the multiple machines in different
 racks.
 
-For a fixed group size, we can observe that, the total synthesis time
-increases exponentially with increase in packet classes.  As we
-decrease the group size, we can observe that synthesis time increases
+For a fixed group size, we observe that, the total synthesis time
+increases exponentially with number of packet classes.  As we
+decrease the group size, the synthesis time increases
 greatly for the same number of packet classes.  In this case, the
 number of tenants increases, making the problem more constrained due
-to increased number of isolation policies.  Group size = 1 denotes the
+to increased number of isolation policies.  Group size 1 denotes the
 extreme case where all flows are isolated w.r.t. one other.
  
 While we evaluated a multi-tenant isolation setting, there are other
@@ -110,10 +110,10 @@ size of the topology, we maintain the relative difficulty of the
 workload across topologies.  We show the average synthesis time per
 class with increasing topology sizes in
 \Cref{fig:tactic-topo}.  We are able to synthesize forwarding rules
-for 12 tenants with tenant-group size 5 in a 125 switch topology in 124
+for 12 tenants with group size 5 in a 125 switch topology in 124
 seconds (avg. 2 seconds per traffic class).
  %Some comment I dont understand.
-We can also observe that average time per flow increases exponentially
+We also observe that average time per flow increases exponentially
 with larger topologies, thus the synthesis problem is also exponential
 in number of switches.
   
