@@ -3,7 +3,7 @@
 	\subfloat[Baseline]{\includegraphics[width=0.66\columnwidth]{figures/noTacticIsolation.eps}}
 	\subfloat[No Edge Tactic]{\includegraphics[width=0.66\columnwidth]{figures/edgeTacticIsolation.eps}}
 	\subfloat[Valley-free Routing Tactic]{\includegraphics[width=0.66\columnwidth]{figures/noValleyTacticIsolation.eps}}
-	\caption{\label{fig:isolation}
+	\compactcaption{\label{fig:isolation}
 		Total synthesis time (log scale) for isolation workloads over range of packet classes and different tenant-group sizes.}
 \end{figure*}
 
@@ -214,7 +214,7 @@ In \Cref{fig:tactic-topo},
 \begin{figure}[h]
 	\centering
 	\includegraphics[width=0.65\columnwidth]{figures/linkTopology.eps}
-	\caption{Average synthesis time per packet class versus topology size for isolation workloads 
+	\compactcaption{Average synthesis time per packet class versus topology size for isolation workloads 
 		with the ratio of packet classes to number of edge-aggregate links 0.25 and 10 low bandwidth links in the topology 
 		have capacity policies.}
 	\label{fig:link-capacity}

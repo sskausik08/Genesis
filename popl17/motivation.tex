@@ -1,7 +1,11 @@
 \section{Motivation}
 \begin{figure}
 	\includegraphics[width=\columnwidth,center]{figures/architecture.eps}
-	\compactcaption{\Name in a multi-tenant datacenter setting.}
+	\compactcaption{\Name in a multi-tenant datacenter setting of a network
+		containing several VMs and middleboxes. The network operator translates
+		the tenant specifications and network resource policies to \name 
+		policies and \name synthesizes switch forwarding rules which are
+		installed by the SDN controller.}
 	\label{fig:architecture}
 \end{figure}
 
@@ -61,7 +65,8 @@ tenant workloads~\cite{mpa-imc15}.  The policies include:
     other~\cite{pga}.} For example, the grey tenant in
   \Cref{fig:architecture} defines a waypoint policy $V1 >> FW;
        [IDS,BC] >> V2$ which specifies that traffic must first pass
-       through the firewall (FW), and then through the IDS and the
+       through the firewall (FW), and then through 
+       the Intrusion detection system (IDS) and the
        byte counter (BC) in any order.
 
   %% \aditya{refer here to an example in
@@ -69,8 +74,8 @@ tenant workloads~\cite{mpa-imc15}.  The policies include:
   %% in which these middle-boxes is traversed is not relevant and the
   %% policy language should therefore support unordered waypoints.
 
-\item \textbf{Isolation}. Tenants may require various QoS guarantees
-  that enforce varying degrees of isolation for their traffic. In the
+\item \textbf{Isolation}. Tenants may require various Quality-of-Service guarantees
+  that stipulate varying degrees of isolation for their traffic. In the
   extreme, a tenant could require that her flows are not affected by
   any other tenant by strictly isolating the path of the tenant's
   flows from others' flows. In \Cref{fig:architecture}, we have two
@@ -121,7 +126,7 @@ tenant workloads~\cite{mpa-imc15}.  The policies include:
   agreements), network operators benefit from being able to enforce
   strict network resource constraints, or optimizing an objective such
   as total utilization of network links or restricting traffic on
-  certain links. For example, in \Cref{fig:architecture}, the red
+  certain links. For example, in \Cref{fig:architecture}, A2-C2 and A4-C2
   links are of low bandwidth, and the operator wants to ensure that
   total traffic on these links does not exceed the link capacity of 100.
 %For instance, to aid traffic engineering, the network
@@ -166,7 +171,7 @@ tenant workloads~\cite{mpa-imc15}.  The policies include:
 
 
 \noindent Realizing these policies requires painstaking, often
-manual configuration of diverse network devices. This is incredibly
+manual configuration of diverse network devices. This is 
 tedious---device configuration files can run into 1000s of lines, and
 intricate dependencies may have to be configured across
 devices~\cite{benson:complexity:nsdi2009,mpa-imc15}. This process is
@@ -208,11 +213,9 @@ optimizations based on the properties desired by network
   searches, and the search technique it employs. 
 \Name\ leverages synthesis as follows: given a set of
 policies which describe user intent, the search space is the space of
-all data planes (the set of forwarding rules is the data plane) 
+all data planes (i.e., the set of forwarding rules) 
 and the search technique involved
-is SAT/SMT solving. 
-
-This approach is appealing for the following reasons: 
+is SAT/SMT solving. This approach is appealing for the following reasons: 
 
 (1)
 Enforcement of the different policies useful to operators 
@@ -248,7 +251,7 @@ its only role is to install the forwarding rules on switches.
 
 (2) Correct policy enforcement is challenging due to different
 objectives for each of the policies --- ensuring isolation between
-paths may lead to overshooting traffic objectives and vice-versa ---
+paths may lead to overshooting link utilizations and vice-versa ---
 and is a common cause of incorrect configurations in networks.  Our
 approach removes the need for a verification step in which the
 operator has to ``check'' whether the forwarding rules satisfy the
