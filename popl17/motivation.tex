@@ -1,4 +1,4 @@
-\section{Motivation}
+\section{Preliminaries and Policies Supported}
 \begin{figure}
 	\includegraphics[width=\columnwidth,center]{figures/architecture.eps}
 	\compactcaption{\Name in a multi-tenant datacenter setting of a network
@@ -12,21 +12,31 @@
 \input{policy}
 
 We describe the type of policies desired in multi-tenant data centers
-that \Name supports.
+that \Name supports. We use \Cref{fig:architecture} as a running
+example. In our setting, an ``operator'' manages a multi-tenant
+datacenter, which could be either a public datacenter (E.g., Azure),
+or a private datacenter. The operator specifies objectives that pertain
+to how she wishes to manage her overall infrastructure.
 %% For simplicity, we assume a multi-tenant cloud set up, where both
 %% the tenants and the provider wish to realize policies over their
 %% respective networks. However, these policies, and our framework,
 %% are applicable to other settings, e.g., enterprise networks with
 %% different departments imposing different sets of policies.
-We use \Cref{fig:architecture} as a running example. A tenant is an
-entity (e.g., an enterprise or a department thereof) which controls a
-number of host machines running some applications, and specifies
-policies about the paths among it's hosts. \Cref{fig:architecture} shows several tenants
-who differ in the nature of policies they wish to realize.  Notice
-that these policies reflect and, in some cases, extend the policies
-that today's enterprises realize in their on-site networks, as well as
-the policies that data center operators support for different
-tenant workloads~\cite{mpa-imc15}.  The policies include:
+ A tenant is an entity (e.g., an enterprise or a department thereof)
+ that has offloaded its IT infrastructure to the datcenter. Each
+ tenant controls a number of host machines in the datacenter running
+ some of its applications, and specifies policies that define whether
+ paths can exist among it's hosts, and if so, what additional
+ properties the paths must satisfy for security, performance or access
+ control reasons. \Cref{fig:architecture} shows several tenants who
+ differ in the nature of policies they wish to realize; we also show
+ the operator's policies.
+
+ The policies and objectives supported by \Name are as follows; we
+ also define important terms along the way. Notice that these reflect
+ and, in some cases, extend policies and objectives that today's
+ enterprises and datacenter operators realize in their
+ networks~\cite{mpa-imc15}.
 
 %\aditya{explain the figure here}.
 %\kausik{Will do this now}
@@ -45,43 +55,53 @@ tenant workloads~\cite{mpa-imc15}.  The policies include:
 
 
 \begin{compactitemize}
-\item \textbf{Reachability}. This enables network communication
-  between specific groups of a tenant's virtual instances (VMs),
-  applications, or hosts. For example, one tenant has defined a
-  reachability policy for its VMs (R2): \texttt{V1 >> V2}, which is translated
-  after VM placement as $E2 >> E4$).
-\item \textbf{Middlebox Traversals}. A tenant may wish that traffic
+\item \textbf{Tenant Policy: Reachability}. This enables network communication
+  between specific pairs of a tenant's virtual instances (VMs),
+  applications, or hosts.  In our example, one tenant has defined a
+  reachability policy for its two VMs (R2): \texttt{V1 >> V2}, which
+  is translated after VM placement (which is handled transparently by
+  the operator) as $E2 >> E4$. A pair of VMs, applications or hosts
+  that are allowed to communicate by means of a reachability policy
+  defines a flow or a ``packet class''; we use these terms
+  interchangeably. Any communication that is not defined by a
+  reachability policy is implicitly blocked (i.e., all communication
+  is ``default off'').
+  
+\item \textbf{Tenant Policy: Middlebox Traversals}. A tenant may wish that the flow
   between two of her end hosts, or from another tenant, must traverse
-  specific middleboxes for %(locations, or logical descriptors) for
-  security, access control, or performance reasons. For specific
-  flows, tenants can provide a sequence of unordered sets of
-  middleboxes
+  specific middleboxes, which we also refer to as ``waypoints'' in
+  this paper. Middleboxes are custom processing appliances often used
+  for security, access control, or performance reasons (e.g.,
+  firewalls, intrusion prevention systems, monitoring/accounting
+  gateways, proxies, and load balancers). Specifically, for particular
+  flows of interest, a tenant can provide a sequence of unordered sets
+  of middleboxes
   %\loris{flow group is not defined, group of flows or set of flows?}
-  to traverse. The flows must traverse these sets in order, while in a
-  set, all middleboxes must be traversed and the order is
+  to traverse~\cite{pga}. The flows must traverse these sets in order,
+  while in a set, all middleboxes must be traversed and the order is
   irrelevant.\footnote{The unordered set abstraction leverages the
     fact that middleboxes without dependencies in their traffic
     processing behavior can be placed in any order relative to each
-    other~\cite{pga}.} For example, one of the tenants 
-   defines a waypoint policy (R1): $V1 >> FW;
-       [IDS,BC] >> V2$ which specifies that traffic must first pass
-       through the firewall (FW), and then through 
-       the Intrusion detection system (IDS) and the
-       byte counter (BC) in any order.
+    other~\cite{pga}.} For example, one of the tenants defines a
+  traversal policy (R1): $V1 >> FW; [IDS,BC] >> V2$ which specifies
+  that traffic must first pass through the firewall (FW), and then
+  through the Intrusion detection system (IDS) and the byte counter
+  (BC) in any order.
 
   %% \aditya{refer here to an example in
   %%   the figure} In several cases \loris{how true is this?} the order
   %% in which these middle-boxes is traversed is not relevant and the
   %% policy language should therefore support unordered waypoints.
 
-\item \textbf{Isolation}. Tenants may require various Quality-of-Service guarantees
-  that stipulate varying degrees of isolation for their traffic. In the
-  extreme, a tenant could require that her flows are not affected by
-  any other tenant by strictly isolating the path of the tenant's
+\item \textbf{Tenant Policy: Isolation}. Tenants may require various
+  Quality-of-Service (QoS) or security guarantees that stipulate
+  varying degrees of isolation for their traffic. In the extreme, a
+  tenant could require that her flows are not affected in any manner
+  by any other tenant by strictly isolating the path of the tenant's
   flows from others' flows. In \Cref{fig:architecture}, we have two
   tenants whose traffic will be isolated from one another, i.e., the
-  paths used by the tenants will not share any links in the topology.
-  A tenant could also specify isolation for a subset of her
+  network paths used by the tenants will not share any links in the
+  topology.  A tenant could also specify isolation for a subset of her
   (performance-sensitive) flows from other flows of the same tenant or
   those belonging to other tenants; the rest of the tenant's flows may
   require no guarantees.
@@ -121,14 +141,25 @@ tenant workloads~\cite{mpa-imc15}.  The policies include:
 
 %\loris{is there a reason why this is not in the itemize?} 
 %\kausik{This is not a tenant policy, but an operator feature, so separate from itemize.}
-\item \textbf{Network Resource Management}. While support for the
-  above policies can be used to satisfy tenant SLAs (service-level
-  agreements), network operators benefit from being able to enforce
-  strict network resource constraints, or optimizing an objective such
-  as total utilization of network links or restricting traffic on
-  certain links. For example, in \Cref{fig:architecture}, A2-C2 and A4-C2
-  links are of low bandwidth, and the operator wants to ensure that
-  total traffic on these links does not exceed the link capacity of 100.
+\item \textbf{Operator Objective: Managing Capacity Constraints}. While support
+  for the above policies can be used to satisfy tenant SLAs
+  (service-level agreements), network operators often wish to
+  carefully managing constrained resources. Common examples that \Name
+  supports include enforcing strict constraints on aggregate number of
+  flows traversing a switch (due to all tenants) so as to adhere to
+  switch memory constraints, and ensuring that the total load on
+  certain links is within predefined thresholds (we assume here that
+  each flow has a predefined load). In our example in
+  \Cref{fig:architecture}, A2-C2 and A4-C2 links are of low bandwidth,
+  and the operator wants to ensure that total load on these links does
+  not exceed 100.
+
+\item \textbf{Operator Objective: Traffic Engineering}. As an alternative to
+  managing strict (link) capacity constraints, operates may also want
+  to balance load on their network infrastructure. This is often done
+  by optimizing a network-wide objective such as total or maximum
+  utilization of network links due to traffic induced by all tenants.
+  
 %For instance, to aid traffic engineering, the network
 %operator may specify policies constraining the maximum number of
 %tenant flows that can traverse a given link or sets of links in the
@@ -144,64 +175,73 @@ tenant workloads~\cite{mpa-imc15}.  The policies include:
           %% useful to ensure the low bandwidth links are not used by
           %% more tenants such that their performance is affected and
           %% can be used to provide bandwidth guarantees to tenants.
-  Likewise, to tackle hardware heterogeneity, operators can specify
-  switch constraints, e.g., restrict the number of flows traversing a
-  particular switch or set of switches to adhere to switches'
-  ruletable size limits.
+  %% Likewise, to tackle hardware constraints, operators can specify
+  %% switch constraints, e.g., restrict the number of flows traversing a
+  %% particular switch or set of switches to adhere to switches'
+  %% ruletable size limits.
   
  
- \item \textbf{Handling Failures}. Modern networks experience link and switch failures
- frequently and an essential requirement in network management systems is to
- provide certain guarantees during failure scenarios. 
- %\name addresses this by
- %providing two mechanisms: minimal network repair and resilience
- synthesis.  When a failure occurs, we must reconfigure the forwarding
- rules such that the policies are satisfied. Naively performing this
- process can result in a solution which incurs a large overhead of
- installing the new rules (controller has to set up connections with
- alive switches, tear down all old rules, and reinstall all new
- rules). It is therefore desirable to have {\em minimal network
-   repair} which aims to minimize the overhead of transitioning from
- an old data-plane to a new policy-compliant one. While repair is a
- reactive approach to failures, the transition time under failures can
- be too high. Thus, as an alternative to minimal repair, it may be
- desirable to proactively configure switches with resilient
- policy-compliant backup paths (at the expense of additional switch
- rules).
+ \item \textbf{Operator Objective: Handling failure gracefully}. Modern networks
+   experience link and switch failures frequently~\cite{}.  When a
+   failure occurs, we must reconfigure the forwarding rules such that
+   the policies are satisfied. Naively recomputing forwarding rules
+   incurs an unduly large overhead because old forwarding rules have
+   to be torn down at all switches, and new rules installed. Switch
+   rules deletions/insertions take a non-trivial amount of
+   time~\cite{keqiang-sosr15}, potentially leading to disruptions. It
+   is therefore desirable to have graceful approaches that either minimize the potential for disruption by minimizing the number of forwarding rules or switches
+   modified in transitioning from an old data-plane,  or eliminate the possibility of disruption altogether by precomputing backup policy-compliant paths (at the cost of storing extra rules at switches).
+   
+   %% {\em minimal network repair} which
+   %% aims to minimize the number of forwarding rules or switches
+   %% modified in transitioning from an old data-plane to a new
+   %% policy-compliant one to minimize disruption.  While repair is a
+   %% reactive approach to failures, the transition {\em time} under
+   %% failures can still be prohibitively high for some practical
+   %% situations. Thus, as an alternative to minimal repair, it may be
+   %% desirable to proactively configure switches with resilient
+   %% policy-compliant backup paths; however this comes at the cost
+   %% of additional switch rules.
 \end{compactitemize}
 
 
-\noindent Realizing these policies requires painstaking, often
-manual configuration of diverse network devices. This is 
-tedious---device configuration files can run into 1000s of lines, and
-intricate dependencies may have to be configured across
-devices~\cite{benson:complexity:nsdi2009,mpa-imc15}. This process is
-also highly error prone~\cite{mpa-imc15}. Even programming with SDN
-languages like Pyretic and Frenetic is challenging as the above policies
-are global and cannot be enforced by programming individual behavior
-of switches.  While some existing SDN-based network management
-systems~\cite{simple,merlin,oneswitch} overcome these limitations,
-they are tailored to support specific policies such as middlebox
-placement or bandwidth and resource constraints. As such they cannot
-enforce several commonly desired policies.
+\noindent Realizing these policies and objectives is challenging today.
+%% legacy (non-SDN) networks
+%% requires painstaking, often manual configuration of diverse network
+%% devices. This is tedious---device configuration files can run into
+%% 1000s of lines, and intricate dependencies may have to be configured
+%% across devices~\cite{benson:complexity:nsdi2009,mpa-imc15}. This
+%% process is also highly error prone~\cite{mpa-imc15}.
+In particular, state-of-the-art SDN frameworks, e.g., Pyretic~\cite{}
+and Frenetic~\cite{}, are insufficient to program networks to realize
+them.  This is because the above policies/objectives are global and
+cannot be enforced (at least not in an intuitive manner) by
+programming individual behavior of switches.  While some existing
+SDN-based network management systems~\cite{simple,merlin,oneswitch}
+overcome these limitations by taking a network-wide view, they are
+tailored to support specific policies such as middlebox placement or
+link capacity constraints. As such they cannot enforce several of the
+policies/objectives above.
 
 
-\subsection{Data Plane Synthesis} \label{sec:synthesis} 
+\section{Data Plane Synthesis} \label{sec:synthesis} 
 
+Our contribution is \name, a new general network management system
+that supports the above policies and objectives, and can be extended
+to support others. The architecture of \name is shown in
+\Cref{fig:architecture}. \Name performs {\em synthesis} of switch
+forwarding rules to enforce policies. The policies/objectives are
+specified using Genesis Policy Language, or GPL, as shown in
+\Cref{tab:policysupport}.
 
-We design \name, a general network management system that 
- performs {\em synthesis} of switch forwarding
-rules to enforce the above set of end-to-end policies (specified using 
-GPL as shown in \Cref{tab:policysupport}). The architecture of \name
-is shown in \Cref{fig:architecture}. 
-
-Unlike previous efforts in the network synthesis space ~\cite{netgen,merlin}, \Name is
-not tailored to specific formalisms such as regular expressions; 
-this aspect makes it {\em modular} and {\em easy to extend}.
+Unlike previous efforts in the network synthesis
+space~\cite{netgen,merlin}, \Name is not tailored to specific
+formalisms such as regular expressions; this aspect makes it {\em
+  modular} and {\em easy to extend}.
 %and allows to devise specific
 %techniques for each type of policies. 
 To draw an analogy with SMT solvers, \Name can be seen as a constraint
-solver that allows the addition of different types of policies
+solver that allows the addition of different types of policies/objectives
 (respectively, theories in SMT) and that allows the design of
 optimizations based on the properties desired by network
   operators using \Name. 
@@ -209,27 +249,26 @@ optimizations based on the properties desired by network
   Our work is motivated by recent advances in program synthesis, i.e.,
   the task of discovering an executable program from user intent
   expressed in the form of some constraints. There are three key
-  dimensions to a synthesis problem: the type of constraints that it accepts as
-  expression of user intent, the space of programs over which it
-  searches, and the search technique it employs. 
-\Name\ leverages synthesis as follows: given a set of
-policies which describe user intent, the search space is the space of
-all data planes (i.e., the set of forwarding rules) 
-and the search technique involved
-is SAT/SMT solving. This approach is appealing for the following reasons: 
+  dimensions to a synthesis problem: the type of constraints that it
+  accepts as expression of user intent, the space of programs over
+  which it searches, and the search technique it employs.
+  \Name\ leverages synthesis as follows: given a set of
+  policies/objectives which describe tenant and operator intent, the
+  search space is the space of all data planes (i.e., the set of
+  forwarding rules) and the search technique involved is SAT/SMT
+  solving.
 
-(1)
-Enforcement of the different policies useful to operators 
-can be translated to 
-the following problem: Given a set of node pairs 
-(derived from the reachability policies) in the graph 
-(topology), find paths in the graph for each
-of the node pairs satisfying certain properties (derived
-from the rest of the policies). 
-Thus, the different policies can be enforced by 
-a correct set of forwarding rules at the switches. 
-No extra functionality is required from the controller;
-its only role is to install the forwarding rules on switches.
+\Name's approach has the following salient features:
+
+(1) Enforcement of the different policies/objectives can be translated
+to the following problem: Given a set of node pairs (derived from the
+reachability policies) in the graph (topology), find paths in the
+graph for each of the node pairs satisfying certain properties
+(derived from the rest of the policies/objectives).  Thus, the
+different policies/objectives can be enforced by a correct set of
+forwarding rules at the switches.  No extra functionality is required
+from the controller; its only role is to install the forwarding rules
+on switches.
 
 %Given these paths, the SDN
 %controller adds the forwarding rules accordingly
@@ -250,24 +289,25 @@ its only role is to install the forwarding rules on switches.
 % which is an interesting synthesis problem, but orthogonal to our
 % approach.
 
-(2) Correct policy enforcement is challenging due to different
-objectives for each of the policies --- ensuring isolation between
-paths may lead to overshooting link utilizations and vice-versa ---
-and is a common cause of incorrect configurations in networks.  Our
-approach removes the need for a verification step in which the
-operator has to ``check'' whether the forwarding rules satisfy the
-desired policies.  By using a formal reasoning technique, we are able
-to consider the space of all data planes and find a solution which is
-\emph{correct by construction}, eliminating the room for error by the
-network operator.
+(2) Correct enforcement is challenging due to different goals for each
+of the policies/objectives --- ensuring isolation between paths may
+lead to overshooting link utilizations and vice-versa --- and is a
+common cause of incorrect configurations in networks.  Our approach
+removes the need for a verification step in which the operator has to
+``check'' whether the forwarding rules satisfy the desired
+policies.  By using a formal reasoning technique, we are
+able to consider the space of all data planes and find a solution
+which is \emph{correct by construction}, eliminating room for operator
+errors.
 
-(3) Automatically enforcing policies is a task with \emph{high
-  theoretical complexity}.  For example, enforcing isolation policies
-is as hard as solving graph-coloring, a well-known NP-complete
-problem.  Many search techniques can be used to find the forwarding
-rules when handling a particular class of policy, but when multiple
-types of policies are combined, e.g., isolation, waypoints, and
-traffic engineering, devising good search techniques becomes
+
+(3) Automatically enforcing policies is a task with
+\emph{high theoretical complexity}.  For example, enforcing isolation
+policies is as hard as solving graph-coloring, a well-known
+NP-complete problem.  Many search techniques can be used to find the
+forwarding rules when handling a particular class of policy, but when
+multiple types of policies/objectives are combined, e.g., isolation, waypoints,
+and traffic engineering, devising good search techniques becomes
 challenging.  Thanks to the many engineering efforts, SMT solvers
 abstract away most of this complexity and allow us to unify search
 objectives for every policy into a generalized search technique.
@@ -275,12 +315,18 @@ objectives for every policy into a generalized search technique.
 %leveraging fast off-the-shelf SMT solvers developed over years of
 %research, \Name can provide support for diverse policies required by
 %network operators. 
-Crucially, \Name can be extended with ease to support new policies
-without requiring changes to the underlying search techniques. To
-further improve the search/synthesis performance, \name uses two techniques
-specific to policy enforcement to speed up synthesis: tactics
-(\secref{sec:tactic}) and divide-and-conquer synthesis
-(\secref{sec:optimistic}).
+Crucially, \Name can be extended with ease to support new policies and
+objectives without requiring changes to the underlying search
+techniques.
+
+In the next few sections, we describe the \Name synthesis
+algorithm. In XXX we describe how \Name accommodates tenant policies.
+We then describe how to accommodate operator objectives pertaining to
+capacity constraints, traffic engineering and failure resiliency
+(XXX).  Finally, we describe two novel \name techniques aimed at
+speeding up \Name's synthesis: tactics (\secref{sec:tactic}) and
+divide-and-conquer synthesis (\secref{sec:optimistic}).
+
 %% \loris{I would like to convey that we are in some sense a Network solver module policy,
 %% in the sense that we support theories (the policies) and now people can work on engineering
 %% the solver for different classes of policies.
