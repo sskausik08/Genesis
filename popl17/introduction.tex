@@ -18,18 +18,18 @@ these pathways of communication through the datacenter network are
 subject to increasingly complex network-based policies.
 
 Consider an enterprise tenant in such a datacenter. She may desire
-basic communication among her applications along shortest paths based
-on certain metrics (reachability). In addition, she may wish that
-traffic attempting to reach some of her applications be examined by a
-set of ``middleboxes'' for auditing and access control
+basic communication among her applications (reachability) along
+shortest paths based on certain metrics. In addition, she may wish
+that traffic attempting to reach some of her applications be examined
+by a set of ``middleboxes'' for auditing and access control
 (traversal). Another tenant may additionally desire a subset of her
-flows not share any infrastructure with others' flows for strong
-security or Quality-of-Service considerations (isolation).  In
-parallel, cloud operators must meet key operational policies. For
-instance, they often need to optimize network performance objectives
-(traffic engineering), e.g., minimizing the maximum load imposed by
-all tenants on network links, and deal with resource constraints such
-as link capacity bounds and switch table sizes. Also, since datacenter
+flows not share any infrastructure with others' flows (isolation) for
+strong security or Quality-of-Service considerations.  In parallel,
+cloud operators must meet key operational policies. For instance, they
+often need to optimize network performance objectives (traffic
+engineering), e.g., minimizing the maximum load imposed by all tenants
+on network links, and deal with resource constraints such as link
+capacity bounds and switch table sizes. Also, since datacenter
 networks are highly prone to link/switch
 failures~\cite{datacenterfailures}, operators need to gracefully
 transition the old (pre-failure) dataplane to a policy-compliant new
@@ -58,7 +58,7 @@ impact.
 %% specifying resource constraints like link bandwidth and switch table
 %% sizes to perform traffic engineering and network resource management.
 
-With \emph{software-defined networking} (SDN),
+With software-defined networking (SDN),
 operators can program networks in a more intuitive manner. In SDN, a
 general-purpose centralized controller machine (control plane)
 controls end-to-end communication pathways by managing network
@@ -82,7 +82,7 @@ programming {\em individual} switch behaviors.  Moreover, for many
 types of policies, generating a data plane that enforces them is a
 %  an NP-complete 
 computationally hard problem, requiring the design of efficient custom
-heuristics {\em per policy type}. Other recent works on
+heuristics  per policy type. Other recent works on
 network-wide policy enforcement~\cite{merlin,simple} go beyond the
 single-switch model, but they target specific types of policies and
 thus are difficult to extend to other commonly desired policy types
@@ -107,7 +107,7 @@ thus are difficult to extend to other commonly desired policy types
 %% \cite{merlin}, and middlebox policy enforcement in SIMPLE
 %% \cite{simple} or FlowTags~\cite{flowtags}. However, these approaches
 
-In this paper, we seek a {\em general} approach that allows a variety
+In this paper, we seek a general approach that allows a variety
 of rich policies to be specified as the input, with the output being
 the corresponding set of switch forwarding rules such that the
 complexities of correctly realizing the policies in the data plane are
@@ -119,14 +119,14 @@ hidden from operators. This is an important step toward {\em
 %% important feature is \emph{generality} of the approach of policy
 %% enforcement, so that it can be extended to enforce custom policies
 %% required by the operator.
-We argue that \emph{data plane synthesis} can offer a practical
+We argue that data plane synthesis can offer a practical
 approach to realizing this vision in the multi-tenant datacenter
 context.
 %% switch
 %% table forwarding rules to the solve the problem of policy enforcement
 %% by use of off-the-shelf SMT-solvers.
 
-We present \Name, a framework for {\em declaratively} specifying and
+We present \Name, a framework for declaratively specifying and
 enforcing complex policies such as, isolation,
 middlebox traversals and failure resilience. To tackle the high
 complexity of enforcing some of these policies (for e.g., enforcing
@@ -155,8 +155,8 @@ policies.
 
 Unfortunately, due to the the large space of forwarding plane
 configurations, naively encoding policies using SMT solvers results in
-slow synthesis speeds (up to hundreds-thousands of seconds in the
-median case; \secref{sec:baselineeval}) which can be impractical.
+slow synthesis speeds (up to several minutes in the median case;
+\secref{sec:baselineeval}) which can be impractical.
 %enterprise networks today because the space of forwarding plane configurations
 %is huge. 
 To make synthesis more practical, \Name leverages domain-specific
