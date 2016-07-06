@@ -157,16 +157,17 @@ tenant workloads~\cite{mpa-imc15}.  The policies include:
  %providing two mechanisms: minimal network repair and resilience
  synthesis.  When a failure occurs, we must reconfigure the forwarding
  rules such that the policies are satisfied. Naively performing this
- process can result in a solution which incurs a large time overhead
- of installing the new rules (controller has to set up connections
- with alive switches and send new rules). It is therefore desirable to
- have {\em minimal network repair} which aims to minimize the overhead of
- transitioning from an old data-plane to a new policy-compliant
- one. While repair is a reactive approach to failures, the transition
- under failures can be expensive. Thus, as an alternative to minimal
- repair, it may be desirable to proactively configure switches with
- resilient policy-compliant backup paths (at the expense of additional
- switch rules).
+ process can result in a solution which incurs a large overhead of
+ installing the new rules (controller has to set up connections with
+ alive switches, tear down all old rules, and reinstall all new
+ rules). It is therefore desirable to have {\em minimal network
+   repair} which aims to minimize the overhead of transitioning from
+ an old data-plane to a new policy-compliant one. While repair is a
+ reactive approach to failures, the transition time under failures can
+ be too high. Thus, as an alternative to minimal repair, it may be
+ desirable to proactively configure switches with resilient
+ policy-compliant backup paths (at the expense of additional switch
+ rules).
 \end{compactitemize}
 
 
