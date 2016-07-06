@@ -25,23 +25,21 @@ set of ``middleboxes'' for auditing and access control
 (traversal). Another tenant may additionally desire a subset of her
 flows not share any infrastructure with others' flows for strong
 security or Quality-of-Service considerations (isolation).  In
-parallel, cloud operators must meet key operational requirements. For
+parallel, cloud operators must meet key operational objectives. For
 instance, they often need to optimize network performance objectives
 (traffic engineering), e.g., minimizing the maximum load imposed by
-all tenants on network links, and deal with heterogeneous resource
-constraints such as switch table sizes. Also, since datacenter
+all tenants on network links, and deal with resource constraints such
+as link capacity bounds and switch table sizes. Also, since datacenter
 networks are highly prone to link/switch
-failures~\cite{datacenterfailures}, operators often need to ``repair" the
-network data plane to re-enforce policies. For stricter guarantees
-during failure scenarios, operators additionally desire a mechanism to
-proactively configure devices to enforce policies under a bounded
-number of failures (failure resilience).
+failures~\cite{datacenterfailures}, operators need to gracefully
+transition the old (pre-failure) dataplane to a policy-compliant new
+(post-failure) one in a rapid and/or efficient manner.
 
-Today, configuring network devices to implement these diverse and
-complex policies in aggregate is manual, ad-hoc, and error-prone.
-This can lead to misconfigurations and violations of tenant
-service-level agreements (SLAs) which can have a severe performance
-and security impact.
+Today, configuring network devices to implement these complex policies
+and objectives in aggregate is manual, ad-hoc, and error-prone.  This
+can lead to misconfigurations and violations of tenant service-level
+agreements (SLAs) which can have a severe performance and security
+impact.
 
 %%  However, in real-life, the
 %% process of policy enforcement by network operators is manual and
@@ -79,16 +77,16 @@ application requirements.
 Unfortunately, existing SDN programming languages (e.g.,
 Frenetic~\cite{frenetic} and Pyretic~\cite{pyretic}) are too
 constraining: operators would ideally want to specify and realize
-policies network-wide, whereas these languages focus on programming
+policies/objectives network-wide, whereas these languages focus on programming
 {\em individual} switch behaviors.  Moreover, for many types of
 policies, generating a data plane that enforces them is a
 %  an NP-complete 
 computationally hard problem, requiring the design of efficient custom
-heuristics {\em per policy type}. Other recent works on network-wide
-policy enforcement~\cite{merlin,simple} go beyond the single-switch
-model, but they target specific types of policies and thus are
-difficult to extend to other commonly desired policy types (e.g.,
-isolation).
+heuristics {\em per policy/objective type}. Other recent works on
+network-wide policy enforcement~\cite{merlin,simple} go beyond the
+single-switch model, but they target specific types of policies/objectives and
+thus are difficult to extend to other commonly desired policy types
+(e.g., isolation).
 %; combining  different policies' heuristics together is non-trivial. 
  %% \aditya{we need to be
 % careful
@@ -110,7 +108,7 @@ isolation).
 %% \cite{simple} or FlowTags~\cite{flowtags}. However, these approaches
 
 In this paper, we seek a {\em general} approach that allows a variety
-of rich policies to be specified as the input, with the output being
+of rich policies/objectives to be specified as the input, with the output being
 the corresponding set of switch forwarding rules such that the
 complexities of correctly realizing the policies in the data plane are
 hidden from operators. This is an important step toward {\em
@@ -129,8 +127,8 @@ datacenter context.
 %% by use of off-the-shelf SMT-solvers.
 
 We present \Name, a framework for {\em declaratively} specifying and
-enforcing complex policies, such as, isolation, capacity constraints,
-middlebox traversals, and failure resilience. To tackle the high
+enforcing complex policies and objectives such as, isolation,
+middlebox traversals and failure resilience. To tackle the high
 complexity of enforcing some of these policies (for e.g., enforcing
 isolation is NP-complete), \Name encodes the problem as that of
 constraint solving and leverages recent advances in fast
@@ -151,14 +149,14 @@ switch forwarding rules.
 %% switch-level behaviours. 
 By leveraging the formal guarantees of constraint solving, \Name
 eliminates the room for error in the enforcement of complex
-policies.
+policies and objectives.
 
 %\kausik{Do we need to make the point of sacrificing performance for generality for POPL? }
 
 Unfortunately, due to the the large space of forwarding plane
 configurations, naively encoding policies using SMT solvers results in
-slow synthesis speeds (up to 100s or even 1000s of seconds in
-the median case; \secref{sec:baselineeval}) which can be impractical.
+slow synthesis speeds (up to hundreds-thousands of seconds in the
+median case; \secref{sec:baselineeval}) which can be impractical.
 %enterprise networks today because the space of forwarding plane configurations
 %is huge. 
 To make synthesis more practical, \Name leverages domain-specific
@@ -203,14 +201,16 @@ a 1.5$\times - $400$\times$ speedup
 \noindent \textbf{Contributions.} \ \ \ Our contributions are the following.
 \begin{compactitemize}
 \item An extensible declarative framework for describing
-  complex policies and a modular SMT-based algorithm for enforcing policies
+  complex policies/objectives and a modular SMT-based algorithm for enforcing policies and objectives
   like isolation, waypoints (\secref{sec:synthesisalgo}), traffic engineering~(\secref{sec:optimization}), and 
   failure resiliency (\secref{sec:resiliency});
 \item A modified synthesis algorithm based on tactics, which leverages datacenter network structure
   to blacklist undesirable path patterns (\secref{sec:tactic});
 \item A divide-and-conquer procedure for speeding up synthesis by leveraging the 
 structure of policy interactions (\secref{sec:optimistic});
-\item An implementation of \Name and an extensive evaluation on different policy workloads, topologies and multi-tenancy settings (\secref{sec:evaluation}).
+\item An implementation of \Name and an extensive evaluation on
+  different policy/objective workloads, topologies and multi-tenancy
+  settings (\secref{sec:evaluation}).
 		%to quantify the performance of Genesis. 
 \end{compactitemize}
 %\aditya{todo}

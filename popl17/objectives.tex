@@ -1,0 +1,87 @@
+\section{Operator Objectives}
+\label{sec:optimization}
+
+We start with the simpler problem of supporting hard capacity
+constraints. We then describe how \Name can support optimization
+objectives pertaining to traffic engineering. For the latter, we use
+linear rational arithmetic (LRA) and linear optimization objectives
+for traffic engineering. We conclude by describing how \Name can be
+extended to allow operators to handle datacenter network failures
+gracefully.
+
+\subsection{Link and Switch Table Capacity Constraints} \label{sec:linkcap}
+%%\subsubsection{Link Capacity Constraints} 
+
+As with policies, \Name uses propositional logic and LRA to accommodate hard
+constraints on link and switch table capacities.
+
+For a link capacity policy on the link $sw_1 \rightarrow sw_2: \omega$, 
+we use the theory of linear rational arithmetic 
+to add constraints on the link. As input, we have the traffic rates $\sigma(pc)$ of
+each of the packet classes, and the constraints must ensure that the traffic rate on $sw_1 \rightarrow sw_2$
+does not exceed $\omega$ :
+\begin{equation}
+ \sum_{\forall pc} \texttt{ite}(Fwd(sw_1,sw_2, pc), \sigma(pc), 0) \leq \omega .
+\end{equation}
+If a class $pc$ uses link $sw_1 \rightarrow sw_2$, then $(sw_1,sw_2, pc) \in Fwd$
+and $\sigma(pc)$ is added in the utilization of the link. \\
+\noindent A switch table policy $sw : \gamma$ specifies that the number of forwarding 
+rules on $sw$ must not exceed $\gamma$. Similar to the link capacity policy,
+the constraints ensure the count of all packet classes which traverse $sw$ (each 
+will require a forwarding rule) is $\leq \gamma$ :
+\begin{equation}
+\sum_{\forall pc} \texttt{ite}(~\exists k. Reach(sw,pc,k), 1, 0)  \leq \gamma.
+\end{equation}
+
+
+
+%% While SMT solvers provide support for different theories like SAT and
+%% LRA to express various policies as seen in \secref{sec:synthesisalgo},
+%% operators additionally need to optimize different metrics of the
+%% network.
+
+
+\subsection{Traffic Engineering}
+While the link capacity policies described in \secref{sec:linkcap} can
+be used to perform a strict form of traffic engineering (TE) in terms
+of adhering to link bandwidths, it is often more useful to balance
+traffic across links (because, a link failure will affect fewer flows
+when the flows are spread evenly across the network).  To this end,
+network operators often impose traffic engineering objectives such as
+minimizing the total link utilization or the maximum link utilization. To support such optimization objectives
+\Name uses extensions of solvers with support for linear optimization
+objectives.
+
+%% useful in balancing traffic across links,
+%% and a link failure will affect lesser number of flows when the flows
+%% are spread evenly across the network.
+
+\paragraph{Min-tot TE}
+To perform traffic engineering, link capacities of the network $C(sw_1, sw_2)$ and traffic 
+rates of the packet classes $\sigma(pc)$ are specified as input to \name (we assume a single
+path for a packet class). The utilization 
+of a link $U(sw_1, sw_2)$ is defined as the ratio of total traffic flowing through the link to the 
+link capacity, and encoded using the theory of linear rational arithmetic as:
+\begin{equation}
+U(sw_1, sw_2) = \frac{\sum_{\forall pc} \texttt{ite}(Fwd(sw_1,sw_2, pc), \sigma(pc), 0)} {C(sw_1, sw_2)}
+\end{equation}
+The objective for minimizing total link utilization is as follows:
+\begin{equation}
+	\texttt{minimize}\ \sum_{\forall sw_1, sw_2} U(sw_1, sw_2)
+\end{equation}
+\paragraph{Min-max TE}
+To encode the TE objective of minimizing the maximum link utilization, we define
+a variable $maxU$, and constraints to ensure that $maxU$ is greater than or equal to all 
+individual link utilizations, and the objective: 
+\begin{equation} \label{eq:maxu}
+\forall sw_1, sw_2.\ \ maxU \geq U(sw_1, sw_2)
+\end{equation} 
+\begin{equation}
+		\texttt{minimize}\ maxU
+\end{equation}
+While $maxU$ can be set to a large value trivially to satisfy \Cref{eq:maxu}, 
+since the objective is to minimize $maxU$, it will be set to the actual
+minimized maximum link utilization. Using an encoding similar to the one presented in this section, \name can be used for other
+quantitative objectives like minimizing total latency and load balancing
+traffic across middleboxes.
+

@@ -1,38 +1,89 @@
-\section{Policy-compliant Resiliency}
-\label{sec:resiliency}
-Datacenter networks are highly prone to
-failures~\cite{datacenterfailures}, and it is crucial to provide
-certain guarantees during failure scenarios. For example, if the
-operator wants to guarantee reachability amongst a pair of endpoints,
-the controller only has to find an active path in the network to
-re-establish reachability.  However, upon the failure of a link, {\em
-  reactively} synthesizing a new data plane which satisfies all input
-policies can be time-consuming, and during this period multiple
-tenants can suffer from lack of reachability and/or performance
-issues.  Thus, we propose \emph{policy-compliant resiliency} to tackle
-network failures by \emph{proactively} synthesizing resilient data
-planes that even in the event of a bounded number of link failures,
-continue to satisfy input policies. This eliminates the need to
-resynthesize the forwarding rules for every network failure event.
+\subsection{Handling Failures Gracefully}
 
-In this section, we describe the transformation of input 
-policies to provide $t-resilience$~\cite{plinko}, i.e in the event of upto $t$
+While policy-compliance is a major requirement in a network management
+system, another important consideration is the ccurence of failures
+(switches, links etc.), which are all too frequent in datacenter
+networks~\cite{}. Failures require recomputation of paths compliant to
+the policies for the modified topology.  A naive approach is to use
+\name to resynthesize the modified instance; however, the new solution
+may be drastically different from the original data plane, incurring a
+large overhead of removing old rules and installing the new
+ones~\cite{sdnlatency,updatescheduling}, which could lead to serious
+disruption of tenants' flows.
+
+
+In what follows, we describe two techniques to handle failures more
+gracefully. The first is data-plane resiliency.  This synthesizes and
+pre-installs resilient data planes that, even in the event of a
+bounded number of link failures, continue to satisfy input
+policies. This altogether eliminates the need to resynthesize the
+forwarding rules for every network failure event. Unfortunately, this
+approach requires extra backup rules at switches, and it also cannot
+capture certain objectives (Section XXX).
+
+Thus, we propose a second \emph{minimal repair} mechanism (Section
+XXX) which can transition with minimal overhead from the current data
+plane to a policy-compliant new one by minimizing the number of
+switches whose tables are modified.  Our minimal repair mechanism uses
+MaxSMT. It does not have the memory cost of the first approach, and it
+can capture all \Name policies and objectives. It is also useful to
+accomodate incremental policy changes, which occurs frequently in
+cloud datacenters~\cite{mpa-imc15}. Its main drawback is that it still
+requires removal/installation of rules when a failure occurs, which
+can still be expensive depending on the number of switches involved.
+
+%% Although the minimal repair mechanism
+
+%% The minimal repair mechanism has two drawbacks: (1) It is {\em reactive}. (2) MaxSMT can be slow to compute a solution impose a high delay to respond to a failure. 
+%% cases impose an undue {\em time} overhead in transitioning to the new
+%% dataplane.
+%% For the new set of policies,
+%% \name can use repair to synthesize a new data plane with minimal
+%% overhead of installation.
+
+
+
+%\name is provided the policies
+%and the current forwarding rules $(\overline{Fwd})$ as input. The policy constraints are added as hard
+%constraints as described in the earlier sections. To maximize the number of unchanged
+%switches, we add \emph{soft} constraints for each switch $sw_1$ of uniform weight as follows:
+%Thus, the new forwarding rules $Fwd$ will maximise the number of unchanged
+%switch rules in $\overline{Fwd}$, because the constraint will be unsatisfied if a rule on the
+%switch changes. 
+
+
+\subsubsection{Dataplane Resiliency}
+\label{sec:resiliency}
+
+%% , and it is crucial to provide
+%% certain guarantees during failure scenarios. For example, if the
+%% operator wants to guarantee reachability amongst a pair of endpoints,
+%% the controller only has to find an active path in the network to
+%% re-establish reachability.  However, upon the failure of a link, {\em
+%%   reactively} synthesizing a new data plane which satisfies all input
+%% policies can be time-consuming, and during this period multiple
+%% tenants can suffer from lack of reachability and/or performance
+%% issues.  Thus, we propose \emph{policy-compliant resiliency} to tackle
+%% network failures by \emph{proactively} synthesizing resilient data
+%% planes that even in the event of a bounded number of link failures,
+%% continue to satisfy input policies. This eliminates the need to
+%% resynthesize the forwarding rules for every network failure event.
+
+In this section, we describe the transformation of input policies to
+provide $t-resilience$~\cite{plinko}, i.e., in the event of upto $t$
 arbitrary link failures, the synthesized data plane still has a path
-for each packet class  satisfying all policies which is achieved
- by synthesizing
-backup paths that satisfy input policies.
-We only consider reachability, waypoint,
-and isolation policies in the input. 
-Global policies like capacity policies
-and traffic engineering pose a difficulty in synthesis. For example,
-consider a packet class $pc$ with a traffic rate of $\sigma(pc)$. By considering
-the backup paths with the same traffic characteristics for synthesis, 
-the total traffic 
-accounted for $pc$ would be $c\times \sigma(pc)$ (for some constant $c$), leading
-to under-provisioning of resources. Our current resilience
-transformation has no provisions to avoid or minimize 
-the under-provisioning of resources which affect capacity policies
-and TE objectives. 
+for each packet class satisfying all policies which is achieved by
+synthesizing backup paths that satisfy input policies.  We only
+consider reachability, waypoint, and isolation policies in the input.
+Global policies like capacity policies and traffic engineering pose a
+difficulty in synthesis. For example, consider a packet class $pc$
+with a traffic rate of $\sigma(pc)$. By considering the backup paths
+with the same traffic characteristics for synthesis, the total traffic
+accounted for $pc$ would be $c\times \sigma(pc)$ (for some constant
+$c$), leading to under-provisioning of resources. Our current
+resilience transformation has no provisions to avoid or minimize the
+under-provisioning of resources which affect capacity policies and TE
+objectives.
 %all backup paths in consideration, while all backup paths will not 
 %exist together in the network (backup paths will be deployed during
 %a failure event).
@@ -228,3 +279,59 @@ for $pc$.
 %the case of reachability, waypoint and isolation policies. Future directions of 
 %research involve incorporating capacity constraints and traffic engineering
 %for synthesis of resilient data planes and devising a complete transformation for isolation.
+
+\subsubsection{Minimal Repair}
+%% Thus, operators need
+%% a \emph{network repair} mechanism which can transition with minimal
+%% overhead from the current data plane to a policy-compliant one.  This
+%% repair mechanism is also useful to accomodate incremental policy
+%% changes, which occurs frequently in cloud
+%% datacenters~\cite{mpa-imc15}.  For the new set of policies, \name can
+%% use repair to synthesize a new data plane with minimal overhead of
+%% installation.
+
+As an alternative to dataplane resiliency, we extend \name's synthesis
+algorithm for performing minimal network repair using MaxSMT.
+Formally, the MaxSMT problem is as follows: given a set of formulas
+$\Psi_0, \Psi_1, \ldots \Psi_n$ with associated weights $w_1, \ldots
+w_n$, find a subset $M \subseteq \{1, \ldots n\}$ s.t:
+\begin{compactenumerate}
+	\item $\Psi_0 \wedge \bigwedge_{i \in M} \Psi_i$ is satisfiable.
+	\item The \emph{award} $\sum_{i \in M} w_i$  is maximized.
+\end{compactenumerate}
+The constraints $\Psi_1, \ldots \Psi_n$ denote \emph{soft} constraints, and
+the weights $w_i$ encodes the award for including $\Psi_i$ in the satisfying
+assignment. 
+%The basic intuition is that
+%we add the existing configuration as \emph{soft} constraints to the set of \emph{hard} 
+%policy constraints. The solver would return a solution which \emph{maximizes} the 
+%number of satisfied soft constraints (the older configuration),
+%thus resulting in a new policy-compliant forwarding 
+%configuration with minimal 
+%number of changes from the older one and reducing the overhead of
+%updating the forwarding rules in the network.  
+
+We reduce network repair to a MaxSMT problem
+such that 
+the number of switches on which rules needs to be updated is minimized.
+ Let
+the policy constraints generated by \name for the new network state be $\Psi_0$, and the present 
+configuration is $\overline{Fwd}$ which does not satisfy $\Psi_0$. The 
+objective is to find new $Fwd$ which satisfies $\Psi_0$ such that the number of \emph{preserved switches} (switches whose rules are unchanged) 
+is maximized. If the rules on switch $sw_i$ are preserved, then $Fwd$ and $\overline{Fwd}$ have the same forwarding rules for all packet classes which
+traverse through $sw_i$. The MaxSMT constraints are described as follows:
+\begin{equation}
+	\Psi_{sw_i} =  
+	  \bigvee_{\mathclap{\substack{\forall sw_j, pc \\
+			  		(sw_i, sw_j, pc) \in \overline{Fwd}}}} Fwd(sw_i, sw_j, pc) 
+			~~~~~~~~~~~ 
+			w_{sw_i}= 1
+\end{equation}
+By providing $\Psi_0, \Psi_{sw_1}, \ldots, \Psi_{sw_n}$ and associated
+weights $w_{sw_1},$ $\ldots w_{sw_n}$ to a MaxSMT solver, we can
+synthesize new forwarding rules \emph{minimizing} the number of
+switches whose rules have to be changed.  Alternate repair objectives
+like minimizing the number of changed forwarding rules can be
+expressed similarly. Note that, interestingly, \name's network repair
+mechanism described above can also be used to transform an existing
+non-policy compliant network data plane to a policy-compliant one.
