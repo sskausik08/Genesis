@@ -74,8 +74,8 @@ tenant workloads~\cite{mpa-imc15}.  The policies include:
   %% in which these middle-boxes is traversed is not relevant and the
   %% policy language should therefore support unordered waypoints.
 
-\item \textbf{Isolation}. Tenants may require various QoS guarantees
-  that enforce varying degrees of isolation for their traffic. In the
+\item \textbf{Isolation}. Tenants may require various Quality-of-Service guarantees
+  that stipulate varying degrees of isolation for their traffic. In the
   extreme, a tenant could require that her flows are not affected by
   any other tenant by strictly isolating the path of the tenant's
   flows from others' flows. In \Cref{fig:architecture}, we have two
@@ -213,11 +213,9 @@ optimizations based on the properties desired by network
   searches, and the search technique it employs. 
 \Name\ leverages synthesis as follows: given a set of
 policies which describe user intent, the search space is the space of
-all data planes (the set of forwarding rules is the data plane) 
+all data planes (i.e., the set of forwarding rules) 
 and the search technique involved
-is SAT/SMT solving. 
-
-This approach is appealing for the following reasons: 
+is SAT/SMT solving. This approach is appealing for the following reasons: 
 
 (1)
 Enforcement of the different policies useful to operators 
@@ -253,7 +251,7 @@ its only role is to install the forwarding rules on switches.
 
 (2) Correct policy enforcement is challenging due to different
 objectives for each of the policies --- ensuring isolation between
-paths may lead to overshooting traffic objectives and vice-versa ---
+paths may lead to overshooting link utilizations and vice-versa ---
 and is a common cause of incorrect configurations in networks.  Our
 approach removes the need for a verification step in which the
 operator has to ``check'' whether the forwarding rules satisfy the

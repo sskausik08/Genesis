@@ -45,7 +45,7 @@ $sw_1$ forwards packets of class $pc$ to switch $sw_2$.
 \label{def:reach}
 	The relation $Reach \subseteq S \times PC \times K$ captures the path reachability,
 	i.e. $(sw, pc, k)\in Reach$ if 
-	the switch $sw$ is reachable in the path from source switch of packet class $pc$ in exactly $k$ steps.  
+	the switch $sw$ is reachable in the path from the source switch of packet class $pc$ in exactly $k$ steps.  
 \end{mydef}
 For brevity, we write $Fwd(sw_1, sw_2, pc)$ for $(sw_1, sw_2, pc) $ $\in Fwd$ and similarly for the $Reach$ relation. 
 Since $Fwd$ depends on the topology,
@@ -121,21 +121,23 @@ When combined together, these constraints %can only be satisfied if there is a v
 % to destination by using the unit clauses in \cref{eq:dst}, and finding a path from destination back to a switch $sw$ which is a neighbour of $src$. $Reach(sw,pc,1)$ would be true from \cref{eq:src} and the reachability policy would be satisfied. 
 are sufficient to ensure the existence of a path from $s$ to $d$ for packet class $pc$.
 % in terms of the forwarding relation $Fwd$. 
-However, since there is no restriction on number of $Fwd$ values that can be true at a switch, we can get multiple forwarding rules at switches, and 
+However, since there is no restriction on the number of $Fwd$ values that can be true at a switch, we can get multiple forwarding rules at switches, and 
 also multiple paths to the destination. 
 These can also create forwarding loops. 
 Concretely, this is not a problem: as long as there is  at least one path from $s$ to $d$ we can recover it from the solution of the constraints. 
 Moreover, this representation is quite efficient, as forcing a single path would
-require adding further constraints.
+require adding further constraints (\secref{sec:waypoint}) and increase the synthesis
+time.
 % we are able to extract a path from the solution without 
 %adding additional constraints to ensure the semantics of \emph{unicast} forwarding. 
 
 To extract a concrete $s$-to-$d$ path we 
 perform a breadth-first search on the reachability graph induced by the solution to the constraints. 
-A directed edge $n_1 \rightarrow n_2$ appears in the reachability-graph if there is forwarding rule indicated by the relation $(n_1,n_2, pc) \in Fwd$. 
+A directed edge $n_1 \rightarrow n_2$ appears in the reachability-graph if there is a 
+forwarding rule indicated by the relation $(n_1,n_2, pc) \in Fwd$. 
 We extract the rules relevant to the shortest path from source to destination from the model, and the additional rules obtained in the solution (extra paths, forwarding loops) are ignored.  
 
-\subsection{Waypoint Constraints} 
+\subsection{Waypoint Constraints} \label{sec:waypoint}
 For a reachability policy with a sequence of waypoint sets $s >> W_1;\ldots;W_n >> d$ and packet class $pc$, we add all the constraints specified in \secref{sec:reach} to ensure the existence of a path from $s$ to $d$. We then add constraints so that all waypoints $w$
 are traversed. 
 \begin{equation} \label{eq:waypoints}
