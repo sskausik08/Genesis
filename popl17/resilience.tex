@@ -1,13 +1,13 @@
 \subsection{Handling Failures Gracefully}
 
-While policy-compliance is a major requirement in a network management
-system, another important consideration is the ccurence of failures
-(switches, links etc.), which are all too frequent in datacenter
-networks~\cite{}. Failures require recomputation of paths compliant to
-the policies for the modified topology.  A naive approach is to use
-\name to resynthesize the modified instance; however, the new solution
-may be drastically different from the original data plane, incurring a
-large overhead of removing old rules and installing the new
+Another network management consideration for operators is the
+occurence of failures (switches, links etc.), which are all too
+frequent in datacenter networks~\cite{}. Failures require
+recomputation of paths compliant to the input policies and objectives
+for the modified topology.  A naive approach is to use \name to
+resynthesize the modified instance; however, the new solution may be
+drastically different from the original data plane, incurring a large
+overhead of removing old rules and installing new
 ones~\cite{sdnlatency,updatescheduling}, which could lead to serious
 disruption of tenants' flows.
 
@@ -26,11 +26,12 @@ XXX) which can transition with minimal overhead from the current data
 plane to a policy-compliant new one by minimizing the number of
 switches whose tables are modified.  Our minimal repair mechanism uses
 MaxSMT. It does not have the memory cost of the first approach, and it
-can capture all \Name policies and objectives. It is also useful to
-accomodate incremental policy changes, which occurs frequently in
+can capture all \Name policies and objectives. It is also useful for
+accomodating incremental policy changes, which occurs frequently in
 cloud datacenters~\cite{mpa-imc15}. Its main drawback is that it still
 requires removal/installation of rules when a failure occurs, which
-can still be expensive depending on the number of switches involved.
+can end up being expensive depending on the number of switches
+involved.
 
 %% Although the minimal repair mechanism
 
@@ -70,10 +71,10 @@ can still be expensive depending on the number of switches involved.
 %% resynthesize the forwarding rules for every network failure event.
 
 In this section, we describe the transformation of input policies to
-provide $t-resilience$~\cite{plinko}, i.e., in the event of upto $t$
-arbitrary link failures, the synthesized data plane still has a path
-for each packet class satisfying all policies which is achieved by
-synthesizing backup paths that satisfy input policies.  We only
+provide dataplane $t-resilience$~\cite{plinko}, i.e., in the event of
+upto $t$ arbitrary link failures, the synthesized data plane still has
+a path for each packet class satisfying all policies which is achieved
+by synthesizing backup paths that satisfy input policies.  We only
 consider reachability, waypoint, and isolation policies in the input.
 Global policies like capacity policies and traffic engineering pose a
 difficulty in synthesis. For example, consider a packet class $pc$
@@ -150,7 +151,7 @@ destination for the packet class in the active data plane $\xi_\theta$.
 	\end{footnotesize}
 \end{algorithm}
 
- We now show how \Name can be modified to provide $t-resilience$.
+We now show how \Name can be modified to provide $t-resilience$.
 Intuitively, this  is done by modifying the input policies so that  multiple disjoint paths satisfying the original
 policies are synthesized for each packet class.
 \noindent The transformation of input policies $(PC, I) \xRightarrow{res} (PC^R, I^R)$
@@ -290,11 +291,15 @@ for $pc$.
 %% use repair to synthesize a new data plane with minimal overhead of
 %% installation.
 
-As an alternative to dataplane resiliency, we extend \name's synthesis
-algorithm for performing minimal network repair using MaxSMT.
-Formally, the MaxSMT problem is as follows: given a set of formulas
-$\Psi_0, \Psi_1, \ldots \Psi_n$ with associated weights $w_1, \ldots
-w_n$, find a subset $M \subseteq \{1, \ldots n\}$ s.t:
+Dataplane resiliency impose high rule storage overhead on switches,
+and cannot accommodate global objectives. As an alternative to it, we
+extend \name's synthesis algorithm to perform minimal network
+repair using MaxSMT.
+
+Formally, the MaxSMT problem is as follows:
+given a set of formulas $\Psi_0, \Psi_1, \ldots \Psi_n$ with
+associated weights $w_1, \ldots w_n$, find a subset $M \subseteq \{1,
+\ldots n\}$ s.t:
 \begin{compactenumerate}
 	\item $\Psi_0 \wedge \bigwedge_{i \in M} \Psi_i$ is satisfiable.
 	\item The \emph{award} $\sum_{i \in M} w_i$  is maximized.
@@ -311,15 +316,20 @@ assignment.
 %number of changes from the older one and reducing the overhead of
 %updating the forwarding rules in the network.  
 
-We reduce network repair to a MaxSMT problem
-such that 
-the number of switches on which rules needs to be updated is minimized.
- Let
-the policy constraints generated by \name for the new network state be $\Psi_0$, and the present 
-configuration is $\overline{Fwd}$ which does not satisfy $\Psi_0$. The 
-objective is to find new $Fwd$ which satisfies $\Psi_0$ such that the number of \emph{preserved switches} (switches whose rules are unchanged) 
-is maximized. If the rules on switch $sw_i$ are preserved, then $Fwd$ and $\overline{Fwd}$ have the same forwarding rules for all packet classes which
-traverse through $sw_i$. The MaxSMT constraints are described as follows:
+We reduce network repair to a MaxSMT problem such that the number of
+switches on which rules needs to be updated is minimized. Note that
+the disadvantage wrt dataplane resiliency is that switches still
+require updates, which may take time depending on the number of
+switches involved.
+
+ Let the policy constraints generated by \name for the new network
+ state be $\Psi_0$, and the present configuration is $\overline{Fwd}$
+ which does not satisfy $\Psi_0$. The objective is to find new $Fwd$
+ which satisfies $\Psi_0$ such that the number of \emph{preserved
+   switches} (switches whose rules are unchanged) is maximized. If the
+ rules on switch $sw_i$ are preserved, then $Fwd$ and $\overline{Fwd}$
+ have the same forwarding rules for all packet classes which traverse
+ through $sw_i$. The MaxSMT constraints are described as follows:
 \begin{equation}
 	\Psi_{sw_i} =  
 	  \bigvee_{\mathclap{\substack{\forall sw_j, pc \\

@@ -1,20 +1,22 @@
 \section{Algorithm for Synthesizing Policies} \label{sec:synthesisalgo}
 
-The problem fomulation here is as follows: Given the network topology
-graph and the set of policies written in GPL, generates paths in the
-network for every source-destination pair specified in the policies
-such that all the policies are satisfied.  To achieve this, \Name
+The problem statement here is as follows: Given the network topology
+graph and the set of tenant policies written in GPL, generate paths in
+the network for every source-destination pair specified in the
+policies such that all policies are satisfied.  To achieve this, \Name
 creates constraints that encodes the forwarding and reachability rules
 pertaining to the paths such that they satisfy the input policies.
 The synthesized solution of paths obtained from the constraints are
-then translated to switch forwarding rules.   To provide support for
-the policies in \Cref{tab:policysupport}, \name uses propositional
+then translated to switch forwarding rules.  To provide support for
+tenant policies in \Cref{tab:policysupport}, \name uses propositional
 logic (SAT) and linear rational arithmetic (LRA).
 
 %% , and linear optimization
 %% objectives for traffic engineering.
 
 \subsection{Network Forwarding Model} \label{sec:fwdmodel}
+
+We start by describing the basic forwarding model we use in \Name.
 We define the physical switch topology as an undirected graph $T=(S, L)$,
 where $S$ is the set of switches and $L$ is the set of links. 
 We use the neighbour function $N(s) = \{s'\ | \ (s,s') \in L \}$ to denote 
@@ -91,7 +93,7 @@ One of the decisions oriented towards performance is modelling the forwarding an
 	which was slower with a greater number of constraints.}. 
 The relations for forwarding and reachability ensure we can write the constraints in a concise and intuitive manner.
 
-\subsection{Reachability Constraints} \label{sec:reach}
+\subsection{Reachability} \label{sec:reach}
 We first discuss the constraints generated for reachability policies without waypoints.
 For a reachability policy $s >> d$ and packet class $pc$, the added constraints must ensure that 
 the solution model represents a path 
@@ -138,7 +140,7 @@ A directed edge $n_1 \rightarrow n_2$ appears in the reachability-graph if there
 forwarding rule indicated by the relation $(n_1,n_2, pc) \in Fwd$. 
 We extract the rules relevant to the shortest path from source to destination from the model, and the additional rules obtained in the solution (extra paths, forwarding loops) are ignored.  
 
-\subsection{Waypoint Constraints} \label{sec:waypoint}
+\subsection{Waypoint Traversal} \label{sec:waypoint}
 For a reachability policy with a sequence of waypoint sets $s >> W_1;\ldots;W_n >> d$ and packet class $pc$, we add all the constraints specified in \secref{sec:reach} to ensure the existence of a path from $s$ to $d$. We then add constraints so that all waypoints $w$
 are traversed. 
 \begin{equation} \label{eq:waypoints}
@@ -181,7 +183,7 @@ waypoints in the right order.
 %There would have to 
 %be more than one rule at a switch for multiple paths from the source to exist. 
 
-\subsection{Isolation Constraints}
+\subsection{Isolation}
 A traffic isolation policy $pc_1 || \ pc_2$ states that the paths for
 $pc_1$ and $pc_2$ do not share any link in the same direction.  We
 enforce this policy by adding constraints that state that at every

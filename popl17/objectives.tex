@@ -1,19 +1,20 @@
 \section{Operator Objectives}
 \label{sec:optimization}
 
-We start with the simpler problem of supporting hard capacity
-constraints. We then describe how \Name can support optimization
-objectives pertaining to traffic engineering. For the latter, we use
-linear rational arithmetic (LRA) and linear optimization objectives
-for traffic engineering. We conclude by describing how \Name can be
-extended to allow operators to handle datacenter network failures
-gracefully.
+We now describe how to extend \Name's synthesis to support various
+operator objectives.  We start with the simpler problem of supporting
+hard capacity constraints. We then describe how \Name can support
+optimization objectives pertaining to traffic engineering. For the
+latter, we use linear rational arithmetic (LRA) and linear
+optimization objectives We conclude by describing how \Name can be
+extended to allow operators to handle datacenter network failures in a
+graceful policy-compliant manner.
 
 \subsection{Link and Switch Table Capacity Constraints} \label{sec:linkcap}
 %%\subsubsection{Link Capacity Constraints} 
 
-As with policies, \Name uses propositional logic and LRA to accommodate hard
-constraints on link and switch table capacities.
+As with tenant policies, \Name uses propositional logic and LRA to
+accommodate hard constraints on link and switch table capacities.
 
 For a link capacity policy on the link $sw_1 \rightarrow sw_2: \omega$, 
 we use the theory of linear rational arithmetic 
@@ -42,15 +43,15 @@ will require a forwarding rule) is $\leq \gamma$ :
 
 
 \subsection{Traffic Engineering}
-While the link capacity policies described in \secref{sec:linkcap} can
-be used to perform a strict form of traffic engineering (TE) in terms
-of adhering to link bandwidths, it is often more useful to balance
-traffic across links (because, a link failure will affect fewer flows
-when the flows are spread evenly across the network).  To this end,
-network operators often impose traffic engineering objectives such as
-minimizing the total link utilization or the maximum link utilization. To support such optimization objectives
-\Name uses extensions of solvers with support for linear optimization
-objectives.
+While the above capacity policies can be used to perform a strict form
+of traffic engineering (TE) in terms of adhering to link bandwidths,
+it is often more useful to balance traffic across links (because, a
+link failure will affect fewer flows when the flows are spread evenly
+across the network).  To this end, network operators often impose
+traffic engineering objectives such as minimizing the total link
+utilization or the maximum link utilization. To support such
+optimization objectives \Name uses extensions of solvers with support
+for linear optimization objectives.
 
 %% useful in balancing traffic across links,
 %% and a link failure will affect lesser number of flows when the flows
@@ -65,7 +66,7 @@ link capacity, and encoded using the theory of linear rational arithmetic as:
 \begin{equation}
 U(sw_1, sw_2) = \frac{\sum_{\forall pc} \texttt{ite}(Fwd(sw_1,sw_2, pc), \sigma(pc), 0)} {C(sw_1, sw_2)}
 \end{equation}
-The objective for minimizing total link utilization is as follows:
+The objective for minimizing total link utilization then is as follows:
 \begin{equation}
 	\texttt{minimize}\ \sum_{\forall sw_1, sw_2} U(sw_1, sw_2)
 \end{equation}
