@@ -2,14 +2,16 @@
 
 The problem statement here is as follows: Given the network topology
 graph and the set of tenant policies written in GPL, generate paths in
-the network for every source-destination pair specified in the
-policies such that all policies are satisfied.  To achieve this, \Name
+the network for every source-destination pair 
+(derived from reachability policies)
+satisfying all policies.  To achieve this, \Name
 creates constraints that encodes the forwarding and reachability rules
 pertaining to the paths such that they satisfy the input policies.
 The synthesized solution of paths obtained from the constraints are
-then translated to switch forwarding rules.  To provide support for
-tenant policies in \Cref{tab:policysupport}, \name uses propositional
-logic (SAT) and linear rational arithmetic (LRA).
+then translated to switch forwarding rules.  
+%To provide support for
+%tenant policies in \Cref{tab:policysupport}, \name uses propositional
+%logic (SAT) and linear rational arithmetic (LRA).
 
 %% , and linear optimization
 %% objectives for traffic engineering.
@@ -89,9 +91,16 @@ if there exists $Fwd, Reach$ such that $(Fwd, Reach) \models \Psi$ and $\ \Pi=\t
 %%There are two reachability policies, $r1 : 1 >> [5] >> 2$ with $pc=1$ and $r2 : 1 >> 2$ with $pc=2$ and $r1$ is isolated to $r2$
 %Using the value of $Fwd$ relation, we can find out paths for each packet class the forwarding rules for each switch. 
 
-One of the decisions oriented towards performance is modelling the forwarding and reachability relations using propositions, so that we can reduce enforcement of policies like reachability, waypoints and isolation to a Boolean Satisfiability Problem (SAT) problem\footnote{An earlier iteration of our model used \emph{uninterpreted functions} and modeled reachability using recursive constraints, 
+One of the decisions oriented towards performance 
+is modelling the forwarding and reachability relations using propositions,
+ so that we can reduce enforcement of tenant policies like reachability, waypoints 
+ and isolation to a Boolean Satisfiability Problem (SAT) problem\footnote{
+ 	An earlier iteration of our model used \emph{uninterpreted functions} 
+ 	and modeled reachability using recursive constraints, 
 	which was slower with a greater number of constraints.}. 
-The relations for forwarding and reachability ensure we can write the constraints in a concise and intuitive manner.
+The relations for forwarding and reachability ensure 
+other global operator policies like capacity bounds and 
+traffic engineering can be expressed concisely.
 
 \subsection{Reachability} \label{sec:reach}
 We first discuss the constraints generated for reachability policies without waypoints.
