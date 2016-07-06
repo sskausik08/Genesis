@@ -55,7 +55,7 @@ to how she wishes to manage her overall infrastructure.
 
 
 \begin{compactitemize}
-\item \textbf{Policy: Reachability}. This enables network communication
+\item \textbf{Tenant Policy: Reachability}. This enables network communication
   between specific pairs of a tenant's virtual instances (VMs),
   applications, or hosts.  In our example, one tenant has defined a
   reachability policy for its two VMs (R2): \texttt{V1 >> V2}, which
@@ -67,7 +67,7 @@ to how she wishes to manage her overall infrastructure.
   reachability policy is implicitly blocked (i.e., all communication
   is ``default off'').
   
-\item \textbf{Policy: Middlebox Traversals}. A tenant may wish that the flow
+\item \textbf{Tenant Policy: Middlebox Traversals}. A tenant may wish that the flow
   between two of her end hosts, or from another tenant, must traverse
   specific middleboxes, which we also refer to as ``waypoints'' in
   this paper. Middleboxes are custom processing appliances often used
@@ -93,7 +93,7 @@ to how she wishes to manage her overall infrastructure.
   %% in which these middle-boxes is traversed is not relevant and the
   %% policy language should therefore support unordered waypoints.
 
-\item \textbf{Policy: Isolation}. Tenants may require various
+\item \textbf{Tenant Policy: Isolation}. Tenants may require various
   Quality-of-Service (QoS) or security guarantees that stipulate
   varying degrees of isolation for their traffic. In the extreme, a
   tenant could require that her flows are not affected in any manner
@@ -141,7 +141,7 @@ to how she wishes to manage her overall infrastructure.
 
 %\loris{is there a reason why this is not in the itemize?} 
 %\kausik{This is not a tenant policy, but an operator feature, so separate from itemize.}
-\item \textbf{Objective: Managing Capacity Constraints}. While support
+\item \textbf{Operator Objective: Managing Capacity Constraints}. While support
   for the above policies can be used to satisfy tenant SLAs
   (service-level agreements), network operators often wish to
   carefully managing constrained resources. Common examples that \Name
@@ -154,7 +154,7 @@ to how she wishes to manage her overall infrastructure.
   and the operator wants to ensure that total load on these links does
   not exceed 100.
 
-\item \textbf{Objective: Traffic Engineering}. As an alternative to
+\item \textbf{Operator Objective: Traffic Engineering}. As an alternative to
   managing strict (link) capacity constraints, operates may also want
   to balance load on their network infrastructure. This is often done
   by optimizing a network-wide objective such as total or maximum
@@ -181,7 +181,7 @@ to how she wishes to manage her overall infrastructure.
   %% ruletable size limits.
   
  
- \item \textbf{Objective: Handling failure gracefully}. Modern networks
+ \item \textbf{Operator Objective: Handling failure gracefully}. Modern networks
    experience link and switch failures frequently~\cite{}.  When a
    failure occurs, we must reconfigure the forwarding rules such that
    the policies are satisfied. Naively recomputing forwarding rules
@@ -189,16 +189,19 @@ to how she wishes to manage her overall infrastructure.
    to be torn down at all switches, and new rules installed. Switch
    rules deletions/insertions take a non-trivial amount of
    time~\cite{keqiang-sosr15}, potentially leading to disruptions. It
-   is therefore desirable to have {\em minimal network repair} which
-   aims to minimize the number of forwarding rules or switches
-   modified in transitioning from an old data-plane to a new
-   policy-compliant one to minimize disruption.  While repair is a
-   reactive approach to failures, the transition {\em time} under
-   failures can still be prohibitively high for some practical
-   situations. Thus, as an alternative to minimal repair, it may be
-   desirable to proactively configure switches with resilient
-   policy-compliant backup paths; however this comes at the cost
-   of additional switch rules.
+   is therefore desirable to have graceful approaches that either minimize the potential for disruption by minimizing the number of forwarding rules or switches
+   modified in transitioning from an old data-plane,  or eliminate the possibility of disruption altogether by precomputing backup policy-compliant paths (at the cost of storing extra rules at switches).
+   
+   %% {\em minimal network repair} which
+   %% aims to minimize the number of forwarding rules or switches
+   %% modified in transitioning from an old data-plane to a new
+   %% policy-compliant one to minimize disruption.  While repair is a
+   %% reactive approach to failures, the transition {\em time} under
+   %% failures can still be prohibitively high for some practical
+   %% situations. Thus, as an alternative to minimal repair, it may be
+   %% desirable to proactively configure switches with resilient
+   %% policy-compliant backup paths; however this comes at the cost
+   %% of additional switch rules.
 \end{compactitemize}
 
 
@@ -209,16 +212,16 @@ to how she wishes to manage her overall infrastructure.
 %% 1000s of lines, and intricate dependencies may have to be configured
 %% across devices~\cite{benson:complexity:nsdi2009,mpa-imc15}. This
 %% process is also highly error prone~\cite{mpa-imc15}.
-State-of-the-art SDN frameworks, e.g., Pyretic~\cite{} and
-Frenetic~\cite{}, are insufficient to program networks to realize the
-above policies/objectives. This is because the above
-policies/objectives are global and cannot be enforced (at least not in
-an intuitive manner) by programming individual behavior of switches.
-While some existing SDN-based network management
-systems~\cite{simple,merlin,oneswitch} overcome these limitations by
-taking a network-wide view, they are tailored to support specific
-policies such as middlebox placement or link capacity constraints. As
-such they cannot enforce several of the policies/objectives above.
+In particular, state-of-the-art SDN frameworks, e.g., Pyretic~\cite{}
+and Frenetic~\cite{}, are insufficient to program networks to realize
+them.  This is because the above policies/objectives are global and
+cannot be enforced (at least not in an intuitive manner) by
+programming individual behavior of switches.  While some existing
+SDN-based network management systems~\cite{simple,merlin,oneswitch}
+overcome these limitations by taking a network-wide view, they are
+tailored to support specific policies such as middlebox placement or
+link capacity constraints. As such they cannot enforce several of the
+policies/objectives above.
 
 
 \section{Data Plane Synthesis} \label{sec:synthesis} 
@@ -227,13 +230,14 @@ Our contribution is \name, a new general network management system
 that supports the above policies and objectives, and can be extended
 to support others. The architecture of \name is shown in
 \Cref{fig:architecture}. \Name performs {\em synthesis} of switch
-forwarding rules to enforce policies. The policies are specified using
-Genesis Policy Language, or GPL, as shown in \Cref{tab:policysupport}.
+forwarding rules to enforce policies. The policies/objectives are
+specified using Genesis Policy Language, or GPL, as shown in
+\Cref{tab:policysupport}.
 
-Unlike previous efforts in the network synthesis space
-~\cite{netgen,merlin}, \Name is not tailored to specific formalisms
-such as regular expressions; this aspect makes it {\em modular} and
-{\em easy to extend}.
+Unlike previous efforts in the network synthesis
+space~\cite{netgen,merlin}, \Name is not tailored to specific
+formalisms such as regular expressions; this aspect makes it {\em
+  modular} and {\em easy to extend}.
 %and allows to devise specific
 %techniques for each type of policies. 
 To draw an analogy with SMT solvers, \Name can be seen as a constraint

@@ -1,15 +1,17 @@
 \section{Algorithm for Synthesizing Policies} \label{sec:synthesisalgo}
 
-The problem fomulation is as follows: Given the network topology graph
-and the set of policies written in GPL, \name generates paths in the
+The problem fomulation here is as follows: Given the network topology
+graph and the set of policies written in GPL, generates paths in the
 network for every source-destination pair specified in the policies
 such that all the policies are satisfied.  To achieve this, \Name
 creates constraints that encodes the forwarding and reachability rules
 pertaining to the paths such that they satisfy the input policies.
 The synthesized solution of paths obtained from the constraints are
-then translated to switch forwarding rules.  %% To provide support for
-%% the policies in \Cref{tab:policysupport}, \name uses propositional
-%% logic (SAT), linear rational arithmetic (LRA), and linear optimization
+then translated to switch forwarding rules.   To provide support for
+the policies in \Cref{tab:policysupport}, \name uses propositional
+logic (SAT) and linear rational arithmetic (LRA).
+
+%% , and linear optimization
 %% objectives for traffic engineering.
 
 \subsection{Network Forwarding Model} \label{sec:fwdmodel}

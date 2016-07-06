@@ -58,8 +58,8 @@ impact.
 %% specifying resource constraints like link bandwidth and switch table
 %% sizes to perform traffic engineering and network resource management.
 
-The rise of \emph{software-defined networking} (SDN) has allowed
-operators to program networks in a more intuitive manner. In SDN, a
+With \emph{software-defined networking} (SDN),
+operators can program networks in a more intuitive manner. In SDN, a
 general-purpose centralized controller machine (control plane)
 controls end-to-end communication pathways by managing network
 forwarding rules on a collection of programmable switches (data
@@ -75,11 +75,11 @@ application requirements.
 %% and requires the design of efficient custom heuristics; combining
 %% different policies' heuristics together is non-trivial.
 Unfortunately, existing SDN programming languages (e.g.,
-Frenetic~\cite{frenetic} and Pyretic~\cite{pyretic}) are too
-constraining: operators would ideally want to specify and realize
-policies/objectives network-wide, whereas these languages focus on programming
-{\em individual} switch behaviors.  Moreover, for many types of
-policies, generating a data plane that enforces them is a
+Frenetic~\cite{frenetic} and Pyretic~\cite{pyretic}) present too
+narrow a view: operators would ideally want to specify and realize
+policies/objectives network-wide, whereas these languages focus on
+programming {\em individual} switch behaviors.  Moreover, for many
+types of policies, generating a data plane that enforces them is a
 %  an NP-complete 
 computationally hard problem, requiring the design of efficient custom
 heuristics {\em per policy/objective type}. Other recent works on
@@ -119,9 +119,9 @@ hidden from operators. This is an important step toward {\em
 %% important feature is \emph{generality} of the approach of policy
 %% enforcement, so that it can be extended to enforce custom policies
 %% required by the operator.
-This paper makes a case for using \emph{data plane synthesis} as a
-practical approach to realizing this vision in the multi-tenant
-datacenter context.
+We argue that \emph{data plane synthesis} can offer a practical
+approach to realizing this vision in the multi-tenant datacenter
+context.
 %% switch
 %% table forwarding rules to the solve the problem of policy enforcement
 %% by use of off-the-shelf SMT-solvers.
@@ -160,11 +160,11 @@ median case; \secref{sec:baselineeval}) which can be impractical.
 %enterprise networks today because the space of forwarding plane configurations
 %is huge. 
 To make synthesis more practical, \Name leverages domain-specific
-properties to simplify the constraints handled by the SMT solver.
-We allow the network operator to write restricted
-forms of regular expressions, called \emph{tactics}, that blacklist
-paths based on certain patterns that are not desired in a datacenter
-network.
+properties to simplify the constraints handled by the SMT solver.  We
+allow the network operator to write restricted forms of regular
+expressions, called \emph{tactics}, that blacklist paths based on
+certain patterns that are not desired in a datacenter network (e.g.,
+paths that alternate between topology tiers).
 %\loris{how about: ...based on path patterns that are not desired...}
 These tactics are used to discard several constraints, 
 acting as a search strategy for the solver.
@@ -178,12 +178,12 @@ a 1.5$\times - $400$\times$ speedup
 (median speedup: 1.6$\times$, average speedup: 22$\times$).
 
  Secondly, we develop a \emph{divide-and-conquer} synthesis procedure
- that leverages the relationships among  isolation policies to
- improve synthesis performance. The procedure partitions the input
- policies into effective components such that \name can synthesize
- these components separately and faster than the complete problem.
- Divide-and-conquer synthesis can halve the synthesis time for 40\% of
- synthetic isolation workloads.
+ that opportunistically leverages the dependency relationships among
+ isolation policies to improve synthesis performance. The procedure
+ partitions the input policies into effective components such that
+ \name can synthesize these components separately and faster than the
+ complete problem.  Divide-and-conquer synthesis can halve the
+ synthesis time for 40\% of synthetic isolation workloads.
  %% which vary in size and complexity
  %% of isolation.
  %\aditya{is this statement correct? what is 40\% of scenarios?}
