@@ -133,10 +133,14 @@ high complexity of enforcing some of these policies (for e.g.,
 enforcing isolation is NP-complete), \Name encodes the problem as that
 of constraint solving and leverages recent advances in fast
 Satisfiability Modulo Theories (SMT) solvers to efficiently search for
-a solution to the constraints. \aditya{should we say something about
-  maxsmt and failure. this is the only para here talking about
-  sections 2--5 of the paper} The solution is then translated into
-switch forwarding rules.
+a solution to the constraints. The solution is then translated into
+switch forwarding rules. \Name uses two intuitive relations that
+concisely capture the semantics of custom network forwarding
+behaviors. These help express a variety of both path-based and global
+policies. Interestingly, complex global policies (specifically,
+policy-compliant failure resilience) can be realized within this
+framework without requiring additional encoding (of specific failure
+scenarios) just by cleverly transforming path-based policies.
 %Using SMT solvers with 
 %support for linear optimization, \name can perform traffic engineering, and
 %minimal network repair. We extend \name to synthesize
