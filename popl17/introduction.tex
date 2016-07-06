@@ -119,21 +119,23 @@ hidden from operators. This is an important step toward {\em
 %% important feature is \emph{generality} of the approach of policy
 %% enforcement, so that it can be extended to enforce custom policies
 %% required by the operator.
-We argue that data plane synthesis can offer a practical
-approach to realizing this vision in the multi-tenant datacenter
+We argue that data plane synthesis can help 
+realize this vision in the multi-tenant datacenter
 context.
 %% switch
 %% table forwarding rules to the solve the problem of policy enforcement
 %% by use of off-the-shelf SMT-solvers.
 
 We present \Name, a framework for declaratively specifying and
-enforcing complex policies such as, isolation,
-middlebox traversals and failure resilience. To tackle the high
-complexity of enforcing some of these policies (for e.g., enforcing
-isolation is NP-complete), \Name encodes the problem as that of
-constraint solving and leverages recent advances in fast
+enforcing complex policies such as, isolation, middlebox traversals,
+network optimization objectives, and failure resilience. To tackle the
+high complexity of enforcing some of these policies (for e.g.,
+enforcing isolation is NP-complete), \Name encodes the problem as that
+of constraint solving and leverages recent advances in fast
 Satisfiability Modulo Theories (SMT) solvers to efficiently search for
-a solution to the constraints.  The solution is then translated into
+a solution to the constraints. \aditya{should we say something about
+  maxsmt and failure. this is the only para here talking about
+  sections 2--5 of the paper} The solution is then translated into
 switch forwarding rules.
 %Using SMT solvers with 
 %support for linear optimization, \name can perform traffic engineering, and
@@ -153,15 +155,16 @@ policies.
 
 %\kausik{Do we need to make the point of sacrificing performance for generality for POPL? }
 
-Unfortunately, due to the the large space of forwarding plane
-configurations, naively encoding policies using SMT solvers results in
-slow synthesis speeds (up to several minutes in the median case;
-\secref{sec:baselineeval}) which can be impractical.
+%% Due to the the large space of forwarding plane configurations, naively
+%% encoding policies using SMT solvers results in slow synthesis (several
+%% minutes in the median case; \secref{sec:baselineeval}).
 %enterprise networks today because the space of forwarding plane configurations
 %is huge. 
-To make synthesis more practical, \Name leverages domain-specific
-properties to simplify the constraints handled by the SMT solver.  We
-allow the network operator to write restricted forms of regular
+Further, we present two novel techniques that leverage domain-specific properties to speed up \Name's synthesis.
+%% We argue that synthesis can be significantly sped up by leveraging  domain-specific
+%% properties to simplify the constraints handled by the SMT solver.
+First, \Name
+allows the network operator to write restricted forms of regular
 expressions, called \emph{tactics}, that blacklist paths based on
 certain patterns that are not desired in a datacenter network (e.g.,
 paths that alternate between topology tiers).
@@ -171,13 +174,12 @@ acting as a search strategy for the solver.
 %\aditya{the previous sentence is vague}
 %By identifying a restricted syntax for specifying
 %tactics, we 
-Tactics can improve the synthesis procedure and achieve
+Tactics can speed up the synthesis procedure by
 %constraints added to the solver without additional constraints
 %required to ensure the solution satisfies the tactic and achieve
-a 1.5$\times - $400$\times$ speedup 
-(median speedup: 1.6$\times$, average speedup: 22$\times$).
-
- Secondly, we develop a \emph{divide-and-conquer} synthesis procedure
+$1.5$-$400$\times$ (median speedup: 1.6$\times$, average speedup:
+22$\times$).
+ Second, we develop a \emph{divide-and-conquer} synthesis procedure
  that opportunistically leverages the dependency relationships among
  isolation policies to improve synthesis performance. The procedure
  partitions the input policies into effective components such that
