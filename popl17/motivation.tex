@@ -47,8 +47,8 @@ tenant workloads~\cite{mpa-imc15}.  The policies include:
 \begin{compactitemize}
 \item \textbf{Reachability}. This enables network communication
   between specific groups of a tenant's virtual instances (VMs),
-  applications, or hosts. For example, the yellow tenant has defined a
-  reachability policy for its VMs ($V1 >> V2$, which is translated
+  applications, or hosts. For example, one tenant has defined a
+  reachability policy for its VMs (R2): \texttt{V1 >> V2}, which is translated
   after VM placement as $E2 >> E4$).
 \item \textbf{Middlebox Traversals}. A tenant may wish that traffic
   between two of her end hosts, or from another tenant, must traverse
@@ -62,8 +62,8 @@ tenant workloads~\cite{mpa-imc15}.  The policies include:
   irrelevant.\footnote{The unordered set abstraction leverages the
     fact that middleboxes without dependencies in their traffic
     processing behavior can be placed in any order relative to each
-    other~\cite{pga}.} For example, the grey tenant in
-  \Cref{fig:architecture} defines a waypoint policy $V1 >> FW;
+    other~\cite{pga}.} For example, the tenant  in
+   defines a waypoint policy (R1): $V1 >> FW;
        [IDS,BC] >> V2$ which specifies that traffic must first pass
        through the firewall (FW), and then through 
        the Intrusion detection system (IDS) and the

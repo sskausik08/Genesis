@@ -119,10 +119,10 @@ in number of switches.
   
   
  \noindent{\bf Isolation with Link Capacity Policies}: 
- \Cref{fig:link-capacity} (orange trace) \aditya{orange???} shows the average synthesis time per flow for the same setting, but
+ \Cref{fig:link-capacity} shows the average synthesis time per flow for the same setting as above, but
  additionally, there are 10 low-bandwidth links in the network for which the operator
- specifies policies to capacity usage (all packet classes have uniform capacity). 
-Since we use LIA for link capacity constraints, we see an 
+ specifies capacity policies (all packet classes have uniform capacity). 
+Since we use LRA for link capacity constraints, we see an 
 increase in average time for synthesis 
 when compared to pure isolation which is completely 
 encoded using SAT. 
@@ -231,8 +231,7 @@ To evaluate the heuristic divide-and-conquer synthesis procedure, we
 perform 100 runs of non-heuristic synthesis and divide-and-conquer
 synthesis (with the no edge tactic in both cases) on isolation
 workloads with varying number of tenants and different group sizes
-similar to \aditya{insert reference to section 8.1 here, not to figure
-  5} we used in the \Cref{fig:isolation} experiment. We compute the
+used in \secref{sec:baselineeval}. We compute the
 speedup (time of non-DC synthesis/time of DC synthesis) and plot its
 cumulative frequency distribution in \Cref{fig:dcsyn-cdf} to quantify
 the benefits of optimistic synthesis. For more than 80\% of the
@@ -280,7 +279,8 @@ with different optimization objectives like traffic engineering and network repa
  rules, and try to find a new configuration from the old one with
  maximum number of switches unaffected, and the new configuration
  satisfies the original tenant isolation policies. We can
- synthesize the minimal repair in ~200 seconds. \aditya{How does this compare to ground up resynthesis? Without a comparison it is not clear minimal repair is useful!}
+ synthesize the minimal repair in near 200 seconds on average.
+%  \aditya{How does this compare to ground up resynthesis? Without a comparison it is not clear minimal repair is useful!}
 
 \minisection{Summary} The key points of our evaluation are:
 \begin{compactitemize}
