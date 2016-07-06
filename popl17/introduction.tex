@@ -158,7 +158,7 @@ policies.
 Unfortunately, due to the the large space of forwarding plane
 configurations, naively encoding policies using SMT solvers results in
 impractical synthesis speeds (up to 100s or even 1000s of seconds in
-the median case; \secref{xxx}).
+the median case; \secref{sec:baselineeval}).
 %enterprise networks today because the space of forwarding plane configurations
 %is huge. 
 To make synthesis more practical, \Name leverages domain-specific
@@ -185,7 +185,7 @@ a 1.5$\times - $400$\times$ speedup
  policies into effective components such that \name can synthesize
  these components separately and faster than the complete problem.
  Divide-and-conquer synthesis can halve the synthesis time for 40\% of
- workloads with isolation policies.
+ synthetic isolation workloads.
  %% which vary in size and complexity
  %% of isolation.
  %\aditya{is this statement correct? what is 40\% of scenarios?}
