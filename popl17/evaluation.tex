@@ -15,7 +15,7 @@ the Genesis Programming Language using PLY~\cite{ply} and the synthesizer using
 the SMT solver Z3~\cite{z3} and its $\nu Z$ extension for MaxSMT and linear
  optimization~\cite{nuz3}; this outputs the
 forwarding rules for the switches, which can be provided as input to a
-SDN controller (for e.g., Floodlight~\cite{floodlight}) to install over the
+SDN controller (e.g., Floodlight~\cite{floodlight}) to install over the
 network. \Name uses the Metis graph-partitioning library~\cite{metis}
 to perform equi-sized partitioning 
 used by divide-and-conquer synthesis.  The prototype contains 5K Python lines of code.  
@@ -119,7 +119,7 @@ in number of switches.
   
   
  \noindent{\bf Isolation with Link Capacity Policies}: 
- \Cref{fig:link-capacity}(orange trace) shows the average synthesis time per flow for the same setting, but
+ \Cref{fig:link-capacity} (orange trace) \aditya{orange???} shows the average synthesis time per flow for the same setting, but
  additionally, there are 10 low-bandwidth links in the network for which the operator
  specifies policies to capacity usage (all packet classes have uniform capacity). 
 Since we use LIA for link capacity constraints, we see an 
@@ -227,22 +227,24 @@ In \Cref{fig:tactic-topo},
 	\label{fig:dcsyn-cdf}
 \end{figure}
 \subsection{Divide-and-Conquer (DC) Synthesis Performance} \label{sec:optimisticeval} 
-To evaluate the heuristic
-divide-and-conquer synthesis procedure, we perform 100 runs of non-heuristic
-synthesis and divde-and-conquer synthesis (with the no edge tactic in both cases) on
-isolation workloads with varying number of tenants and different group
-sizes we used in the \Cref{fig:isolation} experiment. We compute the
-speedup (time of non-DC synthesis/time of DC synthesis) and plot its cumulative
-frequency distribution in \Cref{fig:dcsyn-cdf} to quantify the benefits
-of optimistic synthesis. For more than 80\% of the workloads,
-divide-and-conquer offers a better or comparable performance to non-optimistic
-synthesis, achieving a speedup of 2$\times$ for nearly 40\% of the
-workloads. For 20\% of the workloads, divide-and-conquer performs worse than
-the non-heuristic approach, especially for workloads with tenant
-group size 1.  This arises due to greater recovery attempts which
-results in increased time. We can leverage parallelism by running 
-both instances of synthesis, thus giving the best performance, with
-or without the divide-and-conquer approach.
+To evaluate the heuristic divide-and-conquer synthesis procedure, we
+perform 100 runs of non-heuristic synthesis and divide-and-conquer
+synthesis (with the no edge tactic in both cases) on isolation
+workloads with varying number of tenants and different group sizes
+similar to \aditya{insert reference to section 8.1 here, not to figure
+  5} we used in the \Cref{fig:isolation} experiment. We compute the
+speedup (time of non-DC synthesis/time of DC synthesis) and plot its
+cumulative frequency distribution in \Cref{fig:dcsyn-cdf} to quantify
+the benefits of optimistic synthesis. For more than 80\% of the
+workloads, divide-and-conquer offers a better or comparable
+performance to non-optimistic synthesis, achieving a speedup of
+2$\times$ for nearly 40\% of the workloads. For 20\% of the workloads,
+divide-and-conquer performs worse than the non-heuristic approach,
+especially for workloads with tenant group size 1.  This arises due to
+greater recovery attempts which results in increased time. We can
+leverage parallelism by running both instances of synthesis, thus
+giving the best performance, with or without the divide-and-conquer
+approach.
 
 \begin{table}
 	\begin{footnotesize}
@@ -262,21 +264,23 @@ or without the divide-and-conquer approach.
 		\compactcaption{Synthesis times for workloads on a 80-node fat-tree topology with different optimization objectives.} \label{tab:optimizeval} 
 	\end{footnotesize}
 \end{table}
-\subsection{Synthesis with Optimizations} \label{sec:optimizationeval}
+\subsection{Synthesis with Optimization Objectives} \label{sec:optimizationeval}
 \Cref{tab:optimizeval} shows the synthesis time for workloads on a 80-node fat-tree topology
 with different optimization objectives like traffic engineering and network repair. \name can
  do traffic engineering with minimizing average utilization for 200 packet classes in ~2000 seconds. However,
  for minimizing the maximum link utilization, \name can only synthesize 50 packet classes in ~4000 seconds. For both
- objectives, the synthesis time increases exponentially to increasing number of packet classes. SMT with
+ objectives, the synthesis time increases exponentially with increasing number of packet classes. SMT with
  optimization objectives is an emerging field of research, and we envision that solvers in the future will become fast
  to handle larger workloads. 
  
- To evaluate the performance of network repair using MaxSMT, we consider such a 
- setting. There are 8 tenants, each with 10 packet classes (total classes=80), and tenant
- flows are isolated from one another. Now, we disable the switch with the largest number 
- of rules, and try to find a new configuration from the old one with maximum number of switches
-unaffected, and the new configuration satisfies the original tenant isolation policies, and we can
-synthesize the minimal repair in ~200 seconds. 
+ To evaluate the performance of network repair using MaxSMT, we
+ consider a setting wit 8 tenants, each with 10
+ packet classes (total classes=80), and tenant flows are isolated from
+ one another. Now, we disable the switch with the largest number of
+ rules, and try to find a new configuration from the old one with
+ maximum number of switches unaffected, and the new configuration
+ satisfies the original tenant isolation policies. We can
+ synthesize the minimal repair in ~200 seconds. \aditya{How does this compare to ground up resynthesis? Without a comparison it is not clear minimal repair is useful!}
 
 \minisection{Summary} The key points of our evaluation are:
 \begin{compactitemize}
@@ -285,10 +289,10 @@ synthesize the minimal repair in ~200 seconds.
   forwarding rules for 1 to 8 tenants with complete tenant-isolation
   is in 0.1-2000s;
       \item Tactics provide considerable improvement over the
-        baseline, making \Name practical.  We can synthesize the above
-        workloads in 0.1-300s using the no edge tactic,
-        and under 12s using the valley-free routing tactic;
-      \item \Name can effectively tackle real-world scenarios using
+        baseline, making \Name's synthesis more practical.  We can
+        synthesize the above workloads in 0.1-300s using the no edge
+        tactic, and under 12s using the valley-free routing tactic;
+      \item \Name can further benefit from 
         optimistic synthesis, which provides a 2.0$\times$ speed-up
         over non-optimistic synthesis in 40\% of the workloads, in
         addition to the tactic improvements;
