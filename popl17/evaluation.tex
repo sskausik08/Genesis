@@ -71,16 +71,17 @@ group size $g$ which is the number of packet classes for each
 tenant. The x-axis shows the total packet classes $n*g$.  Packet
 classes of a tenant are not isolated (and they implement simple
 reachability within the tenant), while packet classes of different
-tenants are isolated. Thus, no two tenants share a link, and can never
+tenants are traffic-isolated. Thus, no two tenants share a link in
+the same direction, and can never
 affect each other's performance.  We randomly\footnote{ Smarter
   placement of tenants could speed-up synthesis as tenant endpoints
   would be located closer to each other. The placement algorithm can
   be used to develop specialized tactics.}  place endpoints for the
 tenants' packet classes, ensuring that not more than 4 tenants share a
 single edge switch.  Operators can aggregate a tenant's traffic from
-one rack to another to a single reachability policy and establish
-pathways for communication amongst the multiple machines in different
-racks.
+multiple instances connected to the same switches 
+as a single reachability policy and establish
+pathways for communication amongst different switches.
 
 For a fixed group size, we observe that, the total synthesis time
 increases exponentially with number of packet classes.  As we
@@ -88,7 +89,7 @@ decrease the group size, the synthesis time increases
 greatly for the same number of packet classes.  In this case, the
 number of tenants increases, making the problem more constrained due
 to increased number of isolation policies.  Group size 1 denotes the
-extreme case where all flows are isolated w.r.t. one other.
+extreme case where all flows are isolated with each other.
  
 While we evaluated a multi-tenant isolation setting, there are other
 scenarios that translate to these workloads. Consider an example where
@@ -97,7 +98,9 @@ be isolated w.r.t all other flows. This translates to a two-tenant
 isolation setting. Operators can provide weaker isolation such that
 two flows must be isolated on only certain "special" links. 
 This is an easier problem to tackle than isolation over all
-links, and the performance of such scenarios would be better.
+links, and the performance of such scenarios would be better. 
+Failure resiliency uses link-isolation policies which exhibit a similar
+performance compared to the workloads considered here. 
 
 \noindent {\bf Effect of Topology Size}: To evaluate \Name across
 increasing topology sizes for isolation workloads, we fix the
@@ -105,11 +108,11 @@ tenant-group size to 5, and for each topology, we maintain the ratio
 of packet classes to number of edge-aggregate links to 0.25.  We
 choose this metric because if we kept the number of classes constant,
 as topology sizes increases, it is easier to find isolated
-paths. Thus, by keeping the number of packet classes proportional to
+paths due to more links. Thus, by keeping the number of packet classes proportional to
 size of the topology, we maintain the relative difficulty of the
 workload across topologies.  We show the average synthesis time per
 class with increasing topology sizes in
-\Cref{fig:tactic-topo}.  We are able to synthesize forwarding rules
+\Cref{fig:tactic-topo} (baseline trace).  We are able to synthesize forwarding rules
 for 12 tenants with group size 5 in a 125 switch topology in 124
 seconds (avg. 2 seconds per traffic class).
  %Some comment I dont understand.
@@ -119,7 +122,8 @@ in number of switches.
   
   
  \noindent{\bf Isolation with Link Capacity Policies}: 
- \Cref{fig:link-capacity} shows the average synthesis time per flow for the same setting as above, but
+ \Cref{fig:link-capacity} (baseline trace) 
+ shows the average synthesis time per flow for the same setting as above, but
  additionally, there are 10 low-bandwidth links in the network for which the operator
  specifies capacity policies (all packet classes have uniform capacity). 
 Since we use LRA for link capacity constraints, we see an 
@@ -129,7 +133,7 @@ encoded using SAT.
 
 \noindent {\bf Waypoint Policies}: To evaluate \Name's performance for
 ordered sets of waypoints, we fix the number of waypoints (range:1-5)
-and generate 100 waypoint policies with different size and permutation
+and generate 100 waypoint policies with different sizes and permutations
 of the ordered waypoint sets for a 80 switch topology. Each
 policy has edge switches as endpoints and randomly picked core or
 aggregate switches for waypoints. The synthetic limit $\mu$ on the
@@ -140,7 +144,7 @@ average synthesis time for a waypoint policy is reported in
 exponentially with total number of waypoints in a packet class's
 policy, owing to the complexity of the problem.  \Name can synthesize
 rules for a path with 3 total waypoints in less than a second on
-average. These waypoint policies were either completely ordered or
+average. These waypoint policies had either completely ordered or
 unordered or waypoint sets of sizes 1 and 2.
 %\aditya{I don't follow this last sentence}
 
@@ -167,16 +171,17 @@ unordered or waypoint sets of sizes 1 and 2.
  % Write about waypoints
  \subsection{Tactic Reductions} \label{sec:tacticeval}
  Using the baseline synthesis approach can result in high synthesis
- times due to the large solution space of forwarding plane configurations. We 
- demonstrate the improvements from using tactics for different tenants and group sizes on a 
+ times due to the large solution space of data planes. We 
+ demonstrate the improvements from using tactics for isolation
+ workloads with different number of tenants and group sizes on a 
  80 switch topology.
  
- \noindent {\bf No Edge Tactic}: \Cref{fig:isolation}(b) shows the synthesis time for isolation workloads using the no edge tactic 
+ \noindent {\bf ``No Edge" Tactic}: \Cref{fig:isolation}(b) shows the synthesis time for isolation workloads using the no edge tactic 
  ($\neg(e .^* e .^* e)$). We achieve a best-case speedup of 9.5$\times$ over baseline synthesis with this tactic. 
  Using this tactic, \Name can synthesize forwarding rules for 12 tenants with group size 5 in under 200
  seconds.
   
-\noindent {\bf Valley-free Routing Tactic}:  
+\noindent {\bf ``Valley-free" Tactic}:  
 For the same isolation workloads as above, we use the tactic $\neg (e .^5 .^* e)$ $\wedge \neg (e .^* e .^* e)$
  which ensures {\em valley-free routing}, that is paths are of the form $eacae$. 
  The results are shown in \Cref{fig:isolation}(c). 
@@ -205,7 +210,7 @@ In \Cref{fig:tactic-topo},
  with additional link capacity constraints for 10 links is evaluated
  using the no edge tactic, and we get a best-case 14$\times$
  improvement over baseline synthesis. This demonstrates the usefulness
- of tactics for integrating different kinds of policies like isolation
+ of tactics for integrating with different kinds of policies like isolation
  and link capacities.  Tactics can provide a considerable improvement
  over the baseline performance as illustrated by these experiments,
  and demonstrate the viability of synthesis approach of \Name to
@@ -227,20 +232,20 @@ In \Cref{fig:tactic-topo},
 	\label{fig:dcsyn-cdf}
 \end{figure}
 \subsection{Divide-and-Conquer (DC) Synthesis Performance} \label{sec:optimisticeval} 
-To evaluate the heuristic divide-and-conquer synthesis procedure, we
-perform 100 runs of non-heuristic synthesis and divide-and-conquer
-synthesis (with the no edge tactic in both cases) on isolation
+To evaluate the divide-and-conquer (DC) synthesis procedure, we
+perform 100 runs of DC and non-DC synthesis 
+(with the no edge tactic in both cases) on isolation
 workloads with varying number of tenants and different group sizes
 used in \secref{sec:baselineeval}. We compute the
 speedup (time of non-DC synthesis/time of DC synthesis) and plot its
 cumulative frequency distribution in \Cref{fig:dcsyn-cdf} to quantify
-the benefits of optimistic synthesis. For more than 80\% of the
+the benefits of DC synthesis. For more than 80\% of the
 workloads, divide-and-conquer offers a better or comparable
-performance to non-optimistic synthesis, achieving a speedup of
+performance to non-DC synthesis, achieving a speedup of
 2$\times$ for nearly 40\% of the workloads. For 20\% of the workloads,
-divide-and-conquer performs worse than the non-heuristic approach,
+divide-and-conquer performs worse than the non-DC approach,
 especially for workloads with tenant group size 1.  This arises due to
-greater recovery attempts which results in increased time. We can
+greater number of recovery attempts which results in increased time. We can
 leverage parallelism by running both instances of synthesis, thus
 giving the best performance, with or without the divide-and-conquer
 approach.
