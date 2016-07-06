@@ -28,8 +28,8 @@ numerous different forwarding plane configurations as solutions.
 We propose a heuristic approach which partitions the problem 
 into smaller components to speed up synthesis.
 
-The intuition is as follows, suppose we have two packet classes $pc_1,
-pc_2$ isolated from one another, the standard synthesis algorithm adds 
+The intuition is as follows. Suppose we have two packet classes $pc_1,
+pc_2$ isolated from one another; the standard synthesis algorithm adds 
 constraints for both packet classes to the solver for finding the solution.
 Instead, we could synthesize $pc_1$
 independently and, after that, find a solution for $pc_2$ 
@@ -39,7 +39,7 @@ procedure \emph{divide-and-conquer} synthesis, as we divide
 the problem and try to synthesize them separately.
 However, synthesis of $pc_2$ can fail because the solution
 of $pc_1$ may be such that there is no way to place an isolated path for
-$pc_2$ but if they have been synthesized together, a
+$pc_2$ but if they had been synthesized together, a
 solution might exist. To improve effectiveness, we integrate the 
 divide-and-conquer approach with recovery 
 mechanisms discussed in \secref{sec:recovery}.
@@ -127,23 +127,22 @@ paths obtained in $P_1$.
 %  we do}
 %\aditya{I did not look at the pseducode}
 
-We use the following scheme to partition the policy graph connected component into two: 
-\emph{min-cut} partitioning, which partitions the graph
-such that inter-partition edge count is minimized. The
-rationale behind the heuristic is that since we intend to perform the
-synthesis of both partitions separately, the partition should maximize
-the isolation policies within components and minimize across
-components. By maximizing isolation policies during synthesis of the
-component, the partial solution is more likely to be compatible with a
-complete solution. However, if the min-cut partitioning produces a
-component smaller than a threshold size, we perform partitioning of
-the graph into two \emph{equal sized} partitions and minimizing the cut edges
-between the partitions. We need to ensure that we don't partition the
-graph smaller than a threshold, as the partial solutions obtained by
-synthesis of very small partitions are more likely to conflict with
-other packet classes. Our implementation of \Name performs
-divide-and-conquer synthesis recursively on the components till we cannot partition the
-component further. 
+We use \emph{min-cut} partitioning to partition the policy graph
+connected component into two such that inter-partition edge count is
+minimized. The rationale  is that since we intend
+to perform the synthesis of both partitions separately, the partitioning
+should maximize  isolation policies within components and minimize those
+across components. By maximizing isolation policies during synthesis
+of the component, the partial solution is more likely to be compatible
+with a complete solution. However, if the min-cut partitioning
+produces a component smaller than a threshold size, we perform
+partitioning of the graph into two \emph{equal sized} partitions and
+minimizing the cut edges between the partitions. We need to ensure
+that we don't partition the graph smaller than a threshold, as the
+partial solutions obtained by synthesis of very small partitions are
+more likely to conflict with other packet classes. Our implementation
+of \Name performs divide-and-conquer synthesis recursively on the
+components till we cannot partition the component further.
 
 \subsection{Solution Recovery} \label{sec:recovery}
 While in the best case divide-and-conquer synthesis  will lead to a great
@@ -174,7 +173,8 @@ form of enumeration, in cases where the graph is highly constrained
 (clique), finding a solution can lead to increased number of enumerations,
 while synthesis without partitioning would provide a solution faster. 
 Thus, we bound the number of enumerations performed by the 
-recovery mechanism and return failure to find a solution by solution recovery
+recovery mechanism and return failure
+%to find a solution by solution recovery
 if we don't obtain a solution. 
 
 Divide-and-conquer synthesis with recovery is sound, but 
@@ -222,9 +222,9 @@ thus rendering the routine complete.
 % routine. 
  We evaluate the performance improvement of divide-and-conquer
  synthesis with varying isolation workloads in \secref{sec:optimisticeval}.
- One of the major drawbacks of the divide-and-conquer approach is that it is very
+A drawback of the divide-and-conquer approach is that it is 
  difficult to apply to global policies (like traffic engineering) primarily because
- splitting the input problem isn't easy, and development
+ splitting the input problem isn't easy; development
  of strategies to speed-up global policies is a direction of future work.
 
  %\aditya{the last para was very vague. rest of the section was OK, modulo my comments}
