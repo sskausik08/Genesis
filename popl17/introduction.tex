@@ -25,7 +25,7 @@ set of ``middleboxes'' for auditing and access control
 (traversal). Another tenant may additionally desire a subset of her
 flows not share any infrastructure with others' flows for strong
 security or Quality-of-Service considerations (isolation).  In
-parallel, cloud operators must meet key operational objectives. For
+parallel, cloud operators must meet key operational policies. For
 instance, they often need to optimize network performance objectives
 (traffic engineering), e.g., minimizing the maximum load imposed by
 all tenants on network links, and deal with resource constraints such
@@ -36,7 +36,7 @@ transition the old (pre-failure) dataplane to a policy-compliant new
 (post-failure) one in a rapid and/or efficient manner.
 
 Today, configuring network devices to implement these complex policies
-and objectives in aggregate is manual, ad-hoc, and error-prone.  This
+in aggregate is manual, ad-hoc, and error-prone.  This
 can lead to misconfigurations and violations of tenant service-level
 agreements (SLAs) which can have a severe performance and security
 impact.
@@ -77,14 +77,14 @@ application requirements.
 Unfortunately, existing SDN programming languages (e.g.,
 Frenetic~\cite{frenetic} and Pyretic~\cite{pyretic}) present too
 narrow a view: operators would ideally want to specify and realize
-policies/objectives network-wide, whereas these languages focus on
+policies network-wide, whereas these languages focus on
 programming {\em individual} switch behaviors.  Moreover, for many
 types of policies, generating a data plane that enforces them is a
 %  an NP-complete 
 computationally hard problem, requiring the design of efficient custom
-heuristics {\em per policy/objective type}. Other recent works on
+heuristics {\em per policy type}. Other recent works on
 network-wide policy enforcement~\cite{merlin,simple} go beyond the
-single-switch model, but they target specific types of policies/objectives and
+single-switch model, but they target specific types of policies and
 thus are difficult to extend to other commonly desired policy types
 (e.g., isolation).
 %; combining  different policies' heuristics together is non-trivial. 
@@ -108,7 +108,7 @@ thus are difficult to extend to other commonly desired policy types
 %% \cite{simple} or FlowTags~\cite{flowtags}. However, these approaches
 
 In this paper, we seek a {\em general} approach that allows a variety
-of rich policies/objectives to be specified as the input, with the output being
+of rich policies to be specified as the input, with the output being
 the corresponding set of switch forwarding rules such that the
 complexities of correctly realizing the policies in the data plane are
 hidden from operators. This is an important step toward {\em
@@ -127,7 +127,7 @@ context.
 %% by use of off-the-shelf SMT-solvers.
 
 We present \Name, a framework for {\em declaratively} specifying and
-enforcing complex policies and objectives such as, isolation,
+enforcing complex policies such as, isolation,
 middlebox traversals and failure resilience. To tackle the high
 complexity of enforcing some of these policies (for e.g., enforcing
 isolation is NP-complete), \Name encodes the problem as that of
@@ -149,7 +149,7 @@ switch forwarding rules.
 %% switch-level behaviours. 
 By leveraging the formal guarantees of constraint solving, \Name
 eliminates the room for error in the enforcement of complex
-policies and objectives.
+policies.
 
 %\kausik{Do we need to make the point of sacrificing performance for generality for POPL? }
 
@@ -201,7 +201,7 @@ a 1.5$\times - $400$\times$ speedup
 \noindent \textbf{Contributions.} \ \ \ Our contributions are the following.
 \begin{compactitemize}
 \item An extensible declarative framework for describing
-  complex policies/objectives and a modular SMT-based algorithm for enforcing policies and objectives
+  complex policies and a modular SMT-based algorithm for enforcing policies 
   like isolation, waypoints (\secref{sec:synthesisalgo}), traffic engineering~(\secref{sec:optimization}), and 
   failure resiliency (\secref{sec:resiliency});
 \item A modified synthesis algorithm based on tactics, which leverages datacenter network structure
@@ -209,7 +209,7 @@ a 1.5$\times - $400$\times$ speedup
 \item A divide-and-conquer procedure for speeding up synthesis by leveraging the 
 structure of policy interactions (\secref{sec:optimistic});
 \item An implementation of \Name and an extensive evaluation on
-  different policy/objective workloads, topologies and multi-tenancy
+  different policy workloads, topologies and multi-tenancy
   settings (\secref{sec:evaluation}).
 		%to quantify the performance of Genesis. 
 \end{compactitemize}

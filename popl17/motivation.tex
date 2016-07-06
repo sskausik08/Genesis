@@ -15,8 +15,9 @@ We describe the type of policies desired in multi-tenant data centers
 that \Name supports. We use \Cref{fig:architecture} as a running
 example. In our setting, an ``operator'' manages a multi-tenant
 datacenter, which could be either a public datacenter (E.g., Azure),
-or a private datacenter. The operator specifies objectives that pertain
-to how she wishes to manage her overall infrastructure.
+or a private datacenter. The operator specifies ``operator policies''
+which reflect important global objectives pertaining to how she wishes
+to manage her overall infrastructure.
 %% For simplicity, we assume a multi-tenant cloud set up, where both
 %% the tenants and the provider wish to realize policies over their
 %% respective networks. However, these policies, and our framework,
@@ -25,16 +26,17 @@ to how she wishes to manage her overall infrastructure.
  A tenant is an entity (e.g., an enterprise or a department thereof)
  that has offloaded its IT infrastructure to the datcenter. Each
  tenant controls a number of host machines in the datacenter running
- some of its applications, and specifies policies that define whether
- paths can exist among it's hosts, and if so, what additional
+ some of its applications, and specifies path-based policies (as
+ opposed to operator's global policies). Tenant policies define
+ whether paths can exist among it's hosts, and if so, what additional
  properties the paths must satisfy for security, performance or access
  control reasons. \Cref{fig:architecture} shows several tenants who
  differ in the nature of policies they wish to realize; we also show
- the operator's objectives.
+ the operator policies.
 
- The policies and objectives supported by \Name are as described
+ The policies  supported by \Name are as described
  below. Notice that these reflect and, in some cases, extend policies
- and objectives that today's enterprises and datacenter operators
+ that today's enterprises and datacenter operators
  realize in their networks~\cite{mpa-imc15}.
 
 %\aditya{explain the figure here}.
@@ -140,20 +142,20 @@ to how she wishes to manage her overall infrastructure.
 
 %\loris{is there a reason why this is not in the itemize?} 
 %\kausik{This is not a tenant policy, but an operator feature, so separate from itemize.}
-\item \textbf{Operator Objective: Managing Capacity Constraints}. While support
-  for the above policies can be used to satisfy tenant SLAs
+\item \textbf{Operator Policy: Managing Capacity Constraints}. While
+  support for the above policies can be used to satisfy tenant SLAs
   (service-level agreements), network operators often wish to
   carefully managing constrained resources. Common examples that \Name
   supports include enforcing strict constraints on aggregate number of
   flows traversing a switch (due to all tenants) so as to adhere to
   switch memory constraints, and ensuring that the total load on
   certain links is within predefined thresholds (we assume here that
-  each flow has a predefined load). In our example in
-  \Cref{fig:architecture}, A2-C2 and A4-C2 links are of low bandwidth,
-  and the operator wants to ensure that total load on these links does
-  not exceed 100.
+  each flow has a predefined load that it imposes on the path it
+  uses). In our example in \Cref{fig:architecture}, A2-C2 and A4-C2
+  links are of low bandwidth, and the operator wants to ensure that
+  total load on these links does not exceed 100.
 
-\item \textbf{Operator Objective: Traffic Engineering}. As an alternative to
+\item \textbf{Operator Policy: Traffic Engineering}. As an alternative to
   managing strict (link) capacity constraints, operates may also want
   to balance load on their network infrastructure. This is often done
   by optimizing a network-wide objective such as total or maximum
@@ -180,16 +182,21 @@ to how she wishes to manage her overall infrastructure.
   %% ruletable size limits.
   
  
- \item \textbf{Operator Objective: Handling failure gracefully}. Modern networks
-   experience link and switch failures frequently~\cite{}.  When a
-   failure occurs, we must reconfigure the forwarding rules such that
-   the policies are satisfied. Naively recomputing forwarding rules
-   incurs an unduly large overhead because old forwarding rules have
-   to be torn down at all switches, and new rules installed. Switch
-   rules deletions/insertions take a non-trivial amount of
-   time~\cite{keqiang-sosr15}, potentially leading to disruptions. It
-   is therefore desirable to have graceful approaches that either minimize the potential for disruption by minimizing the number of forwarding rules or switches
-   modified in transitioning from an old data-plane,  or eliminate the possibility of disruption altogether by precomputing backup policy-compliant paths (at the cost of storing extra rules at switches).
+ \item \textbf{Operator Policy: Handling failure gracefully}. Modern
+   networks experience link and switch failures frequently~\cite{}.
+   When a failure occurs, we must reconfigure the forwarding rules
+   such that the policies are satisfied. Naively recomputing
+   forwarding rules incurs an unduly large overhead because old
+   forwarding rules have to be torn down at all switches, and new
+   rules installed. Switch rules deletions/insertions take a
+   non-trivial amount of time~\cite{keqiang-sosr15}, potentially
+   leading to disruptions. It is therefore desirable to have graceful
+   approaches that either minimize the potential for disruption by
+   minimizing the number of forwarding rules or switches modified in
+   transitioning from an old data-plane, or eliminate the possibility
+   of disruption altogether by precomputing backup policy-compliant
+   paths for a fixed number of failures (at the cost of storing extra
+   rules at switches).
    
    %% {\em minimal network repair} which
    %% aims to minimize the number of forwarding rules or switches
@@ -204,7 +211,7 @@ to how she wishes to manage her overall infrastructure.
 \end{compactitemize}
 
 
-\noindent Realizing these policies and objectives is challenging today.
+\noindent Realizing these policies  is challenging today.
 %% legacy (non-SDN) networks
 %% requires painstaking, often manual configuration of diverse network
 %% devices. This is tedious---device configuration files can run into
@@ -213,23 +220,23 @@ to how she wishes to manage her overall infrastructure.
 %% process is also highly error prone~\cite{mpa-imc15}.
 In particular, state-of-the-art SDN frameworks, e.g., Pyretic~\cite{}
 and Frenetic~\cite{}, are insufficient to program networks to realize
-them.  This is because the above policies/objectives are global and
+them.  This is because the above policies are global and
 cannot be enforced (at least not in an intuitive manner) by
 programming individual behavior of switches.  While some existing
 SDN-based network management systems~\cite{simple,merlin,oneswitch}
 overcome these limitations by taking a network-wide view, they are
 tailored to support specific policies such as middlebox placement or
 link capacity constraints. As such they cannot enforce several of the
-policies/objectives above.
+policies above.
 
 
 \section{Data Plane Synthesis} \label{sec:synthesis} 
 
 Our contribution is \name, a new general network management system
-that supports the above policies and objectives, and can be extended
+that supports the above policies, and can be extended
 to support others. The architecture of \name is shown in
 \Cref{fig:architecture}. \Name performs {\em synthesis} of switch
-forwarding rules to enforce policies. The policies/objectives are
+forwarding rules to enforce policies. The policies are
 specified using Genesis Policy Language, or GPL, as shown in
 \Cref{tab:policysupport}.
 
@@ -240,7 +247,7 @@ formalisms such as regular expressions; this aspect makes it {\em
 %and allows to devise specific
 %techniques for each type of policies. 
 To draw an analogy with SMT solvers, \Name can be seen as a constraint
-solver that allows the addition of different types of policies/objectives
+solver that allows the addition of different types of policies
 (respectively, theories in SMT) and that allows the design of
 optimizations based on the properties desired by network
   operators using \Name. 
@@ -252,19 +259,19 @@ optimizations based on the properties desired by network
   accepts as expression of user intent, the space of programs over
   which it searches, and the search technique it employs.
   \Name\ leverages synthesis as follows: given a set of
-  policies/objectives which describe tenant and operator intent, the
+  policies which describe tenant and operator intent, the
   search space is the space of all data planes (i.e., the set of
   forwarding rules) and the search technique involved is SAT/SMT
   solving.
 
 \Name's approach has the following salient features:
 
-(1) Enforcement of the different policies/objectives can be translated
+(1) Enforcement of the different policies can be translated
 to the following problem: Given a set of node pairs (derived from the
 reachability policies) in the graph (topology), find paths in the
 graph for each of the node pairs satisfying certain properties
-(derived from the rest of the policies/objectives).  Thus, the
-different policies/objectives can be enforced by a correct set of
+(derived from the rest of the policies).  Thus, the
+different policies can be enforced by a correct set of
 forwarding rules at the switches.  No extra functionality is required
 from the controller; its only role is to install the forwarding rules
 on switches.
@@ -289,7 +296,7 @@ on switches.
 % approach.
 
 (2) Correct enforcement is challenging due to different goals for each
-of the policies/objectives --- ensuring isolation between paths may
+of the policies --- ensuring isolation between paths may
 lead to overshooting link utilizations and vice-versa --- and is a
 common cause of incorrect configurations in networks.  Our approach
 removes the need for a verification step in which the operator has to
@@ -305,7 +312,7 @@ errors.
 policies is as hard as solving graph-coloring, a well-known
 NP-complete problem.  Many search techniques can be used to find the
 forwarding rules when handling a particular class of policy, but when
-multiple types of policies/objectives are combined, e.g., isolation, waypoints,
+multiple types of policies are combined, e.g., isolation, waypoints,
 and traffic engineering, devising good search techniques becomes
 challenging.  Thanks to the many engineering efforts, SMT solvers
 abstract away most of this complexity and allow us to unify search
@@ -314,13 +321,12 @@ objectives for every policy into a generalized search technique.
 %leveraging fast off-the-shelf SMT solvers developed over years of
 %research, \Name can provide support for diverse policies required by
 %network operators. 
-Crucially, \Name can be extended with ease to support new policies and
-objectives without requiring changes to the underlying search
+Crucially, \Name can be extended with ease to support new policies  without requiring changes to the underlying search
 techniques.
 
 In the next few sections, we describe the \Name synthesis
 algorithm. In XXX we describe how \Name accommodates tenant policies.
-We then describe how to accommodate operator objectives pertaining to
+We then describe how to accommodate operator policies pertaining to
 capacity constraints, traffic engineering and failure resiliency
 (XXX).  Finally, we describe two novel \name techniques aimed at
 speeding up \Name's synthesis: tactics (\secref{sec:tactic}) and
