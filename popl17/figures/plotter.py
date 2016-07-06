@@ -122,7 +122,7 @@ plt.plot(x, len7noEdge, '#984ea3', marker="s", markersize=markersize, label="No 
 plt.plot(x, noValley, '#377eb8', marker="D", markersize=markersize, label="Valley-Free")
 
 plt.legend(loc='upper left', frameon=False, fontsize=18)
-plt.xlim(xmax=185)
+plt.xlim(xmax=182)
 plt.xlabel('Number of Switches', fontsize=20)
 plt.ylabel('Avg. Synthesis Time per Class(s)', fontsize=20)
 
@@ -130,17 +130,17 @@ plt.grid()
 plt.savefig('isolationTopology.eps', format='eps', dpi=1000,  bbox_inches='tight')
 
 linkFig = plt.figure(5)
-adjustFigAspect(linkFig,aspect=2)
+adjustFigAspect(linkFig,aspect=1.6)
 noTactic = [0.01686666667,0.1216433333,6.945813333,28.40629807]
 edgeTactic = [0.01706573168,0.09974876245,0.4901337981,5.841367469]
 
 plt.plot(x, noTactic, '#ff7f00', marker="o", markersize=markersize, label="Baseline")
 plt.plot(x, noEdge, '#377eb8', marker="s", markersize=markersize, label="No Edge")
 
-plt.legend(loc='upper left', frameon=False, fontsize=18)
-plt.xlim(xmax=185)
+plt.legend(loc='upper left', frameon=False, fontsize=16)
+plt.xlim(xmax=182)
 plt.xlabel('Number of Switches', fontsize=20)
-plt.ylabel('Avg. Synthesis Time per Class(s)', fontsize=20)
+plt.ylabel('Avg. Synthesis Time \n per Class(s)', fontsize=20)
 
 plt.grid()
 plt.savefig('linkTopology.eps', format='eps', dpi=1000,  bbox_inches='tight')
