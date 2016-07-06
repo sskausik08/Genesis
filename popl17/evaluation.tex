@@ -151,7 +151,7 @@ unordered or waypoint sets of sizes 1 and 2.
 \begin{table}
 \begin{footnotesize}
 	\begin{center}
-		\begin{tabular}{P{6em} | P{7em}} 
+		\begin{tabular}{P{10em} | P{14em}} 
 			Number of Waypoints & Avg. Synthesis time per Class (s) \\ [0.5ex] 
 			\hline
 			1 & 0.0347\\ [0.5ex] 
@@ -190,9 +190,10 @@ For the same isolation workloads as above, we use the tactic $\neg (e .^5 .^* e)
  
  \begin{figure}[h]
  		\centering
- 	\includegraphics[width=0.75\columnwidth]{figures/isolationTopology.eps}
+ 	\includegraphics[width=0.65\columnwidth]{figures/isolationTopology.eps}
  	\compactcaption{Average synthesis time per packet class versus topology size for isolation workloads 
  		w/o different tactics with the ratio of packet classes to number of edge-aggregate links 0.25.}
+ 	\vspace{0.5cm}
  	\label{fig:tactic-topo}
  \end{figure}
  
@@ -216,7 +217,7 @@ In \Cref{fig:tactic-topo},
  and demonstrate the viability of synthesis approach of \Name to
  real-world networks.
  
-\begin{figure}[h]
+\begin{figure}
 	\centering
 	\includegraphics[width=0.65\columnwidth]{figures/linkTopology.eps}
 	\compactcaption{Average synthesis time per packet class versus topology size for isolation workloads 
@@ -228,7 +229,7 @@ In \Cref{fig:tactic-topo},
 \begin{figure}
 	\centering
 	\includegraphics[width=0.65\columnwidth]{figures/dcSynthesis.eps}
-	\caption{CDF for speedup achieved by divide-and-conquer synthesis.}
+	\compactcaption{CDF for speedup achieved by divide-and-conquer synthesis.}
 	\label{fig:dcsyn-cdf}
 \end{figure}
 \subsection{Divide-and-Conquer (DC) Synthesis Performance} \label{sec:optimisticeval} 

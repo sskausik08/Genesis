@@ -17,12 +17,12 @@ enterprise applications and the need for security and compliance,
 these pathways of communication through the datacenter network are
 subject to increasingly complex network-based policies.
 
-Consider an enterprise tenant in such a datacenter. She may desire
+Consider a tenant in such a datacenter. She may desire
 basic communication among her applications (reachability) along
 shortest paths based on certain metrics. In addition, she may wish
 that traffic attempting to reach some of her applications be examined
-by a set of ``middleboxes'' for auditing and access control
-(traversal). Another tenant may additionally desire a subset of her
+by a set of ``middleboxes'' (traversal) for auditing and access control. 
+Another tenant may additionally desire a subset of her
 flows not share any infrastructure with others' flows (isolation) for
 strong security or Quality-of-Service considerations.  In parallel,
 cloud operators must meet key operational policies. For instance, they
@@ -32,14 +32,14 @@ on network links, and deal with resource constraints such as link
 capacity bounds and switch table sizes. Also, since datacenter
 networks are highly prone to link/switch
 failures~\cite{datacenterfailures}, operators need to gracefully
-transition the old (pre-failure) dataplane to a policy-compliant new
-(post-failure) one in a rapid and/or efficient manner.
+transition the old (pre-failure) data plane to a policy-compliant one
+(post-failure) in a rapid and/or efficient manner.
 
-Today, configuring network devices to implement these complex policies
+Today, configuring network devices to enforce these complex policies
 in aggregate is manual, ad-hoc, and error-prone.  This
 can lead to misconfigurations and violations of tenant service-level
-agreements (SLAs) which can have a severe performance and security
-impact.
+agreements, which can have severe performance and security
+impacts.
 
 %%  However, in real-life, the
 %% process of policy enforcement by network operators is manual and
@@ -137,10 +137,10 @@ a solution to the constraints. The solution is then translated into
 switch forwarding rules. \Name uses two intuitive relations that
 concisely capture the semantics of custom network forwarding
 behaviors. These help express a variety of both path-based and global
-policies. Interestingly, complex global policies (specifically,
+policies desired in a datacenter. Interestingly, complex global policies (specifically,
 policy-compliant failure resilience) can be realized within this
 framework without requiring additional encoding (of specific failure
-scenarios) just by cleverly transforming path-based policies.
+scenarios) by just cleverly transforming path-based policies.
 %Using SMT solvers with 
 %support for linear optimization, \name can perform traffic engineering, and
 %minimal network repair. We extend \name to synthesize
@@ -181,7 +181,7 @@ acting as a search strategy for the solver.
 Tactics can speed up the synthesis procedure by
 %constraints added to the solver without additional constraints
 %required to ensure the solution satisfies the tactic and achieve
-$1.5$-$400$\times$ (median speedup: 1.6$\times$, average speedup:
+$1.5-400\times$ (median speedup: 1.6$\times$, average speedup:
 22$\times$).
  Second, we develop a \emph{divide-and-conquer} synthesis procedure
  that opportunistically leverages the dependency relationships among

@@ -19,12 +19,12 @@ bounded number of link failures, continue to satisfy input
 policies. This altogether eliminates the need to resynthesize the
 forwarding rules for every network failure event. Unfortunately, this
 approach requires extra backup rules at switches, and it also cannot
-capture certain objectives (Section XXX).
+capture global operator policies.
 
-Thus, we propose a second \emph{minimal repair} mechanism (Section
-XXX) which can transition with minimal overhead from the current data
-plane to a policy-compliant new one by minimizing the number of
-switches whose tables are modified.  Our minimal repair mechanism uses
+Thus, we propose a second \emph{minimal repair} mechanism (\secref{sec:repair}) 
+which can transition with minimal overhead from the current data
+plane to a new policy-compliant one by minimizing the number of
+switches whose rule tables are modified using 
 MaxSMT. It does not have the memory cost of the first approach, and it
 can capture all \Name policies and objectives. It is also useful for
 accomodating incremental policy changes, which occurs frequently in
@@ -281,7 +281,7 @@ for $pc$.
 %research involve incorporating capacity constraints and traffic engineering
 %for synthesis of resilient data planes and devising a complete transformation for isolation.
 
-\subsubsection{Minimal Repair}
+\subsubsection{Minimal Repair} \label{sec:repair}
 %% Thus, operators need
 %% a \emph{network repair} mechanism which can transition with minimal
 %% overhead from the current data plane to a policy-compliant one.  This

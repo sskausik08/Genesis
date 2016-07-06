@@ -143,8 +143,8 @@ to manage her overall infrastructure.
 %\loris{is there a reason why this is not in the itemize?} 
 %\kausik{This is not a tenant policy, but an operator feature, so separate from itemize.}
 \item \textbf{Operator Policy: Managing Capacity Constraints}. While
-  support for the above policies can be used to satisfy tenant SLAs
-  (service-level agreements), network operators often wish to
+  support for the above policies can be used to satisfy tenant 
+  requirements, network operators often wish to
   carefully managing constrained resources. Common examples that \Name
   supports include enforcing strict constraints on aggregate number of
   flows traversing a switch (due to all tenants) so as to adhere to
@@ -248,9 +248,9 @@ formalisms such as regular expressions; this aspect makes it {\em
 %techniques for each type of policies. 
 To draw an analogy with SMT solvers, \Name can be seen as a constraint
 solver that allows the addition of different types of policies
-(respectively, theories in SMT) and that allows the design of
-optimizations based on the properties desired by network
-  operators using \Name. 
+(respectively, theories in SMT) and the design of
+optimizations based on properties desired by network
+  operators. 
   
   Our work is motivated by recent advances in program synthesis, i.e.,
   the task of discovering an executable program from user intent
@@ -325,10 +325,11 @@ Crucially, \Name can be extended with ease to support new policies  without requ
 techniques.
 
 In the next few sections, we describe the \Name synthesis
-algorithm. In XXX we describe how \Name accommodates tenant policies.
+algorithm. In \secref{sec:synthesisalgo}, 
+we describe how \Name accommodates tenant policies.
 We then describe how to accommodate operator policies pertaining to
 capacity constraints, traffic engineering and failure resiliency
-(XXX).  Finally, we describe two novel \name techniques aimed at
+(\secref{sec:optimization}).  Finally, we describe two novel techniques aimed at
 speeding up \Name's synthesis: tactics (\secref{sec:tactic}) and
 divide-and-conquer synthesis (\secref{sec:optimistic}).
 

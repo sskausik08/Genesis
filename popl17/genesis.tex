@@ -52,7 +52,7 @@
 \newcommand{\pushcode}[1][1]{\hskip\dimexpr#1\algorithmicindent\relax}
 \newcolumntype{P}[1]{>{\centering\arraybackslash}p{#1}}
 
-\usepackage{caption}
+\usepackage[font=small]{caption}
 \usepackage{enumitem}
 %\usepackage{usenix}
 \usepackage{epsfig}
@@ -73,7 +73,10 @@
 \input{defs}
 %\usepackage[small,compact]{titlesec}
 %\usepackage[font={bf,small}]{caption}
-
+\usepackage{titlesec}
+\titlespacing*{\section}{1pt}{3pt}{1pt}
+\titlespacing*{\subsection}{0.1pt}{2pt}{0.1pt}
+\titlespacing*{\subsubsection}{0.1pt}{0.1pt}{0.1pt}
 \newtheorem{mydef}{Definition}
 \newtheorem{example}{Example}
 \newtheorem{theorem}{Theorem}[section]
