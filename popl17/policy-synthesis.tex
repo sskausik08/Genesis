@@ -29,7 +29,7 @@ we often use the term packet class to identify the corresponding reachability po
 Other policies are not mapped to packet classes as they do not produce a path, but specify restrictions on paths of packet classes. 
 We use $R$ to denote the set of reachability policies; each policy $r \in R$ is
 a pair
-$(predicate$:$src >> W_1;W_2; \ldots W_n >> dst, pc)$ where:
+$(predicate$:$src >> W_1;W_2; \ldots; W_n >> dst, pc)$ where:
 \begin{compactitemize}
 \item  $predicate$ is the packet header identifier pertaining to $r$;
 \item  $src,dst \in S$ are the source and destination switches;

@@ -142,7 +142,7 @@ we extend the notion to include policy compliance.
 			\State{$PC^R, I^R \leftarrow \emptyset$}
 			\For{$pc:\{src_{pc},dst_{pc},W_{pc}\} \in PC$} 
 			\State{// Create $t+1$ edge-disjoint paths of $pc$}
-			\State{$\hat{pc} = \{rc_1, rc_2, \ldots rc_{t+1}$\} s.t $\forall m. \ rc_m: \{src_{pc},dst_{pc},W_{pc}\}$} \label{lst:line:respc}
+			\State{$\hat{pc} = \{rc_1, rc_2, \ldots, rc_{t+1}$\} s.t $\forall m. \ rc_m: \{src_{pc},dst_{pc},W_{pc}\}$} \label{lst:line:respc}
 			\State{$PC^R = PC^R \cup \hat{pc}$} 
 			\State{$I_{pc} = \{rc_m <> rc_n\ |\ \forall m,n \leq t+1 \wedge m < n\}$}  \label{lst:line:respcisolate}
 			\State{$I^R = I^R \cup I_{pc}$} \label{lst:line:respcend}
@@ -306,7 +306,7 @@ repair using MaxSMT.
 Formally, the MaxSMT problem is as follows:
 given a set of formulas $\Psi_0, \Psi_1, \ldots, \Psi_n$ with
 associated weights $w_1, \ldots, w_n$, find a subset $M \subseteq \{1,
-\ldots n\}$ s.t:
+\ldots, n\}$ s.t:
 1) $\Psi_0 \wedge \bigwedge_{i \in M} \Psi_i$ is satisfiable, and 
 2) The \emph{award} $\sum_{i \in M} w_i$  is maximized. 
 The constraints $\Psi_1, \ldots, \Psi_n$ denote \emph{soft} constraints, and
