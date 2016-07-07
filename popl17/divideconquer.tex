@@ -93,7 +93,7 @@ can synthesize each connected component independently, since packet
 classes in different connected components are not related by any
 isolation policy, and therefore are independent of each other.
 
-We describe the heuristic synthesis procedure in Pseudocode 1,
+We describe the divide-and-conquer synthesis procedure in Pseudocode 2,
 which takes as input a connected component of the policy graph.
  The crux of the procedure is that we partition each connected component $P$
   into two smaller components $P_1$ and $P_2$
