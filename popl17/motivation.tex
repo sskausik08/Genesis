@@ -59,9 +59,10 @@ to manage her overall infrastructure.
 \item \textbf{Tenant Policy: Reachability}. This enables network communication
   between specific pairs of tenant's virtual instances (VMs),
   applications, or hosts.  In our example, one tenant has defined a
-  reachability policy for its two VMs (R2): \texttt{V1 >> V2}, which
+  reachability policy (R2) for its two VMs: \texttt{V1 >> V2}, which
   is translated after VM placement (which is handled transparently by
-  the operator) as $E2 >> E4$. A pair of VMs, applications or hosts
+  the operator) to the source and destination switches
+   $E2 >> E4$. A pair of VMs, applications or hosts
   that are allowed to communicate by means of a reachability policy
   defines a flow or a ``packet class''; we use these terms
   interchangeably. Any communication that is not defined by a
@@ -146,7 +147,7 @@ to manage her overall infrastructure.
 \item \textbf{Operator Policy: Managing Capacity Constraints}. While
   support for the above policies can be used to satisfy tenant 
   requirements, network operators often wish to
-  carefully managing constrained resources. Common examples that \Name
+  carefully manage constrained resources. Common examples that \Name
   supports include enforcing strict constraints on aggregate number of
   flows traversing a switch (due to all tenants) so as to adhere to
   switch memory constraints, and ensuring that the total load on
@@ -185,7 +186,7 @@ to manage her overall infrastructure.
   
  
  \item \textbf{Operator Policy: Handling failure gracefully}. Modern
-   networks experience link and switch failures frequently~\cite{}.
+   networks experience link and switch failures frequently~\cite{datacenterfailures}.
    When a failure occurs, we must reconfigure the forwarding rules
    so that the policies are satisfied. Naively recomputing
    forwarding rules incurs an unduly large overhead because old
