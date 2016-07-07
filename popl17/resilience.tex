@@ -5,31 +5,32 @@ occurence of failures (switches, links etc.), which are all too
 frequent in datacenter networks~\cite{datacenterfailures}. Failures require
 recomputation of paths compliant to the input policies
 for the modified topology.  A naive approach is to use \name to
-resynthesize the modified instance; however, the new solution may be
+resynthesize the modified instance; However, the new solution may be
 drastically different from the original data plane, incurring a large
 overhead of removing old rules and installing new
-ones~\cite{sdnlatency,updatescheduling}, which could lead to serious
-disruption of tenants' flows.
+ones~\cite{sdnlatency,updatescheduling}. 
+%which could lead to serious
+%disruption of tenants' flows.
 
 
 In what follows, we describe two techniques to handle failures more
-gracefully. The first is data-plane resiliency (\secref{sec:resiliency}).  
-This synthesizes and
+gracefully. The first technique is data-plane resiliency (\secref{sec:resiliency}),
+which synthesizes and
 pre-installs resilient data planes, which even in the event of a
 bounded number of link failures, continue to satisfy input
-policies. This altogether eliminates the need to resynthesize the
-forwarding rules for every network failure event. Unfortunately, this
-approach requires extra backup rules at switches, and it also cannot
+policies. This technique eliminates the need to resynthesize the
+forwarding rules for every network failure event, but it 
+requires extra backup rules on switches, and it also cannot
 capture global operator policies.
 
 Thus, we propose a second mechanism called \emph{minimal repair} (\secref{sec:repair}),
-which can transition from the current data
+which can transition from the disrupted data
 plane to a new policy-compliant one with minimal overhead
  by minimizing the number of
-switches whose rule tables are modified using 
-MaxSMT. Repair does not incur the extra rule cost of the first approach 
+switches whose rule tables are modified. 
+Repair does not incur the extra rule cost of the first approach 
 and can capture all \Name policies. It is also useful for 
-accommodating incremental policy changes, which occurs frequently in
+accommodating incremental policy changes, which occur frequently in
 cloud datacenters~\cite{mpa-imc15}. The main drawback is that it still
 requires removal/installation of rules when a failure occurs, which
 can end up being expensive depending on the number of switches
@@ -73,7 +74,7 @@ involved.
 %% resynthesize the forwarding rules for every network failure event.
 
 In this section, we describe the transformation of input policies to
-provide dataplane $t-resilience$~\cite{plinko}, i.e., in the event of
+provide dataplane \emph{t-resilience}~\cite{plinko}, i.e., in the event of
 upto $t$ arbitrary link failures, the synthesized data plane still has
 a path for each packet class satisfying all policies which is achieved
 by synthesizing backup paths that satisfy input policies.  We only
@@ -92,14 +93,13 @@ objectives.
 %a failure event).
 %\loris{don't understand previous sentence} \kausik{Have to think!}
 
-Given the physical topology $T=(S,L)$, a link-failure
-scenario $\theta$ is defined as a set of failed links $\theta = \{l_1, l_2 \ldots ... l_n\}$,
-where $\forall i.\ l_i \in L$.
-% For $t-resilience$, we need to
+Given the physical topology $T=(S,L)$, we define a link-failure
+scenario $\theta$ as the set of failed links such that $\theta \subseteq L$.
+% For \emph{t-resilience}, we need to
 %consider synthesis under any set of $t$ or less arbitrary link failures.
 %\begin{mydef}
 	We define $\Theta(t)$ as the set of all failure scenarios where no more than $t$
-	arbitrary links fail, i.e. $\Theta(t) = \{ \ \theta \ \ | \ \ |\theta| \leq t\}$.
+	arbitrary links fail,---i.e. $\Theta(t) = \{ \ \theta \ \ | \ \ |\theta| \leq t\}$.
 %\end{mydef}
 %We define the projected topology $T^{\theta} = (S, L - \theta)$ as the active 
 %physical topology under the failure scenario $\theta$. 	For each class $pc$,
@@ -109,7 +109,7 @@ where $\forall i.\ l_i \in L$.
 %is resilient if the graph $(S, L_{pc} - \theta)$ has a path from $src$ to $dst$ 
 %for the packet class. 
 Given a packet class $pc$,
-let $\xi = (S, L_{pc})$ be the induced data plane graph constructed from the links
+we construct the induced data plane graph $\xi = (S, L_{pc})$ from the links
 of the paths returned by the synthesis algorithm for class $pc$.
  For a failure scenario
 $\theta$, the active data plane $\xi_\theta = (S, L_{pc} \setminus \theta)$ represents
@@ -117,11 +117,14 @@ all the links used by $\xi$ which are unaffected by the failure scenario. A data
 plane $\xi$ is {\em resilient} to $\theta$ if it contains a path from the source to 
 destination for the packet class in the active data plane $\xi_\theta$.
 \begin{mydef}[Resilience]
-	A data plane $\xi = (S, L_{pc})$ for class $pc$ is $t-resilient$ if $\xi$ is 
+	A data plane $\xi = (S, L_{pc})$ for class $pc$ is t-resilient if $\xi$ is 
 	resilient to all $\theta \in \Theta(t)$.
 \end{mydef}
+While resilience deals with 
+existence of paths during failure scenarios,
+we extend the notion to include policy compliance.
 \begin{mydef}[Policy-compliance]
-	A data plane $\xi = (S, L_{pc})$ for class $pc$ is policy-complaint if under
+	A t-resilient data plane $\xi = (S, L_{pc})$ for class $pc$ is policy-complaint if under
 	any failure scenario $\theta \in \Theta(t)$, any path for $pc$ in 
 	$\xi_\theta=(S, L_{pc} \setminus \theta)$ satisfies the input policies. 
 \end{mydef}
@@ -134,7 +137,7 @@ destination for the packet class in the active data plane $\xi_\theta$.
 			\State{[Input] $I$: Isolation policies (Traffic and Link types)}
 			\State{[Input] $t$: Maximum number of arbitrary link failures}
 			\State{[Output] $PC^R, I^R$: Transformed set of policies such that the synthesized data
-				plane is $t-resilient$}
+				plane is \emph{t-resilient} and policy-compliant}
 			\vspace*{0.25cm}
 			\State{$PC^R, I^R \leftarrow \emptyset$}
 			\For{$pc:\{src_{pc},dst_{pc},W_{pc}\} \in PC$} 
@@ -153,13 +156,13 @@ destination for the packet class in the active data plane $\xi_\theta$.
 	\end{footnotesize}
 \end{algorithm}
 
-We now show how \Name can be modified to provide $t-resilience$.
-Intuitively, this  is done by modifying the input policies so that  multiple disjoint paths satisfying the original
-policies are synthesized for each packet class.
-\noindent The transformation of input policies $(PC, I) \xRightarrow{res} (PC^R, I^R)$
-to provide $t-resilience$ to the packet classes is described in \Cref{restransform}. 
-For $t-resilience$, a packet class $pc$ needs at least $t+1$ edge-disjoint paths from
-source to destination. For this, we create $t+1$ new packet classes ($\hat{pc}$ in line~\ref{lst:line:respc})
+\Cref{restransform} shows how \Name can be used to provide \emph{t-resilience}.
+The idea is to modify the input policies such that multiple disjoint paths satisfying the original
+policies are synthesized for each packet class. 
+For \emph{t-resilience}, a packet class $pc$ needs at least $t+1$ edge-disjoint paths from
+source to destination. 
+We ensure this property holds by creating 
+$t+1$ new packet classes ($\hat{pc}$ in line~\ref{lst:line:respc})
 and use {\em link-isolation policies} amongst all pairs in $\hat{pc}$ (line \ref{lst:line:respcisolate})
 to create $t+1$ edge-disjoint paths for $pc$.
 The synthesized data plane $\hat{\xi} = (S, L_{pc})$ for class $pc$ is constructed from the 
@@ -176,19 +179,18 @@ chosen in the data planes of $pc_1$ and $pc_2$ will be isolated from one
 another, thus providing policy-compliance under any arbitrary $t-link$ failure
 scenario. \Cref{fig:restransform}(a) demonstrates an example transformation for providing $1-resilience$. 
 
-We now show the soundness and completeness theorems for the 
-transformation of \Cref{restransform} for $t-resilience$. 
+\noindent We now that \Cref{restransform} is sound.
 \begin{theorem}[Soundness]
 Given input policies $(PC, I)$, 
 the data plane $\hat{\xi}_{pc}$ for every packet class $pc \in PC$
  synthesized from
-transformed policies $(PC^R, I^R)$  is $t-resilient$ 
+transformed policies $(PC^R, I^R)$  is \emph{t-resilient} 
 	and policy-compliant. 
 \end{theorem}
 \iffull
 \begin{proof}
 		Assume, $\exists pc$ such that the data plane $\hat{\xi} = (S, L_{pc})$
-		is not $t-resilient$. 
+		is not \emph{t-resilient}. 
 		Therefore, there exists a failure scenario $\theta$ such that $|\theta| \leq t$ 
 		and $\hat{\xi}_\theta = (S, L_{pc} \setminus \theta)$ 
 		is not resilient, i.e., there is no path from the source to destination. 
@@ -211,27 +213,27 @@ transformed policies $(PC^R, I^R)$  is $t-resilient$
 %Given .... such that ...., the synthesized data plane... is....if and only if...}
 Given input policies $(PC,I)$ such that $I=\emptyset$,
 the synthesized data plane $\xi$ for a packet class $pc$  
-is $t-resilient$ if and only if it 
+is \emph{t-resilient} if and only if it 
 contains $t + 1$ edge-disjoint paths from source to destination
 for $pc$.
 %If there are no isolation policies $I = \emptyset$, 
-%	for a packet classes $pc$, the data plane \loris{what dataplane?} is $t-resilient$ only if it 
+%	for a packet classes $pc$, the data plane \loris{what dataplane?} is \emph{t-resilient} only if it 
 %	contains $t + 1$ edge-disjoint paths for $pc$.
 \end{theorem}
 \iffull
 	\begin{proof}
 		We have proved the soundness of the result in \Cref{resiliencesoundness}. 
-		Now, let us assume the data-plane $\hat{\xi}$ for $pc$ is $t-resilient$ such 
+		Now, let us assume the data-plane $\hat{\xi}$ for $pc$ is \emph{t-resilient} such 
 		that less than $t+1$ instances of $pc$ are required for resilience i.e. 
 		$|\hat{pc}| < t+1$. Let us consider a 
 		t-link failure scenario $\theta, |\theta| = t$ where a link is picked from
 		each path of $\hat{pc}$. The active data plane
 		$\hat{\xi}_\theta = (S, L_{pc} \setminus \theta)$ will not contain a
 		path from source to destination as all paths of $\hat{pc}$ would be disabled.  
-		This is a contradiction since $\hat{\xi}$ is $t-resilient$. 
-		Therefore, we need atleast $t+1$ instances of $pc$ to ensure $t-resilience$.
+		This is a contradiction since $\hat{\xi}$ is \emph{t-resilient}. 
+		Therefore, we need atleast $t+1$ instances of $pc$ to ensure \emph{t-resilience}.
 		
-		Now let us assume there are $t+1$ paths in a $t-resilient$ $\hat{\xi}$ for $pc$,
+		Now let us assume there are $t+1$ paths in a \emph{t-resilient} $\hat{\xi}$ for $pc$,
 		and not all of them are edge-disjoint. Consider two paths $\pi_1$ and $\pi_2$
 		in $\hat{\xi}$ which share a link. We can choose the shared link 
 		of $\pi_1$ and $\pi_2$ and $t-1$ links from the other $t-1$ paths 
@@ -239,23 +241,27 @@ for $pc$.
 		The active data plane
 		$\hat{\xi}_\theta = (S, L_{pc} \setminus \theta)$ will not contain a
 		path from source to destination as all paths of $\hat{pc}$ would be disabled.  
-		This is a contradiction since $\xi$ is $t-resilient$. Therefore,
+		This is a contradiction since $\xi$ is \emph{t-resilient}. Therefore,
 		the $t+1$ paths of $pc$ must be edge-disjoint. 
 		
 		\noindent Thus, the resilience transformation is sound and complete for a  
 		packet class if there are no isolation policies.
 	\end{proof}
 \fi
-\noindent The transformation demonstrated in \Cref{restransform} is not \emph{complete}
- if the original policies contain link-isolation policies i.e. if the transformed policies
- are unsatisfiable, 
- that does not imply the non-existence of resilient data planes. 
- This is because link-isolation causes edge-disjointness of paths,
- and thus, cannot be both affected by a link failure. 
+
+%\noindent The transformation demonstrated in \Cref{restransform} is not \emph{complete}
+% if the original policies contain link-isolation policies i.e. if the transformed policies
+% are unsatisfiable, 
+% that does not imply the non-existence of resilient data planes. 
+When the original policies contain link-isolation policies, the policies
+from \Cref{restransform} may return \texttt{unsat} even when a
+resilient data plane exists. Specifically, line~\ref{lst:line:respolicy}
+can add additional policies than is required for resilience.
+% This is because link-isolation causes edge-disjointness of paths,
+% and thus, cannot be both affected by a link failure. 
  \Cref{fig:restransform}(b) shows a transformation required for $1-resilience$ 
  with a smaller number of link-isolation policies among different classes
- of $pc_1$ and $pc_2$ than one obtained from 
- the resilience transformation of \Cref{restransform}. 
+ of $pc_1$ and $pc_2$ than one obtained from \Cref{restransform}. 
  Consider a failure scenario which disables path
  of $pc_{1A}$. By virtue of the link-isolation policies, $pc_{1B}$ and
  $pc_{2A}$ will be unaffected and can be used as paths for $pc_1$ 
@@ -263,9 +269,7 @@ for $pc$.
  $pc_{1B}$ is affected. Similarily, $pc_{1A}$ and $pc_{2A}$ can be used as
  the paths for the original packet classes. The same scenarios hold symmetrically
  for $pc_2$, and thus the resilience transformation can be achieved without
- adding link-isolation policies amongst all the packet classes. Therefore,
- the resilience transformation proposed in \Cref{restransform} is sound but not
- complete when the input policies contain link-isolation policies. 
+ adding link-isolation policies amongst all the packet classes. 
  
 \begin{figure}
 	\centering
@@ -278,7 +282,7 @@ for $pc$.
 		for 1-resilience in the case of a link-isolation policy.}
 \end{figure}
 
-%We presented a sound transformation of policies to provide $t-resilience$ in
+%We presented a sound transformation of policies to provide \emph{t-resilience} in
 %the case of reachability, waypoint and isolation policies. Future directions of 
 %research involve incorporating capacity constraints and traffic engineering
 %for synthesis of resilient data planes and devising a complete transformation for isolation.
