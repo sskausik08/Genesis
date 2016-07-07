@@ -309,12 +309,13 @@ errors.
 
 (3) Automatically enforcing policies is a task with
 \emph{high theoretical complexity}.  For example, enforcing isolation
-policies is as hard as solving graph-coloring, a well-known
-NP-complete problem.  Many search techniques can be used to find the
-forwarding rules when handling a particular class of policy, but when
-multiple types of policies are combined, e.g., isolation, waypoints,
-and traffic engineering, devising good search techniques becomes
-challenging.  Thanks to the many engineering efforts, SMT solvers
+policies is as hard as solving graph-coloring, an 
+NP-complete problem.  Specialized techniques can be used to find the
+forwarding rules when handling a particular class of policy, but 
+ devising good search techniques becomes
+ challenging when 
+multiple types of policies are combined,--e.g., isolation, waypoints,
+and traffic engineering.  Thanks to the many engineering efforts, SMT solvers
 abstract away most of this complexity and allow us to unify search
 objectives for every policy into a generalized search technique.
 %Thus, by reducing this problem to a SMT instance and
@@ -324,9 +325,8 @@ objectives for every policy into a generalized search technique.
 Crucially, \Name can be extended with ease to support new policies  without requiring changes to the underlying search
 techniques.
 
-In the next few sections, we describe the \Name synthesis
-algorithm. In \secref{sec:synthesisalgo}, 
-we describe how \Name accommodates tenant policies.
+In the next section, we describe the \Name synthesis
+algorithm for tenant policies. 
 We then describe how to accommodate operator policies pertaining to
 capacity constraints, traffic engineering and failure resiliency
 (\secref{sec:optimization}).  Finally, we describe two novel techniques aimed at
