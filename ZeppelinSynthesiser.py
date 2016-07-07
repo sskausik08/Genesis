@@ -176,7 +176,6 @@ class ZeppelinSynthesiser(object) :
 				self.initializeRouteFilters()
 				self.detectDiamonds()
 
-				self.branchingFilters()
 				diamondLoss = self.calculateResilienceLoss()
 
 				#self.findValidCycles()
@@ -264,6 +263,7 @@ class ZeppelinSynthesiser(object) :
 
 			#self.plotUnsatCore()
 			# Pick filters greedily?
+			self.greedyRouteFilter()
 			#self.maximizeResilienceRouteFilter()
 			return True
 		else :
@@ -297,6 +297,26 @@ class ZeppelinSynthesiser(object) :
 					if dependencies >= maxRF[3] :
 						maxRF = [int(fields[1]), int(fields[2]), int(fields[4]), dependencies]
 		
+
+		# Find cycles for RF
+		start_t = time.time()
+		print "Number of cycles", self.findValidCycleCountFilter(maxRF)
+		print "time to find cycles is", time.time() - start_t
+		self.addRouteFilter(maxRF[0], maxRF[1], maxRF[2])
+
+	def greedyCycleFilter(self) :
+		maxRF = [0,0,0,0]
+		
+		for constr in self.ilpSolver.getConstrs() :
+			if constr.getAttr(gb.GRB.Attr.IISConstr) > 0 :
+				name = constr.getAttr(gb.GRB.Attr.ConstrName) 
+				fields = name.split("-")
+				if fields[0] == "RF" :
+					rf = [int(fields[1]), int(fields[2]), int(fields[4])]
+					cycles = self.findValidCycleCountFilter(rf)
+					print rf, cycles
+					if cycles > maxRF[3] :
+						maxRF = [rf[0], rf[1], rf[2], cycles]
 
 		self.addRouteFilter(maxRF[0], maxRF[1], maxRF[2])
 
@@ -709,6 +729,7 @@ class ZeppelinSynthesiser(object) :
 					# if [sw,n] in self.hiddenEdges : 
 					# 	ew = 1000
 					self.topology.addWeight(sw, n, float(ew))
+					print sw, n,  float(ew)
 
 		for s in range(1, swCount + 1) :
 			for t in range(1, swCount + 1) :
@@ -1255,6 +1276,145 @@ class ZeppelinSynthesiser(object) :
 			# 					print [i,j] in self.routefilters[k]
 			return None
 
+	def branchingFiltersIDDFS(self) :
+		""" Perform a iterative deepening DFS branching on route-filter to find optimal """
+
+		depth = 0
+		while True :
+			val = self.DLS([], depth)
+			if val <> None :
+				break 
+			else :
+				depth = depth + 1
+
+
+	def DLS(self, rfs, depth) :
+		""" Run DFS from rfs limited to depth"""
+		self.ilpSolver = gb.Model("C3")
+		self.initializeSMTVariables()
+		dsts = self.pdb.getDestinations()
+
+		self.routefilters = copy.deepcopy(self.diamondRouteFilters)
+
+		for rf in rfs :
+			self.addRouteFilter(rf[0], rf[1], rf[2])
+
+		# Prompted by Gurobi? 
+		# self.ilpSolver.setParam(gb.GRB.Param.BarHomogeneous, 1) 
+		# self.ilpSolver.setParam(gb.GRB.Param.Method, 2) 
+
+		self.addDjikstraShortestPathConstraints()
+		# Adding constraints with routeFilter variables at source
+		for dst in dsts : 
+			dag = self.destinationDAGs[dst]
+			self.addDestinationDAGConstraints(dst, dag)
+
+		solvetime = time.time()
+		self.ilpSolver.optimize()
+		self.z3solveTime += time.time() - solvetime
+
+		status = self.ilpSolver.status
+		if status == gb.GRB.INFEASIBLE :
+			if depth == 0 : 
+				return None
+			else :
+				solvetime = time.time()
+				self.ilpSolver.computeIIS()
+				self.z3solveTime += time.time() - solvetime 
+
+				# Compute rf branches to take.
+				rfBranchs = []
+				for constr in self.ilpSolver.getConstrs() :
+					if constr.getAttr(gb.GRB.Attr.IISConstr) > 0 :
+						name = constr.getAttr(gb.GRB.Attr.ConstrName) 
+						fields = name.split("-")
+						if fields[0] == "RF" :
+							rfBranchs.append([int(fields[1]), int(fields[2]), int(fields[4])])
+
+				for rf in rfBranchs :
+					rfs1 = copy.deepcopy(rfs)
+					rfs1.append(rf)
+					val = self.DLS(rfs1, depth - 1)		
+					if val <> None :
+						return val
+				return None	
+		else : 
+			print "Consistent!!! Optimal!!!", len(rfs)
+			return rfs
+
+	def findValidCycleCountFilter(self, vcRF) :
+		""" Find valid cycles corresponding to the filter rf """
+		swCount = self.topology.getSwitchCount()
+
+		dst = vcRF[2]
+		vcDag = self.destinationDAGs[dst]
+
+		cycles = []
+		
+		dstSPGraphs = dict()
+		for sw in range(1, swCount + 1) :
+			dstSPGraphs[sw] = self.createDestinationSPGraphs(sw)
+
+		swBacks = [] 
+		swBack = vcDag[vcRF[0]]
+		while swBack <> None :
+			swBacks.append(swBack)
+			swBack = vcDag[swBack]
+
+		for swBack in swBacks :
+			for swFwd in range(1, swCount + 1) :
+				if swFwd in swBacks : continue
+
+				end = vcRF[0]
+				start = vcRF[1]
+				fwdGraph = dstSPGraphs[swFwd]
+				backGraph = dstSPGraphs[swBack]
+
+				if end not in fwdGraph or start not in fwdGraph[end] :
+					continue 
+				
+				disabledEdges = []
+
+				# Source (End) Pruning. Cycles we care about concerning rf should end with dag edge.
+				if end not in vcDag : 
+					print "Why the hell"
+					print vcRF
+					print swBacks
+					print vcDag
+					exit(0)
+					continue
+				for n in self.topology.getSwitchNeighbours(end) :
+					if n <> vcDag[end] :
+						disabledEdges.append([end, n])
+
+				# Route Filter disabled edges
+				dsts = self.pdb.getDestinations()
+				for dst1 in dsts :
+					dag1 = self.destinationDAGs[dst1]
+					filters = self.routefilters[dst1]
+					for rf in filters :
+						if rf[0] in fwdGraph and dag1[rf[0]] in fwdGraph[rf[0]] :
+							# path corresponding to filter is in fwdGraph
+							disabledEdges.append(rf)
+
+				# swFwd Graph: Fwd edges, swBack: Backward edges
+				vGraph = self.createValidGraph(fwdGraph, backGraph, disabledEdges)
+
+				# Find all paths from start to end
+
+				paths = list(nx.all_simple_paths(vGraph, source=start, target=end))
+
+				for path in paths : 
+					if path in cycles : 
+						continue
+					else :
+						cycles.append(path)
+			
+		if len(cycles) == 0 : 
+			print "Something with core"
+			self.ilpSolver.write("nocycle.ilp")
+
+		return len(cycles)
 
 
 	def createDestinationSPGraphs(self, t) :
@@ -1455,6 +1615,34 @@ class ZeppelinSynthesiser(object) :
 				else :
 					print "Problemo"
 					exit(0)
+
+	def createValidGraph(self, sp1, sp2, disabledEdges=[]) :
+		""" sp1 forward, sp2 backward """ 
+		#print "finding cycles between", sp1, sp2
+		graph = nx.DiGraph()
+		for sw in sp1 : 
+			graph.add_node(sw)
+
+		for sw in sp2 : 
+			graph.add_node(sw)
+
+		for sw in sp1 : 
+			for n in sp1[sw] : 
+				graph.add_edge(sw, n)
+
+		for sw in sp2 :
+			for n in sp2[sw] :
+				if sw in sp1 and n in sp1[sw] : 
+					continue
+				elif [sw, n] in disabledEdges : 
+					continue
+				else :
+					# Add backward edge to graph 
+					graph.add_edge(n, sw)
+
+
+		return graph
+		
 
 	def checkCycleValidity(self, cycle) :
 		""" Check if cycle indeed is valid (and not filtered) """
