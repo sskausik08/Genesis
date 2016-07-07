@@ -2,10 +2,10 @@
 \label{sec:optimization}
 
 We now describe how to extend \Name's synthesis to support various
-operator policies.  We start with the simpler problem of supporting
-hard capacity constraints. We then describe how \Name can support
-optimization objectives pertaining to traffic engineering. For this, 
-we use linear rational arithmetic (LRA) and support for linear
+operator policies.  We describe \Name can support
+hard capacity constraints and
+optimization objectives pertaining to traffic engineering using
+ linear rational arithmetic (LRA) and linear
 optimization objectives in SMT. We conclude by describing how \Name can be
 extended to allow operators to handle datacenter network failures in a
 graceful policy-compliant manner.
@@ -13,10 +13,11 @@ graceful policy-compliant manner.
 \subsection{Link and Switch Table Capacity Constraints} \label{sec:linkcap}
 %%\subsubsection{Link Capacity Constraints} 
 For a link capacity policy on the link $sw_1 \rightarrow sw_2: \omega$, 
-we use the theory of linear rational arithmetic 
-to add constraints on the link. As input, we have the traffic rates $\sigma(pc)$ of
-each of the packet classes, and the constraints must ensure that the traffic rate on $sw_1 \rightarrow sw_2$
-does not exceed $\omega$ :
+\name must ensure that the sum of traffic rates of packet
+classes using link $sw_1 \rightarrow sw_2$
+does not exceed $\omega$. 
+As input, we have the traffic rates $\sigma(pc)$ of
+each of the packet classes. The constraints added to $\Psi$ are:
 \begin{equation}
  \sum_{\forall pc} \texttt{ite}(Fwd(sw_1,sw_2, pc), \sigma(pc), 0) \leq \omega .
 \end{equation}
@@ -41,14 +42,11 @@ will require a forwarding rule) is $\leq \gamma$ :
 \subsection{Traffic Engineering}
 While the above capacity policies can be used to perform a strict form
 of traffic engineering (TE) in terms of adhering to link bandwidths,
-it is often more useful to balance traffic across links (because, a
+it is often more useful to balance traffic across links because a
 link failure will affect fewer flows when the flows are spread evenly
-across the network).  To this end, network operators often impose
+across the network.  To this end, network operators often impose
 traffic engineering objectives such as minimizing the total link
-utilization or the maximum link utilization. To support such
-optimization objectives \Name uses extensions of solvers with support
-for linear optimization objectives.
-
+utilization or the maximum link utilization. 
 %% useful in balancing traffic across links,
 %% and a link failure will affect lesser number of flows when the flows
 %% are spread evenly across the network.
@@ -62,23 +60,24 @@ link capacity, and encoded using the theory of linear rational arithmetic as:
 \begin{equation}
 U(sw_1, sw_2) = \frac{\sum_{\forall pc} \texttt{ite}(Fwd(sw_1,sw_2, pc), \sigma(pc), 0)} {C(sw_1, sw_2)}
 \end{equation}
-The objective for minimizing total link utilization then is as follows:
+The following objective minimizes the total link utilization:
 \begin{equation}
 	\texttt{minimize}\ \sum_{\forall sw_1, sw_2} U(sw_1, sw_2)
 \end{equation}
 \paragraph{Min-max TE}
 To encode the TE objective of minimizing the maximum link utilization, we define
-a variable $maxU$, and constraints to ensure that $maxU$ is greater than or equal to all 
-individual link utilizations, and the objective: 
+a variable $maxU$ which represents the maximum
+link utilization. 
+The constraints added to ensure that $maxU$ is greater than or equal to all 
+individual link utilizations:
 \begin{equation} \label{eq:maxu}
 \forall sw_1, sw_2.\ \ maxU \geq U(sw_1, sw_2)
 \end{equation} 
+We then impose the following objective:
 \begin{equation}
 		\texttt{minimize}\ maxU
 \end{equation}
-While $maxU$ can be set to a large value trivially to satisfy \Cref{eq:maxu}, 
-since the objective is to minimize $maxU$, it will be set to the actual
-minimized maximum link utilization. Using an encoding similar to the one presented in this section, \name can be used for other
+Using an encoding similar to the one presented in this section, \name can be used for other
 quantitative objectives like minimizing total latency and load balancing
 traffic across middleboxes.
 

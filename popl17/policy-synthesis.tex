@@ -195,25 +195,29 @@ waypoints in the right order.
 \subsection{Isolation}
 A traffic isolation policy $pc_1 || \ pc_2$ states that the paths for
 $pc_1$ and $pc_2$ do not share any link in the same direction.  We
-enforce this policy by adding constraints that state that at every
+enforce this policy by adding to $\Psi$, constraints stating that at every
 switch, $pc_1$ and $pc_2$ must not forward to the same switch:
 \begin{equation}
 	\forall n_1.~\neg ( \exists n_2. Fwd(n_1,n_2,pc_1) \wedge Fwd(n_1,n_2,pc_2)). \label{eq:isolation}
 \end{equation}
 For a link isolation policy $pc_1 <> \ pc_2$ which prevents sharing a link
-in both directions, the constraints added are:
+in both directions, we add the constraints:
 \begin{multline}
 \forall n_1.~\neg ( \exists n_2. Fwd(n_1,n_2,pc_1) ~~\wedge \\ (Fwd(n_1,n_2,pc_2) \vee Fwd(n_2,n_1,pc_2))). \label{eq:linkisolation}
 \end{multline}
 %These constraints are sufficient to ensure that the packet classes $pc_1$ and $pc_2$ would be isolated. 
-When combined with \Cref{eq:fwdset}, these constraints guarantee
-isolation
-as there exists a single path for $pc_1$ and
-$pc_2$ which would be isolated. 
+%When combined with \Cref{eq:fwdset}, these constraints guarantee
+%isolation
+%as there exists a single path for $pc_1$ and
+%$pc_2$ which would be isolated. 
+With single paths for $pc_1$ and $pc_2$ (when combined 
+with \Cref{eq:fwdset}), the above constraints ensure those
+paths are isolated. 
 Interestingly, for a reachability policy without waypoints,  
 the constraints in \Cref{eq:fwdset} are not required to enforce isolation. 
 Even though the solver could produce multiple forwarding rules which induce multiple paths, 
-the constraints in \Cref{eq:isolation} or \Cref{eq:linkisolation} guarantee isolation as the solver would discard
+the constraints in \Cref{eq:isolation} or \Cref{eq:linkisolation} guarantee 
+isolation as the solver would discard
 the rules conflicting with another packet class.
 
 %reachability policy. Thus, the solver would remove the additional rules which conflict with
