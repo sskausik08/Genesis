@@ -74,3 +74,8 @@ popl17/genesis.bbl
 popl17/genesis.blg
 genesis.dvi
 genesis.synctex.gz(busy)
+*.aux
+*.dvi
+paper.out
+paper.pdf
+paper.ps
