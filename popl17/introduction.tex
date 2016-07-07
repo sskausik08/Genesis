@@ -20,11 +20,12 @@ subject to increasingly complex network-based policies.
 Consider a tenant in such a datacenter. She may desire
 basic communication among her applications (reachability) along
 shortest paths based on certain metrics. In addition, she may wish
-that traffic attempting to reach some of her applications be examined
+that traffic attempting to reach some of her applications is examined
 by a set of ``middleboxes'' (traversal) for auditing and access control. 
-Another tenant may additionally desire a subset of her
-flows not share any infrastructure with others' flows (isolation) for
-strong security or Quality-of-Service considerations.  In parallel,
+For strong security or Quality-of-Service considerations,
+a tenant may additionally desire that a subset of her
+flows does not share any infrastructure with others' flows (isolation).  
+In parallel,
 cloud operators must meet key operational policies. For instance, they
 often need to optimize network performance objectives (traffic
 engineering), e.g., minimizing the maximum load imposed by all tenants
@@ -63,7 +64,7 @@ operators can program networks in a more intuitive manner. In SDN, a
 general-purpose centralized controller machine (control plane)
 controls end-to-end communication pathways by managing network
 forwarding rules on a collection of programmable switches (data
-plane). Using a global view of current network topology, the
+plane). Using a global view of the current network topology, the
 controller can program forwarding rules on switches based on
 application requirements.
 %However, many existing SDN
@@ -129,9 +130,10 @@ context.
 We present \Name, a framework for declaratively specifying and
 enforcing complex policies such as, isolation, middlebox traversals,
 network optimization objectives, and failure resilience. To tackle the
-high complexity of enforcing some of these policies (for e.g.,
-enforcing isolation is NP-complete), \Name encodes the problem as that
-of constraint solving and leverages recent advances in fast
+high complexity of enforcing some of these policies (e.g.,
+enforcing isolation is NP-complete), \Name encodes the problem
+of enforcing policies as a constraint solving problem 
+and leverages recent advances in fast
 Satisfiability Modulo Theories (SMT) solvers to efficiently search for
 a solution to the constraints. The solution is then translated into
 switch forwarding rules. \Name uses two intuitive relations that
@@ -186,7 +188,7 @@ $1.5-400\times$ (median speedup: 1.6$\times$, average speedup:
  Second, we develop a \emph{divide-and-conquer} synthesis procedure
  that opportunistically leverages the dependency relationships among
  isolation policies to improve synthesis performance. The procedure
- partitions the input policies into effective components such that
+ partitions the input policies into components such that
  \name can synthesize these components separately and faster than the
  complete problem.  Divide-and-conquer synthesis can halve the
  synthesis time for 40\% of synthetic isolation workloads.

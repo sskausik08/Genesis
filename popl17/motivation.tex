@@ -28,13 +28,13 @@ to manage her overall infrastructure.
  tenant controls a number of host machines in the datacenter running
  some of its applications, and specifies path-based policies (as
  opposed to operator's global policies). Tenant policies define
- whether paths can exist among it's hosts, and if so, what additional
+ whether paths can exist among its hosts, and if so, what additional
  properties the paths must satisfy for security, performance or access
  control reasons. \Cref{fig:architecture} shows several tenants who
  differ in the nature of policies they wish to realize; we also show
  the operator policies.
 
- The policies  supported by \Name are as described
+ The policies  supported by \Name are described
  below. Notice that these reflect and, in some cases, extend policies
  that today's enterprises and datacenter operators
  realize in their networks~\cite{mpa-imc15}.
@@ -57,7 +57,7 @@ to manage her overall infrastructure.
 
 \begin{compactitemize}
 \item \textbf{Tenant Policy: Reachability}. This enables network communication
-  between specific pairs of a tenant's virtual instances (VMs),
+  between specific pairs of tenant's virtual instances (VMs),
   applications, or hosts.  In our example, one tenant has defined a
   reachability policy for its two VMs (R2): \texttt{V1 >> V2}, which
   is translated after VM placement (which is handled transparently by
@@ -100,7 +100,8 @@ to manage her overall infrastructure.
   tenant could require that her flows are not affected in any manner
   by any other tenant by strictly isolating the path of the tenant's
   flows from others' flows. In \Cref{fig:architecture}, we have two
-  tenants whose traffic will be isolated from one another, i.e., the
+  tenants whose traffic will be isolated from one another ($R1||R2$), 
+  i.e., the
   network paths used by the tenants will not share any links in the
   topology.  A tenant could also specify isolation for a subset of her
   (performance-sensitive) flows from other flows of the same tenant or
@@ -153,7 +154,8 @@ to manage her overall infrastructure.
   each flow has a predefined load that it imposes on the path it
   uses). In our example in \Cref{fig:architecture}, A2-C2 and A4-C2
   links are of low bandwidth, and the operator wants to ensure that
-  total load on these links does not exceed 100.
+  total load on these links does not exceed 100 
+  ($A2\rightarrow C2: 100, A4 \rightarrow C2:100$).
 
 \item \textbf{Operator Policy: Traffic Engineering}. As an alternative to
   managing strict (link) capacity constraints, operates may also want
@@ -185,10 +187,10 @@ to manage her overall infrastructure.
  \item \textbf{Operator Policy: Handling failure gracefully}. Modern
    networks experience link and switch failures frequently~\cite{}.
    When a failure occurs, we must reconfigure the forwarding rules
-   such that the policies are satisfied. Naively recomputing
+   so that the policies are satisfied. Naively recomputing
    forwarding rules incurs an unduly large overhead because old
    forwarding rules have to be torn down at all switches, and new
-   rules installed. Switch rules deletions/insertions take a
+   rules must be installed. Switch rules deletions/insertions take a
    non-trivial amount of time~\cite{keqiang-sosr15}, potentially
    leading to disruptions. It is therefore desirable to have graceful
    approaches that either minimize the potential for disruption by
