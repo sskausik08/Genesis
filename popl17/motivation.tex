@@ -191,7 +191,7 @@ to manage her overall infrastructure.
    forwarding rules incurs an unduly large overhead because old
    forwarding rules have to be torn down at all switches, and new
    rules must be installed. Switch rules deletions/insertions take a
-   non-trivial amount of time~\cite{keqiang-sosr15}, potentially
+   non-trivial amount of time~\cite{sdnlatency}, potentially
    leading to disruptions. It is therefore desirable to have graceful
    approaches that either minimize the potential for disruption by
    minimizing the number of forwarding rules or switches modified in
@@ -220,8 +220,8 @@ to manage her overall infrastructure.
 %% 1000s of lines, and intricate dependencies may have to be configured
 %% across devices~\cite{benson:complexity:nsdi2009,mpa-imc15}. This
 %% process is also highly error prone~\cite{mpa-imc15}.
-In particular, state-of-the-art SDN frameworks, e.g., Pyretic~\cite{}
-and Frenetic~\cite{}, are insufficient to program networks to realize
+In particular, state-of-the-art SDN frameworks, e.g., Pyretic~\cite{pyretic}
+and Frenetic~\cite{frenetic}, are insufficient to program networks to realize
 them.  This is because the above policies are global and
 cannot be enforced (at least not in an intuitive manner) by
 programming individual behavior of switches.  While some existing

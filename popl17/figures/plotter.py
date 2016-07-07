@@ -109,6 +109,7 @@ plt.savefig('noValleyTacticIsolation.eps', format='eps', dpi=1000,  bbox_inches=
 x = [45,80,125,180]
 
 isolationTopologyFig = plt.figure(4)
+adjustFigAspect(isolationTopologyFig,aspect=1.5)
 noTactic = [0.0122,0.0804,2.0785,9.6241]
 noEdge = [0.0086,0.05433333333,0.2631666667,2.58618]
 len7 = [0.007133333333,0.043,0.2188333333,1.0793]
@@ -121,10 +122,10 @@ plt.plot(x, len7, '#4daf4a', marker="h", markersize=markersize, label="Len <= 7"
 plt.plot(x, len7noEdge, '#984ea3', marker="s", markersize=markersize, label="No Edge and Len <= 7")
 plt.plot(x, noValley, '#377eb8', marker="D", markersize=markersize, label="Valley-Free")
 
-plt.legend(loc='upper left', frameon=False, fontsize=18)
+plt.legend(loc='upper left', frameon=False, fontsize=16)
 plt.xlim(xmax=182)
-plt.xlabel('Number of Switches', fontsize=20)
-plt.ylabel('Avg. Synthesis Time per Class(s)', fontsize=20)
+plt.xlabel('Number of Switches', fontsize=18)
+plt.ylabel('Avg. Synthesis Time \n per Class(s)', fontsize=18)
 
 plt.grid()
 plt.savefig('isolationTopology.eps', format='eps', dpi=1000,  bbox_inches='tight')

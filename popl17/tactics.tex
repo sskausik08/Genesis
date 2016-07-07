@@ -5,18 +5,18 @@
 %- algorithm
 %- brief comparison with netgen
 \section{Tactics} \label{sec:tactic}
-Synthesis for a reachability policy translates to choosing a path from
-the solution space of all paths from the source to destination such
-that the chosen path satisfies all policies, e.g., waypoint traversal
+Synthesizing a data plane translates to choosing paths from
+the solution space of all paths for each reachability policy such
+that the chosen paths satisfy all policies, e.g., waypoint traversal
 and isolation. Datacenter topologies, e.g., fat-trees~\cite{fattree},
 have numerous paths between edge switches to provide full bisection
 bandwidth.  Thus, the solution space of paths for a pair of endpoints
 is large.  For example, consider the fat-tree topology in
 \Cref{fig:fattree}.  The number of paths under length 10 between two
-edge switches in the same pod is 242 and two edge switches in
+edge switches in the same pod is 242 and between two edge switches in
 different pods is 272.  If we consider the synthesis of $n$ packet
 classes, the problem roughly translates to finding a solution in the
-space of size $n \times 242$.
+space of size $(242)^n$.
 \begin{figure}[h]
 	\includegraphics[width=\columnwidth]{figures/fattree.png}
 	\caption{Fat Tree Topology}
@@ -24,27 +24,32 @@ space of size $n \times 242$.
 \end{figure}
 Operators can leverage the network structure of topologies to reduce
 the solution space by specifying undesirable path patterns.  For
-example, one pattern is that a path between two edge switches in a
-fat-tree must not traverse another edge switch.  This pattern will not
-drastically reduce the solution space of paths due to the dense
-interconnect between aggregate and core switches, ensuring that
-synthesis most likely will not fail.
+example, the operator might require that a path between two edge switches in a
+fat-tree does not traverse another edge switch.  This pattern doesn't
+drastically reduce the set of possible paths due to the dense
+interconnect between aggregate and core switches. 
 
 We introduce \emph{tactics} (the name is inspired from the usage in SMT solvers, not 
 proof assistants)
 on labels; abstractions that allow a
 network operator to impose restrictions on the paths. 
 We use the notion of mapping the set of switches to labels to 
-have a coarse-grained way for specifying path patterns. This helps
-to create search strategies which can be used for a majority 
-of the packet classes instead of individual switch-level patterns which
+have a coarse-grained way for specifying path patterns. Tactics on labels 
+help create search strategies which can be used for a majority 
+of the packet classes rather than individual switch-level patterns which
 lack generality.
 
- Let $Lb$ be the set of labels and $S$ be the set of switches in the topology. Let $\phi : S \rightarrow Lb$ be the labeling function that maps each switch to a label in $Lb$. One example for $\phi$ in the fat-tree topology in \Cref{fig:fattree} can be that we map all switches in the same level (core, aggregate or edge) to the same label,
-therefore leveraging the hierarchical structure of the topology. A path $p$ is a word over the alphabet $S$. 
+ Let $Lb$ be the set of labels and $S$ be the set of switches in the topology. 
+ Let $\phi : S \rightarrow Lb$ be the labeling function that maps each switch to a label in $Lb$. 
+% One example for $\phi$ in the fat-tree topology in \Cref{fig:fattree} can be that we map all switches 
+%therefore leveraging the hierarchical structure of the topology. 
+For e.g., we can leverage the hierarchical structure of the fat-tree by
+mapping all switches in the same level (core, aggregate or edge) to the same label.
+A path $p$ is a word over the alphabet $S$. 
 We define the path-labeling function $\Phi : S^* \rightarrow Lb^*$,  which maps each switch in the path to its corresponding 
  label. 
- For example, given the path $p = e1\ a2\ c3\ a4\ e2$, the path-labeling function function produces $\Phi(p) = eacae$ -- map each switch to its corresponding label.
+ For example, given the path $p = e1\ a2\ c3\ a4\ e2$, the path-labeling function function produces 
+ $\Phi(p) = eacae$---maps each switch to its corresponding label.
  Here, $e$, $a$, and $c$ stand for edge, aggregate, and core respectively.
 
 \subsection{Synthesis with Tactics}
