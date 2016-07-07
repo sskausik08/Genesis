@@ -1,7 +1,7 @@
 \subsection{Handling Failures Gracefully}
 
 Another network management consideration for operators is the
-occurence of failures (switches, links etc.), which are all too
+occurrence of failures (switches, links etc.), which are all too
 frequent in datacenter networks~\cite{datacenterfailures}. Failures require
 recomputation of paths compliant to the input policies
 for the modified topology.  A naive approach is to use \name to
@@ -75,7 +75,7 @@ involved.
 
 In this section, we describe the transformation of input policies to
 provide dataplane \emph{t-resilience}~\cite{plinko}, i.e., in the event of
-upto $t$ arbitrary link failures, the synthesized data plane still has
+up to $t$ arbitrary link failures, the synthesized data plane still has
 a path for each packet class satisfying all policies which is achieved
 by synthesizing backup paths that satisfy input policies.  We only
 consider reachability, waypoint, and isolation policies in the input.
@@ -124,7 +124,7 @@ While resilience deals with
 existence of paths during failure scenarios,
 we extend the notion to include policy compliance.
 \begin{mydef}[Policy-compliance]
-	A t-resilient data plane $\xi = (S, L_{pc})$ for class $pc$ is policy-complaint if under
+	A t-resilient data plane $\xi = (S, L_{pc})$ for class $pc$ is policy-compliant if under
 	any failure scenario $\theta \in \Theta(t)$, any path for $pc$ in 
 	$\xi_\theta=(S, L_{pc} \setminus \theta)$ satisfies the input policies. 
 \end{mydef}
@@ -266,7 +266,7 @@ can add additional policies than is required for resilience.
  of $pc_{1A}$. By virtue of the link-isolation policies, $pc_{1B}$ and
  $pc_{2A}$ will be unaffected and can be used as paths for $pc_1$ 
  and $pc_2$ respectively, and $pc_1 <> pc_2$ holds. Now suppose
- $pc_{1B}$ is affected. Similarily, $pc_{1A}$ and $pc_{2A}$ can be used as
+ $pc_{1B}$ is affected. Similarly, $pc_{1A}$ and $pc_{2A}$ can be used as
  the paths for the original packet classes. The same scenarios hold symmetrically
  for $pc_2$, and thus the resilience transformation can be achieved without
  adding link-isolation policies amongst all the packet classes. 
