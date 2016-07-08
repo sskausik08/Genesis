@@ -16,9 +16,103 @@ class ZeppelinInputGenerator(object) :
 		self.pdb = pdb
 
 		swCount = self.topology.getSwitchCount()
-		edgeSwitches = (topology.getSwitchCount() * 2/ 5) - 1  
+		edgeSwitches = (self.topology.getSwitchCount() * 2/ 5) - 1  
 		self.endpoints = []
-		for pc in range(pcRange) :
+		self.destinationDAGs = dict()
+
+
+		currpc = 0
+		while currpc < pcRange : 
+			d = random.randint(0,edgeSwitches)
+			dst = self.topology.getSwID("e" + str(d))
+
+			length = random.randint(2, self.topology.getMaxPathLength())
+
+			if dst not in self.destinationDAGs : 
+				self.destinationDAGs[dst] = dict()
+				self.destinationDAGs[dst][dst] = None
+			dag = self.destinationDAGs[dst]
+
+			# Do a random DFS from dst to length steps
+			diverged = False
+			depth = 0
+			sw = dst
+			while depth < length:
+				neighbours = self.topology.getSwitchNeighbours(sw)
+				while True : 
+					nextsw = neighbours[random.randint(0, len(neighbours) - 1)]
+					if not diverged : 
+						# sw is in dag. Any switch which isnt connected in dag to another switch is
+						if nextsw not in dag or dag[nextsw] == sw :
+							break
+						else : 
+							count = 0
+							for n in neighbours :
+								if n not in dag or dag[n] == sw : 
+									count += 1
+							if count == 0 : 
+								# Cannot proceed. Exit with here. 
+								nextsw = None 
+								break
+
+					else :
+						# path has diverged from dag. Dont intersect with dag again
+						if nextsw not in dag : 
+							break
+						else :
+							# Check if any neighbours is not in dag
+							count = 0
+							for n in neighbours :
+								if n not in dag : 
+									count += 1
+							if count == 0 : 
+								# Cannot proceed. Exit with here. 
+								nextsw = None 
+								break
+
+				# Cannot proceed with DFS. exit.
+				if nextsw == None :
+					break
+				else :
+					if nextsw not in dag : 
+						diverged = True
+						# add nextsw to dag
+						dag[nextsw] = sw
+					sw = nextsw
+					depth += 1
+
+			if depth > 0 : 
+				# sw ->  dst is a valid path
+				path = []
+				nextsw = sw
+				while nextsw <> dst :
+					path.append(nextsw)
+					nextsw = dag[nextsw]
+				path.append(nextsw)
+				if len(path) <= 1: 
+					print "Some error!"
+					exit(0)
+
+				if [sw, dst] in self.endpoints :
+					continue
+					
+				self.endpoints.append([sw, dst])
+				pc = self.pdb.addReachabilityPolicy(None, sw, dst)
+				self.pdb.addPath(pc, path)
+
+				currpc += 1
+
+
+	def getDestinationDAGs(self) :
+		for dst in self.destinationDAGs : 
+			dag = self.destinationDAGs[dst]
+			self.pdb.addDestinationDAG(dst, dag)
+
+		return self.destinationDAGs
+
+	def getEndpoints(self) :
+		return self.endpoints
+
 
 
 
