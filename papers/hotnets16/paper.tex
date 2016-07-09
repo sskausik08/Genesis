@@ -50,8 +50,39 @@ Synthesizing ARCs ...
 \section{Introduction}
 ---Motivating ARC synthesis---
 
+Para 1: Policy Diversity required in enterprise and datacenters
+%With growing diversity of user applications, need for security and compliance,
+%and the advent of cloud computing, operators of datacenters require a 
+%fine-grained control over the multitude of flows to provide functionalities 
+%for the diverse and complex demands by applications using the datacenter 
+%network like waypoints, isolation, bandwidth guarantees etc.
+%While software-defined networks have been a major research area
+%in this direction to have more control over the network, for 
+%various reasons, the adoption of SDNs have been slow. While 
+%legacy networks running distributed protocols like OSPF, 
+%BGP have various benefits like scalability and fast recovery to failures, 
+%it is very difficult to program these networks to accommodate the 
+%diverse requirements of cloud applications. For example, in a network
+%which uses the OSPF protocol, the path between two endpoints 
+%is the shortest path in the network depending on the link weights 
+%of the network, unlike SDNs where operators can add forwarding 
+%rules according the path they desire.
 
-With growing diversity of user applications, need for security and compliance, and the advent of cloud computing, operators of datacenters require a fine-grained control over the multitude of flows to provide functionalities for the diverse and complex demands by applications using the datacenter network like waypoints, isolation, bandwidth guarantees etc. While software-defined networks have been a major research area in this direction to have more control over the network, for various reasons, the adoption of SDNs have been slow. While legacy networks running distributed protocols like OSPF, BGP have various benefits like scalability and fast recovery to failures, it is very difficult to program these networks to accommodate the diverse requirements of cloud applications. For example, in a network which uses the OSPF protocol, the path between two endpoints is the shortest path in the network depending on the link weights of the network, unlike SDNs where operators can add forwarding rules according the path they desire.
+Para 2: SDN Architecture: Centralized Policy Control, Centralized Control Plane
+
+Para 3: Motivate distributing the control plane for fast failover and resilience.
+
+Para 4: Architecture with policy control afford by SDN and advantages of using
+distributed data planes
+
+Para 5: Features of the architecture
+
+--- Network operators can design network management systems
+providing different functionalities like service chaining~\cite{simple} or traffic
+engineering~\cite{} oblivious of the underlying networking protocol.
+
+--- To achieve this
+
 \section{ARC}
 
 Describe ARC features we will synthesize.
