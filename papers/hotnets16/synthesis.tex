@@ -1,13 +1,21 @@
 \section{Synthesis}
+We first describe the synthesis of {\em pure} ARCs, i.e., 
+ARC with weighted edges and no other mechanisms like route-filters.
+A pure ARC enforces the policies, and since no filters are used, the
+control plane is {\em maximal resilient} (all links can be used 
+to reach a destination). 
+% Provide insight about route-filters before.
 
-\subsection{Inputs}
+The inputs to the synthesis algorithm are:
+
 \minisection{Network Data Plane}
 Since most legacy routing protocols are destination-based,
 from an input data plane, we extract the forwarding
 DAG (directed acyclic graph) for each destination
 as the sink. The DAG will be a directed tree with the
 destination as root if the multi-path
-functionality is not used. We define $\Delta$ to 
+functionality is not used. We define $D$ for the 
+set of destinations, and $\Delta$ for  
 the set of destination DAGs. 
 % Write something about changes to the network manager
 
@@ -16,4 +24,10 @@ We define the physical network topology $T = (S, L)$
 as a directed graph where $S$: set of switches, and 
 $L$: set of directional links. 
 
-\subsection{Outputs}
+The output of the synthesis algorithm is a 
+pure ARC with positive weights on the directional links,
+such that the set of forwarding DAGs $\Delta$ are the 
+shortest paths in the ARC. We define $E(sw_1, sw_2)$ as
+the edge weight for link $sw_1 \rightarrow sw_2$. 
+
+\subsection{Linear Equations}
