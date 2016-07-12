@@ -8,18 +8,18 @@ to reach a destination).
 
 The inputs to the synthesis algorithm are:
 
-\minisection{Network Data Plane}
+(1) Network Data Plane:
 Since most legacy routing protocols are destination-based,
 from an input data plane, we extract the forwarding
 DAG (directed acyclic graph) for each destination
 as the sink. The DAG will be a directed tree with the
 destination as root if the multi-path
-functionality is not used. We define $D$ for the 
+functionality is not used. We define $\Omega$ for the 
 set of destinations, and $\Delta$ for  
 the set of destination DAGs. 
 % Write something about changes to the network manager
 
-\minisection{Network Topology}. 
+(2) Network Topology: 
 We define the physical network topology $T = (S, L)$
 as a directed graph where $S$: set of switches, and 
 $L$: set of directional links. 
@@ -28,6 +28,81 @@ The output of the synthesis algorithm is a
 pure ARC with positive weights on the directional links,
 such that the set of forwarding DAGs $\Delta$ are the 
 shortest paths in the ARC. We define $E(sw_1, sw_2)$ as
-the edge weight for link $sw_1 \rightarrow sw_2$. 
+the edge weight variable for link $sw_1 \rightarrow sw_2$. 
 
 \subsection{Linear Equations}
+We construct an directed overlay graph
+by combining all the individual destination DAGs in $\Delta$.
+We can disable all switches and links not in the overlay. 
+These links can have arbitary large weights as they do not
+feature in the shortest path for any destination. 
+Given $\Omega$ and $\Delta$, we generate a set of linear equations
+to find the requisite edge weights. For a path connecting two switches 
+$s \rightarrow^+ t$ in a DAG, 
+to enforce that the path will be the shortest, we need equations
+which ensure the sum of edge weights of the path is strictly smaller than
+the weight of all other paths from $s$ to $t$. However, this can incur
+an exponential blowup in number of equations. Instead, we use distances 
+to reduce the number of equations to a polynomial order. 
+
+\minisection{Distance Equations}
+We define $D(s,t)$ to be the distance variable from $s$ to $t$
+which denotes the absolute shortest distance from $s$ to $t$. 
+Trivially, $D(s,s) = 0$. For a path $s \rightarrow^+ t$ ($len \geq 1$),
+the shortest distance from $s$ to $t$ is the smallest of the distances
+of the paths traversed through the neighbours of $s$ to $t$. Therefore, the
+following set of equations enforce the semantics of distances; 
+here $s \rightarrow sw$ denotes that $sw$ is a neighbour
+of $s$, and $sw \rightarrow^* t$ denotes that the path from $sw$ to $t$ contains
+zero or more edges.
+\begin{multline} \label{eq:dist}
+\forall s, t, sw. (s \rightarrow sw \rightarrow^* t).\\
+D(s, t) \leq E(s, sw) + D(sw, t)
+\end{multline}
+These equations ensure that $D(s,t)$ is not greater than 
+the actual shortest distance from $s$ to $t$.
+
+\minisection{Destination DAG Equations}
+For each destination DAG, we add equations to ensure the 
+edge weights are set such that a shortest-path forwarding in the ARC will 
+follow the same paths as specified in the DAG. We use the following
+property: If a path is the shortest 
+path, then every subpath of the path has to be the shortest path.
+
+Consider a DAG $\xi_d$ for destination $d$. We define two neighbour
+functions: $N(s)$ denotes the neighbours of switch $s$ 
+in the directed overlay graph, and $N(s, \xi_d)$ denotes
+the neighbours of switch $s$ in the destination DAG. 
+We add the following inductive equations to ensure that
+ the shortest distance
+for each subpath of $\xi_d$ is the sum of weights of the edges in the path (as
+each subpath is the shortest path).
+\begin{multline} \label{eq:shortest}
+	\forall d \in \Omega. \forall s, t \in \xi_d. (s \rightarrow^+ t).
+	\forall n \in N(s, \xi_d). \\
+	 D(s,t) = E(s, n) + D(n, t)
+\end{multline}
+These equations ensure that the weights of paths in the DAG $\xi_i$ are equal to
+sum of edges, and thus would be the shortest paths. 
+However, we also need to ensure that other 
+paths are not shorter or equal to these paths. 
+Strict inequality is required because routing protocols
+can load-balance or choose one of the equal weights paths at
+random, both of which violate the DAG requirements.
+Thus, we add the following equations to ensure this property:
+\begin{multline} \label{eq:uniq}
+		\forall d \in \Omega. \forall s, t \in \xi_d. (s \rightarrow^+ t).\\ 
+		\forall n'. (n' \in N(s) \wedge n' \not\in N(s, \xi_d)). \\
+		D(s,t) < E(s, n') + D(n', t)
+\end{multline}
+
+If the path $n' \rightarrow^* t$ 
+is not in any DAG completely, then
+$D(n',t)$ can be smaller than the actual shortest distance by the
+semantics of \Cref{eq:dist} (as
+$D(n',t)$ is not equal to any quantity by \Cref{eq:shortest}).
+However, since $D(n',t)$ is on the RHS of the equations in \Cref{eq:uniq},
+the equations will ensure that the path $s\rightarrow n \rightarrow^* t$
+has strictly greater weight than the path of the DAG.
+
+%TODO: Add some figures

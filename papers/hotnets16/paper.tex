@@ -15,8 +15,12 @@
 \usepackage{colortbl}
 \usepackage{caption}
 \usepackage{todonotes}
+\usepackage{mathtools}
+\usepackage{amsmath}
+\usepackage{cleveref}
 
 \newtheorem{property}{Property}
+\newtheorem{theorem}{Theorem}
 
 \include{defs}
 
@@ -56,20 +60,20 @@ Synthesizing ARCs ...
 \input{introduction}
 
 \section{Related Work}
-
-Fibbing: Lies can cause loops if the centralized controller fails,
-our approach is sounder
+--- Fill In Later ---
+% Fibbing: Lies can cause loops if the centralized controller fails,
+% our approach is sounder
 
 \input{synthesis}
 
-\section{ARC}
-From the ARC paper:
-Modeling the collective behavior of multiple routing in- stances in a series of weighted digraphs in the ARC is en- abled by the fact that most routing protocols in use today employ a cost-based path selection algorithm. For exam- ple, OSPF uses Dijkstra’s algorithm to compute min-cost paths from a source to all destinations; RIP computes short- est paths using the Bellman-Ford algorithm.1 BGP asso- ciates cost labels with paths based on numeric metrics: e.g., operator-defined local preference, path length, and multi- exit discriminator (MED) [5, 11]. These have similar proper- ties to link costs used in IGPs, except BGP costs are per-path rather than per-link.
+% \section{ARC}
+% From the ARC paper:
+% Modeling the collective behavior of multiple routing in- stances in a series of weighted digraphs in the ARC is en- abled by the fact that most routing protocols in use today employ a cost-based path selection algorithm. For exam- ple, OSPF uses Dijkstra’s algorithm to compute min-cost paths from a source to all destinations; RIP computes short- est paths using the Bellman-Ford algorithm.1 BGP asso- ciates cost labels with paths based on numeric metrics: e.g., operator-defined local preference, path length, and multi- exit discriminator (MED) [5, 11]. These have similar proper- ties to link costs used in IGPs, except BGP costs are per-path rather than per-link.
 
 
-Describe ARC features we will synthesize.
+% Describe ARC features we will synthesize.
 
-\section{Model}
+\input{filtering}
 
 \section{Route Filtering}
 
