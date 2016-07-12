@@ -1,0 +1,19 @@
+\section{Synthesis}
+
+\subsection{Inputs}
+\minisection{Network Data Plane}
+Since most legacy routing protocols are destination-based,
+from an input data plane, we extract the forwarding
+DAG (directed acyclic graph) for each destination
+as the sink. The DAG will be a directed tree with the
+destination as root if the multi-path
+functionality is not used. We define $\Delta$ to 
+the set of destination DAGs. 
+% Write something about changes to the network manager
+
+\minisection{Network Topology}. 
+We define the physical network topology $T = (S, L)$
+as a directed graph where $S$: set of switches, and 
+$L$: set of directional links. 
+
+\subsection{Outputs}

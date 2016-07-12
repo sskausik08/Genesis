@@ -16,6 +16,10 @@
 \usepackage{caption}
 \usepackage{todonotes}
 
+\newtheorem{property}{Property}
+
+\include{defs}
+
 \hypersetup{pdfstartview=FitH,pdfpagelayout=SinglePage}
 
 \setlength\paperheight {11in}
@@ -51,11 +55,12 @@ Synthesizing ARCs ...
 
 \input{introduction}
 
-
 \section{Related Work}
 
 Fibbing: Lies can cause loops if the centralized controller fails,
 our approach is sounder
+
+\input{synthesis}
 
 \section{ARC}
 From the ARC paper:

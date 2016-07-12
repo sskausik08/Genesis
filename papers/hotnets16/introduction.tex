@@ -35,19 +35,19 @@ SDN enables operators to enforce various policies in their networks
 with ease. 
 However, the controller is responsible for updating the forwarding
 rules during a failure scenario, thus creating a central point of 
-failure in the network. Funnily, this was one of the design principles
+failure in the network. One of the design principles
 for legacy control planes running distributed networking protocols 
-(e.g., OSPF, BGP, and MPLS). 
+(e.g., OSPF, BGP, and MPLS) was to avoid central points of failure.
 Legacy control planes are scalable, robust, maintain a smaller amount 
 of state in switches compared to SDNs, 
 and split the computational work over all of the switches. 
 Importantly, there is no central point of failure and the switches
-responded locally to failures and converged to a consistent state. 
+respond locally to failures and converge to a consistent state. 
 
 The major shortcoming of using distributed control planes is that
 they are very difficult to reason about and program to cater to 
 complex policies required by operators. To reduce configuration 
-errors, operators adopt use parameterized templated for common
+errors, operators use parameterized templates for common
 tasks, but these approaches do not eliminate the manual effort
 required to decompose the network-wide policy into individual device
 behavior or help enforce custom policy behavior. While SDNs 
@@ -66,9 +66,10 @@ control planes.
 
 \missingfigure[figwidth=\columnwidth]{Architecture}
 
-In this paper, we introduce an architecture which provides the centralized
-policy control afforded by SDN coupled with the advantages of using
-distributed control planes. The novelty of this architecture is leveraging
+In this paper, we introduce an architecture which marries the centralized
+policy control afforded by SDN and the advantages of using
+distributed control planes. 
+The novelty of this architecture is leveraging
 formal reasoning foundations to develop algorithms to 
 synthesize resilient distributed control planes. 
 By incorporating resilience in the synthesis of 
@@ -89,7 +90,7 @@ enforcing the policies as input for synthesizing the control plane. The primary
 advantage of using network data planes as input is the ease of developing
 different network management applications enforcing proactive policies\footnote{
 Traditional control planes cannot support reactive policies, however
-this limitation can be overcome by middleboxes.} 
+middleboxes can overcome this limitation.} 
 as if operating over a software-defined
 network, agnostic of the actual network protocols used in the network. 
 Many network management systems developed for SDNs could be seamlessly
@@ -131,12 +132,12 @@ for multi-path and backup path policies.
 
 
 We further augment this architecture with two important features: 
-a ``Default Off" behavior and synthesizing ARCs to
+a ``Default Off'' behavior and synthesizing ARCs to
 accomodate incremental policy changes. When a packet not matching any headers
 in the FIB (Forwarding Information Base) is encountered, this packet 
 should ideally be sent to the 
 policy controller for action. However, traditional control planes lack this
-``Default Off" behaviour, which is paramount to prevent policy violations with
+``Default Off'' behaviour, which is paramount to prevent policy violations with
 performance and security impacts. Thus, we propose changes to switch hardware/firmware(?) 
 to support this functionality of sending packets with no matching entries to the 
 policy controller (similar to how SDNs act with new packets).
