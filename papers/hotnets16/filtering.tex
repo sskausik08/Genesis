@@ -39,6 +39,9 @@ distributed control planes. Moreover, this ARC would be
 connectivity among endpoints (as all alternate paths
 are blocked by route-filters). 
 
+\subsubsection{Linear Equations with Route-Filters}
+Write about modified rf Linear Equations.
+
 \subsubsection{Diamond Elimination}
 We define the structure shown in \Cref{fig:diamond}
 as a \emph{diamond}. Formally,
@@ -86,3 +89,12 @@ unsatisfiable core, also called IIS (Irreducible Inconsistent Subsystem)
 if all constraints except those in the IIS are removed, the set of
 linear equations is still inconsistent. However, further removing 
 any one constraint of the IIS produces an consistent result. 
+
+A route-filter effectively removes certain equations. 
+Consider the example in \cref{fig:diamond}, where we choose
+a route-filter such that link $s1 \rightarrow s4$ is disabled for
+destination $s6$. While generating \Cref{eq:uniq}, we will not
+generate the following equation: 
+\begin{eqnarray}
+E(s1, s2) + E(s2, s3) < E(s1, s4) + D(s4, s3) \nonumber
+\end{eqnarray} 
