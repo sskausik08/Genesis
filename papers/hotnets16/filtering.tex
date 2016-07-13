@@ -1,4 +1,4 @@
-\section{Route Filtering}
+\subsection{Route Filtering} \label{sec:routefilter}
 \begin{figure}[h!] 
 	\centering
 	\includegraphics[width=\columnwidth]{figures/diamond.eps}
@@ -39,7 +39,7 @@ distributed control planes. Moreover, this ARC would be
 connectivity among endpoints (as all alternate paths
 are blocked by route-filters). 
 
-\subsection{Diamond Elimination}
+\subsubsection{Diamond Elimination}
 We define the structure shown in \Cref{fig:diamond}
 as a \emph{diamond}. Formally,
 consider two switches $s$ (the source of the diamond) 
@@ -66,9 +66,23 @@ Thus, we find all diamonds for all pairs of destination
 DAGs (this is done in polynomial time) and assign a filter
 to one of the two edges at the source of each diamond. 
 
-\subsection{Unsat-Core Learning Approach}
+\subsubsection{Unsat-Core Learning Approach}
 The converse of \thmref{thm:diamond} does not hold, i.e.,
 there exists data planes without diamonds for which
 we cannot synthesize a pure ARC. We illustrate one example
-in \Cref{}. (example figure and why inconsistent).
+in \Cref{}. (example figure and why inconsistent). 
 
+\kausik{This para may need more work.}
+Characterising the properties of structures causing
+inconsistencies in the ARC synthesis is a tough algorithmic
+problem and is an interesting study of future work. An
+efficient algorithm to find the structures causing 
+inconsistencies can be used to assign route-filters in an
+optimal manner, thus maximizing resilience of the control plane.
+
+Modern LP-solvers have efficient procedures to return an
+unsatisfiable core, also called IIS (Irreducible Inconsistent Subsystem)
+~\cite{iis}. Formally, an IIS is a subset of constraints such that
+if all constraints except those in the IIS are removed, the set of
+linear equations is still inconsistent. However, further removing 
+any one constraint of the IIS produces an consistent result. 

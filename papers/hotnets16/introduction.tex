@@ -1,20 +1,4 @@
 \section{Introduction}
-%With growing diversity of user applications, need for security and compliance,
-%and the advent of cloud computing, operators of datacenters require a 
-%fine-grained control over the multitude of flows to provide functionalities 
-%for the diverse and complex demands by applications using the datacenter 
-%network like waypoints, isolation, bandwidth guarantees etc.
-%While software-defined networks have been a major research area
-%in this direction to have more control over the network, for 
-%various reasons, the adoption of SDNs have been slow. While 
-%legacy networks running distributed protocols like OSPF, 
-%BGP have various benefits like scalability and fast recovery to failures, 
-%it is very difficult to program these networks to accommodate the 
-%diverse requirements of cloud applications. For example, in a network
-%which uses the OSPF protocol, the path between two endpoints 
-%is the shortest path in the network depending on the link weights 
-%of the network, unlike SDNs where operators can add forwarding 
-%rules according the path they desire.
 Modern networks, including data center, campus, 
 and wide area networks, 
 must satisfy increasingly complex security, 
@@ -69,32 +53,26 @@ control planes.
 In this paper, we introduce an architecture which marries the centralized
 policy control afforded by SDN and the advantages of using
 distributed control planes. 
-The novelty of this architecture is leveraging
-formal reasoning foundations to develop algorithms to 
-synthesize resilient distributed control planes. 
-By incorporating resilience in the synthesis of 
-control planes, failure handling will be 
-performed in a distributed manner, thus removing any central point 
-of failure. This systematic approach eliminates the ad-hoc failure behaviors of
-control planes deployed in practice due to manual error-prone practices. This
+By carefully engineering the parameters determining the
+behavior of a distributed control plane by solving a set
+of linear equations, we can synthesize control planes which
+enforce a diverse set of policies. 
+Since failure handling is 
+performed in a distributed manner, the behavior of the control
+plane under failure scenarios is incorporated in the synthesis. 
+This systematic approach overcomes the shortcoming of unwanted
+behaviors of the control planes risen by manual error-prone
+practices. This
 formal approach to synthesis of control planes also eliminates the need of 
 verification using tools like batfish, anteater, and arc. 
 
 The major components of synthesizing distributed control planes from 
 policies are three-fold: specifying input policies, the synthesis 
-algorithm, and the output configurations.
-Our architecture would require a input specification which is expressive 
-and extensible to different kinds of policies required by operators. As a 
-first step towards this, we use a network data plane (set of forwarding rules)
-enforcing the policies as input for synthesizing the control plane. The primary 
-advantage of using network data planes as input is the ease of developing
-different network management applications enforcing proactive policies\footnote{
-Traditional control planes cannot support reactive policies, however
-middleboxes can overcome this limitation.} 
-as if operating over a software-defined
-network, agnostic of the actual network protocols used in the network. 
-Many network management systems developed for SDNs could be seamlessly
-integrated to our architecture with minimal changes. 
+algorithm, and the output configurations. The architecture has to able to
+support a wide array of policies common in network management like service
+chaining, traffic engineering and isolation. Moreover, the operator 
+has to specify policies affecting control plane behaviors under failure 
+scenarios for synthesizing resilient control planes. 
 
 The space of output network configurations to enforce a set of policies
 can be large, each output can contain different compositions of 
@@ -105,14 +83,14 @@ network configurations from
 input policies, or tie the synthesis to a particular type of configuration. 
 Instead, we borrow a page from programming languages
 research and
-synthesize an abstract representation for control planes (ARC) from 
-the data plane which can then be translated to actual device configurations.
+synthesize an Abstract Representation for Control planes (ARC) from 
+the data plane; the ARC can then be translated to actual device configurations.
 The ARC uses the notion that most routing protocols in use 
 today employ a cost-based path selection algorithm, thus a graph with
 weights on the links can be used to abstractly represent the control plane such that 
 the path between two points taken in the network would be 
 the shortest weight path in the graph. 
-ARC effectively decouples the policy component with the 
+The ARC effectively decouples the policy component with the 
 actual network implementation, thus, the networking infrastructure could be
 transitioned to different protocols without affecting the policy 
 control of the architecture. From the ARC, we can construct different
@@ -120,33 +98,25 @@ drivers for translation to actual device configurations; these drivers
 can leverage inferences from healthy network practices in 
 real-life networks~\cite{mpa-imc15} to produce ideal network configurations.
 
-Thus, the synthesis of the ARC from a network data plane reduces to a
-variation of the {\em inverse shortest path} problem, a relatively 
-unexplored research problem. The inverse shortest path problem informally,
-given an input set of paths in a directed graph, 
-finds an assignment of weights to edges such that each input
-path is the shortest weighted path between those endpoints in 
-the graph. We tackle this problem using a preliminary 
-LP-approach. This approach can be extended to provide support
-for multi-path and backup path policies. 
+Contributions. \kausik{Fill later}
 
 
-We further augment this architecture with two important features: 
-a ``Default Off'' behavior and synthesizing ARCs to
-accomodate incremental policy changes. When a packet not matching any headers
-in the FIB (Forwarding Information Base) is encountered, this packet 
-should ideally be sent to the 
-policy controller for action. However, traditional control planes lack this
-``Default Off'' behaviour, which is paramount to prevent policy violations with
-performance and security impacts. Thus, we propose changes to switch hardware/firmware(?) 
-to support this functionality of sending packets with no matching entries to the 
-policy controller (similar to how SDNs act with new packets).
-When we encounter a new packet class, operator assistance is required to create policies 
-for this class. Furthermore, operators frequently add or modify policies in practice. 
-However, every time there is a policy change, it is expensive to resynthesize the device
-configurations and deploy them in the network. Thus, 
-operators requires a mechanism to modify the 
-existing configuration with minimal changes to enforce the new policies.
+% We further augment this architecture with two important features: 
+% a ``Default Off'' behavior and synthesizing ARCs to
+% accomodate incremental policy changes. When a packet not matching any headers
+% in the FIB (Forwarding Information Base) is encountered, this packet 
+% should ideally be sent to the 
+% policy controller for action. However, traditional control planes lack this
+% ``Default Off'' behaviour, which is paramount to prevent policy violations with
+% performance and security impacts. Thus, we propose changes to switch hardware/firmware(?) 
+% to support this functionality of sending packets with no matching entries to the 
+% policy controller (similar to how SDNs act with new packets).
+% When we encounter a new packet class, operator assistance is required to create policies 
+% for this class. Furthermore, operators frequently add or modify policies in practice. 
+% However, every time there is a policy change, it is expensive to resynthesize the device
+% configurations and deploy them in the network. Thus, 
+% operators requires a mechanism to modify the 
+% existing configuration with minimal changes to enforce the new policies.
 
 % --- Network operators can design network management systems
 % providing different functionalities like service chaining~\cite{simple} or traffic

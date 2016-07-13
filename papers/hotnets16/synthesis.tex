@@ -1,9 +1,66 @@
-\section{Synthesis}
+\section{ARC Synthesis}
+Operators require support for a diverse collection of policies, 
+like service chaining, traffic engineering, and isolation. Also,
+since failure is handled in a distributed manner, operators need 
+support for policies which specify resilience properties and behavior
+of traffic under failure scenarios. 
+Earlier 
+work in this area has focused on finding ideal OSPF weights for 
+traffic engineering~\cite{te-ospf}, but such approaches are 
+inherently tied with the policies supported, and are not extensible 
+to other policies easily. Our preliminary approach to this problem was
+to specify policies using SMT theories like propositional logic and 
+linear rational arithmetic and use off-the-shelf SMT solvers~\cite{z3} 
+to synthesize the ARC. However, current SMT solvers are incapable of 
+scaling to even small-sized topologies and number of policies, majorly
+due to the fact the paths in the network are based on the weights in a 
+complicated manner (shortest-path) which increases the complexity of the
+encoding in SMT. Synthesizing resilient control planes with this 
+approach is intractable with current state-of-art SMT solvers.
+
+As a first step towards ARC synthesis, 
+we use a network data plane (set of forwarding paths)
+enforcing the operator-specified policies 
+as input for synthesizing the ARC. The  
+advantage of using network data planes as 
+input is the ease of developing
+different network management applications 
+enforcing proactive policies\footnote{
+Traditional control planes cannot support reactive policies, however
+middleboxes can overcome this limitation.} 
+as if operating over a software-defined
+network, agnostic of the actual network protocols used in the network. 
+Many existing network management systems like Merlin~\cite{merlin} 
+and SIMPLE~\cite{simple}\footnote{
+Traditional control planes cannot support 
+paths with loops for service chaining cannot} developed for SDNs could be seamlessly
+integrated to the architecture with minimal changes.  
+
+For a given network data plane, the synthesis of the ARC reduces to a
+variation of the {\em inverse shortest path} problem, a relatively 
+unexplored algorithmic problem. 
+Given an input set of paths in a directed graph, the inverse shortest path problem 
+informally, is the problem of finding an assignment of weights to edges 
+such that each input path is the shortest weighted path between those endpoints in 
+the graph. We attempt to tackle synthesis of ARCs by formulating a set of linear
+equations  equipped with an unsatisfiable core learning approach. 
+
+While the ARC synthesis from data planes can enforce 
+policies by the distributed control plane, it does not
+encapsulate resilience properties of the control plane. 
+To accomodate resilience properties in the ARC synthesis,
+we envision two different mechanisms: concrete
+backup paths and path-level policies under failure scenarios. 
+We discuss this in \secref{sec:resilience}. \kausik{Could expand more,
+write after resilience section is complete}
+
+\subsection{Pure ARC Synthesis}
 We first describe the synthesis of {\em pure} ARCs, i.e., 
-ARC with weighted edges and no other mechanisms like route-filters.
-A pure ARC enforces the policies, and since no filters are used, the
-control plane is {\em maximal resilient} (all links can be used 
-to reach a destination). 
+ARC with only weighted edges and no other mechanisms like route-filters.
+A pure ARC is an ideal control plane because it is able to
+enforce the data plane with carefully engineered edge weights
+and does not disable any link in the network (e.g., route filters
+(\secref{sec:routefilter})), thus providing maximal resilience. 
 % Provide insight about route-filters before.
 
 The inputs to the synthesis algorithm are:
@@ -29,8 +86,11 @@ pure ARC with positive weights on the directional links,
 such that the set of forwarding DAGs $\Delta$ are the 
 shortest paths in the ARC. We define $E(sw_1, sw_2)$ as
 the edge weight variable for link $sw_1 \rightarrow sw_2$. 
+We generate a set of linear equations to obtain edge weights,
+which are provided to a LP-solver without any optimization
+objectives. 
 
-\subsection{Linear Equations}
+\subsubsection{Linear Equations}
 We construct an directed overlay graph
 by combining all the individual destination DAGs in $\Delta$.
 We can disable all switches and links not in the overlay. 
