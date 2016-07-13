@@ -79,3 +79,5 @@ genesis.synctex.gz(busy)
 paper.out
 paper.pdf
 paper.ps
+paper.blg
+paper.bbl
