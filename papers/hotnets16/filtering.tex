@@ -7,22 +7,68 @@
 Pure ARCs cannot be synthesized for all data planes. Consider the data
 plane in \Cref{fig:diamond}. 
 There exists no solution to the edge weights for this data plane. This is because 
-there are two disjoint shortest paths connecting $s1$ and $s3$, and each path will have constraints
-asserting it is the shortest of all paths. We define this structure as a \emph{diamond}. 
-Formally,
-consider two switches $s$ and $t$. There are two different destination DAGs with 
-paths starting from $s$ such that they forward to different switches from $s$  
+there are two disjoint shortest paths connecting $s1$ and $s3$, and each path will have 
+constraints
+asserting it is the shortest of the two paths. 
+
+How can we synthesize an ARC for the above scenario? 
+If we could disable the edge
+$s1 \rightarrow s4$ for destination $s6$, then we can synthesize ARC weights
+such that path $s1 \rightarrow s2 \rightarrow s3$ is taken to reach $s6$, 
+even if the actual shortest path
+from $s1$ to $s3$ is via $s4$ and $s5$. 
+If a route-filter is added on switch $s4$, $s4$ 
+will not advertise a route for $s6$ to $s1$, so 
+$s1$ will forward to $s2$ and not to $s4$
+to reach $s6$. The forwarding of packets destined
+for $s7$ are not affected, and they will be sent from
+$s1$ to $s4$ as it is the shortest path.
+Thus, by incorporating route-filters, we can
+disable certain links in the topology 
+for specific destinations, and increase the 
+expressiveness of our synthesis. \kausik{expressiveness
+may not be the right term.}
+
+Given a data plane, we can trivially find an 
+ARC enforcing the data plane by placing 
+route-filters on all alternate paths (ref to fig)
+except the shortest paths of the DAGs. However, this
+ARC lacks the resilience properties we desire in
+distributed control planes. Moreover, this ARC would be
+0-resilient, and a single link failure can sever 
+connectivity among endpoints (as all alternate paths
+are blocked by route-filters). 
+
+\subsection{Diamond Elimination}
+We define the structure shown in \Cref{fig:diamond}
+as a \emph{diamond}. Formally,
+consider two switches $s$ (the source of the diamond) 
+and $t$ (the target of the diamond).
+There exist two different destination DAGs with 
+paths starting from $s$ such that they forward t
+o different switches from $s$  
 and these divergent paths from $s$ converge
-at the switch $t$ first. 
-\begin{theorem}
+at the switch $t$ first. A diamond is 
+a reason for the ARC synthesis resulting in no
+solution. 
+\begin{theorem} \label{thm:diamond}
 If the data plane contains a diamond, then no pure ARC  
 can be synthesized for the data plane.
 \end{theorem}
-The converse is not true and discussed in <someplace>.
+Thus, to generate an ARC, we need route-filters
+to eliminate the diamond structures. Consider
+the diamond in \Cref{fig:diamond}. There are two choices
+of route-filters: the $s1-s2$ edge for destination $s7$ 
+and the $s1-s4$ edge for destination $s6$, out of which,
+at least one filter is required to eliminate the 
+inconsistency in the linear equations due to the diamond.
+Thus, we find all diamonds for all pairs of destination
+DAGs (this is done in polynomial time) and assign a filter
+to one of the two edges at the source of each diamond. 
 
-How does route-filtering work in this scenario? If we could disable the edge
-$s1 \rightarrow s4$ for destination $s6$, then the ARC weights can be synthesized
-such that $s1 \rightarrow s2 \rightarrow s3$ is taken, even if the actual shortest path
-from $s1$ to $s3$ is via $s4$ and $s5$. Thus, by incorporating route-filters, we can
-disable certain links in the topology for destinations, and increase the 
-expressiveness of our synthesis. 
+\subsection{Unsat-Core Learning Approach}
+The converse of \thmref{thm:diamond} does not hold, i.e.,
+there exists data planes without diamonds for which
+we cannot synthesize a pure ARC. We illustrate one example
+in \Cref{}. (example figure and why inconsistent).
+
