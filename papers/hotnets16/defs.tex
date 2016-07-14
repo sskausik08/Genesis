@@ -53,7 +53,18 @@
    \vspace{-1ex}
    \end{enumerate}
 }
-\newcommand{\loris}[1]{\textcolor[rgb]{0.00,0.00,1.00}{L: #1}}
-\newcommand{\aditya}[1]{\textcolor[rgb]{0.00,0.00,1.00}{A:#1}}
-\newcommand{\kausik}[1]{\textcolor[rgb]{0.2,0.80,0.2}{K: #1}}
-\newcommand{\aaron}[1]{\textcolor[rgb]{0.00,0.2,0.6}{AGJ: #1}}
+
+\ifdefined\commentenabled
+    \newcommand{\loris}[1]{\textcolor[rgb]{0.00,0.00,1.00}{L: #1}}
+    \newcommand{\aditya}[1]{\textcolor[rgb]{0.00,0.00,1.00}{A:#1}}
+    \newcommand{\kausik}[1]{\textcolor[rgb]{0.2,0.80,0.2}{K: #1}}
+    \newcommand{\aaron}[1]{\textcolor[rgb]{0.00,0.2,0.6}{AGJ: #1}}
+\else
+    \newcommand{\loris}[1]{}
+    \newcommand{\aditya}[1]{}
+    \newcommand{\kausik}[1]{}
+    \newcommand{\aaron}[1]{}
+\fi
+
+\newcommand{\ARC}{ARC\xspace}
+\newcommand{\ARCs}{ARCs\xspace}
