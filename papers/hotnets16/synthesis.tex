@@ -1,17 +1,17 @@
 \section{ARC Synthesis}
-Operators require support for a diverse collection of policies, 
-like service chaining, traffic engineering, and isolation. Also,
-since failure is handled in a distributed manner, operators need 
-support for policies which specify resilience properties and behavior
-of traffic under failure scenarios. 
-Earlier 
-work in this area has focused on finding ideal OSPF weights for 
-traffic engineering~\cite{te-ospf}, but such approaches are 
-inherently tied with the policies supported, and are not extensible 
-to other policies easily. 
+% Operators require support for a diverse collection of policies, 
+% like service chaining, traffic engineering, and isolation. Also,
+% since failure is handled in a distributed manner, operators need 
+% support for policies which specify resilience properties and behavior
+% of traffic under failure scenarios. 
+% Earlier 
+% work in this area has focused on finding ideal OSPF weights for 
+% traffic engineering~\cite{te-ospf}, but such approaches are 
+% inherently tied with the policies supported, and are not extensible 
+% to other policies easily. 
 
-Our preliminary approach to this problem was
-to specify policies using SMT theories like propositional logic and 
+In our preliminary approach to ARC synthesis, 
+we tried to specify policies using SMT theories like propositional logic and 
 linear rational arithmetic and use off-the-shelf SMT solvers~\cite{z3} 
 to synthesize the ARC. However, current SMT solvers are incapable of 
 scaling to even small-sized topologies and number of policies, majorly
