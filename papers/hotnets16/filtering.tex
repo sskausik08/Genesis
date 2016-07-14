@@ -1,7 +1,7 @@
 \subsection{Route Filtering} \label{sec:routefilter}
 \begin{figure}[h!] 
 	\centering
-	\includegraphics[width=\columnwidth]{figures/diamond.eps}
+	\includegraphics[width=0.8\columnwidth]{figures/diamond.eps}
 	\caption{Data plane example which requires route-filtering} \label{fig:diamond}
 \end{figure}
 Pure ARCs cannot be synthesized for all data planes. Consider the data
@@ -46,6 +46,12 @@ that the ARC synthesis succeeds, or we can choose a
 subset that maximizes the resilience of each path 
 in terms of number of edge-disjoint paths in the ARC
 for each endpoint. 
+
+\begin{figure}
+	\centering
+	\includegraphics[width=\columnwidth]{figures/arcSynthesis.eps}
+	\caption{Arc Synthesis} \label{fig:diamond}
+\end{figure}
 
 \subsubsection{Linear Equations with Route-Filters}
 Given a set of route-filters, we generate a modified 
@@ -143,14 +149,15 @@ set of linear equations are consistent. The complete
 algorithm of finding the set of route-filters is shown 
 in Fig <>.
 
-Given an unsat-core, we have a set of route-filters (obtained
-from the linear inequalities of \Cref{sec:dist}) of which we 
-need to choose one to eliminate this unsat-core. Thus, synthesis 
+Synthesis 
 of the ARC with route-filters can be 
 described as follows: given the set of all
 unsat-cores for the original set of equations, find a 
 set of route-filters such that each unsat-cores are eliminated
-by a route-filter in the set. 
+by a route-filter in the set. However, it 
+Given an unsat-core, we have a set of route-filters (obtained
+from the linear inequalities of \Cref{sec:dist}) of which we 
+need to choose one to eliminate this unsat-core. T
 We can 
 adopt a greedy approach (based on the lines of 
 set cover \cite{}) of picking a route-filter which 
@@ -166,6 +173,5 @@ property of the control plane (t+1 edge-disjoint paths indicate
 {\em t-resilience}). Thus, when given an unsat-core, we can choose
 a route-filter which does not affect the number of edge-disjoint paths
 for that pair of endpoints.
-
 
 

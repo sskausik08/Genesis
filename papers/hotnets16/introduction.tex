@@ -19,7 +19,9 @@ SDN enables operators to enforce various policies in their networks
 with ease. 
 However, the controller is responsible for updating the forwarding
 rules during a failure scenario, thus creating a central point of 
-failure in the network. One of the design principles
+failure in the network. 
+
+One of the design principles
 for legacy control planes running distributed networking protocols 
 (e.g., OSPF, BGP, and MPLS) was to avoid central points of failure.
 Legacy control planes are scalable, robust, maintain a smaller amount 
@@ -34,11 +36,11 @@ complex policies required by operators. To reduce configuration
 errors, operators use parameterized templates for common
 tasks, but these approaches do not eliminate the manual effort
 required to decompose the network-wide policy into individual device
-behavior or help enforce custom policy behavior. While SDNs 
+behaviors or help enforce custom policy behavior. While SDNs 
 were introduced to ameliorate the programmability of legacy control planes, 
 for various reasons, 
 SDN deployment in the industry has been slow, and many 
-networks still rely on these ``tried-and-tested" distributed 
+networks still rely on these ``tried-and-tested'' distributed 
 control planes. 
 
 % \begin{figure}
@@ -51,11 +53,11 @@ control planes.
 \missingfigure[figwidth=\columnwidth]{Architecture}
 
 In this paper, we introduce an architecture which marries the centralized
-policy control afforded by SDN and the advantages of using
+policy control provided by SDN and the advantages of using
 distributed control planes. 
 By carefully engineering the parameters determining the
-behavior of a distributed control plane by solving a set
-of linear equations, we can synthesize control planes which
+behavior of a distributed control plane, 
+we can synthesize control planes which
 enforce a diverse set of policies. 
 Since failure handling is 
 performed in a distributed manner, the behavior of the control
@@ -64,23 +66,25 @@ This systematic approach overcomes the shortcoming of unwanted
 behaviors of the control planes risen by manual error-prone
 practices. This
 formal approach to synthesis of control planes also eliminates the need of 
-verification using tools like batfish, anteater, and arc. 
+verification using tools like batfish~\cite{batfish} and anteater~\cite{anteater}.
 
 The major components of synthesizing distributed control planes from 
 policies are three-fold: specifying input policies, the synthesis 
-algorithm, and the output configurations. The architecture has to able to
+algorithm, and the output configurations. The architecture must 
 support a wide array of policies common in network management like service
-chaining, traffic engineering and isolation. Moreover, the operator 
-has to specify policies affecting control plane behaviors under failure 
-scenarios for synthesizing resilient control planes. 
+chaining, traffic engineering, and isolation. The architecture must
+support policies determining control plane behavior under failure scenarios,
+resulting in synthesis of resilient control planes. 
 
-The space of output network configurations to enforce a set of policies
-can be large, each output can contain different compositions of 
+The solution space of output network configurations to enforce a set of policies
+is large; configurations can use different 
 network protocols (e.g., only BGP, only OSPF or a hybrid) and
-mechanisms used (e.g., number of route filters, access control lists
-or protocol-specific variables) which can complicate the synthesis of
+mechanisms (e.g., number of route filters, access control lists
+or protocol-specific variables). The large solution space
+of configurations complicates the synthesis of
 network configurations from
-input policies, or tie the synthesis to a particular type of configuration. 
+input policies, 
+or ties the synthesis to a particular type of configuration. 
 Instead, we borrow a page from programming languages
 research and
 synthesize an Abstract Representation for Control planes (ARC) from 

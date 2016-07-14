@@ -8,7 +8,9 @@ Earlier
 work in this area has focused on finding ideal OSPF weights for 
 traffic engineering~\cite{te-ospf}, but such approaches are 
 inherently tied with the policies supported, and are not extensible 
-to other policies easily. Our preliminary approach to this problem was
+to other policies easily. 
+
+Our preliminary approach to this problem was
 to specify policies using SMT theories like propositional logic and 
 linear rational arithmetic and use off-the-shelf SMT solvers~\cite{z3} 
 to synthesize the ARC. However, current SMT solvers are incapable of 
@@ -128,7 +130,11 @@ edge weights are set such that a shortest-path forwarding in the ARC will
 follow the same paths as specified in the DAG. We use the following
 property: If a path is the shortest 
 path, then every subpath of the path has to be the shortest path.
-
+\begin{figure}[h!] 
+	\centering
+	\includegraphics[width=0.8\columnwidth]{figures/distanceEquation.eps}
+	\caption{Distance equation} \label{fig:disteq}
+\end{figure}
 Consider a DAG $\xi_d$ for destination $d$. We define two neighbour
 functions: $N(s)$ denotes the neighbours of switch $s$ 
 in the directed overlay graph, and $N(s, \xi_d)$ denotes
@@ -142,14 +148,14 @@ random, both of which violate the DAG requirements. The weight
 of a path in the DAG can be expressed as the sum of weights of 
 edges along the path. 
 Thus, we add the following equations to ensure the
-shortest path property:
+shortest path property (\Cref{fig:disteq} illustrates 
+an example).
 \begin{multline} \label{eq:uniq}
 		\forall d \in \Omega. \forall s, t \in \xi_d. (s \rightarrow^+ t).\\ 
 		\forall n'. (n' \in N(s) \wedge n' \not\in N(s, \xi_d)). \\
 		\sum_{\mathclap{\substack{(sw_1, sw_2) \in (s \rightarrow^+ t)}}} 
 		E(sw_1, sw_2) < E(s, n') + D(n', t)
 \end{multline}
-
 If the path $n' \rightarrow^* t$ 
 is not in any DAG completely, then
 $D(n',t)$ can be smaller than the actual shortest distance by the
