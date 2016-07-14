@@ -90,7 +90,7 @@ We generate a set of linear equations to obtain edge weights,
 which are provided to a LP-solver without any optimization
 objectives. 
 
-\subsubsection{Linear Equations}
+\subsubsection{Linear Equations} \label{sec:linearequations}
 We construct an directed overlay graph
 by combining all the individual destination DAGs in $\Delta$.
 We can disable all switches and links not in the overlay. 
@@ -133,27 +133,21 @@ Consider a DAG $\xi_d$ for destination $d$. We define two neighbour
 functions: $N(s)$ denotes the neighbours of switch $s$ 
 in the directed overlay graph, and $N(s, \xi_d)$ denotes
 the neighbours of switch $s$ in the destination DAG. 
-We add the following inductive equations to ensure that
- the shortest distance
-for each subpath of $\xi_d$ is the sum of weights of the edges in the path (as
-each subpath is the shortest path).
-\begin{multline} \label{eq:shortest}
-	\forall d \in \Omega. \forall s, t \in \xi_d. (s \rightarrow^+ t).
-	\forall n \in N(s, \xi_d). \\
-	 D(s,t) = E(s, n) + D(n, t)
-\end{multline}
-These equations ensure that the weights of paths in the DAG $\xi_i$ are equal to
-sum of edges, and thus would be the shortest paths. 
-However, we also need to ensure that other 
-paths are not shorter or equal to these paths. 
+Since, each subpath of $\xi_d$ is the shortest path,
+we need to ensure that all other
+paths are not shorter or equal to these paths.  
 Strict inequality is required because routing protocols
 can load-balance or choose one of the equal weights paths at
-random, both of which violate the DAG requirements.
-Thus, we add the following equations to ensure this property:
+random, both of which violate the DAG requirements. The weight
+of a path in the DAG can be expressed as the sum of weights of 
+edges along the path. 
+Thus, we add the following equations to ensure the
+shortest path property:
 \begin{multline} \label{eq:uniq}
 		\forall d \in \Omega. \forall s, t \in \xi_d. (s \rightarrow^+ t).\\ 
 		\forall n'. (n' \in N(s) \wedge n' \not\in N(s, \xi_d)). \\
-		D(s,t) < E(s, n') + D(n', t)
+		\sum_{\mathclap{\substack{(sw_1, sw_2) \in (s \rightarrow^+ t)}}} 
+		E(sw_1, sw_2) < E(s, n') + D(n', t)
 \end{multline}
 
 If the path $n' \rightarrow^* t$ 

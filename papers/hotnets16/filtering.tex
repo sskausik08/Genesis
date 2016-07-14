@@ -31,16 +31,44 @@ may not be the right term.}
 
 Given a data plane, we can trivially find an 
 ARC enforcing the data plane by placing 
-route-filters on all alternate paths (ref to fig)
+route-filters on all alternate paths ()%\Cref{fig:routefilter})
 except the shortest paths of the DAGs. However, this
 ARC lacks the resilience properties we desire in
 distributed control planes. Moreover, this ARC would be
 0-resilient, and a single link failure can sever 
 connectivity among endpoints (as all alternate paths
-are blocked by route-filters). 
+are blocked by route-filters). Thus, our objective is
+to pick a subset of the route-filters for each destination
+as illustrated by <ref-to-rf-fig> such that the 
+ARC satisfies certain properties. For e.g., we can
+try to find the optimal number of route-filters such 
+that the ARC synthesis succeeds, or we can choose a
+subset that maximizes the resilience of each path 
+in terms of number of edge-disjoint paths in the ARC
+for each endpoint. 
 
 \subsubsection{Linear Equations with Route-Filters}
-Write about modified rf Linear Equations.
+Given a set of route-filters, we generate a modified 
+set of linear equations than the set in \secref{sec:linearequations}
+such that the semantics of route-filters is satisfied. 
+For convenience, we define $RF(sw_1, sw_2, d) = True$ 
+if a route filter disables the link $sw_1 \rightarrow sw_2$
+for forwarding to destination $d$ (The route filter will
+actually be present on $sw_2$). 
+
+When $RF(sw_1, sw_2, d)$ is set, we can ignore the 
+weight of any path using the $sw_1 \rightarrow sw_2$
+link for destination $d$, and thus 
+the weight of the path of DAG $\xi_d$
+starting at $sw_1$ need not be smaller than the path weights
+using the the $sw_1 \rightarrow sw_2$ link. Thus,
+we prune \Cref{eq:uniq} to enforce the route-filter accordingly:
+\begin{multline} \label{eq:uniq}
+		\forall d \in \Omega. \forall s, t \in \xi_d. (s \rightarrow^+ t).\\ 
+		\forall n'. (n' \in N(s) \wedge n' \not\in N(s, \xi_d) \wedge \neg RF(s,n',d)). \\
+		\sum_{\mathclap{\substack{(sw_1, sw_2) \in (s \rightarrow^+ t)}}} 
+		E(sw_1, sw_2) < E(s, n') + D(n', t)   
+\end{multline}
 
 \subsubsection{Diamond Elimination}
 We define the structure shown in \Cref{fig:diamond}
@@ -90,11 +118,54 @@ if all constraints except those in the IIS are removed, the set of
 linear equations is still inconsistent. However, further removing 
 any one constraint of the IIS produces an consistent result. 
 
-A route-filter effectively removes certain equations. 
-Consider the example in \cref{fig:diamond}, where we choose
-a route-filter such that link $s1 \rightarrow s4$ is disabled for
-destination $s6$. While generating \Cref{eq:uniq}, we will not
-generate the following equation: 
+In the case of the ARC synthesis, suppose we obtain
+a unsatisfiable core (unsat-core) from the solver. 
+Some linear inequalities 
+from \Cref{sec:uniq} would be present in the unsat-core 
+(an unsat-core cannot consist only 
+inequalities from \Cref{sec:dist}, as all distances set to zero
+would trivially be consistent). Each linear inequality
+in the unsat-core will be of the form:
 \begin{eqnarray}
-E(s1, s2) + E(s2, s3) < E(s1, s4) + D(s4, s3) \nonumber
-\end{eqnarray} 
+	\sum_{\mathclap{\substack{(sw_1, sw_2) \in (s \rightarrow^+ t)}}} 
+		E(sw_1, sw_2) < E(s, n') + D(n', t)  \nonumber
+\end{eqnarray}
+If we set $RF(s,n',d) = True$ where the DAG of destination $d$
+contains the $s \rightarrow^+ t$, then this inequality would be pruned,
+and the set of equations in the unsat-core will be consistent (though
+the whole set of equations may still be inconsistent) by the 
+irreducible property of the unsat-core. By adding this route-filter
+permanently to the ARC, we are assured that this unsat-core will 
+never be a cause of inconsistency. Thus, our unsat-core learning
+approach uses the unsat-core to learn where to place a route-filter,
+and we repeat this process with an updated set of filters till the
+set of linear equations are consistent. The complete 
+algorithm of finding the set of route-filters is shown 
+in Fig <>.
+
+Given an unsat-core, we have a set of route-filters (obtained
+from the linear inequalities of \Cref{sec:dist}) of which we 
+need to choose one to eliminate this unsat-core. Thus, synthesis 
+of the ARC with route-filters can be 
+described as follows: given the set of all
+unsat-cores for the original set of equations, find a 
+set of route-filters such that each unsat-cores are eliminated
+by a route-filter in the set. 
+We can 
+adopt a greedy approach (based on the lines of 
+set cover \cite{}) of picking a route-filter which 
+eliminates the maximum number of unsat-cores. However, 
+finding the number of unsat-cores a route-filter eliminates
+is an open problem and instrumental in minimizing the number 
+of route-filters.
+
+Alternatively, another scheme we propose in choosing route-filters
+is to maximize the number of edge-disjoint paths for each pair of
+endpoints in the input data plane, thus maximizing the resilience 
+property of the control plane (t+1 edge-disjoint paths indicate
+{\em t-resilience}). Thus, when given an unsat-core, we can choose
+a route-filter which does not affect the number of edge-disjoint paths
+for that pair of endpoints.
+
+
+
