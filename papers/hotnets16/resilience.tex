@@ -1,30 +1,88 @@
 \subsection{Resiliency}
-Intro
 
-\subsubsection{Backup paths}
-\kausik{Encoding backup paths}
-
-\subsubsection{Resilience Policies}
-\kausik{Talk here about ARC repair (some other term for that).}
+%\subsubsection{Backup paths}
+%\kausik{Encoding backup paths}
+%
+%\subsubsection{Resilience Policies}
+%\kausik{Talk here about ARC repair (some other term for that).}
 
 Although the \ARC synthesized using the aforementioned approach represents a
 control plane that will compute policy-compliant paths in the absence of
-failures, it does not guarantee policy compliance is preserved when failures
-occur. For example, if a link along the shortest path (\aaron{refer to some
-example figure}) fails, the next shortest path will become the new path to
-read the destination. The control plane will automatically compute the new
-shortest path (assuming one exists), thus preserving connectivity. However,
-the new path may not conform to the same policies as the path in the original
-failure-free data plane from which the \ARC was synthesized: e.g., the new
-path may no longer traverse a waypoint or have the same bandwidth capacity.
+failures, it does not guarantee policy compliance when failures occur. For
+example, if a link along the shortest path (\aaron{refer to some example
+figure}) fails, the next shortest path will become the new path to reach the
+destination. The control plane automatically computes the new shortest path
+(assuming one exists), thus preserving connectivity. However, the new path may
+not conform to the same policies as the path in the original failure-free data
+plane from which the \ARC was synthesized: e.g., the new path may no longer
+traverse a waypoint or have the same bandwidth capacity.
 
+\minisection{Backup paths}
 Given the high frequency of failures in data center and enterprise campus
-networks, it is desirable to synthesize a control plane that computes
-policy-compliant paths under a reasonable number (denoted by $t$) of link
-failures.\footnote{The precise number of link failures that can/should be
-tolerated depends on the redundancy available in the physical topology and the
-importance of the network.}  \aaron{TODO: Talk about synthesizing from
-multiple data planes and the difficulty in providing multiple data planes as
-well as having pre-determined paths being too constraining. Suggest repair as
-an alternative.}
+networks~\cite{TODO}, it is desirable to synthesize a control plane that
+computes {\em policy-compliant backup paths}. In particular, we want a network
+to be {\em t-resilient}~\cite{TODO}: i.e., the control plane will compute a
+policy-compliant backup path when there are $t$ or fewer link failures in the
+network.\footnote{The value of $t$ depends on operator objectives and the
+level of redundancy available in the physical topology.}
 
+While it is desirable for the backup paths to satisfy all of the same policies
+as the primary path---e.g., reachability, isolation, waypoint traversals,
+bandwidth capacity, etc.---not all policies are equally important.  Policies
+pertaining to security (e.g., reachability, isolation, and some waypoint
+traversals, such as firewalls) are of the utmost importance, because they
+protect the network and its services from attacks and unauthorized accesses.
+In contrast, policies pertaining to performance (e.g., bandwidth capacity and
+some waypoint traversals, such as caches) are desirable, but the consequences
+of violating these policies are often less severe, partially because such
+policies are typically ``best effort'' even in the non-failure
+case.\footnote{In some networks, performance-related policies can have a major
+impact on a company's bottom-line: e.g., degradation in video streaming
+performance due to insufficient bandwidth may cause customers to cancel their
+subscription~\cite{TBD}. However, a centrally controlled, programmable control
+plane~\cite{swan, b4} is better suited to these scenarios, so we do not
+consider them in this work.} Consequently, we focus on ensuring the control
+plane we generate computes backup paths that satisfy the former class of
+policies. \aaron{Are we doing ourselves a disservice by eschewing
+performance-related policies for backup paths, especially for a HotNets
+paper?}
+
+\minisection{Approaches}
+One approach to generating a t-resilient control plane is to synthesize an
+\ARC from a {\em set} of data planes. The set must include a policy-compliant
+data plane for each possible combination of up to $t$ failed links. For a
+network with $n$ links, there are $\sum_{i=0}^{t} \frac{n!}{t! * (n-t)!}$ such
+data planes. Expecting a network operator to provide these data planes,
+constructed using a manual or automated process, goes against the purpose of
+automatically generating a policy-compliant control plane: reducing the burden
+on network operators and the potential for human error. Moreover, if the data
+planes needed for all possible failure scenarios are already available, then
+we can trivially install the corresponding rules on network devices, even if
+the devices are not directly programmable~\cite{TODO}. This avoids the need
+for a control plane that (re-)computes the data planes at runtime.
+Additionally, it may not be possible to produce the collective set of backup
+paths using a single assignment of edge weights. For example, consider the two
+backup paths shown in \figref{fig:TODO}; there is no possible assignment of
+edge weights such that the shortest path computed over the resulting graph
+under each of the failure scenarios equals the depicted backup paths.
+
+Instead, we 
+%synthesize an \ARC that computes paths equivalent to those present
+%in an operator-provided data plane corresponding to a failure-free state, as
+%described above (\secref{sec:}), and then we
+{\em transform} the \ARC synthesized from a single data plane
+(\secref{sec:}) such that all paths computed over the transformed \ARC under
+up to $t$ link failures are policy-compliant. This avoids the need for an
+operator to provide a data plane for every failure scenario. Instead, an
+operator only needs to provide: (1) a single data plane corresponding to a
+failure-free state, and (2) the policies that should apply to all backup paths
+computed for a flow. The transformations are based on simple graph
+characteristics that an \ARC must satisfy to conform to specific
+policies~\cite{arc}.
+\aaron{The graph characteristics in~\cite{arc} are actually if we want
+the policies to be satisfied under an arbitrary (up to $n$) number of link
+failures. This diverges from the discussion of t-resilience above. Does
+t-resilience actually correspond to the ``always reachable with $<t$
+failures'' policy?}
+
+\minisection{Transformations}
