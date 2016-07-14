@@ -1,0 +1,21 @@
+\begin{table}
+\footnotesize
+\setlength{\tabcolsep}{0.2em}
+\begin{tabular}{p{0.38\columnwidth}p{0.57\columnwidth}}
+{\bf Policy} & {\bf Graph characteristic} \\
+\hline
+Flow blocked & After removing the edges with filters for the flow, there is no
+path from $\srcSwitch$ to $\dstSwitch$ \\
+\hline
+Flow traverses waypoint & After removing the vertices corresponding to
+waypoints, there is no path from $\srcSwitch$ to $\dstSwitch$ \\
+\hline
+Destination reachable\newline under $\leq t$ link failures & Max-flow from
+$\srcSwitch$ to $\dstSwitch$ is $\geq t+1$ \aaron{How do filters affect this?} \\
+\hline
+\end{tabular}
+\label{t:policy_characteristics}
+\caption{Graph characteristics an \ARC must satisfy to ensure backup paths are
+policy compliant; policies and characteristics are inspired by Gember-Jacobson
+et. al \protect\cite{arc}}
+\end{table}

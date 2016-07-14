@@ -27,18 +27,18 @@ network.\footnote{The value of $t$ depends on operator objectives and the
 level of redundancy available in the physical topology.}
 
 While it is desirable for the backup paths to satisfy all of the same policies
-as the primary path---e.g., reachability, isolation, waypoint traversals,
-bandwidth capacity, etc.---not all policies are equally important.  Policies
-pertaining to security (e.g., reachability, isolation, and some waypoint
-traversals, such as firewalls) are of the utmost importance, because they
-protect the network and its services from attacks and unauthorized accesses.
-In contrast, policies pertaining to performance (e.g., bandwidth capacity and
-some waypoint traversals, such as caches) are desirable, but the consequences
-of violating these policies are often less severe, partially because such
-policies are typically ``best effort'' even in the non-failure
-case.\footnote{In some networks, performance-related policies can have a major
-impact on a company's bottom-line: e.g., degradation in video streaming
-performance due to insufficient bandwidth may cause customers to cancel their
+as the primary path---e.g., reachability, waypoint traversals, bandwidth
+capacity, etc.---not all policies are equally important.  Policies pertaining
+to security (e.g., reachability and some waypoint traversals, such as
+firewalls) are of the utmost importance, because they protect the network and
+its services from attacks and unauthorized accesses.  In contrast, policies
+pertaining to performance (e.g., bandwidth capacity and some waypoint
+traversals, such as caches) are desirable, but the consequences of violating
+these policies are often less severe, partially because such policies are
+typically ``best effort'' even in the non-failure case.\footnote{In some
+networks, performance-related policies can have a major impact on a company's
+bottom-line: e.g., degradation in video streaming performance due to
+insufficient bandwidth may cause customers to cancel their
 subscription~\cite{TBD}. However, a centrally controlled, programmable control
 plane~\cite{swan, b4} is better suited to these scenarios, so we do not
 consider them in this work.} Consequently, we focus on ensuring the control
@@ -76,13 +76,45 @@ up to $t$ link failures are policy-compliant. This avoids the need for an
 operator to provide a data plane for every failure scenario. Instead, an
 operator only needs to provide: (1) a single data plane corresponding to a
 failure-free state, and (2) the policies that should apply to all backup paths
-computed for a flow. The transformations are based on simple graph
-characteristics that an \ARC must satisfy to conform to specific
-policies~\cite{arc}.
-\aaron{The graph characteristics in~\cite{arc} are actually if we want
-the policies to be satisfied under an arbitrary (up to $n$) number of link
-failures. This diverges from the discussion of t-resilience above. Does
-t-resilience actually correspond to the ``always reachable with $<t$
-failures'' policy?}
+computed for a flow. 
+
+\input{tables/policy_characteristics}
 
 \minisection{Transformations}
+The transformations are based on simple graph characteristics that an \ARC
+must satisfy to conform to specific policies
+(\tabref{tab:policy_characteristics}).  \aaron{The graph characteristics
+in~\cite{arc} are actually if we want the policies to be satisfied under an
+arbitrary (up to $n$) number of link failures. This diverges from the
+discussion of t-resilience above. Does t-resilience actually correspond to the
+``always reachable with $<t$ failures'' policy?}
+For example, to satisfy the policy that a flow from switch $\srcSwitch$ to
+switch $\dstSwitch$ is blocked on all backup paths, it must be the case that
+all paths between $\srcSwitch$ and $\dstSwitch$ in the flow's graph \aaron{do
+we have a name for this?} contain at least one edge on which the flow is
+filtered. If we remove all edges with such a filter from the graph, and there
+remains a path from $\srcSwitch$ to $\dstSwitch$, then there is some backup
+path for which the policy does not hold; (one of) the remaining path(s) is the
+backup path that will be computed when all of the links with filters have
+failed. Compliance with a ``flow traverses waypoint'' policy requires the
+flow's graph to have a similar characteristic.
+
+If the aforementioned graph characteristics are not satisfied, then we need to
+add filters or waypoints to the graph until the characteristic is satisfied.
+We can do this using a simple iterative process: 
+\begin{enumerate}
+\item Remove all edges with a filter (or vertices corresponding to waypoints) 
+\item Find a path from $\srcSwitch$ to $\dstSwitch$; if no such path exists,
+    then the control plane is policy-compliant w.r.t. the current policy
+\item Otherwise, add a filter (waypoint) to an arbitrary edge along the path
+    and repeat
+\end{enumerate}
+
+Although the above steps will produce a policy-compliant control plane, the
+resulting control plane may contain more filters or waypoints than necessary.
+\aaron{TODO: talk about finding an optimal transformation by computing the
+    min-cut}
+
+\aaron{TODO: talk about making the graph satisfy the max-flow characteristic
+    to comply with a destination reachable policy}
+
