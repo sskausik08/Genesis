@@ -45,7 +45,7 @@ consider them in this work.} Consequently, we focus on ensuring the control
 plane we generate computes backup paths that satisfy the former class of
 policies. \aaron{Are we doing ourselves a disservice by eschewing
 performance-related policies for backup paths, especially for a HotNets
-paper?}
+paper?} 
 
 \minisection{Approaches}
 One approach to generating a t-resilient control plane is to synthesize an
@@ -65,6 +65,13 @@ paths using a single assignment of edge weights. For example, consider the two
 backup paths shown in \figref{fig:TODO}; there is no possible assignment of
 edge weights such that the shortest path computed over the resulting graph
 under each of the failure scenarios equals the depicted backup paths.
+\kausik{I think the above para kind of downplays our
+motivation to synthesize control planes. I think we should write
+ it like: given backup paths, we try to incorporate those in the ARC
+ during synthesis. But providing backup paths can be difficult, so we
+ provide functionality to have high level ARC policies like traverses through
+ a waypoint. What do you think?}
+
 
 Instead, we 
 %synthesize an \ARC that computes paths equivalent to those present
@@ -87,11 +94,14 @@ must satisfy to conform to specific policies
 in~\cite{arc} are actually if we want the policies to be satisfied under an
 arbitrary (up to $n$) number of link failures. This diverges from the
 discussion of t-resilience above. Does t-resilience actually correspond to the
-``always reachable with $<t$ failures'' policy?}
+``always reachable with $<t$ failures'' policy?} 
 For example, to satisfy the policy that a flow from switch $\srcSwitch$ to
 switch $\dstSwitch$ is blocked on all backup paths, it must be the case that
 all paths between $\srcSwitch$ and $\dstSwitch$ in the flow's graph \aaron{do
-we have a name for this?} contain at least one edge on which the flow is
+we have a name for this?} \kausik{We havent considered ``always blocked''.
+We were thinking of including it in the discussion as "Default off" network
+like SDNs}
+contain at least one edge on which the flow is
 filtered. If we remove all edges with such a filter from the graph, and there
 remains a path from $\srcSwitch$ to $\dstSwitch$, then there is some backup
 path for which the policy does not hold; (one of) the remaining path(s) is the
@@ -117,4 +127,6 @@ resulting control plane may contain more filters or waypoints than necessary.
 
 \aaron{TODO: talk about making the graph satisfy the max-flow characteristic
     to comply with a destination reachable policy}
-
+\kausik{Is there a way
+to repair ARCs to increase max-flow. Actually, the max-flow property is 
+integrated in the ARC synthesis, so we may not need to do it here}
