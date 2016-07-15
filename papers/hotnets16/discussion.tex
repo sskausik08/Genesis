@@ -1,0 +1,23 @@
+\section{Discussion}
+In this paper, we presented preliminary work on an
+architecture which 
+tackles policy enforcement in networks running distributed 
+network protocols by synthesizing resilient control planes,
+by using data planes as input and an abstract representation
+of the control plane as output. Our vision
+is to provide the rich functionalities provided by 
+software-defined networks to existing 
+networks running traditional network
+protocols. 
+
+One of the features of SDN important in policy 
+enforcement is the ``Default Off'' behavior, i.e.,
+a packet not matching any forwarding rule on a switch
+is sent to the controller, which 
+decides the forwarding path for this class of packet
+based on the policies. This feature ensures that the
+centralized controller has knowledge about all active 
+packet flows, and can ensure that no flow violates 
+policy-compliance. However, legacy control planes 
+do not possess this ``Default Off'' behavior, as they 
+forward only based on destination. 

@@ -6,8 +6,8 @@ availability, and performance objectives to
 meet the demands of multitude of users and applications. 
 Many common network management systems provide support
 for reachability (or lack thereof for access control),
-forms of traffic engineering for optimizing performance
-and fairness, service chaining through ``middleboxes'' and
+traffic engineering for optimizing performance
+and fairness, service chaining through ``middleboxes'', and
 other policies like isolation for performance and privacy reasons.
 Thus, a high degree of programmability is required in networks
 for enforcing the aforementioned policies.
@@ -34,7 +34,7 @@ The major shortcoming of using distributed control planes is that
 they are very difficult to reason about and program to cater to 
 complex policies required by operators. To reduce configuration 
 errors, operators use parameterized templates for common
-tasks, but these approaches do not eliminate the manual effort
+tasks~\cite{config-template}, but these approaches do not eliminate the manual effort
 required to decompose the network-wide policy into individual device
 behaviors or help enforce custom policy behavior. While SDNs 
 were introduced to ameliorate the programmability of legacy control planes, 
@@ -62,8 +62,8 @@ enforce a diverse set of policies.
 Since failure handling is 
 performed in a distributed manner, the behavior of the control
 plane under failure scenarios is incorporated in the synthesis. 
-This systematic approach overcomes the shortcoming of unwanted
-behaviors of the control planes risen by manual error-prone
+This systematic approach avoids unwanted
+control plane behaviors that arise from manual, error-prone
 practices. This
 formal approach to synthesis of control planes also eliminates the need of 
 verification using tools like Batfish~\cite{batfish} and Anteater~\cite{anteater}.
@@ -79,7 +79,7 @@ resulting in synthesis of resilient control planes.
 The solution space of output network configurations to enforce a set of policies
 is large; configurations can use different 
 network protocols (e.g., only BGP, only OSPF or a hybrid) and
-mechanisms (e.g., number of route filters, access control lists
+mechanisms (e.g., route filters, access control lists
 or protocol-specific variables). The large solution space
 of configurations complicates the synthesis of
 network configurations from
@@ -90,10 +90,10 @@ research and
 synthesize an Abstract Representation for Control planes (ARC) from 
 the data plane; the ARC can then be translated to actual device configurations.
 The ARC uses the notion that most routing protocols in use 
-today employ a cost-based path selection algorithm, thus a graph with
+today employ a cost-based path selection algorithm; thus a graph with
 weights on the links can be used to abstractly represent the control plane such that 
 the path between two points taken in the network would be 
-the shortest weight path in the graph. 
+the lowest weight path in the graph. 
 The ARC effectively decouples the policy component with the 
 actual network implementation, thus, the networking infrastructure could be
 transitioned to different protocols without affecting the policy 

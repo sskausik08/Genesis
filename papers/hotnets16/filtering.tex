@@ -7,8 +7,9 @@
 Pure ARCs cannot be synthesized for all data planes. Consider the data
 plane in \Cref{fig:diamond}. 
 There exists no solution to the edge weights for this data plane. 
-This is because 
-there are two disjoint shortest paths connecting 
+This is because the ARC weights are global and we cannot
+assign different weights on a link for different destinations.  
+With global weights, there are two disjoint shortest paths connecting 
 $s1$ and $s4$, and each path will have 
 constraints
 asserting it is the shortest of the two paths. 
@@ -107,7 +108,8 @@ and $t$ (the target of the diamond).
 There exist two different destination DAGs with 
 paths starting from $s$ such that they forward t
 o different switches from $s$  
-and these divergent paths from $s$ converge
+and these divergent paths (of same or
+different lengths) from $s$ converge
 at the switch $t$ first. A diamond is 
 one of possible reasons for the ARC synthesis 
 failing, as it forces two different paths to be 
@@ -128,9 +130,9 @@ to one of the two edges at the source of each diamond.
 While detecting diamonds is efficient, the
 presence of diamonds is a not 
 necessary condition for route-filtering.
-Characterising the properties of data planes which
-guarantees a pure ARC solution and thus, not requiring
-route-filters, is a open algorithmic
+Characterising the properties of data planes for whic there is
+a pure ARC solution (i.e., no route-filters
+required) is a open algorithmic
 problem. An 
 efficient algorithm to find the structures causing 
 inconsistencies based on these properties 
@@ -147,7 +149,7 @@ In the case of the ARC synthesis, suppose we obtain
 a unsatisfiable core (unsat-core) from the solver. 
 Some linear inequalities 
 from \Cref{eq:uniq} will be present in the unsat-core 
-(an unsat-core cannot consist only 
+(an unsat-core cannot consist of only 
 inequalities from \Cref{eq:dist}, as all distances set to zero
 would trivially be consistent). Each linear inequality
 in the unsat-core will be of the form:
@@ -176,36 +178,38 @@ till the set of equations is consistent.
 
 Given an unsat-core, we have a set of route-filters (obtained
 from the linear inequalities of \Cref{sec:dist}) of which we 
-need to choose one to eliminate this unsat-core. T
+need to choose one to eliminate this unsat-core.
 We can 
-adopt a greedy approach (based on the lines of 
-set cover \cite{}) of picking a route-filter which 
+adopt a greedy approach (based on set cover \cite{}) 
+of picking a route-filter which 
 eliminates the maximum number of unsat-cores. However, 
 finding the number of unsat-cores a route-filter eliminates
 is an open problem and instrumental in minimizing the number 
 of route-filters.
 
-Alternatively, another scheme we propose in choosing route-filters
+Another scheme we propose in choosing route-filters
 is to maximize the number of edge-disjoint paths for each pair of
 endpoints in the input data plane, thus maximizing the resilience 
 property of the control plane (t+1 edge-disjoint paths indicate
-{\em t-resilience}). Thus, when given an unsat-core, we can choose
+{\em t-resilience}, i.e., connectivity will not 
+be affected by aribtary $\leq t$ link failures). 
+Thus, when given an unsat-core, we can choose
 a route-filter which does not affect the number of edge-disjoint paths
 for that pair of endpoints.
 
-In a broad sense, the problem of synthesizing the
-ARC with route-filter is as follows: given the set of all
-unsat-cores for the original set of equations, find a 
-set of route-filters such that each unsat-core is eliminated
-by a route-filter in the set. However, we do not possess any
-efficient mechanism to generate all unsat-cores. 
-We are able to circumvent
-this issue by finding diamonds, where each diamond corresponds
-to an unsat-core and we pick a route-filter accordingly to 
-eliminate them. For eliminating the 
-rest of the unsat-cores, we use a solver-guided technique
-to find route-filters, however there is 
-great room for improvement in this approach to find the best possible
-set of route-filters. 
+% In a broad sense, the problem of synthesizing the
+% ARC with route-filter is as follows: given the set of all
+% unsat-cores for the original set of equations, find a 
+% set of route-filters such that each unsat-core is eliminated
+% by a route-filter in the set. However, we do not possess any
+% efficient mechanism to generate all unsat-cores. 
+% We are able to circumvent
+% this issue by finding diamonds, where each diamond corresponds
+% to an unsat-core and we pick a route-filter accordingly to 
+% eliminate them. For eliminating the 
+% rest of the unsat-cores, we use a solver-guided technique
+% to find route-filters, however there is 
+% great room for improvement in this approach to find the best possible
+% set of route-filters. 
 
 

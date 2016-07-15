@@ -61,13 +61,13 @@ variation of the {\em inverse shortest path} problem, an almost
 unexplored algorithmic problem. 
 
 Formally, this variation of inverse shortest path problem 
-has as input (1) A directed graph $T = (S, L)$ (the network topology), 
-(2) A set of endpoints $\Gamma$, and 
-(3) A set of paths $P$
+has as input: (1) a directed graph $T = (S, L)$ (the network topology), 
+(2) a set of endpoints $\Gamma$, and 
+(3) a set of paths $P$
 such that for each $(s,t) \in \Gamma, \exists p \in P$ such
 that the path $p$ is from $s$ to $t$. 
-The problem is to find weights to the edges $L$ such that 
-for each $(s,t) \in \Gamma$, every shortest weighted path 
+The problem is to find weights for the edges $L$ such that 
+for each $(s,t) \in \Gamma$, every lowest weighted path 
 in the graph 
 from $s$ to $t$ is in set $P$. 
 
@@ -91,8 +91,7 @@ an exponential blow-up in number of equations. Instead, we use distances
 to reduce the number of equations to a polynomial order. 
 
 \minisection{Distance Equations}
-We define $D(s,t)$ to be the distance variable from $s$ to $t$
-which denotes the absolute shortest distance from $s$ to $t$. 
+$D(s,t)$ denotes the absolute shortest distance from $s$ to $t$. 
 Trivially, $D(s,s) = 0$. For a path $s \rightarrow^+ t$ ($len \geq 1$),
 the shortest distance from $s$ to $t$ is the smallest of the distances
 of the paths traversed through the neighbours of $s$ to $t$. Therefore, the
