@@ -87,7 +87,7 @@ $s \rightarrow^+ t$ in a DAG,
 to enforce that the path will be the shortest, we need equations
 which ensure the sum of edge weights of the path is strictly smaller than
 the weight of all other paths from $s$ to $t$. However, this can incur
-an exponential blowup in number of equations. Instead, we use distances 
+an exponential blow-up in number of equations. Instead, we use distances 
 to reduce the number of equations to a polynomial order. 
 
 \minisection{Distance Equations}
@@ -126,8 +126,8 @@ neighbours of switch $s$ in the destination DAG.
 Since, each subpath of $\xi_d$ is the shortest path,
 we need to ensure that all other
 paths are not shorter or equal to these paths.  
-The weight
-of a path in the DAG can be expressed as the sum of weights of 
+We express the weight of the  
+path in the DAG by the sum of weights of 
 edges along the path. 
 Thus, we add the following equations to ensure the
 shortest path property (\Cref{fig:disteq} illustrates 
@@ -138,13 +138,19 @@ an example).
 		\sum_{\mathclap{\substack{(sw_1, sw_2) \in (s \rightarrow^+ t)}}} 
 		E(sw_1, sw_2) < E(s, n') + D(n', t)
 \end{multline}
-If the path $n' \rightarrow^* t$ 
-is not in any DAG completely, then
-$D(n',t)$ can be smaller than the actual shortest distance by the
-semantics of \Cref{eq:dist} (as
-$D(n',t)$ is not equal to any quantity by \Cref{eq:shortest}).
-However, since $D(n',t)$ is on the RHS of the equations in \Cref{eq:uniq},
-the equations will ensure that the path $s\rightarrow n \rightarrow^* t$
-has strictly greater weight than the path of the DAG.
+By using distance for the path $n' \rightarrow t$, we 
+are able to find lower bounds to the weight of the non-DAG 
+paths from $s$ to $t$,
+thus avoiding the blow-up of enumerating all paths from $s$
+to $t$. 
+
+% If the path $n' \rightarrow^* t$ 
+% is not in any DAG completely, then
+% $D(n',t)$ can be smaller than the actual shortest distance by the
+% semantics of \Cref{eq:dist} (as
+% $D(n',t)$ is not equal to any quantity by \Cref{eq:shortest}).
+% However, since $D(n',t)$ is on the RHS of the equations in \Cref{eq:uniq},
+% the equations will ensure that the path $s\rightarrow n \rightarrow^* t$
+% has strictly greater weight than the path of the DAG.
 
 %TODO: Add some figures
