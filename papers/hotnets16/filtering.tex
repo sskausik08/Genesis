@@ -6,57 +6,71 @@
 \end{figure}
 Pure ARCs cannot be synthesized for all data planes. Consider the data
 plane in \Cref{fig:diamond}. 
-There exists no solution to the edge weights for this data plane. This is because 
-there are two disjoint shortest paths connecting $s1$ and $s3$, and each path will have 
+There exists no solution to the edge weights for this data plane. 
+This is because 
+there are two disjoint shortest paths connecting 
+$s1$ and $s4$, and each path will have 
 constraints
 asserting it is the shortest of the two paths. 
 
-How can we synthesize an ARC for the above scenario? 
-If we could disable the edge
-$s1 \rightarrow s4$ for destination $s6$, then we can synthesize ARC weights
-such that path $s1 \rightarrow s2 \rightarrow s3$ is taken to reach $s6$, 
+One way to synthesize an ARC in the scenario 
+is to disable the edge
+$s1 \rightarrow s3$ for destination $d1$, 
+then we can synthesize ARC weights
+such that path $s1 \rightarrow s2 \rightarrow s4$
+ is taken to reach $d1$, 
 even if the actual shortest path
-from $s1$ to $s3$ is via $s4$ and $s5$. 
-If a route-filter is added on switch $s4$, $s4$ 
-will not advertise a route for $s6$ to $s1$, so 
-$s1$ will forward to $s2$ and not to $s4$
-to reach $s6$. The forwarding of packets destined
-for $s7$ are not affected, and they will be sent from
-$s1$ to $s4$ as it is the shortest path.
+from $s1$ to $s4$ is via $s2$. 
+A route-filter is a mechanism 
+that can be used to selectively disable
+edges, as it blocks sending advertisements to a
+particular destination along a link. 
+Therefore, if a route-filter is added on switch $s3$, 
+$s3$ 
+will not advertise a route for $d1$ to $s1$, so 
+$s1$ will forward to $s2$ and not to $s3$
+to reach $d1$. The forwarding of packets destined
+for $d2$ are not affected, and they will be sent from
+$s1$ to $s4$ via $s3$ as it is the shortest path.
 Thus, by incorporating route-filters, we can
 disable certain links in the topology 
-for specific destinations, and increase the 
-expressiveness of our synthesis. \kausik{expressiveness
-may not be the right term.}
+for specific destinations, and synthesize
+ARCs for all possible data planes. 
 
 Given a data plane, we can trivially find an 
-ARC enforcing the data plane by placing 
-route-filters on all alternate paths ()%\Cref{fig:routefilter})
-except the shortest paths of the DAGs. However, this
-ARC lacks the resilience properties we desire in
-distributed control planes. Moreover, this ARC would be
+ARC enforcing the data plane by blocking all alternate
+paths by placing 
+route-filters on all outgoing links other than the edges
+in the DAG (e.g., disable $s1 \rightarrow s3$ for $d1$
+and $s1 \rightarrow s2$ for $d2$). However, this 
+ARC would be
 0-resilient, and a single link failure can sever 
 connectivity among endpoints (as all alternate paths
 are blocked by route-filters). Thus, our objective is
-to pick a subset of the route-filters for each destination
-as illustrated by <ref-to-rf-fig> such that the 
+to pick a set of the route-filters for each destination
+such that the 
 ARC satisfies certain properties. For e.g., we can
 try to find the optimal number of route-filters such 
 that the ARC synthesis succeeds, or we can choose a
-subset that maximizes the resilience of each path 
+set that maximizes the resilience of each path 
 in terms of number of edge-disjoint paths in the ARC
 for each endpoint. 
 
+\Cref{fig:arcSynthesis} illustrates the synthesis of 
+the ARC with route-filters. We first describe the 
+modified linear equations generated when a set of
+route-filters are enabled, and then describe two
+techniques to choosing route-filters. 
 \begin{figure}
 	\centering
 	\includegraphics[width=\columnwidth]{figures/arcSynthesis.eps}
-	\caption{Arc Synthesis} \label{fig:diamond}
+	\caption{Arc Synthesis} \label{fig:arcSynthesis}
 \end{figure}
 
-\subsubsection{Linear Equations with Route-Filters}
+\minisection{Linear Equations with Route-Filters}
 Given a set of route-filters, we generate a modified 
-set of linear equations than the set in \secref{sec:linearequations}
-such that the semantics of route-filters is satisfied. 
+set of linear equations to satisfy the 
+semantics of route-filters.
 For convenience, we define $RF(sw_1, sw_2, d) = True$ 
 if a route filter disables the link $sw_1 \rightarrow sw_2$
 for forwarding to destination $d$ (The route filter will
@@ -66,7 +80,8 @@ When $RF(sw_1, sw_2, d)$ is set, we can ignore the
 weight of any path using the $sw_1 \rightarrow sw_2$
 link for destination $d$, and thus 
 the weight of the path of DAG $\xi_d$
-starting at $sw_1$ need not be smaller than the path weights
+starting at $sw_1$ need not be smaller than the weight
+of any path
 using the the $sw_1 \rightarrow sw_2$ link. Thus,
 we prune \Cref{eq:uniq} to enforce the route-filter accordingly:
 \begin{multline} \label{eq:uniq}
@@ -76,7 +91,15 @@ we prune \Cref{eq:uniq} to enforce the route-filter accordingly:
 		E(sw_1, sw_2) < E(s, n') + D(n', t)   
 \end{multline}
 
-\subsubsection{Diamond Elimination}
+If the original set of equations are inconsistent, we 
+can choose a set of route-filters such that the pruned
+equations become consistent. 
+We discuss two schemes used to pick route-filters,
+the first is finding geometrical structures called diamonds 
+and the second uses unsatisfiable cores generated
+by the solver.
+
+\minisection{Diamond Elimination}
 We define the structure shown in \Cref{fig:diamond}
 as a \emph{diamond}. Formally,
 consider two switches $s$ (the source of the diamond) 
@@ -86,36 +109,32 @@ paths starting from $s$ such that they forward t
 o different switches from $s$  
 and these divergent paths from $s$ converge
 at the switch $t$ first. A diamond is 
-a reason for the ARC synthesis resulting in no
-solution. 
-\begin{theorem} \label{thm:diamond}
-If the data plane contains a diamond, then no pure ARC  
-can be synthesized for the data plane.
-\end{theorem}
-Thus, to generate an ARC, we need route-filters
-to eliminate the diamond structures. Consider
+one of possible reasons for the ARC synthesis 
+failing, as it forces two different paths to be 
+shortest with respect to the other. 
+
+The presence of a diamond structure is a sufficient (but not 
+necessary) condition for the need of route-filters. Consider
 the diamond in \Cref{fig:diamond}. There are two choices
-of route-filters: the $s1-s2$ edge for destination $s7$ 
-and the $s1-s4$ edge for destination $s6$, out of which,
+of route-filters: the $s1-s3$ edge for destination $d1$ 
+and the $s1-s2$ edge for destination $d2$, out of which,
 at least one filter is required to eliminate the 
-inconsistency in the linear equations due to the diamond.
+inconsistency in the linear equations caused due to the diamond.
 Thus, we find all diamonds for all pairs of destination
 DAGs (this is done in polynomial time) and assign a filter
 to one of the two edges at the source of each diamond. 
 
-\subsubsection{Unsat-Core Learning Approach}
-The converse of \thmref{thm:diamond} does not hold, i.e.,
-there exists data planes without diamonds for which
-we cannot synthesize a pure ARC. We illustrate one example
-in \Cref{}. (example figure and why inconsistent). 
-
-\kausik{This para may need more work.}
-Characterising the properties of structures causing
-inconsistencies in the ARC synthesis is a tough algorithmic
-problem and is an interesting study of future work. An
+\minisection{Unsat-Core Learning Approach}
+While detecting diamonds is efficient, the
+presence of diamonds is a not 
+necessary condition for route-filtering.
+Characterising the properties of data planes which
+guarantees a pure ARC solution and thus, not requiring
+route-filters, is a open algorithmic
+problem. An 
 efficient algorithm to find the structures causing 
-inconsistencies can be used to assign route-filters in an
-optimal manner, thus maximizing resilience of the control plane.
+inconsistencies based on these properties 
+can be used to minimize the number of route-filters enabled.  
 
 Modern LP-solvers have efficient procedures to return an
 unsatisfiable core, also called IIS (Irreducible Inconsistent Subsystem)
@@ -127,9 +146,9 @@ any one constraint of the IIS produces an consistent result.
 In the case of the ARC synthesis, suppose we obtain
 a unsatisfiable core (unsat-core) from the solver. 
 Some linear inequalities 
-from \Cref{sec:uniq} would be present in the unsat-core 
+from \Cref{eq:uniq} will be present in the unsat-core 
 (an unsat-core cannot consist only 
-inequalities from \Cref{sec:dist}, as all distances set to zero
+inequalities from \Cref{eq:dist}, as all distances set to zero
 would trivially be consistent). Each linear inequality
 in the unsat-core will be of the form:
 \begin{eqnarray}
@@ -138,23 +157,23 @@ in the unsat-core will be of the form:
 \end{eqnarray}
 If we set $RF(s,n',d) = True$ where the DAG of destination $d$
 contains the $s \rightarrow^+ t$, then this inequality would be pruned,
-and the set of equations in the unsat-core will be consistent (though
-the whole set of equations may still be inconsistent) by the 
+and the rest of the equations in the unsat-core will be consistent (though
+the complete set of equations may still be inconsistent) by the 
 irreducible property of the unsat-core. By adding this route-filter
 permanently to the ARC, we are assured that this unsat-core will 
-never be a cause of inconsistency. Thus, our unsat-core learning
-approach uses the unsat-core to learn where to place a route-filter,
-and we repeat this process with an updated set of filters till the
-set of linear equations are consistent. The complete 
-algorithm of finding the set of route-filters is shown 
-in Fig <>.
+never be a cause of inconsistency in our synthesis procedure. 
+Thus, our unsat-core learning approach 
+repeatedly extracts route-filters 
+from unsat-cores to add to the ARC
+till the set of equations is consistent. 
 
-Synthesis 
-of the ARC with route-filters can be 
-described as follows: given the set of all
-unsat-cores for the original set of equations, find a 
-set of route-filters such that each unsat-cores are eliminated
-by a route-filter in the set. However, it 
+% our unsat-core learning
+% approach uses the unsat-core to learn where to place a route-filter,
+% and we repeat this process with an updated set of filters till the
+% set of linear equations are consistent. The complete 
+% algorithm of finding the set of route-filters is shown 
+% in \Cref{f.
+
 Given an unsat-core, we have a set of route-filters (obtained
 from the linear inequalities of \Cref{sec:dist}) of which we 
 need to choose one to eliminate this unsat-core. T
@@ -173,5 +192,20 @@ property of the control plane (t+1 edge-disjoint paths indicate
 {\em t-resilience}). Thus, when given an unsat-core, we can choose
 a route-filter which does not affect the number of edge-disjoint paths
 for that pair of endpoints.
+
+In a broad sense, the problem of synthesizing the
+ARC with route-filter is as follows: given the set of all
+unsat-cores for the original set of equations, find a 
+set of route-filters such that each unsat-core is eliminated
+by a route-filter in the set. However, we do not possess any
+efficient mechanism to generate all unsat-cores. 
+We are able to circumvent
+this issue by finding diamonds, where each diamond corresponds
+to an unsat-core and we pick a route-filter accordingly to 
+eliminate them. For eliminating the 
+rest of the unsat-cores, we use a solver-guided technique
+to find route-filters, however there is 
+great room for improvement in this approach to find the best possible
+set of route-filters. 
 
 

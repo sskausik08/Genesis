@@ -12,7 +12,8 @@
 
 In our preliminary approach to ARC synthesis, 
 we tried to specify policies using SMT theories like propositional logic and 
-linear rational arithmetic and use off-the-shelf SMT solvers~\cite{z3} 
+linear rational arithmetic and 
+use off-the-shelf SMT solvers~\cite{z3} 
 to synthesize the ARC. However, current SMT solvers are incapable of 
 scaling to even small-sized topologies and number of policies, majorly
 due to the fact the paths in the network are based on the weights in a 
@@ -21,9 +22,9 @@ encoding in SMT. Synthesizing resilient control planes with this
 approach is intractable with current state-of-art SMT solvers.
 
 As a first step towards ARC synthesis, 
-we use a network data plane (set of forwarding paths)
-enforcing the operator-specified policies 
-as input for synthesizing the ARC. The  
+we use as input the network data plane 
+(set of forwarding paths) which 
+enforces the operator-specified policies. The  
 advantage of using network data planes as 
 input is the ease of developing
 different network management applications 
@@ -35,17 +36,8 @@ network, agnostic of the actual network protocols used in the network.
 Many existing network management systems like Merlin~\cite{merlin} 
 and SIMPLE~\cite{simple}\footnote{
 Traditional control planes cannot support 
-paths with loops for service chaining cannot} developed for SDNs could be seamlessly
+paths with loops for service chaining.} developed for SDNs could be seamlessly
 integrated to the architecture with minimal changes.  
-
-For a given network data plane, the synthesis of the ARC reduces to a
-variation of the {\em inverse shortest path} problem, a relatively 
-unexplored algorithmic problem. 
-Given an input set of paths in a directed graph, the inverse shortest path problem 
-informally, is the problem of finding an assignment of weights to edges 
-such that each input path is the shortest weighted path between those endpoints in 
-the graph. We attempt to tackle synthesis of ARCs by formulating a set of linear
-equations  equipped with an unsatisfiable core learning approach. 
 
 While the ARC synthesis from data planes can enforce 
 policies by the distributed control plane, it does not
@@ -57,49 +49,40 @@ We discuss this in \secref{sec:resilience}. \kausik{Could expand more,
 write after resilience section is complete}
 
 \subsection{Pure ARC Synthesis}
-We first describe the synthesis of {\em pure} ARCs, i.e., 
-ARC with only weighted edges and no other mechanisms like route-filters.
-A pure ARC is an ideal control plane because it is able to
-enforce the data plane with carefully engineered edge weights
-and does not disable any link in the network (e.g., route filters
-(\secref{sec:routefilter})), thus providing maximal resilience. 
-% Provide insight about route-filters before.
+We first describe the synthesis of {\em pure} ARCs, i.e.,
+the ARC is a directed graph comprising of switches as 
+vertices and weighted edges corresponding to all links in the
+topology (no link is disabled by any mechanism). This is 
+a ideal control plane because it is able to enforce the data plane
+with carefully engineered edge weights and no links are disabled. 
+For a given network data plane, the synthesis of 
+the pure ARC reduces to a
+variation of the {\em inverse shortest path} problem, an almost 
+unexplored algorithmic problem. 
 
-The inputs to the synthesis algorithm are:
+Formally, this variation of inverse shortest path problem 
+has as input (1) A directed graph $T = (S, L)$ (the network topology), 
+(2) A set of endpoints $\Gamma$, and 
+(3) A set of paths $P$
+such that for each $(s,t) \in \Gamma, \exists p \in P$ such
+that the path $p$ is from $s$ to $t$. 
+The problem is to find weights to the edges $L$ such that 
+for each $(s,t) \in \Gamma$, every shortest weighted path 
+in the graph 
+from $s$ to $t$ is in set $P$. 
 
-(1) Network Data Plane:
-Since most legacy routing protocols are destination-based,
-from an input data plane, we extract the forwarding
+From the paths in the data plane, 
+we extract the forwarding
 DAG (directed acyclic graph) for each destination
-as the sink. The DAG will be a directed tree with the
-destination as root if the multi-path
-functionality is not used. We define $\Omega$ for the 
+as the sink (as the forwarding is destination-based). 
+We define $\Omega$ for the 
 set of destinations, and $\Delta$ for  
 the set of destination DAGs. 
-% Write something about changes to the network manager
-
-(2) Network Topology: 
-We define the physical network topology $T = (S, L)$
-as a directed graph where $S$: set of switches, and 
-$L$: set of directional links. 
-
-The output of the synthesis algorithm is a 
-pure ARC with positive weights on the directional links,
-such that the set of forwarding DAGs $\Delta$ are the 
-shortest paths in the ARC. We define $E(sw_1, sw_2)$ as
-the edge weight variable for link $sw_1 \rightarrow sw_2$. 
-We generate a set of linear equations to obtain edge weights,
-which are provided to a LP-solver without any optimization
-objectives. 
-
-\subsubsection{Linear Equations} \label{sec:linearequations}
-We construct an directed overlay graph
-by combining all the individual destination DAGs in $\Delta$.
-We can disable all switches and links not in the overlay. 
-These links can have arbitary large weights as they do not
-feature in the shortest path for any destination. 
 Given $\Omega$ and $\Delta$, we generate a set of linear equations
-to find the requisite edge weights. For a path connecting two switches 
+to find the requisite edge weights of a pure ARC. 
+For this, we define $E(sw_1, sw_2)$ as
+the edge weight variable for link $sw_1 \rightarrow sw_2$. 
+For a path connecting two switches 
 $s \rightarrow^+ t$ in a DAG, 
 to enforce that the path will be the shortest, we need equations
 which ensure the sum of edge weights of the path is strictly smaller than
@@ -126,25 +109,24 @@ the actual shortest distance from $s$ to $t$.
 
 \minisection{Destination DAG Equations}
 For each destination DAG, we add equations to ensure the 
-edge weights are set such that a shortest-path forwarding in the ARC will 
-follow the same paths as specified in the DAG. We use the following
-property: If a path is the shortest 
-path, then every subpath of the path has to be the shortest path.
+edge weights are set such that a shortest-path forwarding in the ARC 
+follows the same path or paths specified in the DAG. If a path
+is the shortest path between its endpoints, then every 
+subpath of the path has to be the shortest between its endpoints
+as well. 
 \begin{figure}[h!] 
 	\centering
 	\includegraphics[width=0.8\columnwidth]{figures/distanceEquation.eps}
 	\caption{Distance equation} \label{fig:disteq}
 \end{figure}
 Consider a DAG $\xi_d$ for destination $d$. We define two neighbour
-functions: $N(s)$ denotes the neighbours of switch $s$ 
-in the directed overlay graph, and $N(s, \xi_d)$ denotes
-the neighbours of switch $s$ in the destination DAG. 
+functions: $N(s)$ denotes the set of neighbours of switch $s$ 
+in the directed graph, and $N(s, \xi_d)$ denote the set of
+neighbours of switch $s$ in the destination DAG. 
 Since, each subpath of $\xi_d$ is the shortest path,
 we need to ensure that all other
 paths are not shorter or equal to these paths.  
-Strict inequality is required because routing protocols
-can load-balance or choose one of the equal weights paths at
-random, both of which violate the DAG requirements. The weight
+The weight
 of a path in the DAG can be expressed as the sum of weights of 
 edges along the path. 
 Thus, we add the following equations to ensure the
