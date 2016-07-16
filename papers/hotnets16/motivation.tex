@@ -36,10 +36,12 @@ actual device configurations is a difficult and error-prone task.
 To tackle synthesis 
 of distributed control planes, 
 we use as input the network data plane 
-(set of forwarding paths) which 
+(set of forwarding paths) \aaron{Where does this data plane come from and
+    why is it reasonable to assume an operator can provide one?} which 
 enforces the operator-specified policies to
 synthesize an abstract representation of the control plane
-called ARC. 
+called ARC. \aaron{Our approach (ARC) should not come up until later in the
+    motivation, if at all.}
 The advantage of using network data planes as 
 input is the ease of developing
 different network management applications 
@@ -53,6 +55,7 @@ and SIMPLE~\cite{simple}\footnote{
 Traditional control planes cannot support 
 paths with loops for service chaining.} developed for SDNs 
 could be seamlessly integrated to the architecture with minimal changes.
+\aaron{Do we need the preceding sentence?}
 Thus, using the data plane as input, we synthesize a control plane
 such that the paths decided by the control plane are the same 
 as the data plane input, and these paths satisfy the operator 
@@ -62,7 +65,8 @@ However, the control plane does not guarantee policy compliance
 when failures occur. For
 example, if a link along the shortest path 
 %(\aaron{refer to some example figure}) 
-fails, the next shortest path will become the new path to reach the
+fails, \aaron{Need to mention earlier that we assume shortest-path-based route
+computations, ala OSPF} the next shortest path will become the new path to reach the
 destination. The control plane automatically computes the new shortest path
 (assuming one exists), thus preserving connectivity. 
 However, the new path may
@@ -98,6 +102,8 @@ and the synthesis of the control plane
 tries to satisfy as many soft policies as 
 possible. 
 
+\aaron{Discussion of the available control plane constructs should come up
+    earlier.}
 While we use an abstract representation of the control
 plane (ARC) to simplify the synthesis, operators need control 
 planes conforming to certain requirements of the 
