@@ -150,6 +150,7 @@ class ZeppelinSynthesiser(object) :
 		self.initializeSMTVariables()
 		self.initializeEndpointResilience()
 
+		start_t = time.time()
 		self.addDjikstraShortestPathConstraints()
 
 		# Adding constraints without routeFilters
@@ -216,9 +217,9 @@ class ZeppelinSynthesiser(object) :
 					print "inconsistency attempts", attempts
 					print "diamond loss", diamondLoss
 
-			print "Time taken is", time.time() - solvetime
-
-
+			
+		f = open('timing', 'a')
+		f.write(str(len(endpoints)) + "," + str(time.time() - start_t))
 		# Enable Topology Edges
 		self.topology.enableAllEdges()
 		# Extract Edge weights for Gurobi		
@@ -227,7 +228,7 @@ class ZeppelinSynthesiser(object) :
 		#self.pdb.printPaths(self.topology)
 		self.pdb.validateControlPlane(self.topology, self.routefilters, self.t_res)
 		#self.topology.printWeights()
-		self.printProfilingStats()
+		#self.printProfilingStats()
 
 
 	"""
