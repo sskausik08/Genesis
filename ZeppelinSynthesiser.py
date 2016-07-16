@@ -300,9 +300,9 @@ class ZeppelinSynthesiser(object) :
 		
 
 		# Find cycles for RF
-		start_t = time.time()
-		print "Number of cycles", self.findValidCycleCountFilter(maxRF)
-		print "time to find cycles is", time.time() - start_t
+		#start_t = time.time()
+		#print "Number of cycles", self.findValidCycleCountFilter(maxRF)
+		#print "time to find cycles is", time.time() - start_t
 		self.addRouteFilter(maxRF[0], maxRF[1], maxRF[2])
 
 	def greedyCycleFilter(self) :
