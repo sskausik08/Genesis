@@ -1,4 +1,4 @@
-\subsection{Route Filtering} \label{sec:routefilter}
+\subsection{Synthesis of ARC with Route-Filters} \label{sec:routefilter}
 \begin{figure}[h!] 
 	\centering
 	\includegraphics[width=0.8\columnwidth]{figures/diamond.eps}
@@ -96,51 +96,26 @@ If the original set of equations are inconsistent, we
 can choose a set of route-filters such that the pruned
 equations become consistent. 
 We discuss two schemes used to pick route-filters,
-the first is finding geometrical structures called diamonds 
-and the second uses unsatisfiable cores generated
-by the solver.
-
-\minisection{Diamond Elimination}
-We define the structure shown in \Cref{fig:diamond}
-as a \emph{diamond}. Formally,
-consider two switches $s$ (the source of the diamond) 
-and $t$ (the target of the diamond).
-There exist two different destination DAGs with 
-paths starting from $s$ such that they forward t
-o different switches from $s$  
-and these divergent paths (of same or
-different lengths) from $s$ converge
-at the switch $t$ first. A diamond is 
-one of possible reasons for the ARC synthesis 
-failing, as it forces two different paths to be 
-shortest with respect to the other. 
-
-The presence of a diamond structure is a sufficient (but not 
-necessary) condition for the need of route-filters. Consider
-the diamond in \Cref{fig:diamond}. There are two choices
-of route-filters: the $s1-s3$ edge for destination $d1$ 
-and the $s1-s2$ edge for destination $d2$, out of which,
-at least one filter is required to eliminate the 
-inconsistency in the linear equations caused due to the diamond.
-Thus, we find all diamonds for all pairs of destination
-DAGs (this is done in polynomial time) and assign a filter
-to one of the two edges at the source of each diamond. 
+the first scheme uses unsatisfiable cores generated
+by the solver and the second scheme 
+finds geometrical structures called diamonds.
 
 \minisection{Unsat-Core Learning Approach}
-While detecting diamonds is efficient, the
-presence of diamonds is a not 
-necessary condition for route-filtering.
-Characterising the properties of data planes for whic there is
-a pure ARC solution (i.e., no route-filters
-required) is a open algorithmic
-problem. An 
-efficient algorithm to find the structures causing 
-inconsistencies based on these properties 
-can be used to minimize the number of route-filters enabled.  
+% While detecting diamonds is efficient, the
+% presence of diamonds is a not 
+% necessary condition for route-filtering.
+% Characterising the properties of data planes for which there is
+% a pure ARC solution (i.e., no route-filters
+% required) is a open algorithmic
+% problem. An 
+% efficient algorithm to find the structures causing 
+% inconsistencies based on these properties 
+% can be used to minimize the number of route-filters enabled.  
+
 
 Modern LP-solvers have efficient procedures to return an
 unsatisfiable core, also called IIS (Irreducible Inconsistent Subsystem)
-~\cite{iis}. Formally, an IIS is a subset of constraints such that
+~\cite{chinneck2007feasibility}. Formally, an IIS is a subset of constraints such that
 if all constraints except those in the IIS are removed, the set of
 linear equations is still inconsistent. However, further removing 
 any one constraint of the IIS produces an consistent result. 
@@ -180,22 +155,24 @@ Given an unsat-core, we have a set of route-filters (obtained
 from the linear inequalities of \Cref{sec:dist}) of which we 
 need to choose one to eliminate this unsat-core.
 We can 
-adopt a greedy approach (based on set cover \cite{}) 
+adopt a greedy approach (based on set cover \cite{setcover}) 
 of picking a route-filter which 
 eliminates the maximum number of unsat-cores. However, 
 finding the number of unsat-cores a route-filter eliminates
 is an open problem and instrumental in minimizing the number 
-of route-filters.
+of route-filters. Other schemes can be used to choose 
+a route-filter from an unsat-core satisfying certain
+objectives. 
 
-Another scheme we propose in choosing route-filters
-is to maximize the number of edge-disjoint paths for each pair of
-endpoints in the input data plane, thus maximizing the resilience 
-property of the control plane (t+1 edge-disjoint paths indicate
-{\em t-resilience}, i.e., connectivity will not 
-be affected by aribtary $\leq t$ link failures). 
-Thus, when given an unsat-core, we can choose
-a route-filter which does not affect the number of edge-disjoint paths
-for that pair of endpoints.
+% Another scheme we propose in choosing route-filters
+% is to maximize the number of edge-disjoint paths for each pair of
+% endpoints in the input data plane, thus maximizing the resilience 
+% property of the control plane (t+1 edge-disjoint paths indicate
+% {\em t-resilience}, i.e., connectivity will not 
+% be affected by aribtary $\leq t$ link failures). 
+% Thus, when given an unsat-core, we can choose
+% a route-filter which does not affect the number of edge-disjoint paths
+% for that pair of endpoints.
 
 % In a broad sense, the problem of synthesizing the
 % ARC with route-filter is as follows: given the set of all
@@ -211,5 +188,53 @@ for that pair of endpoints.
 % to find route-filters, however there is 
 % great room for improvement in this approach to find the best possible
 % set of route-filters. 
+
+\minisection{Diamond Elimination}
+While the unsat-core learning approach can be
+used to pick route-filters till the linear equations 
+are consistent, finding an IIS is NP-hard~\cite{iiscomplexity}
+and can result in increased synthesis times.
+Thus, characterising the properties of data planes 
+for which there is
+a pure ARC solution (i.e., no route-filters
+required), which is an open algorithmic
+problem, can be very beneficial. An 
+efficient algorithm to find the structures causing 
+inconsistencies based on these properties 
+can be used to minimize the number of route-filters enabled.
+
+We identify a sufficient (but not 
+necessary) structure of the DAGs which require 
+route-filters. 
+We define the structure shown in \Cref{fig:diamond}
+as a \emph{diamond}. Formally,
+consider two switches $s$ (the source of the diamond) 
+and $t$ (the target of the diamond).
+There exist two different destination DAGs with 
+paths starting from $s$ such that they forward t
+o different switches from $s$  
+and these divergent paths (of same or
+different lengths) from $s$ converge
+at the switch $t$ first. A diamond is 
+one of possible reasons for the ARC synthesis 
+failing, as it forces two different paths to be 
+shortest with respect to the other. 
+
+Consider
+the diamond in \Cref{fig:diamond}. There are two choices
+of route-filters: the $s1-s3$ edge for destination $d1$ 
+and the $s1-s2$ edge for destination $d2$, out of which,
+at least one filter is required to eliminate the 
+inconsistency in the linear equations caused due to the diamond.
+Thus, we find all diamonds for all pairs of destination
+DAGs (this is done in polynomial time) and assign a filter
+to one of the two edges at the source of each diamond. 
+Thus, by removing the diamonds, we can reduce the 
+number of iterations
+of the unsat-core learning approach, which would have 
+provided diamonds as an unsat-core if 
+diamonds were not eliminated.
+
+
 
 
