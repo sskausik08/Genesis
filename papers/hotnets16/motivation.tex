@@ -1,1 +1,121 @@
 \section{Motivation}
+% Programming a legacy network control plane to satisfy a variety of
+% connectivity, security, and performance policies is a complex and error-prone
+% task. We have shown that program synthesis is a promising approach to automate
+% this process and produce a control plane that is ``correct-by-construction.''
+% In particular, we presented an architecture where a network operator provides
+% a policy-compliant data plane and a set of hard and soft policies as input,
+% and the system automatically provides a set of device configurations that
+% leverage the control plane features available on each device to compute
+% policy-compliant paths, even in the presence of failures.  Formulating a
+% tractable synthesis problem and maximizing the number of satisfied soft
+% policies are the key challenges in realizing this vision. We show these
+% challenges can be overcome by modeling the control plane using a graph-based 
+% abstract representation tied to a traditional shortest path algorithm and
+% iteratively transforming the abstract representation based on feedback from
+% the satisfiability (SAT) solver and characteristics of the graph. However, we
+% have only explored how to address a subset of important policies and leverage a
+% few available control plane features on traditional networking hardware. Our
+% future work will focus on satisfying a wider range of policies using more
+% features, and we will study how to best translate our abstract representation
+% into actual device configurations to make our system practical for use with
+% real networks.
+
+Network management typically entails managing the flow of packets
+through the network based on the policies required by the operator. 
+The tasks include which end-hosts can communicate (or be blocked) from
+each other, and the path taken in the network for these flows which are
+decided from different performance and security considerations like 
+service chaining, traffic engineering and isolation. A controller
+of a software-defined network can decide the paths for each flow
+based on the policies and install forwarding rules accordingly. 
+However, legacy control planes use distributed protocols relying on 
+cost-based path selection algorithms. Thus, translation of policies to
+actual device configurations is a difficult and error-prone task. 
+
+To tackle synthesis 
+of distributed control planes, 
+we use as input the network data plane 
+(set of forwarding paths) which 
+enforces the operator-specified policies to
+synthesize an abstract representation of the control plane
+called ARC. 
+The advantage of using network data planes as 
+input is the ease of developing
+different network management applications 
+enforcing proactive policies\footnote{
+Traditional control planes cannot support reactive policies, however
+middleboxes can overcome this limitation.} 
+as if operating over a software-defined
+network, agnostic of the actual network protocols used in the network. 
+Many existing network management systems like Merlin~\cite{merlin} 
+and SIMPLE~\cite{simple}\footnote{
+Traditional control planes cannot support 
+paths with loops for service chaining.} developed for SDNs 
+could be seamlessly integrated to the architecture with minimal changes.
+Thus, using the data plane as input, we synthesize a control plane
+such that the paths decided by the control plane are the same 
+as the data plane input, and these paths satisfy the operator 
+policies.
+
+However, the control plane does not guarantee policy compliance 
+when failures occur. For
+example, if a link along the shortest path 
+%(\aaron{refer to some example figure}) 
+fails, the next shortest path will become the new path to reach the
+destination. The control plane automatically computes the new shortest path
+(assuming one exists), thus preserving connectivity. 
+However, the new path may
+not conform to the same policies as the path in the 
+original failure-free data
+plane from which the control plane was synthesized: 
+e.g., the new path may no longer
+traverse a waypoint or have the same bandwidth capacity. Thus,
+synthesis must take into account policy-compliance under failures.
+
+Policy-compliance under failures is difficult to achieve due 
+to the large number of failure scenarios to consider and can 
+be impossible to synthesize a control plane which is 
+policy-compliant under all failures. Operators require 
+varying degrees of policy-compliance under failures for 
+which we propose two classes of policies: {\em hard} and
+{\em soft} policies. Operators can specify 
+hard policies pertaining
+to security are of the utmost importance, 
+because they protect the network and
+its services from attacks and unauthorized accesses. Some 
+examples of hard policies are as follows: 
+a particular flow must always traverse through a waypoint 
+under any failure scenario, or a certain pair of hosts must 
+never be able to communicate (always blocked). 
+Soft policies can be considered as objectives which improve 
+the control plane, but are not strict requirements, typically
+pertaining to performance. The consequences of violating
+soft policies are less severe. Operators can provide 
+backup paths for flows (generated such that they 
+satisfy the data plane policies) as soft policies, 
+and the synthesis of the control plane 
+tries to satisfy as many soft policies as 
+possible. 
+
+While we use an abstract representation of the control
+plane (ARC) to simplify the synthesis, operators need control 
+planes conforming to certain requirements of the 
+underlying network infrastructure. For example, a 
+network may comprise of switches which do not have custom
+features like ACLs or route-filters, thus the ARC must take 
+into consideration these requirements. Without losing 
+generality, we translate these 
+requirements as policies determining the properties of the
+ARC, and thus, still use a protocol-independent representation
+to represent the control plane. 
+
+Our architecture envisions network operator providing
+a policy-compliant data plane and a set of hard and soft policies
+pertaining to policy-compliance under failure and network 
+infrastructure requirements as input to synthesize resilient 
+control planes. Towards this vision, we present  
+approaches to synthesize different types of the ARC and the 
+challenges involved in making synthesis efficient and
+extending these approaches to support a wider range of 
+policies and functionalities. 

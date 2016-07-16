@@ -1,58 +1,45 @@
-\section{ARC Synthesis}
-% Operators require support for a diverse collection of policies, 
-% like service chaining, traffic engineering, and isolation. Also,
-% since failure is handled in a distributed manner, operators need 
-% support for policies which specify resilience properties and behavior
-% of traffic under failure scenarios. 
-% Earlier 
-% work in this area has focused on finding ideal OSPF weights for 
-% traffic engineering~\cite{te-ospf}, but such approaches are 
-% inherently tied with the policies supported, and are not extensible 
-% to other policies easily. 
+% \section{ARC Synthesis}
+% % Operators require support for a diverse collection of policies, 
+% % like service chaining, traffic engineering, and isolation. Also,
+% % since failure is handled in a distributed manner, operators need 
+% % support for policies which specify resilience properties and behavior
+% % of traffic under failure scenarios. 
+% % Earlier 
+% % work in this area has focused on finding ideal OSPF weights for 
+% % traffic engineering~\cite{te-ospf}, but such approaches are 
+% % inherently tied with the policies supported, and are not extensible 
+% % to other policies easily. 
 
-In our preliminary approach to ARC synthesis, 
-we tried to specify policies using SMT theories like propositional logic and 
-linear rational arithmetic and 
-use off-the-shelf SMT solvers~\cite{z3} 
-to synthesize the ARC. However, current SMT solvers are incapable of 
-scaling to even small-sized topologies and number of policies, majorly
-due to the fact the paths in the network are based on the weights in a 
-complicated manner (shortest-path) which increases the complexity of the
-encoding in SMT. Synthesizing resilient control planes with this 
-approach is intractable with current state-of-art SMT solvers.
+% In our preliminary approach to ARC synthesis, 
+% we tried to specify policies using SMT theories like propositional logic and 
+% linear rational arithmetic and 
+% use off-the-shelf SMT solvers~\cite{z3} 
+% to synthesize the ARC. However, current SMT solvers are incapable of 
+% scaling to even small-sized topologies and number of policies, majorly
+% due to the fact the paths in the network are based on the weights in a 
+% complicated manner (shortest-path) which increases the complexity of the
+% encoding in SMT. Synthesizing resilient control planes with this 
+% approach is intractable with current state-of-art SMT solvers.
 
-As a first step towards ARC synthesis, 
-we use as input the network data plane 
-(set of forwarding paths) which 
-enforces the operator-specified policies. The  
-advantage of using network data planes as 
-input is the ease of developing
-different network management applications 
-enforcing proactive policies\footnote{
-Traditional control planes cannot support reactive policies, however
-middleboxes can overcome this limitation.} 
-as if operating over a software-defined
-network, agnostic of the actual network protocols used in the network. 
-Many existing network management systems like Merlin~\cite{merlin} 
-and SIMPLE~\cite{simple}\footnote{
-Traditional control planes cannot support 
-paths with loops for service chaining.} developed for SDNs could be seamlessly
-integrated to the architecture with minimal changes.  
+% While the ARC synthesis from data planes can enforce 
+% policies by the distributed control plane, it does not
+% encapsulate resilience properties of the control plane. 
+% To accomodate resilience properties in the ARC synthesis,
+% we envision two different mechanisms: concrete
+% backup paths and path-level policies under failure scenarios. 
+% We discuss this in \secref{sec:resilience}. \kausik{Could expand more,
+% write after resilience section is complete}
 
-While the ARC synthesis from data planes can enforce 
-policies by the distributed control plane, it does not
-encapsulate resilience properties of the control plane. 
-To accomodate resilience properties in the ARC synthesis,
-we envision two different mechanisms: concrete
-backup paths and path-level policies under failure scenarios. 
-We discuss this in \secref{sec:resilience}. \kausik{Could expand more,
-write after resilience section is complete}
-
-\subsection{Pure ARC Synthesis}
-We first describe the synthesis of {\em pure} ARCs, i.e.,
+\section{Pure ARC Synthesis}
+We first describe the synthesis of a type of ARC 
+called {\em pure} ARC which
+only forwards packet bases on shortest-paths and does 
+not support additional mechanisms like filtering etc. 
+Thus, 
 the ARC is a directed graph comprising of switches as 
 vertices and weighted edges corresponding to all links in the
-topology (no link is disabled by any mechanism). This is 
+topology (no link is disabled by any mechanism). 
+This is 
 a ideal control plane because it is able to enforce the data plane
 with carefully engineered edge weights and no links are disabled. 
 For a given network data plane, the synthesis of 
