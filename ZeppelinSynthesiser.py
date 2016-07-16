@@ -219,7 +219,7 @@ class ZeppelinSynthesiser(object) :
 
 			
 		f = open('timing', 'a')
-		f.write(str(len(endpoints)) + "," + str(time.time() - start_t))
+		f.write(str(len(endpoints)) + "," + str(time.time() - start_t)+"\n")
 		# Enable Topology Edges
 		self.topology.enableAllEdges()
 		# Extract Edge weights for Gurobi		
