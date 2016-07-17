@@ -17,6 +17,24 @@ Third, we show how ARCs can be modified to deal with resilience (\secref{TODO}).
 Finally, we show how to restart the process whenever one of the three phases fails (\secref{TODO}).
 
 \subsection{From policies to paths}
+Synthesizing sets of paths---i.e., data planes---that adhere to a given set of policies
+is already a hard problem, but a few practical approaches have been proposed.
+The approach that better meets our policy language is the one proposed in Merlin~\cite{}.
+Merlin supports waypoints, reachability policies, and restricted forms of traffic engineering. 
+Merlin uses automata to succinctly represent
+the set of all possible paths reachability and waypoint policies and then mixed integer linear programming
+to identify a concrete set of paths meeting the traffic engineering requirements.
+We implemented a similar approach in our prototype tool. 
+Since this part of the problem is not novel, we briefly provide the intuition behind our solution.
+Our approach directly uses  constraint solving to generate paths adhering to the given policies and does 
+not use automata operations to describe the search space. This choice is dictated by the complex set of policies, such as isolation,
+that our tool wants to support. 
+Given a set of policies we 
+use an encoding similar to that of Merlin to generate a set of constraints over the propositional theory of
+rationals. Every solution to this set of constraints is a set of paths satisfying the given policies.
+
+\loris{we will add more details if needed}
+
 
 \subsection{From paths to ARCs}
 
