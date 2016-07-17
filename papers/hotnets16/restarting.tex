@@ -1,8 +1,8 @@
 \subsection{Restarting the synthesis process} \label{sec:restart}
-One of the drawbacks of dividing the procedure into multiple phases is that
+One of the drawbacks of using multiple phases is that
 early phases can produce intermediate solutions that will cause the synthesis to fail in  later phases. 
 For example, there might no be a way to produce a resilient ARC for  the set of paths produce by the first phase. 
-When we detect such an instance, we ask produce a different set of paths that satisfies the input policies
+When we detect such an instance, we produce a different set of paths that satisfies the input policies
 and restart the synthesis procedure.
 One could imagine ways to detect failures earlier and reuse part of the computation performed by earlier synthesis
 attempts. %We did not investigate such extensions.
