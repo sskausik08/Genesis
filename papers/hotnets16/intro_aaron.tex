@@ -89,7 +89,8 @@ even moderately-sized networks or sets of policies.
 Instead, we propose 
 a three-phased approach (\secref{sec:synthesis}; \figref{fig:process}). First, we
 synthesize a concrete set of paths---i.e., a data plane---meeting 
-all the functional policies, such as reachability, waypoint, and isolation.
+all specified policies.
+%, such as reachability, waypoint, and isolation.
 %a partially-correct control plane from a set of example paths, such
 %as those contained within a sample data plane. 
 Second, we generate a simple control plane that,
@@ -113,9 +114,15 @@ challenges. First, control plane configurations are low-level (e.g., on which
 interfaces should a routing protocol operate and what costs should be assigned
 to the incident links) while policies are high-level. Second, we must ensure
 the transformations we apply to the synthesized control plane cause the
-program to no longer conform to the input paths. \aaron{What else?} We
-discuss these challenges in more depth in \secref{sec:synthesis} and present
-preliminary solutions to address them.
+program to no longer conform to the input paths. We discuss these challenges
+in more depth in \secref{sec:synthesis} and present preliminary solutions to
+address them.
 
-\aaron{Needs a closing, perhaps an outline, a summary of contributions, some
-results, and/or something visionary?}
+Automatically synthesizing distributed realizations of network policies is an
+important step towards simplifying network management and reducing the
+frequency and impact of network failures. Our approach is an important
+contribution towards the vision of intent-driven networking~\cite{intent}.
+
+
+%\aaron{Needs a closing, perhaps an outline, a summary of contributions, some
+%results, and/or something visionary?}
