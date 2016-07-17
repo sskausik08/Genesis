@@ -42,11 +42,11 @@ In particular, policies like isolation and waypoints require disjunctive formula
 The second phase of our approach takes as input the set of paths produced by the first phase
 and produces an Abstract Representation of the Control Plane (ARC) that realizes the given set of paths.
 First, we  consider the problem of generating ARCs that
- forwards packet bases on shortest-paths---e.g., and ARC representing OSPF routings.
+ forward packets based on shortest-paths---e.g., OSPF routing.
 Then, we consider more complex forms of ARCs in which 
  additional mechanisms like route filtering are allowed. 
  
-\minisection{From paths to simplified ARCs}
+\subsubsection{From paths to simplified ARCs}
 The \emph{Simplified Abstract Representation of the Control Plane} (sARC) is a directed graph comprising switches as 
 vertices and weighted edges corresponding to all links in the
 topology. 
@@ -58,97 +58,100 @@ variation of the so-called {\em inverse shortest path} problem~\cite{}.
 Assume we are given the following inputs: (1) a directed graph $T = (S, L)$ (the network topology), 
 (2) a set of endpoints $\Gamma \subseteq S\times S$
 describing the sources and destinations of the input paths, and 
-(3) a function $P: \Gamma \rightarrow L^*$
+(3) a function $P: \Gamma \rightarrow 2^{L^*}$
 that assigns to each pair of endpoints $(s,t) \in \Gamma$ 
-an \emph{acyclic} path $P(s,t)=l_0\cdots l_n$ such
-that $l_0=(s,s')$, for some $s'\in S$, and $l_n=(s'',t)$, for some $s''\in S$.\footnote{
+a set of \emph{acyclic} paths, such that for every path $l_0\cdots l_n\in P(s,t)$,
+$l_0=(s,s')$, for some $s'\in S$, and $l_n=(s'',t)$, for some $s''\in S$.\footnote{
 We use $L^*$ the denote the set of all finite sequences over the set$L$.}
 The 
 \emph{sARC synthesis}
 problem is to find rational weights for the edges in $L$ such that 
 for each pair of endpoints $(s,t) \in \Gamma$, 
-the path $P(s,t)$ is the shortest path from $s$ to $t$ 
-in the graph. 
+the paths in $P(s,t)$ are \emph{the} shortest paths from $s$ to $t$ 
+in the graph. Notice, that there can be multiple shortest
+paths of equal cost.
 
-Since, the forwarding is destination-based,
-for a destination $d$, we aggregate the paths 
-to create a directed graph $\xi_d$ with the destination
-as the sink. Since, the forwarding path cannot have 
-loops, $\xi_d$ must be a directed acyclic graph for 
-correct enforcement, else we reject the input if this
-requirement is not adhered to.
-We define $\Omega$ for the 
-set of destinations, and $\Delta$ for  
-the set of destination DAGs. 
-Given $\Omega$ and $\Delta$, we generate a set of linear equations
-to find the requisite edge weights of a pure ARC. 
-For this, we define $E(sw_1, sw_2)$ as
-the edge weight variable for link $sw_1 \rightarrow sw_2$. 
-We use $\rightarrow$ operator to denote a path of length 1 
-(link), $\rightarrow^*$ to denote a path of length $\geq 0$
-and $\rightarrow^+$ to denote a path of length $\geq 1$.
-For a path connecting two switches 
-$s \rightarrow^+ t$ in a DAG, 
-to enforce that the path will be the shortest, we need equations
-which ensure the sum of edge weights of the path is strictly smaller than
-the weight of all other paths from $s$ to $t$. 
+In sARC packet forwarding is based on destination.
+For a destination $d$, we call $\xi_d$ the directed
+subgraph of $T$ obtained by only keeping the nodes and edges 
+that are traversed by paths with destination $d$.
+Since paths are acyclic, $\xi_d$ is a directed acyclic graph.
+We use $\Omega=\{d\mid (\_,d)\in\Gamma\}$ to denote the 
+set of all destinations and $\Delta=\{\xi_d\mid d\in \Omega\}$ to denote  
+the set of all destination DAGs. 
+
+We use  $sw_1\rightarrow sw_2$ to denote $(sw_1,sw_2)\in L$ and
+$sw_1\rightarrow^* sw_2$ (resp. $sw_1\rightarrow^+ sw_2$) to denote that $sw_2$ is reachable from $sw_1$ by crossing zero (resp. one) or more links.
+Similarly, we use $\rightarrow_{\xi_d}$ to denote the same relations in the destination DAGs.
+
 
 \minisection{Distance Equations}
-$D(s,t)$ denotes the absolute shortest distance from $s$ to $t$. 
-Trivially, $D(s,s) = 0$. For a path $s \rightarrow^+ t$ ($len \geq 1$),
-the shortest distance from $s$ to $t$ is the smallest of the distances
-of the paths traversed through the neighbours of $s$ to $t$. The
-following equations enforce the semantics of distances; 
-here $s \rightarrow sw$ denotes that $sw$ is a neighbour
-of $s$, and $sw \rightarrow^* t$ denotes that the path from $sw$ to $t$ contains
-zero or more edges.
+To solve the ARC synthesis problem, we generate a set of linear equations
+to find the required edge weights. 
+We use $E(sw_1, sw_2)$ to denote the weight of the edge $(sw_1,sw_2)\in L$
+and 
+$D(sw_1, sw_2)$ to denote the shortest distance from $sw_1$ to $sw_2$.
+We add the equation $D(s,s) = 0$ for every $s\in S$ to denote that the distance
+from a node to itself is $0$.
+The
+following equation guarantees that $D(s,t)$ is not greater than 
+the actual shortest distance from $s$ to $t$.
 \begin{multline} \label{eq:dist}
 \forall s, t, sw. (s \rightarrow sw \rightarrow^* t).\\
 D(s, t) \leq E(s, sw) + D(sw, t)
 \end{multline}
-Intuitively, $D(s,t)$ is not greater than 
-the actual shortest distance from $s$ to $t$.
 
-\minisection{Destination DAG Equations}
-For each destination DAG, we add equations to ensure the 
-edge weights are set such that a shortest-path forwarding in the ARC 
-follows the same path or paths specified in the DAG. If a path
+For each destination DAG $\xi_d\in\Delta$, we add equations to ensure 
+that the input paths with destination $d$ are indeed the shortest ones.
+ If a path
 is the shortest path between its endpoints, then every 
 subpath of the path has to be the shortest between its endpoints
 as well (otherwise the complete path would not be the shortest).
 \begin{figure}[h!] 
 	\centering
 	\includegraphics[width=0.8\columnwidth]{figures/distanceEquation.eps}
-	\caption{Distance equation} \label{fig:disteq}
+	\caption{Distance equation
+	\loris{more explanation}	
+	} \label{fig:disteq}
 \end{figure}
 Consider a DAG $\xi_d$ for destination $d$. We define two neighbour
-functions: $N(s)$ denotes the set of neighbours of switch $s$ 
-in the directed graph, and $N(s, \xi_d)$ denote the set of
-neighbours of switch $s$ in the destination DAG. 
-Consider a path $s \rightarrow^+ t$ in the DAG ($t$ 
-need not be the destination. As the DAG specifies
-the shortest paths to the destination, this 
-path from $s$ to $t$ has the lowest weight, 
-which we express by the sum of weights of 
-edges along the path. 
-To satisfy the semantics of the ARC,
-we need to ensure that all other
-paths from $s$ to $t$ are have strictly 
-greater path weights.
-Thus, we add the following equations to ensure the
-shortest path property (\Cref{fig:disteq} illustrates 
+functions: $N_T(s)$ denotes the set of neighbours of switch $s$ 
+in the input graph $T$, and $N_{\xi_d}(s)$ denote the set of
+neighbours of switch $s$ in the destination DAG $\xi_d$. 
+Given a destination $d\in \Omega$,
+we use the following equations to ensure that, given two nodes $s$ and $t$ in
+$\xi_d$, 
+the set of paths from $s$ to $t$ in $\xi_d$ are
+exactly
+\emph{the} shortest paths from $s$ to $t$ in $T$ (\Cref{fig:disteq} illustrates 
 an example).
-\begin{multline} \label{eq:uniq}
-		\forall d \in \Omega. \forall s, t \in \xi_d. (s \rightarrow^+ t).\\ 
-		\forall n'. (n' \in N(s) \wedge n' \not\in N(s, \xi_d)). \\
-		\sum_{\mathclap{\substack{(sw_1, sw_2) \in (s \rightarrow^+ t)}}} 
-		E(sw_1, sw_2) < E(s, n') + D(n', t)
+Let $s,t$ be two nodes in $\xi_d$ and let  $Paths_{\xi_d}(s,t)$ be the set of paths from $s$ to $t$ in $\xi_d$.
+\begin{multline} \label{eq:uniq1}
+		\forall l_0\cdots l_n\in Paths_{\xi_d}(s,t).
+		\forall n' \in N(s) \setminus N_{\xi_d}(s). \\
+		E(s, n') + D(n', t) > \sum_{\mathclap{\substack{l_i=(s_i,t_i)}}} 
+		E(s_i, t_i) 
 \end{multline}
-By using distance for the path $n' \rightarrow t$, we 
-are able to find lower bounds to the weight of the non-DAG 
-paths from $s$ to $t$,
-thus avoiding the blow-up of enumerating all paths from $s$
-to $t$. 
+\begin{multline} \label{eq:uniq2}
+		\forall l_0\cdots l_n\in Paths_{\xi_d}(s,t).
+		\forall n' \in N_{\xi_d}(s). \neg n'\rightarrow^+_{\xi_d} t.  \\
+		E(s, n') + D(n', t) > \sum_{\mathclap{\substack{l_i=(s_i,t_i)}}} 
+		E(s_i, t_i) 
+\end{multline}
+\begin{multline} \label{eq:uniq3}
+		\forall l_0\cdots l_n, l_0'\cdots l_n'\in Paths_{\xi_d}(s,t).\\
+		\sum_{\mathclap{\substack{l_i=(s_i,t_i)}}} 
+		E(s_i, t_i)  =\sum_{\mathclap{\substack{l_i'=(s_i',t_i')}}} 
+		E(s_i', t_i') 
+\end{multline}
+Equation~\ref{eq:uniq1} guarantees that 
+the sum of the weights belonging to a path from $s$ to $t$ in $\xi_d$ is smaller than 
+any path that goes to $t$ via a node $n'$ that is a neighbour of $s$ in $T$ but not in $\xi_d$.
+Equation~\ref{eq:uniq2} guarantees that
+the sum of the weights belonging to a path from $s$ to $t$ in $\xi_d$ is smaller than 
+any path that goes to $t$ via a node $n'$ that is a neighbour of $s$ in $\xi_d$ but such that
+$t$ is not reachable from $n'$ in $\xi_d$.
+Finally, Equation~\ref{eq:uniq2} guarantees that all the paths from $s$ to $t$ in $\xi_d$ have the same weight.
 
 % If the path $n' \rightarrow^* t$ 
 % is not in any DAG completely, then

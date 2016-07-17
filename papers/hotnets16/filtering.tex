@@ -1,4 +1,4 @@
-\minisection{Synthesis of ARC with Route-Filters} \label{sec:routefilter}
+\subsubsection{Synthesis of ARC with Route-Filters} \label{sec:routefilter}
 \begin{figure}[h!] 
 	\centering
 	\includegraphics[width=0.8\columnwidth]{figures/diamond.eps}
@@ -86,7 +86,7 @@ starting at $sw_1$ need not be smaller than the weight
 of any path
 using the the $sw_1 \rightarrow sw_2$ link. Thus,
 we prune \Cref{eq:uniq} to enforce the route-filter accordingly:
-\begin{multline} \label{eq:uniq}
+\begin{multline} \label{eq:uniq-filt}
 		\forall d \in \Omega. \forall s, t \in \xi_d. (s \rightarrow^+ t).\\ 
 		\forall n'. (n' \in N(s) \wedge n' \not\in N(s, \xi_d) \wedge \neg RF(s,n',d)). \\
 		\sum_{\mathclap{\substack{(sw_1, sw_2) \in (s \rightarrow^+ t)}}} 
