@@ -9,7 +9,6 @@ one exists) will become the new path to reach the destination. However, the
 new path may not conform to the same policies as the path in the original
 failure-free data plane from which the \ARC was synthesized---e.g., the new
 path may no longer traverse a waypoint or have the same bandwidth capacity.
-
 Given the high frequency of failures in data center~\cite{datacenterfailures},
 campus, and wide-area~\cite{turner10:sigcomm} networks, it is desirable to
 generate a control plane that computes {\em policy-compliant backup paths}.
@@ -22,64 +21,53 @@ topology.}
 
 \input{tables/policy_characteristics}
 
-Our propose  approach is to attempt to {\em transform} the \ARC synthesized from a single
-data plane (\secref{sec:dps_to_arc}) into a k-resilient \ARC.
+Our proposed  approach is to attempt to {\em transform} the \ARC synthesized in phase
+two into a k-resilient \ARC.
 The transformations are based on simple graph characteristics that an \ARC
 must satisfy to be policy-compliant.  \tabref{policy_characteristics}
 lists several policies and the requisite graph characteristics of a
 $k$-resilient control plane. 
 
-For example, to satisfy the policy that a flow from switch $\srcSwitch$ to
+We illustrate how this can be done
+to satisfy the policy that a flow from switch $\srcSwitch$ to
 switch $\dstSwitch$ is blocked on all backup paths ({\em P1}), it must be the
 case that all paths between $\srcSwitch$ and $\dstSwitch$ in the \ARC contain
 at least one edge on which the flow is filtered. If we remove all edges with
 such a filter from the graph, and there remains a path from $\srcSwitch$ to
 $\dstSwitch$, then there is some backup path for which the policy does not
 hold; (one of) the remaining path(s) is the backup path for a scenario in
-which all of the links with filters have failed. Compliance with a ``flow
-traverses waypoint'' policy ({\em P2}) requires the flow's graph to have a
-similar characteristic.
-
+which all of the links with filters have failed. 
 If the aforementioned graph characteristics are not satisfied, then we need to
 add filters or waypoints to the graph until the characteristic is satisfied.
 We can do this using a simple iterative process: 
-\begin{enumerate}
-\vspace{-1ex}
-\setlength{\topsep}{0pt}
-\setlength{\itemsep}{0em}
-\setlength{\parskip}{0pt}
-\setlength{\parsep}{0pt}
-\item Remove all edges with a filter (or vertices corresponding to waypoints) 
-\item Find a path from $\srcSwitch$ to $\dstSwitch$; if none exists,
-    then the control plane is k-resilient w.r.t. the current policy
-\item Otherwise, add a filter (waypoint) to some edge along the path, and repeat
-\vspace{-1ex}
-\end{enumerate}
+1) remove all edges with a filter (or vertices corresponding to waypoints);
+2) find a path from $\srcSwitch$ to $\dstSwitch$; if none exists,
+    then the control plane is k-resilient w.r.t. the current policy and we are done;
+ 3) otherwise, add a filter (waypoint) to some edge along the path, and repeat.
 Note that adding filters does not impact the selection of paths for a flow, as
-is the case in \secref{sec:dps_to_arcs}, because we are adding filters to
+is the case in \secref{sec:routefilter}, because we are adding filters to
 ensure there is {\em no} path for the flow.
-
-Although the above steps will produce an k-resilient control plane, the
+Although the above steps will produce a k-resilient control plane, the
 resulting control plane may contain more filters or waypoints than necessary.
 We can find the minimal number of filters or waypoints to add by computing a
 min-cut after the first step and adding a filter or waypoint to each edge in the cut. 
 
+Compliance with a ``flow
+traverses waypoint'' policy ({\em P2}) requires the flow's graph to have a
+similar characteristic.
 Other policies require more complex transformations. For example, to ensure
 two endpoints can communicate even in the presence of up to $k$ link failures
-({\em P3}), where $k \leq t$, the \ARC must contain at least $k+1$
+({\em P3}), the \ARC must contain at least $k+1$
 edge-disjoint, filter-free paths; this is equivalent to a unit-weight,
 filter-edges-removed version of the \ARC having a max-flow of at least
 $k+1$~\cite{arc}. By removing filters, we may be able to increase the number
 of available edge-disjoint, filter-free paths. However, this may counteract
 the addition of filters that occurred during the \ARC synthesis phase
-(\secref{sec:dps_to_arc}). Fortunately, the data plane from which the
-0-resilient \ARC was synthesized is just one possible policy-compliant data
-plane; other paths are acceptable as long as they conform to the provided
-policies. We can ensure policy-compliance is preserved by applying the
-transformations for other policies ({\em P1} and {\em P2}) second.
-
-The graph characteristics that need to be satisfied when $t < \ell$ are more
-complex, because only some of the possible paths between $\srcSwitch$ and
-$\dstSwitch$ need to conform to the policies. Identifying these
-characteristics and an efficient way to enforce them is part of our future
+(\secref{sec:dps_to_arc}). In this case we need to restart the synthesis procedure
+with a different set of paths or try considering different route-filters assignments.
+%The graph characteristics that need to be satisfied when $t < \ell$ are more
+%complex, because only some of the possible paths between $\srcSwitch$ and
+%$\dstSwitch$ need to conform to the policies. 
+Identifying efficient ways to perform this transformations
+is part of our future
 work.
