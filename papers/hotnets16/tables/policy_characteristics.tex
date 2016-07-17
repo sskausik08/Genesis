@@ -1,17 +1,17 @@
 \begin{table}
 \footnotesize
 \setlength{\tabcolsep}{0.2em}
-\begin{tabular}{p{0.38\columnwidth}p{0.57\columnwidth}}
+\begin{tabular}{p{0.43\columnwidth}p{0.52\columnwidth}}
 {\bf Policy} & {\bf Graph characteristic} \\
 \hline
-Flow blocked & After removing the edges with filters for the flow, there is no
+{\em P1}: Flow blocked & After removing the edges with filters for the flow, there is no
 path from $\srcSwitch$ to $\dstSwitch$ \\
 \hline
-Flow traverses waypoint & After removing the vertices corresponding to
+{\em P2}: Flow traverses waypoint & After removing the vertices corresponding to
 waypoints, there is no path from $\srcSwitch$ to $\dstSwitch$ \\
 \hline
-Destination reachable\newline under $\leq t$ link failures & Max-flow from
-$\srcSwitch$ to $\dstSwitch$ is $\geq t+1$ \aaron{How do filters affect this?} \\
+{\em P3}: Destination reachable\newline under $\leq k$ link failures & Max-flow from
+$\srcSwitch$ to $\dstSwitch$ is $\geq$~$k$~+~1 \\
 \hline
 \end{tabular}
 \label{t:policy_characteristics}

@@ -50,89 +50,112 @@ topology.}
 %paper?} 
 
 We could synthesize a t-resilient control plane by generating a data plane
-(\secref{sec:data_plane}) for each possible combination of up to $t$ failed
-links. 
+(\secref{sec:policies_to_dp}) for each possible combination of up to $t$
+failed links and updating our constraints (\secref{sec:dps_to_arc}) to account
+for all backup paths. However, for a network with $\ell$ links, this requires
+generating $\sum_{i=0}^{t} \frac{\ell!}{t! * (\ell-t)!}$ data planes.
+Moreover, some of the data planes we generate may not be compatible---i.e., it
+may not be possible to assign edge weights and route filters such that the
+paths computed under a given failure scenario match the provided backup paths.
+Thus, we will need many iterations of data plane generation to find a set of
+data planes from which we can synthesize a t-resilient control plane.
 
-\minisection{Approaches}
-One approach to generating a t-resilient control plane is to synthesize an
-\ARC from a {\em set} of data planes. The set must include a policy-compliant
-data plane for each possible combination of up to $t$ failed links. For a
-network with $n$ links, there are $\sum_{i=0}^{t} \frac{n!}{t! * (n-t)!}$ such
-data planes. Expecting a network operator to provide these data planes,
-constructed using a manual or automated process, goes against the purpose of
-automatically generating a policy-compliant control plane: reducing the burden
-on network operators and the potential for human error. Moreover, if the data
-planes needed for all possible failure scenarios are already available, then
-we can trivially install the corresponding rules on network devices, even if
-the devices are not directly programmable~\cite{TODO}. This avoids the need
-for a control plane that (re-)computes the data planes at runtime.
-Additionally, it may not be possible to produce the collective set of backup
-paths using a single assignment of edge weights. For example, consider the two
-backup paths shown in \figref{fig:TODO}; there is no possible assignment of
-edge weights such that the shortest path computed over the resulting graph
-under each of the failure scenarios equals the depicted backup paths.
-\kausik{I think the above para kind of downplays our
-motivation to synthesize control planes. I think we should write
- it like: given backup paths, we try to incorporate those in the ARC
- during synthesis. But providing backup paths can be difficult, so we
- provide functionality to have high level ARC policies like traverses through
- a waypoint. What do you think?}
-
-
-Instead, we 
-%synthesize an \ARC that computes paths equivalent to those present
-%in an operator-provided data plane corresponding to a failure-free state, as
-%described above (\secref{sec:}), and then we
-{\em transform} the \ARC synthesized from a single data plane
-(\secref{sec:}) such that all paths computed over the transformed \ARC under
-up to $t$ link failures are policy-compliant. This avoids the need for an
-operator to provide a data plane for every failure scenario. Instead, an
-operator only needs to provide: (1) a single data plane corresponding to a
-failure-free state, and (2) the policies that should apply to all backup paths
-computed for a flow. 
+%\minisection{Approaches}
+%One approach to generating a t-resilient control plane is to synthesize an
+%\ARC from a {\em set} of data planes. The set must include a policy-compliant
+%data plane for each possible combination of up to $t$ failed links. For a
+%network with $n$ links, there are $\sum_{i=0}^{t} \frac{n!}{t! * (n-t)!}$ such
+%data planes. Expecting a network operator to provide these data planes,
+%constructed using a manual or automated process, goes against the purpose of
+%automatically generating a policy-compliant control plane: reducing the burden
+%on network operators and the potential for human error. Moreover, if the data
+%planes needed for all possible failure scenarios are already available, then
+%we can trivially install the corresponding rules on network devices, even if
+%the devices are not directly programmable~\cite{TODO}. This avoids the need
+%for a control plane that (re-)computes the data planes at runtime.
+%Additionally, it may not be possible to produce the collective set of backup
+%paths using a single assignment of edge weights. For example, consider the two
+%backup paths shown in \figref{fig:TODO}; there is no possible assignment of
+%edge weights such that the shortest path computed over the resulting graph
+%under each of the failure scenarios equals the depicted backup paths.
+%\kausik{I think the above para kind of downplays our
+%motivation to synthesize control planes. I think we should write
+% it like: given backup paths, we try to incorporate those in the ARC
+% during synthesis. But providing backup paths can be difficult, so we
+% provide functionality to have high level ARC policies like traverses through
+% a waypoint. What do you think?}
 
 \input{tables/policy_characteristics}
 
 \minisection{Transformations}
+Instead, we {\em transform} the 0-resilient \ARC synthesized from a single
+data plane (\secref{sec:dps_to_arc}) to a t-resilient \ARC.
+%such that all paths computed over the transformed \ARC under up to $t$ link
+%failures are policy-compliant. This avoids the need for an operator to provide
+%a data plane for every failure scenario. Instead, an operator only needs to
+%provide: (1) a single data plane corresponding to a failure-free state, and
+%(2) the policies that should apply to all backup paths computed for a flow. 
 The transformations are based on simple graph characteristics that an \ARC
-must satisfy to conform to specific policies
-(\tabref{tab:policy_characteristics}).  \aaron{The graph characteristics
-in~\cite{arc} are actually if we want the policies to be satisfied under an
-arbitrary (up to $n$) number of link failures. This diverges from the
-discussion of t-resilience above. Does t-resilience actually correspond to the
-``always reachable with $<t$ failures'' policy?} 
+must satisfy to be policy-compliant.  \tabref{tab:policy_characteristics}
+lists several policies and the requisite graph characteristics of an
+$\ell$-resilient control plane---i.e., a control plane that complies with this
+policy under all possible combinations of link failures. 
+%\aaron{The graph characteristics in~\cite{arc} are actually if we want the policies to be satisfied under an
+%arbitrary (up to $n$) number of link failures. This diverges from the
+%discussion of t-resilience above. Does t-resilience actually correspond to the
+%``always reachable with $<t$ failures'' policy?} 
+
 For example, to satisfy the policy that a flow from switch $\srcSwitch$ to
-switch $\dstSwitch$ is blocked on all backup paths, it must be the case that
-all paths between $\srcSwitch$ and $\dstSwitch$ in the flow's graph \aaron{do
-we have a name for this?} \kausik{We havent considered ``always blocked''.
-We were thinking of including it in the discussion as "Default off" network
-like SDNs}
-contain at least one edge on which the flow is
-filtered. If we remove all edges with such a filter from the graph, and there
-remains a path from $\srcSwitch$ to $\dstSwitch$, then there is some backup
-path for which the policy does not hold; (one of) the remaining path(s) is the
-backup path that will be computed when all of the links with filters have
-failed. Compliance with a ``flow traverses waypoint'' policy requires the
-flow's graph to have a similar characteristic.
+switch $\dstSwitch$ is blocked on all backup paths ({\em P1}), it must be the
+case that all paths between $\srcSwitch$ and $\dstSwitch$ in the \ARC contain
+at least one edge on which the flow is filtered. If we remove all edges with
+such a filter from the graph, and there remains a path from $\srcSwitch$ to
+$\dstSwitch$, then there is some backup path for which the policy does not
+hold; (one of) the remaining path(s) is the backup path for a scenario in
+which all of the links with filters have failed. Compliance with a ``flow
+traverses waypoint'' policy ({\em P2}) requires the flow's graph to have a
+similar characteristic.
 
 If the aforementioned graph characteristics are not satisfied, then we need to
 add filters or waypoints to the graph until the characteristic is satisfied.
 We can do this using a simple iterative process: 
 \begin{enumerate}
+\vspace{-1ex}
+\setlength{\topsep}{0pt}
+\setlength{\itemsep}{0em}
+\setlength{\parskip}{0pt}
+\setlength{\parsep}{0pt}
 \item Remove all edges with a filter (or vertices corresponding to waypoints) 
-\item Find a path from $\srcSwitch$ to $\dstSwitch$; if no such path exists,
-    then the control plane is policy-compliant w.r.t. the current policy
-\item Otherwise, add a filter (waypoint) to an arbitrary edge along the path
-    and repeat
+\item Find a path from $\srcSwitch$ to $\dstSwitch$; if none exists,
+    then the control plane is $\ell$-resilient w.r.t. the current policy
+\item Otherwise, add a filter (waypoint) to some edge along the path, and repeat
+\vspace{-1ex}
 \end{enumerate}
+Note that adding filters does not impact the selection of paths for a flow, as
+is the case in \secref{sec:dps_to_arcs}, because we are adding filters to
+ensure there is {\em no} path for the flow.
 
-Although the above steps will produce a policy-compliant control plane, the
+Although the above steps will produce an $\ell$-resilient control plane, the
 resulting control plane may contain more filters or waypoints than necessary.
-\aaron{TODO: talk about finding an optimal transformation by computing the
-    min-cut}
+We can find the minimal number of filters or waypoints to add by computing a
+min-cut after the first step and adding a filter or waypoint to each edge in the cut. 
 
-\aaron{TODO: talk about making the graph satisfy the max-flow characteristic
-    to comply with a destination reachable policy}
-\kausik{Is there a way
-to repair ARCs to increase max-flow. Actually, the max-flow property is 
-integrated in the ARC synthesis, so we may not need to do it here}
+Other policies require more complex transformations. For example, to ensure
+two endpoints can communicate even in the presence of up to $k$ link failures
+({\em P3}), where $k \leq t$, the \ARC must contain at least $k+1$
+edge-disjoint, filter-free paths; this is equivalent to a unit-weight,
+filter-edges-removed version of the \ARC having a max-flow of at least
+$k+1$~\cite{arc}. By removing filters, we may be able to increase the number
+of available edge-disjoint, filter-free paths. However, this may counteract
+the addition of filters that occurred during the \ARC synthesis phase
+(\secref{sec:dps_to_arc}). Fortunately, the data plane from which the
+0-resilient \ARC was synthesized is just one possible policy-compliant data
+plane; other paths are acceptable as long as they conform to the provided
+policies. We can ensure policy-compliance is preserved by applying the
+transformations for other policies ({\em P1} and {\em P2}) second.
+
+The graph characteristics that need to be satisfied when $t < \ell$ are more
+complex, because only some of the possible paths between $\srcSwitch$ and
+$\dstSwitch$ need to conform to the policies. Identifying these
+characteristics and an efficient way to enforce them is part of our future
+work.
