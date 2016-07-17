@@ -7,7 +7,7 @@ Second, we show how to generate ARCs that induce
 the set of paths synthesized in the first phase (\secref{sec:phase2}).
 Third, we show how ARCs can be modified to deal with resilience (\secref{sec:phase3}).
 We then show how to restart the process whenever one of the three phases fails (\secref{sec:restart}).
-Finally, we show how we can transform ARCs to actual device configurations (\secref{sec:deviceconf}). 
+Finally, we show how we can transform ARCs to actual device configurations (\secref{sec:configs}). 
 
 \subsection{From policies to paths} \label{sec:phase1}
 The first phase of our approach produces a set of paths adhering to
@@ -118,8 +118,7 @@ we use the following equations to ensure that, given two nodes $s$ and $t$ in
 $\xi_d$, 
 the set of paths from $s$ to $t$ in $\xi_d$ are
 exactly
-\emph{the} shortest paths from $s$ to $t$ in $T$ (\Cref{fig:disteq} illustrates 
-an example).
+\emph{the} shortest paths from $s$ to $t$ in $T$.
 Let $s,t$ be two nodes in $\xi_d$ and let  $Paths_{\xi_d}(s,t)$ be the set of paths from $s$ to $t$ in $\xi_d$.
 \begin{multline} \label{eq:uniq1}
 		\forall l_0\cdots l_n\in Paths_{\xi_d}(s,t).
