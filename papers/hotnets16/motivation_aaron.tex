@@ -58,12 +58,16 @@ This avoids the scalability and failure tolerance
 challenges of centralized approaches like SDN~\cite{onos, hasdn, propane}. However, programming (i.e.,
 configuring) a traditional control plane to compute policy-compliant paths
 remains challenging for several reasons: 
+\setlist[itemize]{
+    topsep=.5ex,
+    itemsep=0ex,
+    leftmargin=1em,
+}
 \begin{itemize}
-\vspace{-1ex}
-\setlength{\topsep}{0pt}
-\setlength{\itemsep}{0em}
-\setlength{\parskip}{0pt}
-\setlength{\parsep}{0pt}
+%\setlength{\topsep}{0ex}
+%\setlength{\itemsep}{0ex}
+%\setlength{\parskip}{0pt}
+%\setlength{\parsep}{0pt}
 \item The available path-computation algorithms
 available are pre-defined---e.g., OSPF uses
 Dijkstra's shortest path---and their behavior can only be influenced
