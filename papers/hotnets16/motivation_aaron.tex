@@ -96,7 +96,6 @@ planes satisfying the input policies for a
 producer-consumer model to make the synthesis of 
 control planes from policies tractable.  
 
-
 The solution space of output network configurations to 
 enforce a set of policies
 is large; configurations can use different 
@@ -130,6 +129,18 @@ generality, we translate these
 requirements as types of ARCs with different properties,
 and still use a protocol-independent representation
 to represent the control plane. 
+
+In this paper, we show the preliminary treatment 
+of the second and third phase of the our three-phased
+approach, i.e synthesizing a control plane from a set 
+of input paths and transforming the control plane to 
+satisfy policies under failure scenarios. The first 
+phase has seen promising work in recent times~\cite{merlin,
+simple}, these systems generate data planes to enforce 
+different kinds of policies, and 
+we can be retrofit these systems to generate different 
+data planes to integrate in our three-phase approach.
+
 % thus, the networking infrastructure could be
 % transitioned to different protocols without affecting the policy 
 % control of the architecture. From the ARC, we can construct different
