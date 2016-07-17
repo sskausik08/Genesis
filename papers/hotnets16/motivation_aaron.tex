@@ -34,8 +34,8 @@ policies, otherwise performance, security, or availability problems may arise.
 A variety of techniques can be used to determine the appropriate forwarding
 paths. One option is to compute a data plane offline, and install the data
 plane using an API that allows direct control of switches' forwarding tables
-(e.g., OpenFlow). Several recent works~\cite{netegg} have adopted this
-approach, using a satisfiability (SAT) solver to automatically compute a data
+(e.g., OpenFlow). Several recent works~\cite{merlin, simple} have adopted this
+approach, using solvers to automatically compute a data
 plane that conforms to a set of policies. \aaron{need to say what is wrong
  with this approach} A second option is to dynamically compute forwarding
 paths at a logically centralized controller---i.e., use a software-defined
@@ -45,7 +45,7 @@ which links have failed) as input and output paths that conform to a
 multiplicity of policies.  Most existing SDN control applications only compute
 paths based on one or a few types of policies: e.g., service
 chaining~\cite{simple, flowtags}, traffic engineering~\cite{swan, b4}, or
-resilience~\cite{brent}. Furthermore, the controller may become bottlenecked
+resilience~\cite{plinko}. Furthermore, the controller may become bottlenecked
 or fail (even if it is distributed), leading to (a partial) network failure.
 
 A third option, which continues to be the most widely adopted, is to
@@ -80,6 +80,46 @@ This approach causes information to be lost between the different phases and may
 multiple iterations to produce results that meet all the polices. 
 However, our preliminary results show encouraging performance.
 }
+
+The solution space of output network configurations to 
+enforce a set of policies
+is large; configurations can use different 
+network protocols (e.g., only BGP, only OSPF or a hybrid) and
+mechanisms (e.g., route filters, access control lists
+or protocol-specific variables). The large solution space
+of configurations complicates the synthesis of
+network configurations from
+input policies, 
+or ties the synthesis to a particular type of configuration. 
+Instead, we borrow a page from programming languages
+research and
+synthesize an Abstract Representation for Control planes (ARC)~\cite{arc} 
+from the data plane; the ARC can then be translated to actual device configurations.
+The ARC uses the notion that most routing protocols in use 
+today employ a cost-based path selection algorithm; thus a weighted
+graph can be used to abstractly represent the control plane such that 
+the path between two points taken in the network would be 
+the lowest weight path in the graph. 
+The ARC effectively decouples the policy component with the 
+actual network infrastructure. 
+
+While we use an abstract representation of the control
+plane (ARC) to simplify the synthesis, operators need control 
+planes conforming to certain requirements of the 
+underlying network infrastructure. For example, a 
+network may comprise of switches which do not have custom
+features like ACLs or route-filters, thus the ARC must take 
+into consideration these requirements. Without losing 
+generality, we translate these 
+requirements as types of ARCs with different properties,
+and still use a protocol-independent representation
+to represent the control plane. 
+% thus, the networking infrastructure could be
+% transitioned to different protocols without affecting the policy 
+% control of the architecture. From the ARC, we can construct different
+% drivers for translation to actual device configurations; these drivers
+% can leverage inferences from healthy network practices in 
+% real-life networks~\cite{mpa-imc15} to produce ideal network configurations.
 
 
 %\aaron{Old text below}

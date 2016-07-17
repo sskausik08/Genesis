@@ -104,17 +104,7 @@ possible.
 
 \aaron{Discussion of the available control plane constructs should come up
     earlier.}
-While we use an abstract representation of the control
-plane (ARC) to simplify the synthesis, operators need control 
-planes conforming to certain requirements of the 
-underlying network infrastructure. For example, a 
-network may comprise of switches which do not have custom
-features like ACLs or route-filters, thus the ARC must take 
-into consideration these requirements. Without losing 
-generality, we translate these 
-requirements as policies determining the properties of the
-ARC, and thus, still use a protocol-independent representation
-to represent the control plane. 
+
 
 Our architecture envisions network operator providing
 a policy-compliant data plane and a set of hard and soft policies

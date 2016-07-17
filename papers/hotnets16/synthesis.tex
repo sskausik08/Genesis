@@ -30,39 +30,41 @@
 % We discuss this in \secref{sec:resilience}. \kausik{Could expand more,
 % write after resilience section is complete}
 
-\section{Pure ARC Synthesis}
-\label{sec:synthesis}
+\section{ARC Synthesis} \label{sec:synthesis}
 We first describe the synthesis of a type of ARC 
 called {\em pure} ARC which
 only forwards packet bases on shortest-paths and does 
 not support additional mechanisms like filtering etc. 
 Thus, 
-the ARC is a directed graph comprising of switches as 
+the ARC is a directed graph comprising switches as 
 vertices and weighted edges corresponding to all links in the
 topology (no link is disabled by any mechanism). 
 This is 
 a ideal control plane because it is able to enforce the data plane
 with carefully engineered edge weights and no links are disabled. 
 For a given network data plane, the synthesis of 
-the pure ARC reduces to a
+the pure ARC from input paths reduces to a
 variation of the {\em inverse shortest path} problem, an almost 
 unexplored algorithmic problem. 
 
 Formally, this variation of inverse shortest path problem 
 has as input: (1) a directed graph $T = (S, L)$ (the network topology), 
-(2) a set of endpoints $\Gamma$, and 
-(3) a set of paths $P$
+(2) a set of endpoints $\Gamma \subseteq S\times S$, and 
+(3) a set of paths $P \subset L*$
 such that for each $(s,t) \in \Gamma, \exists p \in P$ such
-that the path $p$ is from $s$ to $t$. 
+that the path $p$ is a set of links connecting $s$ to $t$. 
 The problem is to find weights for the edges $L$ such that 
 for each $(s,t) \in \Gamma$, every lowest weighted path 
 in the graph 
-from $s$ to $t$ is in set $P$. 
+from $s$ to $t$ is in the set $P$. 
 
-From the paths in the data plane, 
-we extract the forwarding
-DAG (directed acyclic graph) for each destination
-as the sink (as the forwarding is destination-based). 
+Since, the forwarding is destination-based,
+for a destination $d$, we aggregate the paths 
+to create a directed graph $\xi_d$ with the destination
+as the sink. Since, the forwarding path cannot have 
+loops, $\xi_d$ must be a directed acyclic graph for 
+correct enforcement, else we reject the input if this
+requirement is not adhered to.
 We define $\Omega$ for the 
 set of destinations, and $\Delta$ for  
 the set of destination DAGs. 
@@ -70,20 +72,21 @@ Given $\Omega$ and $\Delta$, we generate a set of linear equations
 to find the requisite edge weights of a pure ARC. 
 For this, we define $E(sw_1, sw_2)$ as
 the edge weight variable for link $sw_1 \rightarrow sw_2$. 
+We use $\rightarrow$ operator to denote a path of length 1 
+(link), $\rightarrow^*$ to denote a path of length $\geq 0$
+and $\rightarrow^+$ to denote a path of length $\geq 1$.
 For a path connecting two switches 
 $s \rightarrow^+ t$ in a DAG, 
 to enforce that the path will be the shortest, we need equations
 which ensure the sum of edge weights of the path is strictly smaller than
-the weight of all other paths from $s$ to $t$. However, this can incur
-an exponential blow-up in number of equations. Instead, we use distances 
-to reduce the number of equations to a polynomial order. 
+the weight of all other paths from $s$ to $t$. 
 
 \minisection{Distance Equations}
 $D(s,t)$ denotes the absolute shortest distance from $s$ to $t$. 
 Trivially, $D(s,s) = 0$. For a path $s \rightarrow^+ t$ ($len \geq 1$),
 the shortest distance from $s$ to $t$ is the smallest of the distances
-of the paths traversed through the neighbours of $s$ to $t$. Therefore, the
-following set of equations enforce the semantics of distances; 
+of the paths traversed through the neighbours of $s$ to $t$. The
+following equations enforce the semantics of distances; 
 here $s \rightarrow sw$ denotes that $sw$ is a neighbour
 of $s$, and $sw \rightarrow^* t$ denotes that the path from $sw$ to $t$ contains
 zero or more edges.
@@ -91,7 +94,7 @@ zero or more edges.
 \forall s, t, sw. (s \rightarrow sw \rightarrow^* t).\\
 D(s, t) \leq E(s, sw) + D(sw, t)
 \end{multline}
-These equations ensure that $D(s,t)$ is not greater than 
+Intuitively, $D(s,t)$ is not greater than 
 the actual shortest distance from $s$ to $t$.
 
 \minisection{Destination DAG Equations}
@@ -100,7 +103,7 @@ edge weights are set such that a shortest-path forwarding in the ARC
 follows the same path or paths specified in the DAG. If a path
 is the shortest path between its endpoints, then every 
 subpath of the path has to be the shortest between its endpoints
-as well. 
+as well (otherwise the complete path would not be the shortest).
 \begin{figure}[h!] 
 	\centering
 	\includegraphics[width=0.8\columnwidth]{figures/distanceEquation.eps}
@@ -110,12 +113,16 @@ Consider a DAG $\xi_d$ for destination $d$. We define two neighbour
 functions: $N(s)$ denotes the set of neighbours of switch $s$ 
 in the directed graph, and $N(s, \xi_d)$ denote the set of
 neighbours of switch $s$ in the destination DAG. 
-Since, each subpath of $\xi_d$ is the shortest path,
-we need to ensure that all other
-paths are not shorter or equal to these paths.  
-We express the weight of the  
-path in the DAG by the sum of weights of 
+Consider a path $s \rightarrow^+ t$ in the DAG ($t$ 
+need not be the destination. As the DAG specifies
+the shortest paths to the destination, this 
+path from $s$ to $t$ has the lowest weight, 
+which we express by the sum of weights of 
 edges along the path. 
+To satisfy the semantics of the ARC,
+we need to ensure that all other
+paths from $s$ to $t$ are have strictly 
+greater path weights.
 Thus, we add the following equations to ensure the
 shortest path property (\Cref{fig:disteq} illustrates 
 an example).

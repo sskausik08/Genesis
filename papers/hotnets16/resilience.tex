@@ -6,9 +6,9 @@
 %\subsubsection{Resilience Policies}
 %\kausik{Talk here about ARC repair (some other term for that).}
 
-Although the \ARC synthesized using the aforementioned approach represents a
+The \ARC synthesized using the aforementioned approach represents a
 control plane that will compute policy-compliant paths in the absence of
-failures, it does not guarantee policy compliance when failures occur. For
+failures. However, it does not guarantee policy compliance when failures occur. For
 example, if a link along the shortest path (\aaron{refer to some example
 figure}) fails, the next shortest path will become the new path to reach the
 destination. The control plane automatically computes the new shortest path
@@ -17,11 +17,10 @@ not conform to the same policies as the path in the original failure-free data
 plane from which the \ARC was synthesized: e.g., the new path may no longer
 traverse a waypoint or have the same bandwidth capacity.
 
-\minisection{Backup paths}
 Given the high frequency of failures in data center and enterprise campus
-networks~\cite{TODO}, it is desirable to synthesize a control plane that
+networks~\cite{datacenterfailures}, it is desirable to synthesize a control plane that
 computes {\em policy-compliant backup paths}. In particular, we want a network
-to be {\em t-resilient}~\cite{TODO}: i.e., the control plane will compute a
+to be {\em t-resilient}~\cite{plinko}: i.e., the control plane will compute a
 policy-compliant backup path when there are $t$ or fewer link failures in the
 network.\footnote{The value of $t$ depends on operator objectives and the
 level of redundancy available in the physical topology.}
