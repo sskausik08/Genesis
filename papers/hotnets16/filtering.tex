@@ -201,6 +201,22 @@ the addition of a route-filter.
 In fact, each such a diamond can be ``removed'' by introducing a route-filter $(l_0, d')$ that hides
 the path $l_0\cdots l_n$ for the destination $d'$ (see \Cref{fig:diamond}).
 Diamonds can detected and removed in polynomial time.
+
+\begin{figure}
+	\centering
+	\includegraphics[width=0.7\columnwidth]{figures/evaluation.eps}
+	\caption{Preliminary evaluation of synthesis of ARC with
+	route-filters.} \label{fig:evaluation}
+\end{figure}
+\minisection{Evaluation} \Cref{fig:evaluation} shows 
+the preliminary evaluation of our second phase, synthesis 
+of the ARC with route-filters from the input data plane 
+for varying number of paths in the data plane and size 
+of a fat-tree topology~\cite{fattree}. 
+We generate the input paths randomly
+(the maximum path is 7) and report the average 
+synthesis time. Our implementation uses the Gurobi 
+LP-solver~\cite{gurobi}. 
 %
 %Consider
 %the diamond in \Cref{fig:diamond}. There are two choices
