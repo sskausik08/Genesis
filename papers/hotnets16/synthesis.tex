@@ -1,12 +1,13 @@
 \section{Control Plane Synthesis via ARCs} \label{sec:synthesis}
-In this section, we describe preliminary ideas on how each phase of our synthesis 
-approach can be implemented.
+In this section, we describe preliminary ideas on how each phase of 
+\Cref{fig:process} can be implemented.
 First, we briefly discuss how existing tools can be used to generate
-policy-compliant paths (\secref{phase1}).
+policy-compliant paths (\secref{sec:phase1}).
 Second, we show how to generate ARCs that induce
-the set of paths synthesized in the first phase (\secref{phase2}).
-Third, we show how ARCs can be modified to deal with resilience (\secref{TODO}).
-Finally, we show how to restart the process whenever one of the three phases fails (\secref{TODO}).
+the set of paths synthesized in the first phase (\secref{sec:phase2}).
+Third, we show how ARCs can be modified to deal with resilience (\secref{sec:phase3}).
+We then show how to restart the process whenever one of the three phases fails (\secref{sec:restart}).
+Finally, we show how we can transform ARCs to actual device configurations (\secref{sec:deviceconf}). 
 
 \subsection{From policies to paths} \label{sec:phase1}
 The first phase of our approach produces a set of paths adhering to
@@ -100,14 +101,14 @@ is the shortest path between its endpoints, then every
 subpath of the path has to be the shortest between its endpoints
 as well (otherwise the complete path would not be the shortest).
 
-% \begin{figure}[h!] 
-% 	\centering
-% 	\includegraphics[width=0.75\columnwidth]{figures/distanceEquation.eps}
-% 	\caption{An example illustration of the distance equations for shortest path forwarding.
-% 		The pointed arrows represent the path in DAG of destination $d$, and the
-% 		dotted line represents 1 or more edges. 
-% 	} \label{fig:disteq}
-% \end{figure}
+ \begin{figure}[h!] 
+ 	\centering
+ 	\includegraphics[width=0.75\columnwidth]{figures/distanceEquation.eps}
+ 	\caption{An example illustration of the distance equations for shortest path forwarding.
+ 		The pointed arrows represent the path in DAG of destination $d$, and the
+ 		dotted line represents 1 or more edges. 
+ 	} \label{fig:disteq}
+ \end{figure}
 Consider a DAG $\xi_d$ for destination $d$. We define two neighbour
 functions: $N_T(s)$ denotes the set of neighbours of switch $s$ 
 in the input graph $T$, and $N_{\xi_d}(s)$ denote the set of
