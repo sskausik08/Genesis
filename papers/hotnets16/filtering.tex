@@ -2,7 +2,7 @@
 \begin{figure}[!t] 
 	\centering
 	\includegraphics[width=0.7\columnwidth]{figures/diamond.eps}
-	\caption{Data plane example which requires route-filtering} \label{fig:diamond}
+	\caption{Example of paths that requires route-filtering} \label{fig:diamond}
 \end{figure}
 The sARC synthesis problem does not always admit a solution.
 For example, consider the set of paths illustrated in \Cref{fig:diamond}. 
@@ -52,7 +52,7 @@ route-filters are used to enforce the exact set of input paths by blocking all o
 This can be done by creating a 
 route-filter $(l,d)$ for every link $l$ not in $\xi_d$. 
 However, this solution may overly restrict the structure of the network.
-In particular, if two nodes are connected by a single path,
+In particular, if two nodes were connected by a single path,
 a link failure would immediately result in the network becoming disconnected!
 Moreover, installing so many route-filters might be costly as not all switches might
 support this mechanism.
@@ -196,7 +196,7 @@ there exists two nodes $s$ and $t$, such that $s\rightarrow_{\xi_d} t$,
 $s\rightarrow_{\xi_{d'}} t$, and
 there exists a path $l_0\cdots l_n$ from $s$ to $t$ in $\xi_d$ that is not a path from
 $s$ to $t$ in $\xi_{d'}$.
-As we mentioned at the beginning synthesising an ARC for  diamond structures requires
+As we mentioned at the beginning, synthesizing an ARC for  diamond structures requires
 the addition of a route-filter.
 In fact, each such a diamond can be ``removed'' by introducing a route-filter $(l_0, d')$ that hides
 the path $l_0\cdots l_n$ for the destination $d'$ (see \Cref{fig:diamond}).

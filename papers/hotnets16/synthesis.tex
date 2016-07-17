@@ -54,7 +54,7 @@ describing the sources and destinations of the input paths, and
 that assigns to each pair of endpoints $(s,t) \in \Gamma$ 
 a set of \emph{acyclic} paths, such that for every path $l_0\cdots l_n\in P(s,t)$,
 $l_0=(s,s')$, for some $s'\in S$, and $l_n=(s'',t)$, for some $s''\in S$.\footnote{
-We use $L^*$ the denote the set of all finite sequences over the set $L$.}
+We use $L^*$ the denote the set of all finite sequences over $L$.}
 The 
 \emph{sARC synthesis}
 problem is to find rational weights for the edges in $L$ such that 
@@ -119,7 +119,7 @@ $\xi_d$,
 the set of paths from $s$ to $t$ in $\xi_d$ are
 exactly
 \emph{the} shortest paths from $s$ to $t$ in $T$.
-Let $s,t$ be two nodes in $\xi_d$ and let  $Paths_{\xi_d}(s,t)$ be the set of paths from $s$ to $t$ in $\xi_d$.
+Let $s$ and $t$ be two nodes in $\xi_d$ and let  $Paths_{\xi_d}(s,t)$ be the set of paths from $s$ to $t$ in $\xi_d$.
 \begin{multline} \label{eq:uniq1}
 		\forall l_0\cdots l_n\in Paths_{\xi_d}(s,t).
 		\forall n' \in N(s) \setminus N_{\xi_d}(s). \\
@@ -146,14 +146,3 @@ the sum of the weights belonging to a path from $s$ to $t$ in $\xi_d$ is smaller
 any path that goes to $t$ via a node $n'$ that is a neighbour of $s$ in $\xi_d$ but such that
 $t$ is not reachable from $n'$ in $\xi_d$.
 Finally, Equation~\ref{eq:uniq2} guarantees that all the paths from $s$ to $t$ in $\xi_d$ have the same weight.
-
-% If the path $n' \rightarrow^* t$ 
-% is not in any DAG completely, then
-% $D(n',t)$ can be smaller than the actual shortest distance by the
-% semantics of \Cref{eq:dist} (as
-% $D(n',t)$ is not equal to any quantity by \Cref{eq:shortest}).
-% However, since $D(n',t)$ is on the RHS of the equations in \Cref{eq:uniq},
-% the equations will ensure that the path $s\rightarrow n \rightarrow^* t$
-% has strictly greater weight than the path of the DAG.
-
-%TODO: Add some figures
