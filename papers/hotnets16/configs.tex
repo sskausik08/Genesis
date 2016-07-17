@@ -1,18 +1,30 @@
-\section{Generating Configurations}
-\aaron{TODO: talk about the task of generating configurations from an \ARC}
-Gember-Jacobson et al.~\cite{arc} describe the process 
-of generating the \ARC from the device configurations by transforming 
-the concrete network protocol parameters to create weighted digraphs. 
-Our three-phased architecture to synthesize distributed control planes
-from policies produces the \ARC which has to be compiled to 
-individual device configurations, which is the inverse of 
-the process tackled by Gember-Jacobson et al. ~\kausik{something more?}
+\subsection{Resilient \ARCs to device configurations}
+To deploy the resulting control plane, the \ARC must be
+transformed to actual device configurations expressed in a
+generic~\cite{openconfig} or vendor-specific~\cite{ciscoios} language. \ARC's
+semantics are equivalent to the semantics of OSPF and layer-3 access control
+lists (ACLs). Thus, we can trivially compile the \ARC into device
+configurations by: (1) setting the OSPF link weights to the edge weights of
+the \ARC, and (2) adding a layer-3 ACL for each route-filter in the ARC.
+However, the resulting configurations may be overly
+complex~\cite{complexitymetrics} or use features that make the network more
+prone to failures~\cite{mpa-imc15}. Consequently, part of our future work is to
+explore how to generate more optimal configurations from \ARCs.
 
-For example, suppose the underlying network comprises 
-one complete OSPF domain. For this, we can trivially
-compile the \ARC to individual device configurations by: (1)
-setting the OSPF link weights to the edge weights of the \ARC, and
-(2) adding a route-filter or Access Control List (ACL) for the 
-route-filters in the ARC. However, the compilation process becomes
-complicated if the network consists of multiple OSPF 
-domains, and use BGP for intra-domain communication. 
+%\aaron{TODO: talk about the task of generating configurations from an \ARC}
+%Gember-Jacobson et al.~\cite{arc} describe the process 
+%of generating the \ARC from the device configurations by transforming 
+%the concrete network protocol parameters to create weighted digraphs. 
+%Our three-phased architecture to synthesize distributed control planes
+%from policies produces the \ARC which has to be compiled to 
+%individual device configurations, which is the inverse of 
+%the process tackled by Gember-Jacobson et al. ~\kausik{something more?}
+%
+%For example, suppose the underlying network comprises 
+%one complete OSPF domain. For this, we can trivially
+%compile the \ARC to individual device configurations by: (1)
+%setting the OSPF link weights to the edge weights of the \ARC, and
+%(2) adding a route-filter or Access Control List (ACL) for the 
+%route-filters in the ARC. However, the compilation process becomes
+%complicated if the network consists of multiple OSPF 
+%domains, and use BGP for intra-domain communication. 
