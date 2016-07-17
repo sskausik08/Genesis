@@ -2,7 +2,7 @@
 \centering
 \includegraphics[width=0.7\textwidth]{figures/process.pdf}
 \label{fig:process}
-\caption{Three-step process for generating a control plane that generates
+\caption{Three-phase process for generating a control plane that generates
     policy-compliant paths under bounded failures}
 \end{figure*}
 
@@ -10,26 +10,25 @@
 In this section, we describe preliminary ideas on how each phase of our synthesis 
 approach can be implemented.
 First, we briefly discuss how existing tools can be used to generate
-policy-compliant paths (\secref{TODO}).
+policy-compliant paths (\secref{phase1}).
 Second, we show how to generate ARCs that induce
-the set of paths synthesized in the first phase (\secref{TODO}).
+the set of paths synthesized in the first phase (\secref{phase2}).
 Third, we show how ARCs can be modified to deal with resilience (\secref{TODO}).
 Finally, we show how to restart the process whenever one of the three phases fails (\secref{TODO}).
 
-\subsection{From policies to paths}
+\subsection{From policies to paths} \label{sec:phase1}
 The first phase of our approach produces a set of paths adhering to
-\loris{what policies}.
+different policies like reachability, service chaining, traffic engineering and isolation.
 Synthesizing sets of paths---i.e., data planes---that adhere to a given set of policies
 is already a hard problem, but a few practical approaches have been proposed.
 The approach that is most similar to ours is the one used in Merlin~\cite{merlin}.
-Given a set of waypoints, reachability, and \loris{traffic load?} policies,
+Given a set of waypoints, reachability, and bandwidth guarantee policies,
 Merlin generates a mixed integer linear programming instance. 
 A solution to this instance is a set of paths meeting the input policies.
 Our prototype implementation uses a similar idea and,
 since this part of the problem is not novel, we briefly provide the intuition behind our solution.
 Given a set of policies we generate a set of constraints over the propositional theory of rationals 
-and the solutions to these constraints are paths satisfying all the policies that \loris{say which policies
-exactly we support at this point}.
+and the solutions to these constraints are paths satisfying all the policies.
 Our rich policy language requires complex Boolean reasoning that forces us to adopt propositional theories
 in place of simple conjunctions of constraints.
 In particular, policies like isolation and waypoints require disjunctive formulas.
@@ -37,14 +36,14 @@ In particular, policies like isolation and waypoints require disjunctive formula
 %\loris{we will add more details if needed}
 
 
-\subsection{From paths to ARCs}
+\subsection{From paths to ARCs} \label{sec:phase2}
 
 The second phase of our approach takes as input the set of paths produced by the first phase
 and produces an Abstract Representation of the Control Plane (ARC) that realizes the given set of paths.
-First, we  consider the problem of generating ARCs that
+First, we consider the problem of generating ARCs that
  forward packets based on shortest-paths---e.g., OSPF routing.
 Then, we consider more complex forms of ARCs in which 
- additional mechanisms like route filtering are allowed. 
+ additional mechanisms like route-filtering are allowed. 
  
 \subsubsection{From paths to simplified ARCs}
 The \emph{Simplified Abstract Representation of the Control Plane} (sARC) is a directed graph comprising switches as 
@@ -54,7 +53,7 @@ This is an ideal control plane supporting classic shortest path routing in which
 
 The problem of synthesizing 
 a sARC that realizes an input set of paths reduces to a
-variation of the so-called {\em inverse shortest path} problem~\cite{}. 
+variation of the so-called {\em inverse shortest path} problem~\cite{isp}. 
 Assume we are given the following inputs: (1) a directed graph $T = (S, L)$ (the network topology), 
 (2) a set of endpoints $\Gamma \subseteq S\times S$
 describing the sources and destinations of the input paths, and 
@@ -62,16 +61,16 @@ describing the sources and destinations of the input paths, and
 that assigns to each pair of endpoints $(s,t) \in \Gamma$ 
 a set of \emph{acyclic} paths, such that for every path $l_0\cdots l_n\in P(s,t)$,
 $l_0=(s,s')$, for some $s'\in S$, and $l_n=(s'',t)$, for some $s''\in S$.\footnote{
-We use $L^*$ the denote the set of all finite sequences over the set$L$.}
+We use $L^*$ the denote the set of all finite sequences over the set $L$.}
 The 
 \emph{sARC synthesis}
 problem is to find rational weights for the edges in $L$ such that 
 for each pair of endpoints $(s,t) \in \Gamma$, 
 the paths in $P(s,t)$ are \emph{the} shortest paths from $s$ to $t$ 
 in the graph. Notice, that there can be multiple shortest
-paths of equal cost.
+paths of equal cost for multi-path support (e.g., for traffic engineering).
 
-In sARC packet forwarding is based on destination.
+In sARC, packet forwarding is based on destination.
 For a destination $d$, we call $\xi_d$ the directed
 subgraph of $T$ obtained by only keeping the nodes and edges 
 that are traversed by paths with destination $d$.
@@ -81,12 +80,13 @@ set of all destinations and $\Delta=\{\xi_d\mid d\in \Omega\}$ to denote
 the set of all destination DAGs. 
 
 We use  $sw_1\rightarrow sw_2$ to denote $(sw_1,sw_2)\in L$ and
-$sw_1\rightarrow^* sw_2$ (resp. $sw_1\rightarrow^+ sw_2$) to denote that $sw_2$ is reachable from $sw_1$ by crossing zero (resp. one) or more links.
+$sw_1\rightarrow^* sw_2$ (resp. $sw_1\rightarrow^+ sw_2$) to denote 
+that $sw_2$ is reachable from $sw_1$ by crossing zero (resp. one) or more links in $T$.
 Similarly, we use $\rightarrow_{\xi_d}$ to denote the same relations in the destination DAGs.
 
 
 \minisection{Distance Equations}
-To solve the ARC synthesis problem, we generate a set of linear equations
+To solve the sARC synthesis problem, we generate a set of linear equations
 to find the required edge weights. 
 We use $E(sw_1, sw_2)$ to denote the weight of the edge $(sw_1,sw_2)\in L$
 and 
@@ -110,8 +110,9 @@ as well (otherwise the complete path would not be the shortest).
 \begin{figure}[h!] 
 	\centering
 	\includegraphics[width=0.8\columnwidth]{figures/distanceEquation.eps}
-	\caption{Distance equation
-	\loris{more explanation}	
+	\caption{An example illustration of the distance equations for shortest path forwarding.
+		The pointed arrows represent the path in DAG of destination $d$, and the
+		dotted line represents 1 or more edges. 
 	} \label{fig:disteq}
 \end{figure}
 Consider a DAG $\xi_d$ for destination $d$. We define two neighbour
@@ -134,7 +135,7 @@ Let $s,t$ be two nodes in $\xi_d$ and let  $Paths_{\xi_d}(s,t)$ be the set of pa
 \end{multline}
 \begin{multline} \label{eq:uniq2}
 		\forall l_0\cdots l_n\in Paths_{\xi_d}(s,t).
-		\forall n' \in N_{\xi_d}(s). \neg n'\rightarrow^+_{\xi_d} t.  \\
+		\forall n' \in N_{\xi_d}(s). n' \not\rightarrow^+_{\xi_d} t.  \\
 		E(s, n') + D(n', t) > \sum_{\mathclap{\substack{l_i=(s_i,t_i)}}} 
 		E(s_i, t_i) 
 \end{multline}
