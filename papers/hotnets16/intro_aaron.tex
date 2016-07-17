@@ -1,0 +1,96 @@
+\section{Introduction}
+\label{sec:intro}
+
+%(1) Programming networks is hard, because: (1) there are many types of
+%policies, (2) policies are inherently centralized/global, and (3) policies
+%should also hold under failures. 
+
+Programming networks to correctly forward flows according to user- and
+application-induced policies is notoriously difficult and
+error-prone~\cite{TODO-see-Propane}. At least three common characteristics of
+network policies are to blame: (1) there are several types of policies a
+network may need to satisfy, including reachability, isolation, service
+chaining, resilience, and traffic engineering; (2) many of these policies must
+also hold under failures; and (3) most policies are global---i.e., they
+concern end-to-end paths as opposed to individual devices and links.
+
+%(2) SDN tries to make realization centralized like policies, but it is hard
+%to ensure link failures don't impact the controller's ability to update the
+%network to accommodate the failures; a distributed SDN controller doesn't fix
+%this problem. Legacy control planes are preferable from a failure
+%tolerance-perspective, but determining the appropriate distributed
+%realization of policies is hard.
+
+The global nature of network policies is one motivation for software-defined
+networking (SDN). SDN allows paths to be centrally computed over a global view
+of the network. However, it is difficult to ensure forwarding paths are
+correctly computed and installed in the presence of failures, even if the SDN
+controller is distributed~\cite{TODO-see-Propane-or-Akella-HotNets}.
+``Traditional'' control planes that rely on distributed routing protocols to
+compute paths are preferable from a failure-tolerance perspective. But
+determining the appropriate distributed realization of policies is hard.
+   
+%(3) Our goal is to automate the process of producing this distributed
+%realization. We want to handle a wide range of policies and leverage the many
+%protocols/mechanisms available in legacy control planes for realizing these
+%policies.
+
+
+%(4) We can view the control plane as a program whose input is set of
+%endpoints and the state of the links in the network and whose output is a set
+%of paths.  Our goal is to synthesize this program.
+
+Our goal is to {\em automate the process of producing the distributed
+realization of policies in a traditional control plane}. We seek to handle
+a wide range of policies and leverage the many protocols (e.g., OSFP, BGP) and
+mechanisms (e.g., route filters, route redistribution) available in
+traditional control planes. Although each network switch runs its own routing
+processes, we can view the collection of processes (i.e., the control plane)
+as a single program whose input is a set of endpoints plus the state
+of network links; the output of this program is a set of paths that conform to
+the policies encoded in the program (\figref{fig:cp_program}). Our goal is
+thus to synthesize this program out of the constructs \aaron{word choice?}
+(e.g., OSPF performs shortest-path routing) available in network switches.
+
+%(5) PL community has adopted two primary approaches to synthesis: synthesis
+%from specifications and synthesis from examples. In our case, the
+%specifications are the policies we want to realize, and examples are paths
+%that satisfy these policies. We show the former does not scale, and the
+%latter does not work well because we need lots of examples to get the control
+%plane right and generating example paths is hard.
+
+The programming languages community has adopted two primary approaches to
+program synthesis: synthesis from specifications and synthesis from examples.
+In our case, the specifications are the policies we want to realize, and
+examples are paths that satisfy these policies under a given network state.
+Unfortunately, as we show in \secref{sec:TODO}, synthesizing a control plane
+directly from policies does not scale due to \aaron{need a pithy summary}.
+Synthesizing from examples, while scalable, requires many example paths to get
+the control plane right (\secref{sec:TODO}). Generating example paths is hard,
+which is part of the reason we want to synthesize the control plane!
+
+%(6) We propose a two-phased approach that synthesizes a partially-correct
+%control plane from examples, and then applies a series of transformations to
+%produce a fully policy-compliant control plane.
+
+Instead, we propose a two-phased approach (\secref{sec:synthesis}). First, we
+synthesize a partially-correct control plane from a set of example paths, such
+as those contained within a sample data plane. Then, we apply a series of
+transformations to the synthesized control plane to produce a control plane
+that computes policy-compliant paths under a bounded set of failures (e.g.,
+all single- and double-link failures).
+
+%(7) A major challenge is abstracting away the low-level details of control
+%plane configurations. We do this using an abstract representation.
+
+Making this approach scalable and practical requires overcoming several
+challenges. First, control plane configurations are low-level (e.g., on which
+interfaces should a routing protocol operate and what costs should be assigned
+to the incident links) while policies are high-level. Second, we must ensure
+the transformations we apply to the synthesized control plane cause the
+program to no longer conform to the example paths. \aaron{What else?} We
+discuss these challenges in more depth in \secref{sec:synthesis} and present
+preliminary solutions to address them.
+
+\aaron{Needs a closing, perhaps an outline, a summary of contributions, some
+results, and/or something visionary?}
