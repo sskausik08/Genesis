@@ -2,21 +2,18 @@
 Programming a legacy network control plane to satisfy a variety of
 connectivity, security, and performance policies is a complex and error-prone
 task. We have shown that program synthesis is a promising approach to automate
-this process and produce a control plane that is ``correct-by-construction.''
+this process and produce a control plane that is correct by construction.
 In particular, we presented an architecture where a network operator provides
-a policy-compliant data plane and a set of hard and soft policies as input,
+a set of policies 
 and the system automatically provides a set of device configurations that
 leverage the control plane features available on each device to compute
-policy-compliant paths, even in the presence of failures.  Formulating a
-tractable synthesis problem and maximizing the number of satisfied soft
-policies are the key challenges in realizing this vision. We show these
-challenges can be overcome by modeling the control plane using a graph-based 
+policy-compliant paths, even in the presence of failures.  
+We show how the synthesis problem can be made tractable 
+ by modeling the control plane using a graph-based 
 abstract representation tied to a traditional shortest path algorithm and
 iteratively transforming the abstract representation based on feedback from
-the satisfiability (SAT) solver and characteristics of the graph. However, we
+a constraint solver and characteristics of the graph. However, we
 have only explored how to address a subset of important policies and leverage a
 few available control plane features on traditional networking hardware. Our
 future work will focus on satisfying a wider range of policies using more
-features, and we will study how to best translate our abstract representation
-into actual device configurations to make our system practical for use with
-real networks.
+features and into making our system practical for use with real networks.
