@@ -1,4 +1,4 @@
-\subsubsection{Synthesis of ARC with Route-Filters} \label{sec:routefilter}
+\subsubsection{Synthesis of ARC with route-filters} \label{sec:routefilter}
 \begin{figure}[!t] 
 	\centering
 	\includegraphics[width=0.7\columnwidth]{figures/diamond.eps}
@@ -91,7 +91,7 @@ techniques used to choose route-filters.
 %	\caption{Synthesis of ARC with route-filters.} \label{fig:arcSynthesis}
 %\end{figure}
 
-\minisection{Linear Equations with Route-Filters}
+\minisection{Equations with route-filters}
 We show how the technique used to solve the simplified synthesis
 problem can be modified to handle filtered and unfiltered paths.
 We assume we are given a set of route-filters $F$ and 
@@ -101,7 +101,7 @@ We use $D_d(sw_1, sw_2)$ to denote the shortest distance from $sw_1$ to $sw_2$
 using only edges that are not filtered for destination $d$.
 We can revise the equation in \eqref{eq:dist} to correctly restrict the values of $D_d$
 by simply ignoring all the filtered edges. 
-In the same way, we can modify equations  \eqref{eq:uniq1} and \eqref{eq:uniq1}, while
+In the same way, we can modify equations  \eqref{eq:uniq1} and \eqref{eq:uniq2}, while
 equation \eqref{eq:uniq3} remains unchanged.
 
 Unfortunately, if the encoding without route-filters produces $n$ equations, this encoding produces $|\Omega|n$ due
@@ -110,7 +110,7 @@ Notice that, the shortest distance $D_d(s,t)$ between two nodes $s$ and $t$ with
 smaller than the shortest distance $D(s,t)$ obtained without considering route-filters.
 We use this property to simplify the encoding by only computing $D(s,t)$ and by replacing each instance of $D_d(s,t)$
 with $D(s,t)$ in
-equations \eqref{eq:uniq1} and \eqref{eq:uniq1}. 
+equations \eqref{eq:uniq1} and \eqref{eq:uniq2}. 
 It is easy to see that every solution of this simplified set of constraints
 is also a solution to the original solution (because $D(s,t)\leq D_d(s,t)$).
 However, the reverse is not true and the set of simplified equations can be unsatisfiable
@@ -139,7 +139,7 @@ cannot be handled without route-filters.
 % inconsistencies based on these properties 
 % can be used to minimize the number of route-filters enabled.  
 
-\minisection{Adding Filters using Unsatisfiable Cores}
+\minisection{Adding filters using unsatisfiable cores}
 Modern LP-solvers have efficient procedures to return an
 unsatisfiable core, also called IIS (Irreducible Inconsistent Subsystem)
 ~\cite{chinneck2007feasibility}. Formally, an IIS is a subset of constraints such that,
@@ -181,7 +181,7 @@ and we have therefore reached a solution to the ARC synthesis problem.
 %objectives. 
 
 
-\minisection{Diamond Elimination}
+\minisection{Diamond elimination}
 Finding an IIS is an NP-hard problem~\cite{iiscomplexity}
 and can result in slow synthesis times.
 We identify a topological property of the set of input paths that 
