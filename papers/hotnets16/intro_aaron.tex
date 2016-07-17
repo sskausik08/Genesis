@@ -7,12 +7,12 @@
 
 Programming networks to correctly forward flows according to user- and
 application-induced policies is notoriously difficult and
-error-prone~\cite{TODO-see-Propane}. At least three common characteristics of
-network policies are to blame: (1) there are several types of policies a
-network may need to satisfy, including reachability, isolation, service
+error-prone~\cite{troubleshooting, bgpmisconfig}. At least three common characteristics of
+network policies are to blame: (1) a network may need to satisfy several
+types of policies, including reachability, isolation, service
 chaining, resilience, and traffic engineering; (2) many of these policies must
 also hold under failures; and (3) most policies are global---i.e., they
-concern end-to-end paths as opposed to individual devices and links.
+concern end-to-end paths, not individual devices and links.
 
 %(2) SDN tries to make realization centralized like policies, but it is hard
 %to ensure link failures don't impact the controller's ability to update the
@@ -25,9 +25,9 @@ The global nature of network policies is one motivation for software-defined
 networking (SDN). SDN allows paths to be centrally computed over a global view
 of the network. However, it is difficult to ensure forwarding paths are
 correctly computed and installed in the presence of failures, even if the SDN
-controller is distributed~\cite{TODO-see-Propane-or-Akella-HotNets}.
-``Traditional'' control planes that rely on distributed routing protocols to
-compute paths are preferable from a failure-tolerance perspective. But
+controller is distributed~\cite{hasdn}.
+Traditional control planes that rely on distributed protocols to
+compute paths are preferable from a failure-tolerance perspective, but
 determining the appropriate distributed realization of policies is hard.
    
 %(3) Our goal is to automate the process of producing this distributed
@@ -40,17 +40,27 @@ determining the appropriate distributed realization of policies is hard.
 %endpoints and the state of the links in the network and whose output is a set
 %of paths.  Our goal is to synthesize this program.
 
-Our goal is to {\em automate the process of producing the distributed
+Our goal is to {\em automate the process of creating a correct distributed
 realization of policies in a traditional control plane}. We seek to handle
-a wide range of policies and leverage the many protocols (e.g., OSFP, BGP) and
-mechanisms (e.g., route filters, route redistribution) available in
-traditional control planes. Although each network switch runs its own routing
-processes, we can view the collection of processes (i.e., the control plane)
-as a single program whose input is a set of endpoints plus the state
-of network links; the output of this program is a set of paths that conform to
-the policies encoded in the program (\figref{fig:cp_program}). Our goal is
-thus to synthesize this program out of the constructs \aaron{word choice?}
-(e.g., OSPF performs shortest-path routing) available in network switches.
+a wide range of policies (e.g., reachability, service chaining, traffic
+engineering) and leverage the many protocols (e.g., OSFP, BGP) and mechanisms
+(e.g., route filters, route redistribution) available in traditional control
+planes. We also want to ensure the generated control plane computes
+policy-compliant paths under a bounded number of failures. This contrasts with
+prior works~\cite{netegg, propage} which generate SDN- or BGP-based
+control planes for a limited range of policies (e.g., inter-domain
+reachability).
+
+Although a distributed control plane is composed of a collection of routing
+processes running on individual switches, we can view the control plane as a
+single program. The input is a set of endpoints plus the state of network
+links; the output of this program is a set of paths that conform to the
+policies encoded in the program. This view inspires us to explore {\em program
+synthesis} as a mechanism for generating a policy-compliance control plane.
+
+%Our goal is thus to synthesize this program out of the constructs \aaron{word
+%choice?} (e.g., OSPF performs shortest-path routing) available in network
+%switches.
 
 %(5) PL community has adopted two primary approaches to synthesis: synthesis
 %from specifications and synthesis from examples. In our case, the
@@ -60,21 +70,24 @@ thus to synthesize this program out of the constructs \aaron{word choice?}
 %plane right and generating example paths is hard.
 
 The problem of synthesising programs that meet a given specification
-is computationally hard. In our setting, 
-the specifications are the policies we want to realize and the programs 
-are the control plane.
+is computationally hard. 
+%In our setting, the specifications are the policies we want to realize and the programs 
+%are the control plane.
 As we show in \secref{sec:vision}, synthesizing a control plane
 directly from policies is complicated by the fact that, to infer the concrete
 set of paths induced by a given control plane, one has to incorporate
 into the synthesis procedure complex concepts such as shortest path algorithms
 using theories like propositional logic (SAT) and linear rational
-arithmetic (LRA).
+arithmetic (LRA). Even with recent advances in Satisfiability Modulo Theories
+(SMT) solvers (e.g., Z3~\cite{z3}), this approach does not scale to
+even moderately-sized networks or sets of policies.
+
 %(6) We propose a two-phased approach that synthesizes a partially-correct
 %control plane from examples, and then applies a series of transformations to
 %produce a fully policy-compliant control plane.
 
 Instead, we propose 
-a three-phased approach (\secref{sec:synthesis}). First, we
+a three-phased approach (\secref{sec:synthesis}; \figref{fig:process}). First, we
 synthesize a concrete set of paths---i.e., a data plane---meeting 
 all the functional policies, such as reachability, waypoint, and isolation.
 %a partially-correct control plane from a set of example paths, such
@@ -100,7 +113,7 @@ challenges. First, control plane configurations are low-level (e.g., on which
 interfaces should a routing protocol operate and what costs should be assigned
 to the incident links) while policies are high-level. Second, we must ensure
 the transformations we apply to the synthesized control plane cause the
-program to no longer conform to the inputf paths. \aaron{What else?} We
+program to no longer conform to the input paths. \aaron{What else?} We
 discuss these challenges in more depth in \secref{sec:synthesis} and present
 preliminary solutions to address them.
 
