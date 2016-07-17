@@ -1,16 +1,13 @@
 FILE=paper
 
 all:
-	latex $(FILE)
+	pdflatex $(FILE)
 	bibtex $(FILE)
-	latex $(FILE)
-	latex $(FILE)
-	dvips $(FILE).dvi
-	ps2pdf $(FILE).ps
+	pdflatex $(FILE)
+	pdflatex $(FILE)
+	
 small:
-	latex $(FILE)
-	dvips $(FILE).dvi
-	ps2pdf $(FILE).ps	
+	pdflatex $(FILE)		
 
 view:
 	open -a Skim $(FILE).pdf
