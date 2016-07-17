@@ -6,45 +6,52 @@
 %\subsubsection{Resilience Policies}
 %\kausik{Talk here about ARC repair (some other term for that).}
 
-The \ARC synthesized using the aforementioned approach represents a
-control plane that will compute policy-compliant paths in the absence of
-failures. However, it does not guarantee policy compliance when failures occur. For
-example, if a link along the shortest path (\aaron{refer to some example
-figure}) fails, the next shortest path will become the new path to reach the
-destination. The control plane automatically computes the new shortest path
-(assuming one exists), thus preserving connectivity. However, the new path may
-not conform to the same policies as the path in the original failure-free data
-plane from which the \ARC was synthesized: e.g., the new path may no longer
-traverse a waypoint or have the same bandwidth capacity.
+The \ARC synthesized using the aforementioned approach represents a control
+plane that will compute policy-compliant paths in the absence of failures.
+However, it does not guarantee policy compliance when failures occur. For
+example, if a link along the shortest path fails, the next shortest path (if
+one exists) will become the new path to reach the destination. However, the
+new path may not conform to the same policies as the path in the original
+failure-free data plane from which the \ARC was synthesized: e.g., the new
+path may no longer traverse a waypoint or have the same bandwidth capacity.
 
-Given the high frequency of failures in data center and enterprise campus
-networks~\cite{datacenterfailures}, it is desirable to synthesize a control plane that
-computes {\em policy-compliant backup paths}. In particular, we want a network
-to be {\em t-resilient}~\cite{plinko}: i.e., the control plane will compute a
-policy-compliant backup path when there are $t$ or fewer link failures in the
-network.\footnote{The value of $t$ depends on operator objectives and the
-level of redundancy available in the physical topology.}
+Given the high frequency of failures in data center~\cite{datacenterfailures},
+campus~\cite{TODO}, and wide-area~\cite{TODO} networks, it is desirable to
+generate a control plane that computes {\em policy-compliant backup paths}.
+In particular, we want a network to be {\em t-resilient}~\cite{plinko}: i.e.,
+the control plane will compute a policy-compliant path when there are $t$ or
+fewer link failures in the network.\footnote{The value of $t$ depends on
+operator objectives and the level of redundancy available in the physical
+topology.} 
 
-While it is desirable for the backup paths to satisfy all of the same policies
-as the primary path---e.g., reachability, waypoint traversals, bandwidth
-capacity, etc.---not all policies are equally important.  Policies pertaining
-to security (e.g., reachability and some waypoint traversals, such as
-firewalls) are of the utmost importance, because they protect the network and
-its services from attacks and unauthorized accesses.  In contrast, policies
-pertaining to performance (e.g., bandwidth capacity and some waypoint
-traversals, such as caches) are desirable, but the consequences of violating
-these policies are often less severe, partially because such policies are
-typically ``best effort'' even in the non-failure case.\footnote{In some
-networks, performance-related policies can have a major impact on a company's
-bottom-line: e.g., degradation in video streaming performance due to
-insufficient bandwidth may cause customers to cancel their
-subscription~\cite{TBD}. However, a centrally controlled, programmable control
-plane~\cite{swan, b4} is better suited to these scenarios, so we do not
-consider them in this work.} Consequently, we focus on ensuring the control
-plane we generate computes backup paths that satisfy the former class of
-policies. \aaron{Are we doing ourselves a disservice by eschewing
-performance-related policies for backup paths, especially for a HotNets
-paper?} 
+%In some cases, network operators may only require a subset of
+%policies to be enforced during failures---e.g., enforce reachability and
+%waypoint policies but 
+
+%While it is desirable for the backup paths to satisfy all of the same policies
+%as the primary path---e.g., reachability, waypoint traversals, bandwidth
+%capacity, etc.---not all policies are equally important.  Policies pertaining
+%to security (e.g., reachability and some waypoint traversals, such as
+%firewalls) are of the utmost importance, because they protect the network and
+%its services from attacks and unauthorized accesses.  In contrast, policies
+%pertaining to performance (e.g., bandwidth capacity and some waypoint
+%traversals, such as caches) are desirable, but the consequences of violating
+%these policies are often less severe, partially because such policies are
+%typically ``best effort'' even in the non-failure case.\footnote{In some
+%networks, performance-related policies can have a major impact on a company's
+%bottom-line: e.g., degradation in video streaming performance due to
+%insufficient bandwidth may cause customers to cancel their
+%subscription~\cite{TBD}. However, a centrally controlled, programmable control
+%plane~\cite{swan, b4} is better suited to these scenarios, so we do not
+%consider them in this work.} Consequently, we focus on ensuring the control
+%plane we generate computes backup paths that satisfy the former class of
+%policies. \aaron{Are we doing ourselves a disservice by eschewing
+%performance-related policies for backup paths, especially for a HotNets
+%paper?} 
+
+We could synthesize a t-resilient control plane by generating a data plane
+(\secref{sec:data_plane}) for each possible combination of up to $t$ failed
+links. 
 
 \minisection{Approaches}
 One approach to generating a t-resilient control plane is to synthesize an
@@ -129,16 +136,3 @@ resulting control plane may contain more filters or waypoints than necessary.
 \kausik{Is there a way
 to repair ARCs to increase max-flow. Actually, the max-flow property is 
 integrated in the ARC synthesis, so we may not need to do it here}
-
-
-\subsection{Restarting the synthesis process}
-One of the drawbacks of dividing the procedure into multiple phases is that
-early phases can produce solutions that will not be able to be handled by future phases.
-For example, it could be that, given the paths produce by phase 1, there is no way
-to produce a resilient ARC. We want to detect when this happens and restart the synthesis procedure
-so that a different set of paths is produced
-We briefly describe how the synthesis process can be restarted
-when one of the three phases fails.
-
-\loris{this can be short and just talks about unsat cores or stuff like that, technically we can
-restart from different phases too.}

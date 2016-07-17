@@ -1,0 +1,11 @@
+\subsection{Restarting the synthesis process}
+One of the drawbacks of dividing the procedure into multiple phases is that
+early phases can produce solutions that will not be able to be handled by future phases.
+For example, it could be that, given the paths produce by phase 1, there is no way
+to produce a resilient ARC. We want to detect when this happens and restart the synthesis procedure
+so that a different set of paths is produced
+We briefly describe how the synthesis process can be restarted
+when one of the three phases fails.
+
+\loris{this can be short and just talks about unsat cores or stuff like that, technically we can
+restart from different phases too.}

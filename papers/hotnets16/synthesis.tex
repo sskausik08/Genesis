@@ -8,7 +8,7 @@
 
 \section{Control Plane Synthesis via ARCs} \label{sec:synthesis}
 In this section, we describe preliminary ideas on how each phase of our synthesis 
-approach is implemented.
+approach can be implemented.
 First, we briefly discuss how existing tools can be used to generate
 policy-compliant paths (\secref{TODO}).
 Second, we show how to generate ARCs that induce
@@ -17,53 +17,58 @@ Third, we show how ARCs can be modified to deal with resilience (\secref{TODO}).
 Finally, we show how to restart the process whenever one of the three phases fails (\secref{TODO}).
 
 \subsection{From policies to paths}
+The first phase of our approach produces a set of paths adhering to
+\loris{what policies}.
 Synthesizing sets of paths---i.e., data planes---that adhere to a given set of policies
 is already a hard problem, but a few practical approaches have been proposed.
-The approach that better meets our policy language is the one proposed in Merlin~\cite{}.
-Merlin supports waypoints, reachability policies, and restricted forms of traffic engineering. 
-Merlin uses automata to succinctly represent
-the set of all possible paths reachability and waypoint policies and then mixed integer linear programming
-to identify a concrete set of paths meeting the traffic engineering requirements.
-We implemented a similar approach in our prototype tool. 
-Since this part of the problem is not novel, we briefly provide the intuition behind our solution.
-Our approach directly uses  constraint solving to generate paths adhering to the given policies and does 
-not use automata operations to describe the search space. This choice is dictated by the complex set of policies, such as isolation,
-that our tool wants to support. 
-Given a set of policies we 
-use an encoding similar to that of Merlin to generate a set of constraints over the propositional theory of
-rationals. Every solution to this set of constraints is a set of paths satisfying the given policies.
+The approach that is most similar to ours is the one used in Merlin~\cite{merlin}.
+Given a set of waypoints, reachability, and \loris{traffic load?} policies,
+Merlin generates a mixed integer linear programming instance. 
+A solution to this instance is a set of paths meeting the input policies.
+Our prototype implementation uses a similar idea and,
+since this part of the problem is not novel, we briefly provide the intuition behind our solution.
+Given a set of policies we generate a set of constraints over the propositional theory of rationals 
+and the solutions to these constraints are paths satisfying all the policies that \loris{say which policies
+exactly we support at this point}.
+Our rich policy language requires complex Boolean reasoning that forces us to adopt propositional theories
+in place of simple conjunctions of constraints.
+In particular, policies like isolation and waypoints require disjunctive formulas.
 
-\loris{we will add more details if needed}
+%\loris{we will add more details if needed}
 
 
 \subsection{From paths to ARCs}
 
-We first describe the synthesis of a type of ARC 
-called {\em pure} ARC which
-only forwards packet bases on shortest-paths and does 
-not support additional mechanisms like filtering etc. 
-Thus, 
-the ARC is a directed graph comprising switches as 
+The second phase of our approach takes as input the set of paths produced by the first phase
+and produces an Abstract Representation of the Control Plane (ARC) that realizes the given set of paths.
+First, we  consider the problem of generating ARCs that
+ forwards packet bases on shortest-paths---e.g., and ARC representing OSPF routings.
+Then, we consider more complex forms of ARCs in which 
+ additional mechanisms like route filtering are allowed. 
+ 
+\minisection{From paths to simplified ARCs}
+The \emph{Simplified Abstract Representation of the Control Plane} (sARC) is a directed graph comprising switches as 
 vertices and weighted edges corresponding to all links in the
-topology (no link is disabled by any mechanism). 
-This is 
-a ideal control plane because it is able to enforce the data plane
-with carefully engineered edge weights and no links are disabled. 
-For a given network data plane, the synthesis of 
-the pure ARC from input paths reduces to a
-variation of the {\em inverse shortest path} problem, an almost 
-unexplored algorithmic problem. 
+topology. 
+This is an ideal control plane supporting classic shortest path routing in which no links can be disabled. 
 
-Formally, this variation of inverse shortest path problem 
-has as input: (1) a directed graph $T = (S, L)$ (the network topology), 
-(2) a set of endpoints $\Gamma \subseteq S\times S$, and 
-(3) a set of paths $P \subset L*$
-such that for each $(s,t) \in \Gamma, \exists p \in P$ such
-that the path $p$ is a set of links connecting $s$ to $t$. 
-The problem is to find weights for the edges $L$ such that 
-for each $(s,t) \in \Gamma$, every lowest weighted path 
-in the graph 
-from $s$ to $t$ is in the set $P$. 
+The problem of synthesizing 
+a sARC that realizes an input set of paths reduces to a
+variation of the so-called {\em inverse shortest path} problem~\cite{}. 
+Assume we are given the following inputs: (1) a directed graph $T = (S, L)$ (the network topology), 
+(2) a set of endpoints $\Gamma \subseteq S\times S$
+describing the sources and destinations of the input paths, and 
+(3) a function $P: \Gamma \rightarrow L^*$
+that assigns to each pair of endpoints $(s,t) \in \Gamma$ 
+an \emph{acyclic} path $P(s,t)=l_0\cdots l_n$ such
+that $l_0=(s,s')$, for some $s'\in S$, and $l_n=(s'',t)$, for some $s''\in S$.\footnote{
+We use $L^*$ the denote the set of all finite sequences over the set$L$.}
+The 
+\emph{sARC synthesis}
+problem is to find rational weights for the edges in $L$ such that 
+for each pair of endpoints $(s,t) \in \Gamma$, 
+the path $P(s,t)$ is the shortest path from $s$ to $t$ 
+in the graph. 
 
 Since, the forwarding is destination-based,
 for a destination $d$, we aggregate the paths 
