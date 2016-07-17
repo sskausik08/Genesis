@@ -27,8 +27,9 @@ policies. Common types of policies include: reachability (i.e., which
 end-hosts can communicate), isolation (i.e., which flows cannot share links),
 service chaining (i.e., which middleboxes must be traversed), resilience
 (e.g., how many backup paths are available), and traffic engineering. Every
-set of forwarding paths (i.e., data plane) installed in the network---either
-manually or by a control plane---should conform to these operator-provided
+set of forwarding paths (i.e., data plane) installed in the network
+%---either manually or by a control plane---
+should conform to these operator-provided
 policies, otherwise performance, security, or availability problems may arise.
 
 % A variety of techniques can be used to determine the appropriate forwarding
@@ -51,21 +52,35 @@ policies, otherwise performance, security, or availability problems may arise.
 
 To enforce these policies, the most widely adopted approach is to
 dynamically compute forwarding paths using distributed routing protocols
-running on ``legacy'' network switches---i.e., use a ``traditional'' network
-control plane. This avoids the scalability and failure tolerance 
-challenges of centralized approaches like SDN. However, programming (i.e.,
+running on ``traditional'' network switches.
+%---i.e., use a ``traditional'' network %control plane. 
+This avoids the scalability and failure tolerance 
+challenges of centralized approaches like SDN~\cite{onos, hasdn, propane}. However, programming (i.e.,
 configuring) a traditional control plane to compute policy-compliant paths
-remains challenging for several reasons: (1) the path-computation algorithms
-are pre-defined---e.g., OSPF uses Dijkstra's shortest path---and their
-behavior can only be influenced through a limited set of parameters---e.g.,
-link weights; (2) there is often no direct mapping between policies---e.g.,
-isolation---and configuration options---e.g., link weights and route filters;
-and (3) a single set of parameters must result in policy-compliant paths under
-all possible network states---e.g., all combinations of link failures.
+remains challenging for several reasons: 
+\begin{itemize}
+\vspace{-1ex}
+\setlength{\topsep}{0pt}
+\setlength{\itemsep}{0em}
+\setlength{\parskip}{0pt}
+\setlength{\parsep}{0pt}
+\item The available path-computation algorithms
+available are pre-defined---e.g., OSPF uses
+Dijkstra's shortest path---and their behavior can only be influenced
+through a limited set of parameters---e.g.,
+link weights. 
+\item Most policies are
+global---i.e., they concern end-to-end paths, not individual devices and
+links---making it difficult to map policies to
+individual devices and control plane parameters.
+\item A single set of parameters must result in
+policy-compliant paths under all reasonable network states---e.g., a bounded
+number of link failures.
+\end{itemize}
 
 These issues motivate us to design a system that automatically synthesizes
 (configurations for) a control plane that computes policy-compliant paths
-under all possible network states.
+under a bounded number of failures.
 Unfortunately, this task is inherently challenging as it requires solving in one shot multiple
 computationally hard problems.
 For example, even when considering static routing and no failures, synthesizing a control plane that satisfies  policies such as isolation and waypoints
@@ -75,7 +90,17 @@ Although the progress in SMT solving has made many NP-hard problems more practic
 into these solvers have resulted into huge performance losses~\cite{monosat}. 
 Finally, adding failure-handling to the problem results in yet another layer of combinatorial explosion.
 
-Our proposed approach is to tackle these three problems in separate phases.
+\begin{figure*}
+\centering
+\includegraphics[width=0.7\textwidth]{figures/process.pdf}
+\caption{Three-phase process for generating a control plane that generates
+    policy-compliant paths under bounded failures}
+\label{fig:process}
+\end{figure*}
+
+
+Our proposed approach is to tackle these three problems in separate phases
+(\figref{fig:process}).
 By choosing a data plane as input to the second phase, we 
 express the problem of finding a control plane using only the 
 theory of linear rational arithmetic (LRA), for which we can use
