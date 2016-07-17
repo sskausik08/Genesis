@@ -59,16 +59,16 @@ thus to synthesize this program out of the constructs \aaron{word choice?}
 %latter does not work well because we need lots of examples to get the control
 %plane right and generating example paths is hard.
 
-\loris{The problem of synthesising programs that meet a given specification
+The problem of synthesising programs that meet a given specification
 is computationally hard. In our setting, 
 the specifications are the policies we want to realize and the programs 
 are the control plane.
-As we show in \secref{sec:TODO}, synthesizing a control plane
+As we show in \secref{sec:vision}, synthesizing a control plane
 directly from policies is complicated by the fact that, to infer the concrete
 set of paths induced by a given control plane, one has to incorporate
-into the synthesis procedure complex concepts such as shortest path algorithms.
-}
-
+into the synthesis procedure complex concepts such as shortest path algorithms
+using theories like propositional logic (SAT) and linear rational
+arithmetic (LRA).
 %(6) We propose a two-phased approach that synthesizes a partially-correct
 %control plane from examples, and then applies a series of transformations to
 %produce a fully policy-compliant control plane.
@@ -82,14 +82,16 @@ all the functional policies, such as reachability, waypoint, and isolation.
 %as those contained within a sample data plane. 
 Second, we generate a simple control plane that,
 under no failures,
-induces the set of synthesized paths.
+induces the set of synthesized paths. This makes the synthesis 
+tractable, as the second phase uses only the theory of linear 
+rational arithmetic (LRA) to generate a control plane. 
 Finally, we 
 apply a series of
 transformations
 to obtain a control plane that  computes policy-compliant paths under a bounded set of failures (e.g.,
 all single- and double-link failures).
 If the procedure fails, we produce a different set of paths using the approach in the first phase 
-and try again.}
+and try again. 
 
 %(7) A major challenge is abstracting away the low-level details of control
 %plane configurations. We do this using an abstract representation.
