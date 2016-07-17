@@ -105,14 +105,18 @@ Finally, adding failure handling to the problem results in yet another layer of 
 
 Our proposed approach is to tackle these three problems in separate phases
 (\figref{fig:process}).
-By choosing a data plane as input to the second phase, we 
-express the problem of finding a control plane using only the 
+First we synthesize a data plane that meets the input policies and then,
+by using the data plane as input to the second phase, we 
+express the problem of finding a policy-compliant control plane using only the 
 theory of linear rational arithmetic (LRA), for which we can use
 efficient off-the-shelf LP-solvers. 
-However, this approach causes information to be lost 
-between the different phases
-and multiple iterations of the phases may be required,
-but preliminary results of our approach are promising.
+Finally, we modify the obtained control plane to obtain failure tolerance.
+The drawback of this approach is that one might need to consider multiple possible
+data planes before finding one that can successfully complete all the phases of the
+synthesis algorithm
+%ailures that happen in the later phases may require to restart the synthesis procedure 
+%multiple times.
+%but preliminary results of our approach are promising.
 
 The solution space of output network configurations to 
 enforce a set of policies
