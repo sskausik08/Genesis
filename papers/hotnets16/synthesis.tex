@@ -1,35 +1,3 @@
-% \section{ARC Synthesis}
-% % Operators require support for a diverse collection of policies, 
-% % like service chaining, traffic engineering, and isolation. Also,
-% % since failure is handled in a distributed manner, operators need 
-% % support for policies which specify resilience properties and behavior
-% % of traffic under failure scenarios. 
-% % Earlier 
-% % work in this area has focused on finding ideal OSPF weights for 
-% % traffic engineering~\cite{te-ospf}, but such approaches are 
-% % inherently tied with the policies supported, and are not extensible 
-% % to other policies easily. 
-
-% In our preliminary approach to ARC synthesis, 
-% we tried to specify policies using SMT theories like propositional logic and 
-% linear rational arithmetic and 
-% use off-the-shelf SMT solvers~\cite{z3} 
-% to synthesize the ARC. However, current SMT solvers are incapable of 
-% scaling to even small-sized topologies and number of policies, majorly
-% due to the fact the paths in the network are based on the weights in a 
-% complicated manner (shortest-path) which increases the complexity of the
-% encoding in SMT. Synthesizing resilient control planes with this 
-% approach is intractable with current state-of-art SMT solvers.
-
-% While the ARC synthesis from data planes can enforce 
-% policies by the distributed control plane, it does not
-% encapsulate resilience properties of the control plane. 
-% To accomodate resilience properties in the ARC synthesis,
-% we envision two different mechanisms: concrete
-% backup paths and path-level policies under failure scenarios. 
-% We discuss this in \secref{sec:resilience}. \kausik{Could expand more,
-% write after resilience section is complete}
-
 \begin{figure*}
 \centering
 \includegraphics[width=0.7\textwidth]{figures/process.pdf}
@@ -38,7 +6,20 @@
     policy-compliant paths under bounded failures}
 \end{figure*}
 
-\section{ARC Synthesis} \label{sec:synthesis}
+\section{Control Plane Synthesis via ARCs} \label{sec:synthesis}
+In this section, we describe preliminary ideas on how each phase of our synthesis 
+approach is implemented.
+First, we briefly discuss how existing tools can be used to generate
+policy-compliant paths (\secref{TODO}).
+Second, we show how to generate ARCs that induce
+the set of paths synthesized in the first phase (\secref{TODO}).
+Third, we show how ARCs can be modified to deal with resilience (\secref{TODO}).
+Finally, we show how to restart the process whenever one of the three phases fails (\secref{TODO}).
+
+\subsection{From policies to paths}
+
+\subsection{From paths to ARCs}
+
 We first describe the synthesis of a type of ARC 
 called {\em pure} ARC which
 only forwards packet bases on shortest-paths and does 
