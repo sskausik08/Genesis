@@ -1,0 +1,23 @@
+\subsection*{Abstract}
+Operators of modern networks
+require support for diverse and complex end-to-end policies, such
+as, middlebox traversals, isolation, and traffic engineering. While 
+Software-defined Networking (SDN) provides centralized 
+custom routing functionality
+in networks to realize these policies, many networks deploy "traditional"
+control planes running distributed routing protocols like OSPF and BGP
+because they are scalable and robust to failures. However, realization of 
+policies by distributed control plane configurations is manual and error-prone,
+and as failure handling is distributed, ensuring policy-compliance under failures 
+can be challenging. We propose a three-phase 
+architecture to automatically realize 
+fault-tolerant control planes from policy specifications. First, we 
+construct the data plane from policies, and use the data plane to 
+synthesize a control plane whose paths follow the data plane paths. 
+We then transform the control plane to ensure policy-compliance
+under failures to produce a fault-tolerant control plane. 
+We use a weighted graph-based abstract representation 
+of the control plane called \ARC to simplify the synthesis of control 
+planes and compile device configurations based on the underlying
+network infrastructure requirements. Our paper presents a preliminary 
+treatment of the architecture and the challenges in realizing our vision. 
