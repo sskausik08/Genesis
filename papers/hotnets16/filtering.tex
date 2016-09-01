@@ -115,7 +115,7 @@ It is easy to see that every solution of this simplified set of constraints
 is also a solution to the original solution (because $D(s,t)\leq D_d(s,t)$).
 However, the reverse is not true and the set of simplified equations can be unsatisfiable
 in cases in which the original set is satisfiable.
-Since our three-phases algorithm already contains other sources of incompleteness, we use the simplified
+We use the simplified
 set of equations in our preliminary implementation and show how it yields encouraging results in practice.
 
 If the set of linear equations does not admit a solution, we 
@@ -162,7 +162,7 @@ E(s, n') + D(n', t) > \sum_{\mathclap{\substack{l_i=(s_i,t_i)}}}
 \end{eqnarray}
 that was added to reason about some DAG $\xi_d$.
 
-By adding the route-filter $(s,n')$ to $F$, this inequality is removed from the set of constraints
+By adding the route-filter $((s,n'),d)$ to $F$, this inequality is removed from the set of constraints
 and the combination of the other constraints appearing in the other unsat-core is now satisfiable.
 The complete set of equations may still be inconsistent as other unsat-cores might exist. 
 The procedure can be repeated until the resulting set of constraints becomes satisfiable
@@ -186,7 +186,7 @@ Finding an IIS is an NP-hard problem~\cite{iiscomplexity}
 and can result in slow synthesis times.
 We identify a topological property of the set of input paths that 
 is guaranteed to require route-filters and use it to produce an initial set of necessary route-filters.
-This technique allows us to limit the number of times we are required to compute  unsat-cores.
+This technique allows us to reduce the number of times we are required to compute  unsat-cores.
 
 We define the structure shown in \Cref{fig:diamond}
 as a \emph{diamond}. 
