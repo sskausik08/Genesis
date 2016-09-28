@@ -93,6 +93,8 @@ class ZeppelinSynthesiser(object) :
 		for dst in self.pdb.getDestinations() :
 			self.routefilters[dst] = []
 
+		self.routefilters[0] = [] # Default destination val = 0 (Not a s)
+
 
 	def initializeEndpointResilience(self) : 
 		# Without filters, all sources have maximum resilience = number of source neighbours.
@@ -149,6 +151,7 @@ class ZeppelinSynthesiser(object) :
 		self.disableUnusedEdges()
 		self.initializeSMTVariables()
 		self.initializeEndpointResilience()
+		self.initializeRouteFilters()
 
 		start_t = time.time()
 		self.addDjikstraShortestPathConstraints()
@@ -174,7 +177,6 @@ class ZeppelinSynthesiser(object) :
 			else : 
 				print "solving ILP with routefilters"
 				self.routeFilterMode = True
-				self.initializeRouteFilters()
 				self.detectDiamonds()
 
 				diamondLoss = self.calculateResilienceLoss()
@@ -218,18 +220,19 @@ class ZeppelinSynthesiser(object) :
 					print "diamond loss", diamondLoss
 
 			
-		f = open('timing', 'a')
-		f.write(str(len(endpoints)) + "," + str(time.time() - start_t)+"\n")
+		self.f = open('timing', 'a')
+		self.f.write(str(len(endpoints)) + "," + str(time.time() - start_t)+"\n")
 		# Enable Topology Edges
 		self.topology.enableAllEdges()
 		# Extract Edge weights for Gurobi		
-		self.getEdgeWeightModel(self.routeFilterMode)		
+		self.getEdgeWeightModel(self.routeFilterMode)	
 
+		self.f.close()	
 		#self.pdb.printPaths(self.topology)
 		self.pdb.validateControlPlane(self.topology, self.routefilters, self.t_res)
 		#self.topology.printWeights()
 		#self.printProfilingStats()
-
+		self.printRouteFilterDistribution()
 
 	"""
 	An IIS is a subset of the constraints and variable bounds of the original model. 
@@ -521,11 +524,8 @@ class ZeppelinSynthesiser(object) :
 	# These constraints are solved fast, does exponentially increase synthesis time.
 	def addDjikstraShortestPathConstraints(self) :
 		swCount = self.topology.getSwitchCount()
-		dsts = self.pdb.getDestinations()
-
 		constraintIndex = 0
 
-		#print "number of destinations", len(dsts)
 		for s in range(1, swCount + 1):
 			if self.topology.isSwitchDisabled(s) :
 				continue
@@ -730,7 +730,7 @@ class ZeppelinSynthesiser(object) :
 					# if [sw,n] in self.hiddenEdges : 
 					# 	ew = 1000
 					self.topology.addWeight(sw, n, float(ew))
-					print sw, n,  float(ew)
+					#print sw, n,  float(ew)
 
 		for s in range(1, swCount + 1) :
 			for t in range(1, swCount + 1) :
@@ -760,8 +760,33 @@ class ZeppelinSynthesiser(object) :
 		
 		for dst in dsts : 
 			setRouteFilters += len(self.routefilters[dst])
+		self.f.write("Ratio of routefilters : " + str(setRouteFilters) + ":" + str(totalRouteFilters) + "\n") 
 		print "Ratio of routefilters : ", setRouteFilters, totalRouteFilters 
 		self.calculateResilienceLoss()
+
+	def printRouteFilterDistribution(self) :
+		swCount = self.topology.getSwitchCount()
+		dsts = self.pdb.getDestinations()
+		distribution = defaultdict(lambda:defaultdict(lambda:None))
+		# Distribution of Route Filters
+		for s in range(1, swCount + 1) :
+			for t in range(1, swCount + 1) :
+				distribution[s][t] = 0
+
+		for s in range(1, swCount + 1) :
+			for t in range(1, swCount + 1) :
+				for dst in dsts :
+					if [s,t] in self.routefilters[dst] :
+						distribution[s][t] += 1
+
+		for s in range(1, swCount + 1) :
+			for t in range(1, swCount + 1) :
+				if distribution[s][t] > 0 :
+					print self.topology.getSwName(s), self.topology.getSwName(t), distribution[s][t]
+
+		for dst in dsts : 
+			print dst, len(self.routefilters[dst])
+
 
 	# def findRouteFilters(self, dst, dag) :
 	# 	""" Finds the required route filters for dst from model """
