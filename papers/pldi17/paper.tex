@@ -1,0 +1,161 @@
+%-----------------------------------------------------------------------------
+%
+%               Template for sigplanconf LaTeX Class
+%
+% Name:         sigplanconf-template.tex
+%
+% Purpose:      A template for sigplanconf.cls, which is a LaTeX 2e class
+%               file for SIGPLAN conference proceedings.
+%
+% Guide:        Refer to "Author's Guide to the ACM SIGPLAN Class,"
+%               sigplanconf-guide.pdf
+%
+% Author:       Paul C. Anagnostopoulos
+%               Windfall Software
+%               978 371-2316
+%               paul@windfall.com
+%
+% Created:      15 February 2005
+%
+%-----------------------------------------------------------------------------
+
+
+\documentclass[10pt,numbers,preprint,nocopyrightspace]{sigplanconf}
+
+% The following \documentclass options may be useful:
+
+% preprint      Remove this option only once the paper is in final form.
+% 10pt          To set in 10-point type instead of 9-point.
+% 11pt          To set in 11-point type instead of 9-point.
+% numbers       To obtain numeric citation style instead of author/year.
+
+\newif\iffull
+\fullfalse
+
+\usepackage{times}
+\usepackage{graphicx}
+\usepackage{mathtools}
+\usepackage{amsmath}
+\usepackage[utf8]{inputenc}
+\usepackage{cleveref}
+\usepackage{listings}
+\usepackage{array}
+\usepackage{breqn}
+\usepackage{tikz}
+\usepackage{algorithmicx}
+\usepackage[Algorithm,ruled]{algorithm}
+\usepackage{algpseudocode}
+\usepackage{pifont,xspace}
+\usetikzlibrary{automata,positioning}
+\newcommand{\name}{Genesis\xspace}
+\newcommand{\Name}{\name}
+\newcommand{\pushcode}[1][1]{\hskip\dimexpr#1\algorithmicindent\relax}
+\newcolumntype{P}[1]{>{\centering\arraybackslash}p{#1}}
+
+\usepackage[font=small]{caption}
+\usepackage{enumitem}
+%\usepackage{usenix}
+\usepackage{epsfig}
+%\usepackage[TABBOTCAP]{subfigure}
+\usepackage{color}
+%\usepackage{thumbpdf}
+\usepackage{verbatim}
+%\usepackage{hyperref}
+\usepackage{url}
+%\usepackage{booktabs}
+\usepackage{colortbl}
+\usepackage{enumitem}
+\usepackage[export]{adjustbox}
+\usepackage{subfig}
+\usepackage{mathtools}
+\usepackage{amsthm}
+\usepackage{multirow}% http://ctan.org/pkg/multirow
+\usepackage{hhline}
+\input{defs}
+%\usepackage[small,compact]{titlesec}
+%\usepackage[font={bf,small}]{caption}
+\usepackage{titlesec}
+%\titlespacing*{\section}{1pt}{3pt}{3pt}
+%\titlespacing*{\subsection}{1pt}{3pt}{1.5pt}
+%\titlespacing*{\subsubsection}{1pt}{3pt}{2pt}
+\newtheorem{mydef}{Definition}
+\newtheorem{example}{Example}
+\newtheorem{theorem}{Theorem}[section]
+\lstset{
+	basicstyle=\itshape,
+	xleftmargin=2em,
+	literate={->}{$\rightarrow$}{2}
+	{α}{$\alpha$}{1}
+	{δ}{$\delta$}{1}
+}
+
+
+\crefname{Section}{§}{§§}
+\Crefname{Section}{§}{§§}
+
+
+\usepackage{color}
+\newcommand{\loris}[1]{\textcolor[rgb]{0.00,0.00,1.00}{L: #1}}
+\newcommand{\aditya}[1]{\textcolor[rgb]{0.00,0.00,1.00}{A:#1}}
+\newcommand{\kausik}[1]{\textcolor[rgb]{0.00,1.00,0.00}{K: #1}}
+%\renewcommand{\aditya}[1]{{\color{red}{\bf AA: #1}}}
+
+\usepackage{float}
+
+\newcommand{\cL}{{\cal L}}
+
+\begin{document}
+
+%\special{papersize=8.5in,11in}
+%\setlength{\pdfpageheight}{\paperheight}
+%\setlength{\pdfpagewidth}{\paperwidth}
+%
+%\conferenceinfo{CONF 'yy}{Month d--d, 20yy, City, ST, Country}
+%\copyrightyear{20yy}
+%\copyrightdata{978-1-nnnn-nnnn-n/yy/mm}
+%\copyrightdoi{nnnnnnn.nnnnnnn}
+
+% Uncomment the publication rights you want to use.
+%\publicationrights{transferred}
+%\publicationrights{licensed}     % this is the default
+%\publicationrights{author-pays}
+
+%\titlebanner{}        % These are ignored unless
+%\preprintfooter{}   % 'preprint' option specified.
+
+\title{Synthesizing Router Configuration based on Paths}
+
+\authorinfo{Omitted for double blind}
+{...}
+{...}
+
+\maketitle
+
+\input{synthesis}
+
+%\category{CR-number}{subcategory}{third-level}
+%
+%% general terms are not compulsory anymore,
+%% you may leave them out
+%\terms
+%term1, term2
+%
+%\keywords
+%keyword1, keyword2
+
+
+%\acks
+%
+%Acknowledgments, if needed.
+
+% We recommend abbrvnat bibliography style.
+
+\bibliographystyle{abbrvnat}
+
+% The bibliography should be embedded for final submission.
+\bibliography{references}
+\iffull
+\input{appendix}
+\fi
+
+\end{document}
