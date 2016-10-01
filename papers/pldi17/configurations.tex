@@ -1,0 +1,17 @@
+\section{Configuration Requirements}
+We consider synthesis of inter-domain 
+(for lack of a better word) routing 
+configurations where each domain uses a 
+IGP for intra-domain routing (like 
+OSPF) and domains communicate among 
+themselves using BGP. 
+Routing inside a domain is controlled 
+by synthesizing OSPF edge weights and 
+route-filters. BGP is a path-vector
+protocol and primarily selects routes by 
+AS-PATH length. However, we can 
+use BGP's powerful path selection metrics 
+like local preferences to select 
+paths with greater path lengths (local
+preference value is considered first in 
+path selection with multiple routes). 
