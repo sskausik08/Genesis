@@ -6,17 +6,16 @@ import time
 import random
 import metis
 import networkx as nx
-from SliceGraphSolver import SliceGraphSolver
+#from SliceGraphSolver import SliceGraphSolver
 from Tactic import *
 import re
 from subprocess import *
 from collections import deque
-from ZeppelinSynthesiser import ZeppelinSynthesiser
 from collections import defaultdict
 
 
 class GenesisSynthesiser(object) :
-	def __init__(self, topo, pdb, Optimistic=True, TopoSlicing=False, pclist=None, useTactic=False, noOptimizations=False, BridgeSlicing=True, weakIsolation=False, controlPlane=False) :
+	def __init__(self, topo, pdb, Optimistic=True, TopoSlicing=False, pclist=None, useTactic=False, noOptimizations=False, BridgeSlicing=True, weakIsolation=False, repairMode=False, controlPlane=False) :
 		self.topology = topo
 
 		# Network Forwarding Function
@@ -27,8 +26,6 @@ class GenesisSynthesiser(object) :
 		self.stackfwdvars = dict()
 		self.stackreachvars = dict()
 
-		self.R = Function('R', IntSort(), IntSort(), IntSort())
-		self.L = Function('L', IntSort(), IntSort(), IntSort(), RealSort())
 		#self.delta = Function('delta', IntSort(), IntSort(), IntSort())
 		self.pc = Int('pc') # Generic variable for packet classes
 		
@@ -38,8 +35,6 @@ class GenesisSynthesiser(object) :
 		
 		# #self.z3Solver.set("sat.phase", "always-false")
 		self.fwdmodel = None 
-
-		self.sliceGraphSolver = SliceGraphSolver()
 
 		self.count = 20
 		# Policy Database. 
@@ -107,7 +102,7 @@ class GenesisSynthesiser(object) :
 		self.totalUtilizationVar = Real('totUtilVar')
 
 		# Repair Mode
-		self.repairMode = False
+		self.repairMode = repairMode
 
 		# Generate Control Plane
 		self.controlPlaneMode = controlPlane
@@ -125,21 +120,23 @@ class GenesisSynthesiser(object) :
 		pcRange = self.pdb.getPacketClassRange()
 		maxPathLen = self.topology.getMaxPathLength()
 
+		# Fwd Relation Variables
 		self.fwdvars = [[[0 for x in range(pcRange)] for x in range(swCount + 1)] for x in range(swCount + 1)]
+		
+		# Reach Relation Variables
 		self.reachvars = [[[0 for x in range(maxPathLen+1)] for x in range(pcRange)] for x in range(swCount + 1)]
 
 		for sw1 in range(1,swCount+1):
 			for sw2 in range(1,swCount+1):
 				for pc in range(pcRange) :
 					self.fwdvars[sw1][sw2][pc] = Bool(str(sw1)+"-"+str(sw2)+":"+str(pc))
-					#self.smtlib2file.write("(declare-fun |" + str(str(sw1)+"-"+str(sw2)+":"+str(pc)) + "| () Bool)\n")
 
 		for sw in range(1,swCount+1):
 			for pc in range(pcRange) :
 				for plen in range(1,maxPathLen +1) :
 					self.reachvars[sw][pc][plen] = Bool(str(sw)+":"+str(pc)+":"+str(plen))
-					#self.smtlib2file.write("(declare-fun |" + str(str(sw)+":"+str(pc)+"*"+str(plen)) + "| () Bool)\n")
 
+	# Fwd relation
 	def Fwd(self, sw1, sw2, pc) :
 		if self.pdb.getOriginalPacketClass(pc) <> pc : 
 			neighbours = self.topology.getSwitchNeighbours(sw2)
@@ -154,21 +151,7 @@ class GenesisSynthesiser(object) :
 			else : 
 				return self.fwdvars[sw1][sw2][pc]
 
-	def FwdStr(self, sw1, sw2, pc):
-		if self.pdb.getOriginalPacketClass(pc) <> pc : 
-			neighbours = self.topology.getSwitchNeighbours(sw2)
-			if sw1 not in neighbours : 
-				return "false"
-			else : 
-				return "|" + str(str(sw1)+"-"+str(sw2)+":"+str(pc)) + "|"
-		else : 
-			neighbours = self.topology.getSwitchNeighbours(sw2)
-			if sw1 not in neighbours : 
-				return "false"
-			else : 
-				return "|" + str(str(sw1)+"-"+str(sw2)+":"+str(pc)) + "|"
-
-
+	# Reach relation
 	def Reach(self, sw, pc, plen) :
 		if self.pdb.getOriginalPacketClass(pc) <> pc : 
 			if plen == 0 :
@@ -185,21 +168,6 @@ class GenesisSynthesiser(object) :
 					return False
 			return self.reachvars[sw][pc][plen]
 
-	def ReachStr(self, sw, pc, plen) :
-		if self.pdb.getOriginalPacketClass(pc) <> pc : 
-			if plen == 0 :
-				if sw == self.pdb.getSourceSwitch(pc) : 
-					return "true"
-				else : 
-					return "false"
-			return "|" + str(str(sw)+":"+str(pc)+"*"+str(plen)) + "|"
-		else : 
-			if plen == 0 :
-				if sw == self.pdb.getSourceSwitch(pc) : 
-					return "true"
-				else : 
-					return "false"
-			return "|" + str(str(sw)+":"+str(pc)+"*"+str(plen)) + "|"
 
 	def pushSATVariables(self, pclist):
 		swCount = self.topology.getSwitchCount()
@@ -227,39 +195,35 @@ class GenesisSynthesiser(object) :
 				del self.reachvars[pc]
 
 	def enforcePolicies(self): 
-		if self.bridgeSlicingFlag : 
+		# If there are bridges in the topology, we can split the 
+		# synthesis into different parts. Optimization only 
+		# applicable in sparse topologies with bridges. 
+		if self.bridgeSlicingFlag: 
 			self.bridgeSlicingFlag = self.topology.findTopologyBridges()
 
 		start_t = time.time()
 		self.initializeSATVariables()
-
-		# # Topology Slicing : 
-		# if self.topologySlicingFlag : 
-		# 	self.topology.createSliceGraph()
-		# 	self.initializeSliceGraphSolver()
 
 		# Enforce Tactics 
 		if self.useTacticFlag : 
 			#st = time.time()
 			self.useTactic()
 			#et = time.time()
-			#print "Time taken to create tactic variables is ", et - st
 		
-		# Generate the assertions.
+		# Generate the relational classes (maximal set of related packet classes)
+		# pc1 is related to pc2 if pc1 || pc2 or there are global policies like
+		# link capacities or TE		
 		self.pdb.createRelationalClasses()
 
-		# st = time.time()
-		# if(not self.OptimisticSynthesisFlag) or self.addGlobalTopoFlag :
-		# 	self.addTopologyConstraints(0, self.pdb.getPacketClassRange())
-		# print "Time to add global topology constraints", time.time() - st
-
-	
+		# If optimistic synthesis mode is enabled
 		if self.OptimisticSynthesisFlag : 
 			rcGraphs = self.pdb.getRelationalClassGraphs()
 
 			# Add link capacity constraints
 			self.OptimisticLinkCapacityConstraints = self.pdb.getLinkCapacityConstraints()
 
+			# To make optimistic synthesis complete, we increase 
+			# current graph threshold by a factor by 2 each time optimistic synthesis fails. 
 			for rcGraph in rcGraphs :
 				rcGraphSat = False
 				self.CURR_GRAPH_SIZE_THRESHOLD = self.BASE_GRAPH_SIZE_THRESHOLD # reset the graph size to base value.
@@ -267,7 +231,7 @@ class GenesisSynthesiser(object) :
 				while rcGraphSat == False and self.CURR_GRAPH_SIZE_THRESHOLD < rcGraph.number_of_nodes() : 
 					(rcGraphSat, synPaths) = self.enforceGraphPoliciesOptimistic(rcGraph)
 					if rcGraphSat == False : 
-						# Incremental Graph recovery
+						# Incremental Graph recovery.
 						self.CURR_GRAPH_SIZE_THRESHOLD = self.CURR_GRAPH_SIZE_THRESHOLD * 2 # Doubling the current graph size
 						#print "Incrementing the solver graph size to " + str(self.CURR_GRAPH_SIZE_THRESHOLD)
 
@@ -277,15 +241,16 @@ class GenesisSynthesiser(object) :
 
 				self.synthesisSuccessFlag = self.synthesisSuccessFlag & rcGraphSat
 			self.enforceMulticastPolicies()		
+		
 		elif self.noOptimizationsFlag : 
 			#st = time.time()
 			self.synthesisSuccessFlag = self.enforceUnicastPoliciesNoOptimizations()
 			#et = time.time()
 			#print "No Optimizations time is", et - st
-			self.enforceMulticastPolicies()		
+			#self.enforceMulticastPolicies()		
 		else : 
 			self.synthesisSuccessFlag = self.enforceUnicastPolicies()
-			self.enforceMulticastPolicies()		
+			# self.enforceMulticastPolicies()		
 
 		end_t = time.time()
 		print "Time taken to solve the " + str(self.pdb.getPacketClassRange()) + " policies " + str(end_t - start_t)
@@ -294,13 +259,16 @@ class GenesisSynthesiser(object) :
 			for pc in self.OptimisticPaths : 
 				self.pdb.addPath(pc, self.OptimisticPaths[pc])
 			self.pdb.validatePolicies(self.topology)
-			#self.pdb.printPaths(self.topology)
+			self.pdb.printPaths(self.topology)
 		elif self.synthesisSuccessFlag and not self.OptimisticSynthesisFlag :
 			self.pdb.validatePolicies(self.topology)
-			#self.pdb.printPaths(self.topology)
+			self.pdb.printPaths(self.topology)
 
 		self.pdb.validatePolicies(self.topology)
+		
+		# Control plane synthesis: outside scope of POPL17 Genesis paper.
 		if self.controlPlaneMode : 
+			from ZeppelinSynthesiser import ZeppelinSynthesiser
 			self.zeppelinSynthesiser = ZeppelinSynthesiser(self.topology, self.pdb)
 			dsts = self.pdb.getDestinations()
 			for dst in dsts : 
@@ -314,13 +282,14 @@ class GenesisSynthesiser(object) :
 					self.endpoints.append(endpt)
 
 			self.zeppelinSynthesiser.enforceDAGs(self.pdb.getDestinationDAGs(), self.endpoints)
-		
-		#self.enforceChangedPolicies()
+	
 		#self.pdb.printPaths(self.topology)
 		self.pdb.writeForwardingRulesToFile(self.topology)
 		self.printProfilingStats()
 
 
+		if self.repairMode : 
+			self.enforceChangedPolicies()
 	
 	def addReachabilityPolicy(self, predicate, src, dst, waypoints=None, pathlen=None) :
 		""" src = next hop switch of source host(s) 
@@ -392,7 +361,7 @@ class GenesisSynthesiser(object) :
 		self.addSwitchTableConstraints(switchTableConstraints)  # Adding switch table constraints.
 
 		for relClass in relClasses :
-			# Independent Synthesis of relClass.
+			# Independent Synthesis of relClass. There is one relClass if there are global policies
 			self.z3Solver.push()
 			#reachtime = time.time()
 
@@ -407,7 +376,7 @@ class GenesisSynthesiser(object) :
 						self.addTopologyConstraints(pc)
 
 			#isolationtime = time.time()
-			# Add traffic constraints. 
+			# Add traffic isolation constraints. 
 			for pno in range(self.pdb.getIsolationPolicyCount()) :
 				pc = self.pdb.getIsolationPolicy(pno)
 				pc1 = pc[0]
@@ -417,7 +386,7 @@ class GenesisSynthesiser(object) :
 			
 			#print "Time taken to add isolation constraints is", time.time() - isolationtime
 
-			# check if global traffic engineering constraints! 
+			# check if global traffic engineering constraints
 			if self.pdb.minimizeAverageUtilizationTE() : 
 				self.addAverageUtilizationMinimizationConstraints()
 			elif self.pdb.minimizeMaxUtilizationTE() :
@@ -432,13 +401,14 @@ class GenesisSynthesiser(object) :
 			if modelsat == z3.sat : 
 				#print "Solver return SAT"
 				self.fwdmodel = self.z3Solver.model()
-				print "Total utilization", self.fwdmodel.evaluate(self.totalUtilizationVar)
-				print "Max utilization", self.fwdmodel.evaluate(self.maxUtilizationVar)
+				# print "Total utilization", self.fwdmodel.evaluate(self.totalUtilizationVar)
+				# print "Max utilization", self.fwdmodel.evaluate(self.maxUtilizationVar)
 				for pc in relClass :
 					self.pdb.addPath(pc, self.getPathFromModel(pc))
 					
 			else :
 				print "Input Policies not realisable"
+				# These unsat cores could be used to generate policy violations for the operator. 
 				unsatCores = self.z3Solver.unsat_core()
 				for unsatCore in unsatCores :
 					print str(unsatCore)
@@ -446,18 +416,17 @@ class GenesisSynthesiser(object) :
 			self.z3Solver.pop()
 
 	def enforceUnicastPoliciesNoOptimizations(self) :
-		""" Enforcement of Policies stored in the PDB. """
+		""" Enforcement of Policies stored in the PDB without any optimizations """
 
 		self.addTopologyConstraints(0, self.pdb.getPacketClassRange())
 
-		# switchTableConstraints = self.pdb.getSwitchTableConstraints()
-		# self.addSwitchTableConstraints(switchTableConstraints)  # Adding switch table constraints.
+		switchTableConstraints = self.pdb.getSwitchTableConstraints()
+		self.addSwitchTableConstraints(switchTableConstraints)  # Adding switch table constraints.
 
 		linkCapacityConstraints = self.pdb.getLinkCapacityConstraints()
 		self.addLinkConstraints(range(self.pdb.getPacketClassRange()), linkCapacityConstraints)
 
-		
-		# Synthesize all together.
+		# Add reachability constraints.
 		for pc in range(self.pdb.getPacketClassRange()) :
 			if not self.pdb.isMulticast(pc) : 
 				policy = self.pdb.getReachabilityPolicy(pc)
@@ -470,10 +439,6 @@ class GenesisSynthesiser(object) :
 			pc2 = pcs[1]
 			self.addTrafficIsolationConstraints(pc1, pc2)
 
-
-		#self.smtlib2file.write("(check-sat)\n")
-		#self.smtlib2file.write("(get-model)\n")
-
 		# Apply synthesis
 		solvetime = time.time()
 		modelsat = self.z3Solver.check()
@@ -485,6 +450,442 @@ class GenesisSynthesiser(object) :
 				self.pdb.addPath(pc, self.getPathFromModel(pc))		
 		else :
 			print "Input Policies not realisable"
+
+
+	def addTopologyConstraintsSAT(self, pcStart, pcEnd=0) :
+		if pcEnd == 0 :
+			""" Topology Constraint for one packet class"""
+			pcEnd = pcStart + 1
+
+		st = time.time()
+		swCount = self.topology.getSwitchCount()
+		# \forall sw \forall n \in neighbours(sw) and NextHop = {n | F(sw,n,pc,1) = True}. |NextHop| \leq 1 
+		# None or only one of F(sw,n,pc,1) can be true.
+		for pc in range(pcStart, pcEnd) :
+			if not self.pdb.isMulticast(pc) :
+				""" Unicast packet class """
+
+				if not self.pdb.hasWaypoints(pc) :
+					# Dont need to have topology forwarding constraints
+					continue
+				
+				useBridgeSlicing = False
+				if self.bridgeSlicingFlag :
+					# Find if exists in a bridge slice. 
+					srcSlice = self.topology.getBridgeSliceNumber(self.pdb.getSourceSwitch(pc))
+					dstSlice = self.topology.getBridgeSliceNumber(self.pdb.getDestinationSwitch(pc))
+
+					if srcSlice == dstSlice and srcSlice <> None : 
+						# Path will exist only in this slice.
+						swList = self.topology.getBridgeSlice(srcSlice)
+						useBridgeSlicing = True
+					else :
+						swList = range(1,swCount + 1)
+				else : 
+					swList = range(1,swCount + 1)
+
+				for sw in swList :
+					neighbours = self.topology.getSwitchNeighbours(sw, useBridgeSlicing)
+
+					# Add assertions to ensure f(sw,*) leads to a valid neighbour. 
+					topoAssertions = []
+					unreachedAssertions = []
+					
+					unreachedAssertionsStr = ""
+					topoAssertStr = ""
+
+					for n in neighbours : 
+						#neighbourAssert = self.F(sw,n,pc,1) == True
+						neighbourAssertions = [self.Fwd(sw,n,pc)]
+						unreachedAssertions.append(Not(self.Fwd(sw,n,pc)))
+
+						neighbourAssertionsStr = self.FwdStr(sw,n,pc)
+						unreachedAssertionsStr += " (not " + self.FwdStr(sw,n,pc) + ") "
+
+						for n1 in neighbours :
+							if n == n1 : 
+								continue
+							else :
+								neighbourAssertions.append(Not(self.Fwd(sw,n1,pc)))
+
+								neighbourAssertionsStr += " (not " + self.FwdStr(sw,n1,pc) + ") "
+						
+						neighbourAssert = And(*neighbourAssertions)
+						topoAssertions.append(neighbourAssert)
+
+						neighbourAssertStr = " (and " + neighbourAssertionsStr + ") "
+						topoAssertStr += neighbourAssertStr
+
+					unreachedAssert = And(*unreachedAssertions)
+					topoAssertions.append(unreachedAssert) # Either one forwarding rule or no forwarding rules.
+					topoAssert = Or(*topoAssertions) 
+
+					unreachedAssertStr = " (and " + unreachedAssertionsStr + ") "
+					topoAssertStr = " (or " + topoAssertStr + " " + unreachedAssertStr +  ") "
+					#self.smtlib2file.write("; Forwarding Rule Constraint for switch " + str(sw) + "\n")
+					#self.smtlib2file.write("( assert " + topoAssertStr + ")\n")
+
+					self.z3numberofadds += 1
+					#addtime = time.time() # Profiling z3 add.
+					self.z3Solver.add(topoAssert)
+					#self.z3addTime += time.time() - addtime
+				else :
+					""" Multicast packet class. No restrictions on forwarding set """
+					pass	
+
+	def addTopologyConstraints(self, pcStart, pcEnd=0) :
+		if self.UseTopoSAT == True :
+			self.addTopologyConstraintsSAT(pcStart, pcEnd)
+			return
+
+		if pcEnd == 0 :
+			""" Topology Constraint for one packet class"""
+			pcEnd = pcStart + 1
+
+		swCount = self.topology.getSwitchCount()
+		# \forall sw \forall n \in neighbours(sw) and NextHop = {n | F(sw,n,pc,1) = True}. |NextHop| \leq 1 
+		# None or only one of F(sw,n,pc,1) can be true.
+		for sw in range(1,swCount+1) :
+			for pc in range(pcStart, pcEnd) :
+				if not self.pdb.isMulticast(pc) : 
+					""" Unicast packet class """
+					neighbours = self.topology.getSwitchNeighbours(sw)
+
+					fname = "fwdSet" + str(sw) + "#" + str(pc)
+					fwdSet = Function(fname, IntSort(), IntSort(), IntSort(), IntSort())
+
+					i = 0
+					for n in neighbours :
+						if n == neighbours[0] :
+							self.z3numberofadds += 1
+							addtime = time.time() # Profiling z3 add.
+							self.z3Solver.add(Implies(self.Fwd(sw, n, pc), fwdSet(sw, pc, n) == 1))
+							self.z3addTime += time.time() - addtime
+							self.z3numberofadds += 1
+							addtime = time.time() # Profiling z3 add.
+							self.z3Solver.add(Implies(Not(self.Fwd(sw, n, pc)), fwdSet(sw, pc, n) == 0))
+							self.z3addTime += time.time() - addtime
+						else :
+							prevn = neighbours[i - 1]
+							self.z3numberofadds += 1
+							addtime = time.time() # Profiling z3 add.
+							self.z3Solver.add(Implies(self.Fwd(sw, n, pc), fwdSet(sw, pc, n) == 1 + fwdSet(sw, pc, prevn)))
+							self.z3addTime += time.time() - addtime
+							self.z3numberofadds += 1
+							addtime = time.time() # Profiling z3 add.
+							self.z3Solver.add(Implies(Not(self.Fwd(sw, n, pc)), fwdSet(sw, pc, n) == fwdSet(sw, pc, prevn)))
+							self.z3addTime += time.time() - addtime
+						i +=1
+					n = neighbours[i - 1] # Last element in the list.
+					self.z3numberofadds += 1
+					addtime = time.time() # Profiling z3 add.
+					self.z3Solver.add(fwdSet(sw, pc, n) < 2)
+					self.z3addTime += time.time() - addtime
+				else :
+					""" Multicast packet class. No restrictions on forwarding set """
+					pass	
+
+	def addTopologySliceConstraints(self, slice, pcStart, pcEnd=0) :
+		if pcEnd == 0 :
+			""" Topology Constraint for one packet class"""
+			pcEnd = pcStart + 1
+
+		topologySlice = self.topology.getTopologySlice(slice)
+		# \forall sw \forall n \in neighbours(sw) and NextHop = {n | F(sw,n,pc,1) = True}. |NextHop| \leq 1 
+		# None or only one of F(sw,n,pc,1) can be true.
+		for sw in topologySlice :
+			for pc in range(pcStart, pcEnd) :
+				if not self.pdb.isMulticast(pc) : 
+					""" Unicast packet class """
+					neighbours = self.topology.getSwitchNeighbours(sw)
+
+					# Add assertions to ensure f(sw,*) leads to a valid neighbour. 
+					topoAssert = False
+					unreachedAssert = True
+
+					for n in neighbours : 
+						#neighbourAssert = self.F(sw,n,pc,1) == True
+						neighbourAssert = self.Fwd(sw,n,pc)
+						unreachedAssert = And(unreachedAssert, Not(self.Fwd(sw,n,pc)))
+						for n1 in neighbours :
+							if n == n1 : 
+								continue
+							else :
+								neighbourAssert = And(neighbourAssert, Not(self.Fwd(sw,n1,pc)))
+						topoAssert = Or(topoAssert, neighbourAssert)
+
+					topoAssert = Or(topoAssert, unreachedAssert) # Either one forwarding rule or no forwarding rules.
+					self.z3numberofadds += 1
+					addtime = time.time() # Profiling z3 add.
+					self.z3Solver.add(topoAssert)
+					self.z3addTime += time.time() - addtime
+				else :
+					""" Multicast packet class. No restrictions on forwarding set """
+					pass
+
+	def addReachabilityConstraints(self, srcIP, srcSw, dstIP, dstSw, pc, W=None, pathlen=0) :
+		#reachtime = time.time()
+		if pathlen == 0 :
+			# Default argument. Set to max.
+			pathlen = self.topology.getMaxPathLength()
+		
+		# Add Reachability in atmost pathlen steps constraint. 
+		#reachAssert = self.Reach(dstSw,pc,pathlen) == True
+
+		# Destination is reachable in <= plen steps
+		reachAssertions = []
+		for plen in range(1,pathlen+1) :
+			reachAssertions.append(self.Reach(dstSw,pc,plen))
+
+		reachAssert = Or(*reachAssertions)
+
+		self.z3numberofadds += 1
+		#addtime = time.time() # Profiling z3 add.
+		self.z3Solver.add(reachAssert)
+		#self.z3addTime += time.time() - addtime
+
+		# At Destination, forwarding has to stop here. So, F(d,neighbour(d),pc,1) == False 
+		# When we perform the translation to rules, we can forward it to host accordingly.
+		neighbours = self.topology.getSwitchNeighbours(dstSw)
+		
+		destAssert = True
+		for n in neighbours :
+			destAssert = And(destAssert, self.Fwd(dstSw,n,pc) == False)
+
+
+		self.z3numberofadds += 1
+		#addtime = time.time() # Profiling z3 add.
+		self.z3Solver.add(destAssert)
+		#self.z3addTime += time.time() - addtime
+
+		# If waypoints, add ordered waypoint constraints.
+		if len(W) > 0 : 
+			totalwaypointCount = 0
+			currwaypointCount = 0
+			for wayptSet in W :
+				totalwaypointCount += len(wayptSet)
+
+			prevWayptSet = None
+			for wayptSet in W : 
+				# ordered Waypoints.
+				# Add the Waypoint Constraints. 
+				currwaypointCount += len(wayptSet)
+				for w in wayptSet :			
+					reachAssertions = []
+					for plen in range(1 + currwaypointCount - len(wayptSet), pathlen - (totalwaypointCount - currwaypointCount)) :
+						reachAssertions.append(self.Reach(w,pc,plen))
+
+						if prevWayptSet <> None : 
+							for w2 in prevWayptSet : 
+								orderAssertions = []
+								for plen2 in range(1, plen): 
+									orderAssertions.append(self.Reach(w2, pc, plen2))
+								orderAssert = Implies(self.Reach(w, pc, plen), Or(*orderAssertions))
+								self.z3Solver.add(orderAssert)
+					
+					reachAssert = Or(*reachAssertions)
+
+					self.z3numberofadds += 1
+					#addtime = time.time() # Profiling z3 add.
+					self.z3Solver.add(reachAssert)
+					#self.z3addTime += time.time() - addtime
+				prevWayptSet = wayptSet
+
+		#st = time.time()
+		
+		# This prunes the Reach relation to only valid 
+		# states by constructing a tree from the source switch
+		# For example, if a switch sw is a distance = 3 from src, then 
+		# Reach(sw,pc,[0,1,2]) is trivially False.
+		self.addTopologyTreeConstraints(srcSw, pc)
+
+		# Add Path Constraints for this flow to find the forwarding model for this flow.
+		self.addPathConstraints(srcSw,pc)		
+
+		#et = time.time()
+		#print "Path Constraints time is " + str(et - st)
+		#print "total function takes ", time.time() - reachtime
+		
+	# Note This functions take the most time for each pc. Look for ways to improve this. 
+	def addPathConstraints(self, s, pc) :
+		swCount = self.topology.getSwitchCount()
+		maxPathLen = self.topology.getMaxPathLength()
+
+		useBridgeSlicing = False
+		if self.topologySlicingFlag : 
+			swList = self.topology.getTopologySlice(self.topology.getSliceNumber(s))
+		
+		elif self.bridgeSlicingFlag :
+			# Find if exists in a bridge slice. 
+			srcSlice = self.topology.getBridgeSliceNumber(s)
+			dstSlice = self.topology.getBridgeSliceNumber(self.pdb.getDestinationSwitch(pc))
+
+			if srcSlice == dstSlice and srcSlice <> None : 
+				# Path will exist only in this slice.
+				swList = self.topology.getBridgeSlice(srcSlice)
+				useBridgeSlicing = True
+			else :
+				swList = range(1,swCount + 1)
+		else : 
+			swList = range(1,swCount + 1)
+
+		neighbours = self.topology.getSwitchNeighbours(s, useBridgeSlicing)
+		
+		srcAssertions = []
+		for n in neighbours : 
+			srcAssertions.append(And(self.Fwd(s,n,pc), self.Reach(n, pc, 1)))
+
+		self.z3numberofadds += 1
+		#addtime = time.time() # Profiling z3 add.
+		self.z3Solver.add(Or(*srcAssertions))
+		#self.z3addTime += time.time() - addtime
+
+		st = time.time()
+		#constime = 0
+		#addtime = 0
+		for i in swList :
+			if i == s : 
+				continue
+
+			for pathlen in range(1,maxPathLen+1) :
+				if i not in self.bfsLists[pathlen] : 
+					# Not at distance i in the topology tree, dont add constraints.
+					continue 
+
+				ineighbours = self.topology.getSwitchNeighbours(i, useBridgeSlicing) 
+				if self.useTacticFlag and pc in self.tactics :
+					# Use Tactic to reduce constraints.
+					tactic = self.tactics[pc]
+					labels = tactic.getPreviousLabels(self.topology.getLabel(i), pathlen)
+					labelneighbours = []
+					for n in ineighbours : 
+						if self.topology.getLabel(n) in labels :
+							labelneighbours.append(n)
+					if len(labelneighbours) == 0 :
+						# self.Reach(i,pc,pathlen) = False
+						self.z3Solver.add(Not(self.Reach(i,pc,pathlen)))
+						continue
+					else :
+						# Modify the ineighbours
+						ineighbours = labelneighbours
+				
+				
+				# Backward reachability proogation constraints.  
+				# If a node $n_1$ is reachable in $k$ steps, there must be a node $n_2$ reachable in  $k-1$ steps and 
+				# a forwarding rule $n_2 \rightarrow n_1$.
+
+				constraintKey = str(i) + ":" + str(pc) + "*" + str(pathlen)
+				if constraintKey in self.backwardReachPropagationConstraints : 
+					# Reuse constraint object if already created.
+					backwardReachConstraint = self.backwardReachPropagationConstraints[constraintKey]
+				else : 
+					# Create constraint.
+					beforeHopAssertions = []
+
+					#beforeHopAssertionsStr = ""
+					ct = time.time()
+					for isw in ineighbours : 
+						beforeHopAssertions.append(And(self.Fwd(isw, i, pc), self.Reach(isw, pc, pathlen - 1)))
+						
+					backwardReachConstraint = Implies(self.Reach(i,pc,pathlen), Or(*beforeHopAssertions))
+					#constime += time.time() - ct
+
+				#at = time.time()	
+				self.z3Solver.add(backwardReachConstraint)
+				#addtime += time.time() - at
+
+				# Store constraint for reuse. 
+				constraintKey = str(i) + ":" + str(pc) + "*" + str(pathlen)
+				if constraintKey not in self.backwardReachPropagationConstraints :
+					self.backwardReachPropagationConstraints[constraintKey] = backwardReachConstraint
+
+
+		# print "constime", constime
+		# print "addTime", addtimw
+		# st = time.time()
+
+	def addTopologyTreeConstraints(self, srcSw, pc) : 
+		""" Construct a topology tree for each packet class from src to
+		prune the Reach relation for unreachable switches""" 
+
+		swCount = self.topology.getSwitchCount()
+		maxPathLen = self.topology.getMaxPathLength()
+
+		swList = [srcSw]
+		for k in range(1, maxPathLen + 1) :
+			newSwList = []
+			for sw in swList :
+				neighbours = self.topology.getSwitchNeighbours(sw)
+				for n in neighbours :
+					if n not in newSwList : 
+						newSwList.append(n)
+
+			self.bfsLists[k] = newSwList
+			# Set switches not in newSwList to false at Reach(k)
+			for sw in range(1, swCount+1) :
+				if sw not in newSwList  :
+					self.z3Solver.add(Not(self.Reach(sw, pc, k)))
+
+			swList = newSwList
+
+	def addTrafficIsolationConstraints(self, pc1, pc2) : 
+		""" Adding constraints for Isolation Policy enforcement of traffic for packet classes pc1 and pc2 """
+		
+		swCount = self.topology.getSwitchCount()
+		useBridgeSlicing = False
+
+		# Find bridges for pc1 and pc2.
+		if self.bridgeSlicingFlag :
+			# Find if exists in a bridge slice. 
+			srcSlice1 = self.topology.getBridgeSliceNumber(self.pdb.getSourceSwitch(pc1))
+			dstSlice1 = self.topology.getBridgeSliceNumber(self.pdb.getDestinationSwitch(pc1))
+			srcSlice2 = self.topology.getBridgeSliceNumber(self.pdb.getSourceSwitch(pc2))
+			dstSlice2 = self.topology.getBridgeSliceNumber(self.pdb.getDestinationSwitch(pc2))
+			slice1 = None
+			slice2 = None
+			if srcSlice1 == dstSlice1 and srcSlice1 <> None :
+				slice1 = srcSlice1
+			if srcSlice2 == dstSlice2 and srcSlice2 <> None :
+				slice2 = srcSlice2
+			if slice1 <> None and slice2 <> None :
+				# Both are in bridge slices.
+				if slice1 <> slice2: 
+					# pc1 and pc2 will be isolated naturally. 
+					return
+			if slice1 <> None or slice2 <> None : 
+				# One of them is in a bridge slice. Only add traffic isolation constraints in that slice.
+				if slice1 <> None : 
+					slice = slice1
+				else :
+					slice = slice2
+				swList = self.topology.getBridgeSlice(slice)
+				useBridgeSlicing = True
+			else :
+				swList = range(1, swCount + 1) 
+		else :
+			swList = range(1, swCount + 1) 
+
+		for sw in swList:
+			for n in self.topology.getSwitchNeighbours(sw, useBridgeSlicing) :
+				isolateAssert = Not( And (self.Fwd(sw,n,pc1), self.Fwd(sw,n,pc2)))
+				self.z3numberofadds += 1
+				#addtime = time.time() # Profiling z3 add.
+				self.z3Solver.add(isolateAssert)	
+				#self.z3addTime += time.time() - addtime
+
+
+	# def addSliceTrafficIsolationConstraints(self, slice, pc1, pc2) : 
+	# 	""" Adding constraints for Isolation Policy enforcement of traffic for packet classes (end-points) ep1 and ep2. """
+
+	# 	swList = self.topology.getTopologySlice(slice)
+	# 	for sw in swList :
+	# 		for n in self.topology.getSwitchNeighbours(sw) :
+	# 			isolateAssert = Not( And (self.Fwd(sw,n,pc1), self.Fwd(sw,n,pc2)))
+	# 			self.z3numberofadds += 1
+	# 			addtime = time.time() # Profiling z3 add.
+	# 			self.z3Solver.add(isolateAssert)
+	# 			self.z3addTime += time.time() - addtime	
+
 
 	def enforceGraphPolicies(self, rcGraph, differentPathConstraints=None, recovery=True) :
 		""" Synthesis of the Relational Class Graph given some path constraints (isolation and inequality). 
@@ -640,12 +1041,14 @@ class GenesisSynthesiser(object) :
 			(edgecuts, partitions) = metis.part_graph(graph=rcGraph, nparts=2, contig=True) # Note : Metis overhead is minimal.
 
 			# If the min-cut between the two partitions is greater than a threshold, dont partition. 
+			# This is because too many edges in the cut would lead to more failures of divide-and-conquer method.
 			no_attempts = 10
 
 			random.seed(time.time())
 			while edgecuts > self.CUT_THRESHOLD and no_attempts > 0:
-				# try to partition into 4 and combining them with a random seed.
-				#print "Attempting repartitions"
+				# If metis partitioning is not good enough =>
+				# try to partition into 4 and combining them into 2 to form a better cut
+				
 				(edgecuts, partitions) = metis.part_graph(graph=rcGraph, nparts=4, contig=True) # Note : Metis overhead is minimal.
 
 				# Combine partitions and check if edgecut is less than threshold.
@@ -859,6 +1262,8 @@ class GenesisSynthesiser(object) :
 		
 		return newPathConstraints
 
+	# This function implements the solution recovery mechanism used in optimistic synthesis
+	# We add constraints to synthesize different solutions of the rcGraphs than the failed ones (provided as input)
 	def differentSolutionRecovery(self, attempt, rcGraph1, rcGraph2, differentPathConstraints) :
 		#print "Recovery Attempt #" + str(attempt) + " " + str(differentPathConstraints)
 		if differentPathConstraints == None :
@@ -1025,466 +1430,6 @@ class GenesisSynthesiser(object) :
 					self.pdb.addPath(pc, [])	
 
 				self.z3Solver.pop()
-
-
-	def addTopologyConstraintsSAT(self, pcStart, pcEnd=0) :
-		if pcEnd == 0 :
-			""" Topology Constraint for one packet class"""
-			pcEnd = pcStart + 1
-
-		st = time.time()
-		swCount = self.topology.getSwitchCount()
-		# \forall sw \forall n \in neighbours(sw) and NextHop = {n | F(sw,n,pc,1) = True}. |NextHop| \leq 1 
-		# None or only one of F(sw,n,pc,1) can be true.
-		for pc in range(pcStart, pcEnd) :
-			if not self.pdb.isMulticast(pc) :
-				""" Unicast packet class """
-
-				if not self.pdb.hasWaypoints(pc) :
-					# Dont need to have topology forwarding constraints
-					continue
-				
-				useBridgeSlicing = False
-				if self.bridgeSlicingFlag :
-					# Find if exists in a bridge slice. 
-					srcSlice = self.topology.getBridgeSliceNumber(self.pdb.getSourceSwitch(pc))
-					dstSlice = self.topology.getBridgeSliceNumber(self.pdb.getDestinationSwitch(pc))
-
-					if srcSlice == dstSlice and srcSlice <> None : 
-						# Path will exist only in this slice.
-						swList = self.topology.getBridgeSlice(srcSlice)
-						useBridgeSlicing = True
-					else :
-						swList = range(1,swCount + 1)
-				else : 
-					swList = range(1,swCount + 1)
-
-				for sw in swList :
-					neighbours = self.topology.getSwitchNeighbours(sw, useBridgeSlicing)
-
-					# Add assertions to ensure f(sw,*) leads to a valid neighbour. 
-					topoAssertions = []
-					unreachedAssertions = []
-					
-					unreachedAssertionsStr = ""
-					topoAssertStr = ""
-
-					for n in neighbours : 
-						#neighbourAssert = self.F(sw,n,pc,1) == True
-						neighbourAssertions = [self.Fwd(sw,n,pc)]
-						unreachedAssertions.append(Not(self.Fwd(sw,n,pc)))
-
-						neighbourAssertionsStr = self.FwdStr(sw,n,pc)
-						unreachedAssertionsStr += " (not " + self.FwdStr(sw,n,pc) + ") "
-
-						for n1 in neighbours :
-							if n == n1 : 
-								continue
-							else :
-								neighbourAssertions.append(Not(self.Fwd(sw,n1,pc)))
-
-								neighbourAssertionsStr += " (not " + self.FwdStr(sw,n1,pc) + ") "
-						
-						neighbourAssert = And(*neighbourAssertions)
-						topoAssertions.append(neighbourAssert)
-
-						neighbourAssertStr = " (and " + neighbourAssertionsStr + ") "
-						topoAssertStr += neighbourAssertStr
-
-					unreachedAssert = And(*unreachedAssertions)
-					topoAssertions.append(unreachedAssert) # Either one forwarding rule or no forwarding rules.
-					topoAssert = Or(*topoAssertions) 
-
-					unreachedAssertStr = " (and " + unreachedAssertionsStr + ") "
-					topoAssertStr = " (or " + topoAssertStr + " " + unreachedAssertStr +  ") "
-					#self.smtlib2file.write("; Forwarding Rule Constraint for switch " + str(sw) + "\n")
-					#self.smtlib2file.write("( assert " + topoAssertStr + ")\n")
-
-					self.z3numberofadds += 1
-					#addtime = time.time() # Profiling z3 add.
-					self.z3Solver.add(topoAssert)
-					#self.z3addTime += time.time() - addtime
-				else :
-					""" Multicast packet class. No restrictions on forwarding set """
-					pass	
-
-	def addTopologyConstraints(self, pcStart, pcEnd=0) :
-		if self.UseTopoSAT == True :
-			self.addTopologyConstraintsSAT(pcStart, pcEnd)
-			return
-
-		if pcEnd == 0 :
-			""" Topology Constraint for one packet class"""
-			pcEnd = pcStart + 1
-
-		swCount = self.topology.getSwitchCount()
-		# \forall sw \forall n \in neighbours(sw) and NextHop = {n | F(sw,n,pc,1) = True}. |NextHop| \leq 1 
-		# None or only one of F(sw,n,pc,1) can be true.
-		for sw in range(1,swCount+1) :
-			for pc in range(pcStart, pcEnd) :
-				if not self.pdb.isMulticast(pc) : 
-					""" Unicast packet class """
-					neighbours = self.topology.getSwitchNeighbours(sw)
-
-					fname = "fwdSet" + str(sw) + "#" + str(pc)
-					fwdSet = Function(fname, IntSort(), IntSort(), IntSort(), IntSort())
-
-					i = 0
-					for n in neighbours :
-						if n == neighbours[0] :
-							self.z3numberofadds += 1
-							addtime = time.time() # Profiling z3 add.
-							self.z3Solver.add(Implies(self.Fwd(sw, n, pc), fwdSet(sw, pc, n) == 1))
-							self.z3addTime += time.time() - addtime
-							self.z3numberofadds += 1
-							addtime = time.time() # Profiling z3 add.
-							self.z3Solver.add(Implies(Not(self.Fwd(sw, n, pc)), fwdSet(sw, pc, n) == 0))
-							self.z3addTime += time.time() - addtime
-						else :
-							prevn = neighbours[i - 1]
-							self.z3numberofadds += 1
-							addtime = time.time() # Profiling z3 add.
-							self.z3Solver.add(Implies(self.Fwd(sw, n, pc), fwdSet(sw, pc, n) == 1 + fwdSet(sw, pc, prevn)))
-							self.z3addTime += time.time() - addtime
-							self.z3numberofadds += 1
-							addtime = time.time() # Profiling z3 add.
-							self.z3Solver.add(Implies(Not(self.Fwd(sw, n, pc)), fwdSet(sw, pc, n) == fwdSet(sw, pc, prevn)))
-							self.z3addTime += time.time() - addtime
-						i +=1
-					n = neighbours[i - 1] # Last element in the list.
-					self.z3numberofadds += 1
-					addtime = time.time() # Profiling z3 add.
-					self.z3Solver.add(fwdSet(sw, pc, n) < 2)
-					self.z3addTime += time.time() - addtime
-				else :
-					""" Multicast packet class. No restrictions on forwarding set """
-					pass	
-
-	def addTopologySliceConstraints(self, slice, pcStart, pcEnd=0) :
-		if pcEnd == 0 :
-			""" Topology Constraint for one packet class"""
-			pcEnd = pcStart + 1
-
-		topologySlice = self.topology.getTopologySlice(slice)
-		# \forall sw \forall n \in neighbours(sw) and NextHop = {n | F(sw,n,pc,1) = True}. |NextHop| \leq 1 
-		# None or only one of F(sw,n,pc,1) can be true.
-		for sw in topologySlice :
-			for pc in range(pcStart, pcEnd) :
-				if not self.pdb.isMulticast(pc) : 
-					""" Unicast packet class """
-					neighbours = self.topology.getSwitchNeighbours(sw)
-
-					# Add assertions to ensure f(sw,*) leads to a valid neighbour. 
-					topoAssert = False
-					unreachedAssert = True
-
-					for n in neighbours : 
-						#neighbourAssert = self.F(sw,n,pc,1) == True
-						neighbourAssert = self.Fwd(sw,n,pc)
-						unreachedAssert = And(unreachedAssert, Not(self.Fwd(sw,n,pc)))
-						for n1 in neighbours :
-							if n == n1 : 
-								continue
-							else :
-								neighbourAssert = And(neighbourAssert, Not(self.Fwd(sw,n1,pc)))
-						topoAssert = Or(topoAssert, neighbourAssert)
-
-					topoAssert = Or(topoAssert, unreachedAssert) # Either one forwarding rule or no forwarding rules.
-					self.z3numberofadds += 1
-					addtime = time.time() # Profiling z3 add.
-					self.z3Solver.add(topoAssert)
-					self.z3addTime += time.time() - addtime
-				else :
-					""" Multicast packet class. No restrictions on forwarding set """
-					pass
-
-	def addReachabilityConstraints(self, srcIP, srcSw, dstIP, dstSw, pc, W=None, pathlen=0) :
-		#reachtime = time.time()
-		if pathlen == 0 :
-			# Default argument. Set to max.
-			pathlen = self.topology.getMaxPathLength()
-		
-		# Add Reachability in atmost pathlen steps constraint. 
-		#reachAssert = self.Reach(dstSw,pc,pathlen) == True
-
-		reachAssertions = []
-		reachAssertionsStr = ""
-		for plen in range(1,pathlen+1) :
-			reachAssertions.append(self.Reach(dstSw,pc,plen))
-
-			reachAssertionsStr += self.ReachStr(dstSw,pc,plen) + " "
-
-		reachAssert = Or(*reachAssertions)
-
-		#self.smtlib2file.write("; Destination Reachability \n")
-		#self.smtlib2file.write("(assert (or " + reachAssertionsStr + " ))\n")
-
-		self.z3numberofadds += 1
-		#addtime = time.time() # Profiling z3 add.
-		self.z3Solver.add(reachAssert)
-		#self.z3addTime += time.time() - addtime
-
-		# At Destination, forwarding has to stop here. So, F(d,neighbour(d),pc,1) == False 
-		# When we perform the translation to rules, we can forward it to host accordingly.
-		
-		neighbours = self.topology.getSwitchNeighbours(dstSw)
-		
-		destAssert = True
-		destAssertStr = ""
-		for n in neighbours :
-			destAssert = And(destAssert, self.Fwd(dstSw,n,pc) == False)
-
-			destAssertStr += " (not " + self.FwdStr(dstSw,n,pc) + " )"
-
-		destAssertStr = "(and " + destAssertStr + ")"
-		#self.smtlib2file.write("(assert " + destAssertStr + ")\n")
-
-		self.z3numberofadds += 1
-		#addtime = time.time() # Profiling z3 add.
-		self.z3Solver.add(destAssert)
-		#self.z3addTime += time.time() - addtime
-
-		
-		if len(W) > 0 : 
-			totalwaypointCount = 0
-			currwaypointCount = 0
-			for bags in W :
-				totalwaypointCount += len(bags)
-
-			prevbag = None
-			for bags in W : 
-				# ordered Waypoints.
-				# Add the Waypoint Constraints. 
-				currwaypointCount += len(bags)
-				for w in bags :
-					#self.smtlib2file.write("; Waypoint " + str(w) + " Reachability \n")			
-						
-					reachAssertions = []
-					reachAssertionsStr = ""
-					for plen in range(1 + currwaypointCount - len(bags), pathlen - (totalwaypointCount - currwaypointCount)) :
-						reachAssertions.append(self.Reach(w,pc,plen))
-
-						if prevbag <> None : 
-							for w2 in prevbag : 
-								orderAssertions = []
-								for plen2 in range(1, plen): 
-									orderAssertions.append(self.Reach(w2, pc, plen2))
-								orderAssert = Implies(self.Reach(w, pc, plen), Or(*orderAssertions))
-								self.z3Solver.add(orderAssert)
-					
-					reachAssert = Or(*reachAssertions)
-
-					self.z3numberofadds += 1
-					#addtime = time.time() # Profiling z3 add.
-					self.z3Solver.add(reachAssert)
-					#self.z3addTime += time.time() - addtime
-				prevbag = bags
-
-				
-		# # Weird Reach Constraint.
-		# dstneighbours = self.topology.getSwitchNeighbours(dstSw)
-		# # Only want one switch rule from neighbours of dst to dst. (thus ensuring a single path to destination)
-		# singlePathAssertions = []
-		# for n in dstneighbours : 
-		# 	ruleAssertions = [self.Fwd(n, dstSw, pc)]
-		# 	for n1 in dstneighbours :
-		# 		if n <> n1 : 
-		# 			ruleAssertions.append(Not(self.Fwd(n1, dstSw, pc)))
-		# 	singlePathAssertions.append(And(*ruleAssertions))
-		# self.z3Solver.add(Or(*singlePathAssertions))
-
-		#st = time.time()
-		# Add Path Constraints for this flow to find the forwarding model for this flow.
-		self.addTopologyTreeConstraints(srcSw, pc)
-		self.addPathConstraints(srcSw,pc)		
-		#et = time.time()
-		#print "Path Constraints time is " + str(et - st)
-		#print "total function takes ", time.time() - reachtime
-		
-	# Note This functions take the most time for each pc. Look for ways to improve this
-	def addPathConstraints(self, s, pc) :
-		swCount = self.topology.getSwitchCount()
-		maxPathLen = self.topology.getMaxPathLength()
-
-		useBridgeSlicing = False
-		if self.topologySlicingFlag : 
-			swList = self.topology.getTopologySlice(self.topology.getSliceNumber(s))
-		
-		elif self.bridgeSlicingFlag :
-			# Find if exists in a bridge slice. 
-			srcSlice = self.topology.getBridgeSliceNumber(s)
-			dstSlice = self.topology.getBridgeSliceNumber(self.pdb.getDestinationSwitch(pc))
-
-			if srcSlice == dstSlice and srcSlice <> None : 
-				# Path will exist only in this slice.
-				swList = self.topology.getBridgeSlice(srcSlice)
-				useBridgeSlicing = True
-			else :
-				swList = range(1,swCount + 1)
-		else : 
-			swList = range(1,swCount + 1)
-
-		neighbours = self.topology.getSwitchNeighbours(s, useBridgeSlicing)
-		
-		srcAssertions = []
-		srcAssertionsStr = ""
-		for n in neighbours : 
-			srcAssertions.append(And(self.Fwd(s,n,pc), self.Reach(n, pc, 1)))
-
-			#srcAssertionsStr += " (and " + self.FwdStr(s,n,pc) + " " + self.ReachStr(n, pc, 1) + " )"
-
-		self.z3numberofadds += 1
-		#addtime = time.time() # Profiling z3 add.
-		self.z3Solver.add(Or(*srcAssertions))
-		#self.z3addTime += time.time() - addtime
-
-		#self.smtlib2file.write(";Source forwarding assertions \n")
-		#self.smtlib2file.write("(assert (or" + srcAssertionsStr + "))\n")
-
-		st = time.time()
-		#constime = 0
-		#addtime = 0
-		for i in swList :
-			if i == s : 
-				continue
-
-			#self.smtlib2file.write("; Backward Reachability Propagation for switch " + str(i) + "\n")
-
-			for pathlen in range(1,maxPathLen+1) :
-				if i not in self.bfsLists[pathlen] : 
-					# Not at distance i in the topology tree, dont add constraints.
-					continue 
-
-				ineighbours = self.topology.getSwitchNeighbours(i, useBridgeSlicing) 
-				if self.useTacticFlag and pc in self.tactics :
-					# Use Tactic to reduce constraints.
-					tactic = self.tactics[pc]
-					labels = tactic.getPreviousLabels(self.topology.getLabel(i), pathlen)
-					labelneighbours = []
-					for n in ineighbours : 
-						if self.topology.getLabel(n) in labels :
-							labelneighbours.append(n)
-					if len(labelneighbours) == 0 :
-						# self.Reach(i,pc,pathlen) = False
-						self.z3Solver.add(Not(self.Reach(i,pc,pathlen)))
-						continue
-					else :
-						# Modify the ineighbours
-						ineighbours = labelneighbours
-				
-				constraintKey = str(i) + ":" + str(pc) + "*" + str(pathlen)
-				if constraintKey in self.backwardReachPropagationConstraints : 
-					# Reuse constraint object if already created.
-					backwardReachConstraint = self.backwardReachPropagationConstraints[constraintKey]
-				else : 
-					# Create constraint.
-					beforeHopAssertions = []
-
-					#beforeHopAssertionsStr = ""
-					ct = time.time()
-					for isw in ineighbours : 
-						beforeHopAssertions.append(And(self.Fwd(isw, i, pc), self.Reach(isw, pc, pathlen - 1)))
-						
-					backwardReachConstraint = Implies(self.Reach(i,pc,pathlen), Or(*beforeHopAssertions))
-					#constime += time.time() - ct
-
-				#at = time.time()	
-				self.z3Solver.add(backwardReachConstraint)
-				#addtime += time.time() - at
-
-				#beforeHopAssertStr = "(=> " + self.ReachStr(i,pc,pathlen) + " (or " + beforeHopAssertionsStr + " ))"
-				#self.smtlib2file.write("(assert " + beforeHopAssertStr + " )\n")
-
-				# Store constraint for reuse. 
-				constraintKey = str(i) + ":" + str(pc) + "*" + str(pathlen)
-				if constraintKey not in self.backwardReachPropagationConstraints :
-					self.backwardReachPropagationConstraints[constraintKey] = backwardReachConstraint
-
-
-		# print "constime", constime
-		# print "addTime", addtimw
-		# st = time.time()
-
-	def addTopologyTreeConstraints(self, srcSw, pc) : 
-		swCount = self.topology.getSwitchCount()
-		maxPathLen = self.topology.getMaxPathLength()
-
-		swList = [srcSw]
-		for k in range(1, maxPathLen + 1) :
-			newSwList = []
-			for sw in swList :
-				neighbours = self.topology.getSwitchNeighbours(sw)
-				for n in neighbours :
-					if n not in newSwList : 
-						newSwList.append(n)
-
-			self.bfsLists[k] = newSwList
-			# Set switches not in newSwList to false at Reach(k)
-			for sw in range(1, swCount+1) :
-				if sw not in newSwList  :
-					self.z3Solver.add(Not(self.Reach(sw, pc, k)))
-
-			swList = newSwList
-
-	def addTrafficIsolationConstraints(self, pc1, pc2) : 
-		""" Adding constraints for Isolation Policy enforcement of traffic for packet classes (end-points) ep1 and ep2. """
-		
-		swCount = self.topology.getSwitchCount()
-		useBridgeSlicing = False
-
-		# Find bridges for pc1 and pc2.
-		if self.bridgeSlicingFlag :
-			# Find if exists in a bridge slice. 
-			srcSlice1 = self.topology.getBridgeSliceNumber(self.pdb.getSourceSwitch(pc1))
-			dstSlice1 = self.topology.getBridgeSliceNumber(self.pdb.getDestinationSwitch(pc1))
-			srcSlice2 = self.topology.getBridgeSliceNumber(self.pdb.getSourceSwitch(pc2))
-			dstSlice2 = self.topology.getBridgeSliceNumber(self.pdb.getDestinationSwitch(pc2))
-			slice1 = None
-			slice2 = None
-			if srcSlice1 == dstSlice1 and srcSlice1 <> None :
-				slice1 = srcSlice1
-			if srcSlice2 == dstSlice2 and srcSlice2 <> None :
-				slice2 = srcSlice2
-			if slice1 <> None and slice2 <> None :
-				# Both are in bridge slices.
-				if slice1 <> slice2: 
-					# pc1 and pc2 will be isolated naturally. 
-					return
-			if slice1 <> None or slice2 <> None : 
-				# One of them is in a bridge slice. Only add traffic isolation constraints in that slice.
-				if slice1 <> None : 
-					slice = slice1
-				else :
-					slice = slice2
-				swList = self.topology.getBridgeSlice(slice)
-				useBridgeSlicing = True
-			else :
-				swList = range(1, swCount + 1) 
-		else :
-			swList = range(1, swCount + 1) 
-
-		for sw in swList:
-			#self.smtlib2file.write("; Traffic Isolation Constraints for switch " + str(sw) + "\n")
-			for n in self.topology.getSwitchNeighbours(sw, useBridgeSlicing) :
-				isolateAssert = Not( And (self.Fwd(sw,n,pc1), self.Fwd(sw,n,pc2)))
-				self.z3numberofadds += 1
-				#addtime = time.time() # Profiling z3 add.
-				self.z3Solver.add(isolateAssert)	
-				#self.z3addTime += time.time() - addtime
-
-				#self.smtlib2file.write("(assert (not (and " + self.FwdStr(sw,n,pc1) + " " + self.FwdStr(sw,n,pc2) + ")))\n")
-
-	def addSliceTrafficIsolationConstraints(self, slice, pc1, pc2) : 
-		""" Adding constraints for Isolation Policy enforcement of traffic for packet classes (end-points) ep1 and ep2. """
-
-		swList = self.topology.getTopologySlice(slice)
-		for sw in swList :
-			for n in self.topology.getSwitchNeighbours(sw) :
-				isolateAssert = Not( And (self.Fwd(sw,n,pc1), self.Fwd(sw,n,pc2)))
-				self.z3numberofadds += 1
-				addtime = time.time() # Profiling z3 add.
-				self.z3Solver.add(isolateAssert)
-				self.z3addTime += time.time() - addtime	
 
 	def addPathIsolationConstraints(self, pc, path, tracker=0) :
 		""" Adding constraints such that the path of pc is isolated by 'path' argument"""
@@ -1749,7 +1694,8 @@ class GenesisSynthesiser(object) :
 
 	def addLinkConstraints(self, pclist, constraints):
 		if len(constraints) == 0 : return
-		""" Constraints : List of [sw1, sw2, max-number-of-flows]"""
+		""" Constraints : List of [sw1, sw2, max-number-of-flows]. Can be done if we mention
+		an input traffic matrix by replacing the count by traffic"""
 
 		pcRange = self.pdb.getPacketClassRange()
 		maxPathLen = self.topology.getMaxPathLength()
@@ -1760,7 +1706,7 @@ class GenesisSynthesiser(object) :
 			capacity = constraint[2]
 			traffic = 0
 			for pc in range(pcRange) :
-				traffic = traffic + If(self.Fwd(sw1,sw2,pc), 1, 0) # If sw1-sw2 is used
+				traffic = traffic + If(self.Fwd(sw1,sw2,pc), 1, 0) # If sw1-sw2 is used 
 			self.z3Solver.add(traffic < capacity)
 
 	def addAverageUtilizationMinimizationConstraints(self) :
@@ -1889,6 +1835,7 @@ class GenesisSynthesiser(object) :
 
 		return getPathHelper(self.pdb.getSourceSwitch(pc), pc)
 
+	# Do a BFS on the Fwd relation to find the shortest path from src to dst 
 	def getBFSModelPath(self, pc):
 		src = self.pdb.getSourceSwitch(pc)
 		dst = self.pdb.getDestinationSwitch(pc)
@@ -1976,12 +1923,14 @@ class GenesisSynthesiser(object) :
 					dag[path[i]] = path[i+1]
 				self.destinationDAGs[dst] = dag
 
+	
 	def enforceChangedPolicies(self):
-		# A model already exists. Synthesis of newly added policies. 
+		# A model already exists. Synthesis of newly added policies using MaxSMT
 
 		self.repairMode = True # Unicast constraints takes more time to solve. 
 
-		self.z3Solver = Optimize()
+		self.z3Solver = Optimize() # MaxSMT solver object 
+
 		relClasses = self.pdb.getRelationalClasses()
 		self.z3Solver.push()
 		#create the updated relational Classes.
@@ -2044,7 +1993,7 @@ class GenesisSynthesiser(object) :
 		#self.pdb.printPaths(self.topology)
 
 	def addMinRuleChangeConstraints(self, relClass) : 
-		# Add soft constraints for minimum rule change
+		# Add soft constraints for minimize the number of rule changes
 		for pc in relClass :
 			path = self.pdb.getPath(pc)
 				
@@ -2059,7 +2008,7 @@ class GenesisSynthesiser(object) :
 			#self.z3Solver.add_soft(arg=self.Reach(path[len(path) - 1], pc, len(path) - 1), id="rules")
 
 	def addMinSwitchChangeConstraints(self, relClass) :
-		# Add soft constraints for minimum switch change
+		# Add soft constraints for minimizing number of switch changes		s
 		swRuleMap = dict() # Rules of each switch
 		swCount = self.topology.getSwitchCount()
 		for sw in range(1, swCount + 1) : 
@@ -2070,18 +2019,18 @@ class GenesisSynthesiser(object) :
 			for i in range(len(path) - 1) :
 				swRuleMap[path[i]].append([path[i+1], pc])
 
-
 		for sw in range(1, swCount + 1) :
 			rules = swRuleMap[sw]
 			swAssertions = []
 			for r in rules : 
-				swAssertions.append(self.Fwd(sw, r[0], r[1]))
+				swAssertions.append(self.Fwd(sw, r[0], r[1])) # the rules on a single switch are conjucted
 
 			self.z3Solver.add_soft(arg=And(*swAssertions), id="switches")
 
 		#self.addMinRuleChangeConstraints(relClass)
 
-		# disable switch with max rules
+		# disable switch with max rules (to simulate a failure. In real-life deployments
+		# there would be an online component informing Genesis of topology changes 
 		maxrules = 0
 		maxSw = None 
 		for sw in swRuleMap.keys() :
@@ -2096,7 +2045,6 @@ class GenesisSynthesiser(object) :
 				self.z3Solver.add(Not(self.Fwd(maxSw, n, pc)))
 
 
-
 	# Profiling Statistics : 
 	def printProfilingStats(self) :
 		#print "Time taken to add constraints are ", self.z3addTime
@@ -2104,71 +2052,31 @@ class GenesisSynthesiser(object) :
 		# print "Number of z3 adds to the solver are ", self.z3numberofadds
 
 	def useTactic(self) :
+		# SPECIFY Tactics here using the Blacklist (negation of regex), first argument is 
+		# the regular expression, second is the set of switch labels. 
 		b1 = Blacklist("e .* e .* e", ["a","c","e"])
-		b2 = Whitelist("e .* e",  ["a","c","e"])
-		b3 = Blacklist("e . . . . . . . . . . .* e", ["a", "c", "e"])
+		b2 = Blacklist("e . . . . . . . . . . .* e", ["a", "c", "e"])
 		#b3 = Blacklist("e a c a c a c .* e", ["a", "c", "e"])
 
+
+		w = Whitelist("e .* e",  ["a","c","e"]) # Used to specify to the tactic module that the path is from edge to edge switches
 		self.topology.assignLabels()
-		t = Tactic([b1, b2, b3], self.topology)
+		
+		# We specify a b1 <and> b2 tactic for all the classes in the workload 
+		t = Tactic([b1, b2, w], self.topology)
+
+		maxPathLen = self.topology.getMaxPathLength()
 
 		st = time.time()
-		t.findValidNeighbours(11)
+		t.findValidNeighbours(maxPathLen + 1) # Using the tactic to precompute the pruning of constraints. 
 		et = time.time()
 		for pc in range(self.pdb.getPacketClassRange()) :
-			if not self.pdb.hasWaypoints(pc) : 
+			if not self.pdb.hasWaypoints(pc) :  # Dont add the tactic for packet classes with waypoints
 				self.addTactic(t, pc)
 
 
 	def addTactic(self, tactic, pc) :
 		self.tactics[pc] = tactic
-		
-	def delta(self, state, label) :
-		st = time.time()
-		delta = self.currentTactic.getDelta()
-		sink = self.currentTactic.getSinkState()
-		deltaAssert = sink
-		for transition in delta :
-			deltaAssert = If(And(state == transition[0], label == transition[1]), transition[2], deltaAssert)
-
-		print "delta time", time.time() - st
-		return deltaAssert
-
-
-	def addrhoConstraints(self, t, pc):
-		""" t is the tactic """
-
-		self.currentTactic = self.tactics[pc]
-
-		dst = self.pdb.getDestinationSwitch(pc)
-		src = self.pdb.getSourceSwitch(pc)
-		q0 = t.getInitialState()
-		
-		initialStateAssert = self.rho(dst, pc) == self.delta(q0, t.getSwitchLabelMapping(dst))
-		self.z3Solver.add(initialStateAssert)
-
-		swCount = self.topology.getSwitchCount()
-		swList = range(1,swCount+1)
-		maxPathLen = self.topology.getMaxPathLength()
-
-		sink = t.getSinkState()
-		if sink == -1 : 
-			print "No sink." 
-			exit(0)
-		st = time.time()
-
-		for i in swList :
-			# Add non-sink constraints.
-			self.z3Solver.add(Not(self.rho(i,pc) == sink)) 
-
-			ineighbours = self.topology.getSwitchNeighbours(i) 
-
-			for isw in ineighbours : 
-				ct = time.time()
-				tacticAssert = Implies(self.Fwd(i, isw, pc), self.rho(i, pc) == self.delta(self.rho(isw, pc), t.getSwitchLabelMapping(i)))
-				self.z3Solver.add(tacticAssert)
-					
-		print "Tactic constraints time is " + str(time.time() - st)
 	
 	def addDestinationTreeConstraints(self, pc1, pc2) : 
 		""" If pc1 and pc2 have the same destination, then
