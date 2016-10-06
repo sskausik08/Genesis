@@ -151,46 +151,45 @@ class PolicyDatabase(object) :
 		isolation """
 
 		# If link capacity policies exist, or global traffic engineering constraints, No relational classes!
-		if len(self.getLinkCapacityConstraints()) > 0 or len(self.getSwitchTableConstraints()) > 0 or self.minimizeAverageUtilizationTE : 
+		if len(self.getLinkCapacityConstraints()) > 0 or len(self.getSwitchTableConstraints()) > 0 or self.trafficEngineeringEnabled() : 
 			self.relationalClassCreationFlag = True
 			self.relClasses = []
 			self.relClasses.append(range(self.getPacketClassRange()))	
+		else : 
+			# For now, our inter-class policy is isolation.
+			for pno in range(self.getIsolationPolicyCount()) :
+				pc = self.getIsolationPolicy(pno)
+				pc1 = pc[0]
+				pc2 = pc[1]
+				pc1rc = None
+				pc2rc = None
+				for relClass in self.relClasses :
+					if pc1 in relClass : 
+						pc1rc = relClass
+					if pc2 in relClass :
+						pc2rc = relClass
 
-			return self.relClasses
-
-		# For now, our inter-class policy is isolation.
-		for pno in range(self.getIsolationPolicyCount()) :
-			pc = self.getIsolationPolicy(pno)
-			pc1 = pc[0]
-			pc2 = pc[1]
-			pc1rc = None
-			pc2rc = None
-			for relClass in self.relClasses :
-				if pc1 in relClass : 
-					pc1rc = relClass
-				if pc2 in relClass :
-					pc2rc = relClass
-
-			# If pc1rc and pc2rc are same, dont do anything.
-			if pc1rc == pc2rc and not pc1rc == None :
-				continue # Both are in same relational class, dont do anything. 
-			elif not pc1rc == None and pc2rc == None : 
-				pc1rc.append(pc2)
-			elif pc1rc == None and not pc2rc == None : 
-				pc2rc.append(pc1)
-			elif pc1rc == None and pc2rc == None :
-				rc = [pc1,pc2]
-				self.relClasses.append(rc)
-			else :
-				# Both are in different packet classes. Join them.
-				pc1rc.extend(pc2rc)
-				self.relClasses.remove(pc2rc)
+				# If pc1rc and pc2rc are same, dont do anything.
+				if pc1rc == pc2rc and not pc1rc == None :
+					continue # Both are in same relational class, dont do anything. 
+				elif not pc1rc == None and pc2rc == None : 
+					pc1rc.append(pc2)
+				elif pc1rc == None and not pc2rc == None : 
+					pc2rc.append(pc1)
+				elif pc1rc == None and pc2rc == None :
+					rc = [pc1,pc2]
+					self.relClasses.append(rc)
+				else :
+					# Both are in different packet classes. Join them.
+					pc1rc.extend(pc2rc)
+					self.relClasses.remove(pc2rc)
 
 
 		# Clear graphs as we re-create them. 
 		self.relClassGraphs = []
 
-		for relClass in self.relClasses : 
+		for relClass in self.relClasses :
+			print "Rel", relClass 
 			self.createRelationalClassGraph(relClass)
 
 		self.relationalClassCreationFlag = True
@@ -385,6 +384,7 @@ class PolicyDatabase(object) :
 		for policy in self.isolationTable : 	
 			if policy[0] in relClass : 
 				G.add_edge(policy[0],policy[1])
+				print "iso", policy[0],policy[1]
 
 		self.relClassGraphs.append(G)
 
@@ -531,7 +531,6 @@ class PolicyDatabase(object) :
 
 	def addTrafficEngineeringObjective(self, minavg=False, minmax=False) :
 		""" Add a traffic engineering objective """
-
 		if minavg : 
 			self.minimizeAverageUtilizationTEFlag = True
 		elif minmax : 
@@ -539,6 +538,7 @@ class PolicyDatabase(object) :
 
 	def trafficEngineeringEnabled(self) : 
 		return self.minimizeAverageUtilizationTEFlag or self.minimizeMaxUtilizationTEFlag
+	
 	def minimizeAverageUtilizationTE(self) :
 		return self.minimizeAverageUtilizationTEFlag
 
