@@ -15,3 +15,75 @@ like local preferences to select
 paths with greater path lengths (local
 preference value is considered first in 
 path selection with multiple routes). 
+OSPF has better convergence times than BGP,
+thus, it is advantageous to use OSPF for 
+routing in small domains and using BGP for
+inter-domain routing. 
+
+We introduce a framework of synthesizing
+inter-domain configurations under certain
+constraints. For example, due to scalability
+concerns, OSPF domains must be smaller than 
+a certain threshold for effective operations.
+Similarily, the number of local preferences 
+stored on a router is limited due to 
+resource constraints. Thus, the routing 
+configurations generated must adhere to 
+these constraints. We describe the constraints
+supported by the framework, points 1-4 are 
+hard constraints we would ensure, while 5-8
+are optimizations to synthesize better inter-domain
+configurations. 
+
+\begin{enumerate}
+	\item \textbf{Number of domains ($N(D)$)}: 
+	Can be used for administrative constraints 
+	(each domain can be managed by different
+	entities). 
+	\begin{equation}
+	N_l \leq N(D) \leq N_u
+	\end{equation}
+
+	\item \textbf{Size of domain ($|D|$)}: OSPF
+	performs poorly as size of the domain increases
+	(due to flooding of link-state updates). Thus,
+	operators can specify bounds on the size of each
+	domain.
+	\begin{equation}
+	S_l \leq |D| \leq S_u
+	\end{equation}
+
+	\item \textbf{BGP-Compatibility}: Certain 
+	routers may not be suited to run BGP due to resource
+	constraints. Thus, the operator can specify if a 
+	router is non-BGP compatible. 
+
+	\item \textbf{Optimization: Number of local-preference entries} 
+	To enable path-based inter-domain routing, BGP routers
+	would store different local preferences for destinations
+	to ensure the routing emulates the input paths under no 
+	failures, which would increase the size and thus complexity
+	of configurations to manually or verify using software tools
+	like Batfish~\cite{batfish} would increase. 
+
+	\item \textbf{Optimization: Number of BGP speakers}: 
+	Minimize the number of BGP speaking routers.
+
+	\item \textbf{Optimization: Equal sized domains}:
+	Routers equally divided across the domains will ensure 
+	each domain performs well with internal OSPF routing (no 
+	disproportionately-sized domain). 
+
+	\item \textbf{Optimization: Geographic proximity}:
+	The network topology can be augmented with link distances. 
+	This can be used to ensure that a domain's physical diameter
+	is minimized 
+\end{enumerate}
+
+\section{MCMC Cost Function}
+Let us denote a mapping $\Gamma: R \rightarrow D$ maps each 
+router $r \in R$ to a domain $d \in D$. The cost function 
+$c(\Gamma)$ is defined as follows: 
+\begin{equation}
+	c(\Gamma) = h(\Gamma) + \beta \times o(\Gamma)
+\end{equation}
