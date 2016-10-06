@@ -15,7 +15,7 @@ from collections import defaultdict
 
 
 class GenesisSynthesiser(object) :
-	def __init__(self, topo, pdb, Optimistic=True, TopoSlicing=False, pclist=None, useTactic=False, noOptimizations=False, BridgeSlicing=True, weakIsolation=False, repairMode=False, controlPlane=False) :
+	def __init__(self, topo, pdb, DC=True, TopoSlicing=False, pclist=None, useTactic=False, noOptimizations=False, BridgeSlicing=True, weakIsolation=False, repairMode=False, controlPlane=False) :
 		self.topology = topo
 
 		# Network Forwarding Function
@@ -40,16 +40,16 @@ class GenesisSynthesiser(object) :
 		# Policy Database. 
 		self.pdb = pdb
 		
-		# Optimistic Synthesis Variables
-		self.OptimisticPaths = dict()  # Stores the solutions obtained during the Optimistic synthesis procedure. 
-		self.OptimisticLinkCapacityConstraints = []
+		# DC Synthesis Variables
+		self.DCPaths = dict()  # Stores the solutions obtained during the DC synthesis procedure. 
+		self.DCLinkCapacityConstraints = []
 		
 		# Store the different retry attempts for link capacity recovery to ensure we dont repeat solutions.
-		self.OptimisticLinkRecoveryAttempts = dict() 
-		self.OptimisticTrackedPaths = dict()
-		self.OptimisticUnsatLinkCores = []
+		self.DCLinkRecoveryAttempts = dict() 
+		self.DCTrackedPaths = dict()
+		self.DCUnsatLinkCores = []
 
-		# Optimistic Synthesis Constants. 
+		# DC Synthesis Constants. 
 		self.CUT_THRESHOLD = 50
 		self.BASE_GRAPH_SIZE_THRESHOLD = 10
 		self.CURR_GRAPH_SIZE_THRESHOLD = 10
@@ -62,9 +62,9 @@ class GenesisSynthesiser(object) :
 		# Link Capacity Recovery Variables
 		self.LINK_RECOVERY_COUNT = 4
 
-		# Optimistic Synthesis Flags 
+		# DC Synthesis Flags 
 		self.noOptimizationsFlag = noOptimizations
-		self.OptimisticSynthesisFlag = Optimistic
+		self.DCSynthesisFlag = DC
 		self.recoveryFlag = False
 		self.topologySlicingFlag = TopoSlicing
 		self.bridgeSlicingFlag = BridgeSlicing
@@ -215,56 +215,53 @@ class GenesisSynthesiser(object) :
 		# link capacities or TE		
 		self.pdb.createRelationalClasses()
 
-		# If optimistic synthesis mode is enabled
-		if self.OptimisticSynthesisFlag : 
+		# If DC synthesis mode is enabled
+		if self.DCSynthesisFlag : 
 			rcGraphs = self.pdb.getRelationalClassGraphs()
 
 			# Add link capacity constraints
-			self.OptimisticLinkCapacityConstraints = self.pdb.getLinkCapacityConstraints()
+			self.DCLinkCapacityConstraints = self.pdb.getLinkCapacityConstraints()
 
-			# To make optimistic synthesis complete, we increase 
-			# current graph threshold by a factor by 2 each time optimistic synthesis fails. 
+			# To make DC synthesis complete, we increase 
+			# current graph threshold by a factor by 2 each time DC synthesis fails. 
 			for rcGraph in rcGraphs :
 				rcGraphSat = False
 				self.CURR_GRAPH_SIZE_THRESHOLD = self.BASE_GRAPH_SIZE_THRESHOLD # reset the graph size to base value.
 				
 				while rcGraphSat == False and self.CURR_GRAPH_SIZE_THRESHOLD < rcGraph.number_of_nodes() : 
-					(rcGraphSat, synPaths) = self.enforceGraphPoliciesOptimistic(rcGraph)
+					(rcGraphSat, synPaths) = self.enforceGraphPoliciesDC(rcGraph)
 					if rcGraphSat == False : 
 						# Incremental Graph recovery.
 						self.CURR_GRAPH_SIZE_THRESHOLD = self.CURR_GRAPH_SIZE_THRESHOLD * 2 # Doubling the current graph size
 						#print "Incrementing the solver graph size to " + str(self.CURR_GRAPH_SIZE_THRESHOLD)
 
 				if rcGraphSat == False :
-					# Apply non-Optimistic synthesis. 
+					# Apply non-DC synthesis. 
 					(rcGraphSat, synPaths) = self.enforceGraphPolicies(rcGraph=rcGraph, recovery=False)
 
 				self.synthesisSuccessFlag = self.synthesisSuccessFlag & rcGraphSat
-			self.enforceMulticastPolicies()		
+			#self.enforceMulticastPolicies()		
 		
 		elif self.noOptimizationsFlag : 
 			#st = time.time()
 			self.synthesisSuccessFlag = self.enforceUnicastPoliciesNoOptimizations()
 			#et = time.time()
-			#print "No Optimizations time is", et - st
-			#self.enforceMulticastPolicies()		
+			#print "No Optimizations time is", et - st		
 		else : 
-			self.synthesisSuccessFlag = self.enforceUnicastPolicies()
-			# self.enforceMulticastPolicies()		
+			self.synthesisSuccessFlag = self.enforceUnicastPolicies()	
 
 		end_t = time.time()
 		print "Time taken to solve the " + str(self.pdb.getPacketClassRange()) + " policies " + str(end_t - start_t)
 
-		if self.synthesisSuccessFlag and self.OptimisticSynthesisFlag: 
-			for pc in self.OptimisticPaths : 
-				self.pdb.addPath(pc, self.OptimisticPaths[pc])
+		if self.synthesisSuccessFlag and self.DCSynthesisFlag: 
+			for pc in self.DCPaths : 
+				self.pdb.addPath(pc, self.DCPaths[pc])
 			self.pdb.validatePolicies(self.topology)
-			self.pdb.printPaths(self.topology)
-		elif self.synthesisSuccessFlag and not self.OptimisticSynthesisFlag :
-			self.pdb.validatePolicies(self.topology)
-			self.pdb.printPaths(self.topology)
 
-		self.pdb.validatePolicies(self.topology)
+		elif self.synthesisSuccessFlag and not self.DCSynthesisFlag :
+			self.pdb.validatePolicies(self.topology)
+
+		self.pdb.printPaths(self.topology)
 		
 		# Control plane synthesis: outside scope of POPL17 Genesis paper.
 		if self.controlPlaneMode : 
@@ -283,10 +280,8 @@ class GenesisSynthesiser(object) :
 
 			self.zeppelinSynthesiser.enforceDAGs(self.pdb.getDestinationDAGs(), self.endpoints)
 	
-		#self.pdb.printPaths(self.topology)
 		self.pdb.writeForwardingRulesToFile(self.topology)
 		self.printProfilingStats()
-
 
 		if self.repairMode : 
 			self.enforceChangedPolicies()
@@ -927,10 +922,10 @@ class GenesisSynthesiser(object) :
 			pc2 = pcs[1]
 			if pc1 in pclist and pc2 in pclist : 
 				self.addTrafficIsolationConstraints(pc1, pc2)
-			elif pc1 in pclist and pc2 in self.OptimisticPaths :
-				self.addPathIsolationConstraints(pc1, self.OptimisticPaths[pc2], pc2)
-			elif pc2 in pclist and pc1 in self.OptimisticPaths :
-				self.addPathIsolationConstraints(pc2, self.OptimisticPaths[pc1], pc1)
+			elif pc1 in pclist and pc2 in self.DCPaths :
+				self.addPathIsolationConstraints(pc1, self.DCPaths[pc2], pc2)
+			elif pc2 in pclist and pc1 in self.DCPaths :
+				self.addPathIsolationConstraints(pc2, self.DCPaths[pc1], pc1)
 
 		if not differentPathConstraints == None : 
 			# Unsat Cores: [pc1, path]. pc1 must find a solution which is not equal to path. 
@@ -938,7 +933,7 @@ class GenesisSynthesiser(object) :
 				self.addDifferentSolutionConstraint(unsatCores)
 				
 		# Add link capacity constraints. 
-		self.addLinkConstraints(pclist, self.OptimisticLinkCapacityConstraints)
+		self.addLinkConstraints(pclist, self.DCLinkCapacityConstraints)
 
 		#print "Starting Z3 check for " + str(pclist)
 		st = time.time()
@@ -954,10 +949,10 @@ class GenesisSynthesiser(object) :
 				path = self.getPathFromModel(pc)
 				synPaths[pc] = path
 				self.pdb.addPath(pc, path)		
-				self.OptimisticPaths[pc] = path
+				self.DCPaths[pc] = path
 
-				# Update Optimistic link capacity constraints.
-				for constraint in self.OptimisticLinkCapacityConstraints : 
+				# Update DC link capacity constraints.
+				for constraint in self.DCLinkCapacityConstraints : 
 					try:
 						index = path.index(constraint[0])
 						if index == len(path) - 1:
@@ -968,10 +963,10 @@ class GenesisSynthesiser(object) :
 						
 						# Add pc to tracked Paths. 
 						key = str(constraint[0]) + "-" + str(constraint[1])
-						if key in self.OptimisticTrackedPaths : 
-							self.OptimisticTrackedPaths[key].append(pc)
+						if key in self.DCTrackedPaths : 
+							self.DCTrackedPaths[key].append(pc)
 						else : 
-							self.OptimisticTrackedPaths[key] = [pc]
+							self.DCTrackedPaths[key] = [pc]
 
 					except ValueError:
 						continue
@@ -990,13 +985,13 @@ class GenesisSynthesiser(object) :
 					if len(fields) == 1: 
 						# Path Isolation core. 
 						ipc = int(fields[0])
-						synPaths[ipc] = self.OptimisticPaths[ipc]
+						synPaths[ipc] = self.DCPaths[ipc]
 					else :
 						# Link constraint core.
 						print str(core) + " is the link overloaded."
 						unsatLinks.append([int(fields[0]), int(fields[1])])
 				# Setting the unsat Links for the recovery function. Doing this so as to not return this(like a register)
-				self.OptimisticUnsatLinkCores = unsatLinks
+				self.DCUnsatLinkCores = unsatLinks
 		
 		self.z3Solver.pop()
 
@@ -1008,11 +1003,11 @@ class GenesisSynthesiser(object) :
 				print "Link Capacity Recovery successful"
 				synPaths = dict()
 				for pc in pclist : 
-					synPaths[pc] = self.OptimisticPaths[pc]
+					synPaths[pc] = self.DCPaths[pc]
 		return (rcGraphSat, synPaths)
 	
-	def enforceGraphPoliciesOptimistic(self, rcGraph, differentPathConstraints=None) :
-		""" Optimistic Enforcement of Policies in arg 'rcGraph' """
+	def enforceGraphPoliciesDC(self, rcGraph, differentPathConstraints=None) :
+		""" DC Enforcement of Policies in arg 'rcGraph' """
 
 		synPaths = dict()
 
@@ -1025,7 +1020,7 @@ class GenesisSynthesiser(object) :
 			return (graphSat, synPaths)
 
 		
-		# Optimistic Synthesis of rcGraph.
+		# DC Synthesis of rcGraph.
 		# Find mimimum cut of rcGraph
 		st = time.time()
 		edgecuts = nx.minimum_edge_cut(rcGraph)
@@ -1089,15 +1084,15 @@ class GenesisSynthesiser(object) :
 				(graphSat, synPaths) = self.enforceGraphPolicies(rcGraph,differentPathConstraints)
 				return (graphSat, synPaths)
 
-			# Graph Partitioned in two. Apply Optimistic Synthesis on both of them. 
+			# Graph Partitioned in two. Apply DC Synthesis on both of them. 
 			# Propagate the first graph solutions as constraints to second. 
 
 			# Create the Graphs.
 			rcGraph1 = nx.Graph()
 			rcGraph2 = nx.Graph()
 			
-			OptimisticSolCount1 = 0
-			OptimisticSolCount2 = 0
+			DCSolCount1 = 0
+			DCSolCount2 = 0
 
 			rc1empty = True
 			rc2empty = True
@@ -1107,21 +1102,21 @@ class GenesisSynthesiser(object) :
 				pc = int(node)
 				solCount = 0
 				
-				# Find Optimistic paths which are isolated to pc. 
+				# Find DC paths which are isolated to pc. 
 				isolatedPcs = self.pdb.getIsolatedPolicies(pc)
 				for ipc in isolatedPcs :
-					if ipc in self.OptimisticPaths : 
+					if ipc in self.DCPaths : 
 						solCount += 1
 
 				if partitions[i] == 0 :
 					rcGraph1.add_node(int(rcGraph.node[pc]['switch']), switch=str(rcGraph.node[pc]['switch'])) 
 					rc1empty = False
-					OptimisticSolCount1 += solCount
+					DCSolCount1 += solCount
 
 				elif partitions[i] == 1 :
 					rcGraph2.add_node(int(rcGraph.node[pc]['switch']), switch=str(rcGraph.node[pc]['switch'])) 
 					rc2empty = False
-					OptimisticSolCount2 += solCount
+					DCSolCount2 += solCount
 				i += 1
 
 			if rc1empty == True or rc2empty == True: 
@@ -1140,7 +1135,7 @@ class GenesisSynthesiser(object) :
 			
 			# Decide on the order of RCgraph1 and RCgraph2. We must synthesize the graph which has more constraints 
 			# and then the one with less constraints. 
-			if OptimisticSolCount1 < OptimisticSolCount2 : 
+			if DCSolCount1 < DCSolCount2 : 
 				# Swap the order of graphs.
 				rcGraph1, rcGraph2 = rcGraph2, rcGraph1
 		else :
@@ -1156,41 +1151,41 @@ class GenesisSynthesiser(object) :
 			rcGraph1 = graphs[0]
 			rcGraph2 = graphs[1]
 
-			OptimisticSolCount1 = 0
-			OptimisticSolCount2 = 0
+			DCSolCount1 = 0
+			DCSolCount2 = 0
 
 			for node in rcGraph1.nodes():
 				pc = int(node)
 				
-				# Find Optimistic paths which are isolated to pc. 
+				# Find DC paths which are isolated to pc. 
 				isolatedPcs = self.pdb.getIsolatedPolicies(pc)
 				for ipc in isolatedPcs :
-					if ipc in self.OptimisticPaths : 
-						OptimisticSolCount1 += 1
+					if ipc in self.DCPaths : 
+						DCSolCount1 += 1
 
 			for node in rcGraph2.nodes():
 				pc = int(node)
 				
-				# Find Optimistic paths which are isolated to pc. 
+				# Find DC paths which are isolated to pc. 
 				isolatedPcs = self.pdb.getIsolatedPolicies(pc)
 				for ipc in isolatedPcs :
-					if ipc in self.OptimisticPaths : 
-						OptimisticSolCount2 += 1
+					if ipc in self.DCPaths : 
+						DCSolCount2 += 1
 
 			# Decide on the order of RCgraph1 and RCgraph2. We must synthesize the graph which has more constraints 
 			# and then the one with less constraints. 
-			if OptimisticSolCount1 < OptimisticSolCount2 : 
+			if DCSolCount1 < DCSolCount2 : 
 				# Swap the order of graphs.
 				rcGraph1, rcGraph2 = rcGraph2, rcGraph1
 
 
-		(rcGraph1Sat, synPaths1) = self.enforceGraphPoliciesOptimistic(rcGraph1, differentPathConstraints)
+		(rcGraph1Sat, synPaths1) = self.enforceGraphPoliciesDC(rcGraph1, differentPathConstraints)
 
 		if rcGraph1Sat == False : 
 			# Function cannot find a solution on the complete graph, as partial graph failed.
 			return (False, synPaths1)  # synPaths1 is the unsat cores that failed the synthesis of rcGraph1.
 
-		(rcGraph2Sat, synPaths2) = self.enforceGraphPoliciesOptimistic(rcGraph2, differentPathConstraints)
+		(rcGraph2Sat, synPaths2) = self.enforceGraphPoliciesDC(rcGraph2, differentPathConstraints)
 
 		if rcGraph2Sat == True : 
 			# Partial graph solutions can be combined. 
@@ -1262,7 +1257,7 @@ class GenesisSynthesiser(object) :
 		
 		return newPathConstraints
 
-	# This function implements the solution recovery mechanism used in optimistic synthesis
+	# This function implements the solution recovery mechanism used in DC synthesis
 	# We add constraints to synthesize different solutions of the rcGraphs than the failed ones (provided as input)
 	def differentSolutionRecovery(self, attempt, rcGraph1, rcGraph2, differentPathConstraints) :
 		#print "Recovery Attempt #" + str(attempt) + " " + str(differentPathConstraints)
@@ -1271,7 +1266,7 @@ class GenesisSynthesiser(object) :
 		else : 
 			localDifferentPathConstraints = list(differentPathConstraints)
 
-		(rcGraph1Sat, synPaths1) = self.enforceGraphPoliciesOptimistic(rcGraph1, localDifferentPathConstraints)
+		(rcGraph1Sat, synPaths1) = self.enforceGraphPoliciesDC(rcGraph1, localDifferentPathConstraints)
 			
 		if rcGraph1Sat == False : 
 			#print "Recovery Failed"
@@ -1280,7 +1275,7 @@ class GenesisSynthesiser(object) :
 			# Returning the empty dict because the failure of rcGraph1 is due to the absence of different solutions 
 			# apart from the ones we found. Failure is not due to external isolate constraints. 
 
-		(rcGraph2Sat, synPaths2) = self.enforceGraphPoliciesOptimistic(rcGraph2, differentPathConstraints)
+		(rcGraph2Sat, synPaths2) = self.enforceGraphPoliciesDC(rcGraph2, differentPathConstraints)
 
 		if rcGraph2Sat == True : 
 			# Partial graph solutions can be combined. 
@@ -1324,7 +1319,7 @@ class GenesisSynthesiser(object) :
 			# Pick policies to reroute. 
 			reroutedPCs = []
 			key = str(link[0]) + "-" + str(link[1])
-			trackedPCs = list(self.OptimisticTrackedPaths[key])
+			trackedPCs = list(self.DCTrackedPaths[key])
 			print "Tracked PCs", trackedPCs
 
 			while len(reroutedPCs) < len(pclist):
@@ -1357,7 +1352,7 @@ class GenesisSynthesiser(object) :
 				return False
 
 			# Call recovery
-			return self.linkcapacityRecovery(attempt, self.OptimisticUnsatLinkCores, rcGraph, differentPathConstraints)
+			return self.linkcapacityRecovery(attempt, self.DCUnsatLinkCores, rcGraph, differentPathConstraints)
 			 
 	def getBestReroutePacketClass(self, linkKey, pclist) :
 		# Returns the best packet class (least degree and unrerouted).
@@ -1368,8 +1363,8 @@ class GenesisSynthesiser(object) :
 		mindegree = self.pdb.getRelationalClassGraphDegree(minpc)
 		for pc in pclist :
 			degree = self.pdb.getRelationalClassGraphDegree(pc)
-			if pc in self.OptimisticLinkRecoveryAttempts: 
-				if linkKey in self.OptimisticLinkRecoveryAttempts[pc] :
+			if pc in self.DCLinkRecoveryAttempts: 
+				if linkKey in self.DCLinkRecoveryAttempts[pc] :
 					continue
 
 			# compare with mindegree
@@ -1378,17 +1373,17 @@ class GenesisSynthesiser(object) :
 				mindegree = degree
 
 		# Check if minimum is valid (no reroute attempt)
-		if minpc in self.OptimisticLinkRecoveryAttempts: 
-			if linkKey in self.OptimisticLinkRecoveryAttempts[minpc] :
+		if minpc in self.DCLinkRecoveryAttempts: 
+			if linkKey in self.DCLinkRecoveryAttempts[minpc] :
 				# There is no valid pc to return. Return None.
 				return None
 
 		# minpc will be used in the recovery. Add attempt for linkKey.
-		if minpc in self.OptimisticLinkRecoveryAttempts:
-			self.OptimisticLinkRecoveryAttempts[minpc].append(linkKey)
+		if minpc in self.DCLinkRecoveryAttempts:
+			self.DCLinkRecoveryAttempts[minpc].append(linkKey)
 		else :
-			self.OptimisticLinkRecoveryAttempts[minpc] = [linkKey]
-		print self.OptimisticLinkRecoveryAttempts[minpc]
+			self.DCLinkRecoveryAttempts[minpc] = [linkKey]
+		print self.DCLinkRecoveryAttempts[minpc]
 		return minpc
 
 	def enforceMulticastPolicies(self) :
@@ -1496,9 +1491,9 @@ class GenesisSynthesiser(object) :
 
 	def enforceReroute(self, pc, sw1, sw2) :
 		""" Resynthesise path for pc so that it does not go through link sw1-sw2 """
-		oldpath = list(self.OptimisticPaths[pc])
+		oldpath = list(self.DCPaths[pc])
 		# Revert oldpath changes : 
-		for constraint in self.OptimisticLinkCapacityConstraints : 
+		for constraint in self.DCLinkCapacityConstraints : 
 			try : 
 				index = oldpath.index(constraint[0])
 				if index == len(oldpath) - 1:
@@ -1509,9 +1504,9 @@ class GenesisSynthesiser(object) :
 
 				# Remove pc from tracked paths.
 				key = str(constraint[0]) + "-" + str(constraint[1]) 
-				if key in self.OptimisticTrackedPaths : 
-					if pc in self.OptimisticTrackedPaths[key] :
-						self.OptimisticTrackedPaths[key].remove(pc)
+				if key in self.DCTrackedPaths : 
+					if pc in self.DCTrackedPaths[key] :
+						self.DCTrackedPaths[key].remove(pc)
 			except ValueError:
 					continue
 
@@ -1528,10 +1523,10 @@ class GenesisSynthesiser(object) :
 			pcs = self.pdb.getIsolationPolicy(pno)
 			pc1 = pcs[0]
 			pc2 = pcs[1]
-			if pc1 == pc and pc2 in self.OptimisticPaths: 
-				self.addPathIsolationConstraints(pc1, self.OptimisticPaths[pc2], pc2)
-			elif pc2 == pc and pc1 in self.OptimisticPaths:
-				self.addPathIsolationConstraints(pc2, self.OptimisticPaths[pc1], pc1)
+			if pc1 == pc and pc2 in self.DCPaths: 
+				self.addPathIsolationConstraints(pc1, self.DCPaths[pc2], pc2)
+			elif pc2 == pc and pc1 in self.DCPaths:
+				self.addPathIsolationConstraints(pc2, self.DCPaths[pc1], pc1)
 
 		# Add Reroute Constraint. 
 		self.z3numberofadds += 1
@@ -1540,7 +1535,7 @@ class GenesisSynthesiser(object) :
 		self.z3addTime += time.time() - addtime
 
 		# Add Link Capacity Constraints : 
-		self.addLinkConstraints([pc], self.OptimisticLinkCapacityConstraints)
+		self.addLinkConstraints([pc], self.DCLinkCapacityConstraints)
 
 		successFlag = False
 		solvetime = time.time()
@@ -1552,20 +1547,20 @@ class GenesisSynthesiser(object) :
 			self.fwdmodel = self.z3Solver.model()
 			path = self.getPathFromModel(pc)
 			self.pdb.addPath(pc, path)
-			self.OptimisticPaths[pc] = path
+			self.DCPaths[pc] = path
 
 			print "Old path", oldpath, "new path", path
 			# Reset isolated policies (can be reattempted for reroute)
-			self.OptimisticLinkRecoveryAttempts[pc] = []
+			self.DCLinkRecoveryAttempts[pc] = []
 			isolatedPcs = self.pdb.getIsolatedPolicies(pc)
 			for ipc in isolatedPcs : 
-				self.OptimisticLinkRecoveryAttempts[ipc] = []
+				self.DCLinkRecoveryAttempts[ipc] = []
 		else :
 			# Rerouting not possible. 
 			path = oldpath
 
-		# Update Optimistic link capacity constraints.
-		for constraint in self.OptimisticLinkCapacityConstraints : 
+		# Update DC link capacity constraints.
+		for constraint in self.DCLinkCapacityConstraints : 
 			try:
 				index = path.index(constraint[0])
 				if index == len(path) - 1:
@@ -1576,10 +1571,10 @@ class GenesisSynthesiser(object) :
 				
 				# Add pc to tracked Paths. 
 				key = str(constraint[0]) + "-" + str(constraint[1])
-				if key in self.OptimisticTrackedPaths : 
-					self.OptimisticTrackedPaths[key].append(pc)
+				if key in self.DCTrackedPaths : 
+					self.DCTrackedPaths[key].append(pc)
 				else : 
-					self.OptimisticTrackedPaths[key] = [pc]
+					self.DCTrackedPaths[key] = [pc]
 			except ValueError:
 				continue
 

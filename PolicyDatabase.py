@@ -189,7 +189,6 @@ class PolicyDatabase(object) :
 		self.relClassGraphs = []
 
 		for relClass in self.relClasses :
-			print "Rel", relClass 
 			self.createRelationalClassGraph(relClass)
 
 		self.relationalClassCreationFlag = True
@@ -374,7 +373,7 @@ class PolicyDatabase(object) :
 
 	def createRelationalClassGraph(self, relClass) :
 		""" Creation of a Graph of edges of each packet class in the relational Class to leverage policy interactions to 
-		perform Optimistic synthesis"""
+		perform DC synthesis"""
 
 		G = nx.Graph()
 		
@@ -384,7 +383,6 @@ class PolicyDatabase(object) :
 		for policy in self.isolationTable : 	
 			if policy[0] in relClass : 
 				G.add_edge(policy[0],policy[1])
-				print "iso", policy[0],policy[1]
 
 		self.relClassGraphs.append(G)
 
