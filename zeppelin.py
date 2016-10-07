@@ -6,6 +6,8 @@ from GPLInterpreter import GPLInterpreter
 from Topology import Topology
 from PolicyDatabase import PolicyDatabase
 from ZeppelinSynthesiser import ZeppelinSynthesiser
+from OuterZeppelinSynthesiser import OuterZeppelinSynthesiser
+from ZeppelinSynthesiser2 import ZeppelinSynthesiser2
 from ZeppelinInputGenerator import ZeppelinInputGenerator
 import sys
 
@@ -41,10 +43,16 @@ class Zeppelin(object):
     def run(self):
         self.gplparser.parseTopo()
         self.zepInput = ZeppelinInputGenerator(self.topology, self.policyDatabase, self.pcRange)
-        self.zepSynthesiser = ZeppelinSynthesiser(self.topology, self.policyDatabase)
+        
+        self.outerZepSynthesizer = OuterZeppelinSynthesiser(self.topology, self.policyDatabase)
+        self.outerZepSynthesizer.enforceDAGs(self.zepInput.getDestinationDAGs(), self.zepInput.getEndpoints())
 
+        exit(0)
+        self.zepSynthesiser = ZeppelinSynthesiser(self.topology, self.policyDatabase)
         self.zepSynthesiser.enforceDAGs(self.zepInput.getDestinationDAGs(), self.zepInput.getEndpoints())
 
+        # self.zepSynthesiser2 = ZeppelinSynthesiser2(self.topology, self.policyDatabase)
+        # self.zepSynthesiser2.enforceDAGs(self.zepInput.getDestinationDAGs(), self.zepInput.getEndpoints())
         exit(0)
 
 
