@@ -5,7 +5,7 @@ from Topology import Topology
 
 
 class Regex(object):
-	""" Regex class built using FAdo.reex which stores reverse of regexStr """
+	""" Regex class built using FAdo.reex which of regexStr """
 	def __init__(self, regexStr, sigma, isNeg=False) :
 		self.sigma = sigma
 		self.regex = str2regexp(s=self.preprocessDot(regexStr), sigma=self.sigma)
@@ -40,24 +40,20 @@ class Whitelist(Regex) :
 	def __init__(self, regex, sigma):
 		Regex.__init__(self, regex, sigma, False)
 
+# Follows the grammar specified in the Genesis POPL paper
+class TacticRegex(object): 
+	def __init__(self, l_src, l_dst, tlen, l1="", l2=""): 
+		self.l_src = l_src
+		self.l_dst = l_dst
+		self.tlen = tlen
+		self.l1 = l1 # "" = epsilon
+		self.l2 = l2 # "" = epsilon
+
+
 class Tactic(object):
-	def __init__(self, regexList, topology) :
-		""" Tactic satisfies all the regular expressions in regexList. 
-		regexList contains the list of blacklists and whitelists"""
-		if len(regexList) == 0 :
-			print "Cannot create empty Tactic. Exit"
-			exit(0)
-		self.dfa = regexList[0].getDFA()
-		for i in range(1, len(regexList)) :
-			self.dfa = self.dfa & regexList[i].getDFA()
-			self.dfa = self.dfa.minimalHopcroft()
-
-		self.dfa.completeMinimal()
-		self.numStates = len(self.dfa.States)
-		self.dfa.renameStates(range(self.numStates))
-
-		self.sigma = regexList[0].sigma
-		self.topology = topology
+	def __init__(self, sigma, regexList, topology) :
+		""" Tactic satisfies all the restricted regular expressions in regexList"""
+		self.sigma = sigma
 		self.labelMappings = dict()
 		# Map sigma to integers.
 		i = 0
@@ -65,7 +61,61 @@ class Tactic(object):
 			self.labelMappings[lb] = i
 			i += 1
 
-		self.sink = None
+		self.topology = topology
+		maxPathLen = self.topology.getMaxPathLength()
+
+		# Previous neighbour information. Will be pruned using the tactics
+		self.neighbours = dict()
+		for lb in self.sigma :
+			self.neighbours[lb] = dict()
+			for i in range(1, maxPathLen + 1):
+				self.neighbours[lb][i] = self.sigma
+
+		if len(regexList) == 0 :
+			print "Cannot create empty Tactic. Exit"
+			exit(0)
+		
+
+		for tregex in regexList : 
+			if tregex.l1 == "" and tregex.l2 == "" :
+				# Tactic of the form: not (l_src .^i .^* l_dst) =>
+				# Restricts the path to a length < i + 1
+				for lb in self.sigma : 
+					for i in range(tregex.tlen + 1, maxPathLen + 1):
+						self.neighbours[lb][i] = [] # Prune all constraints for Reach at length i for all switches of lb
+
+			elif tregex.l2 == "":
+				# Tactic of the form: not (l_src .^i l .^* l_dst) =>
+				# a switch with label l cannot be reached in i + 1 steps, except if switch is the detination
+				self.neighbours[tregex.l1][tregex.tlen + 1] = ["!DST!"] # Check special destination case before pruning
+
+			else : 
+				# Tactic of the form: not (l_src .^i l_1 l_2 .^* l_dst) => 
+				# This tactic ensures that a switch with label l_1 at i + 1 in the path
+				# will not forward the packet to a switch with label l_2 
+				neighbours = self.neighbours[tregex.l2][tregex.tlen + 2] 
+				newNeighbours = []
+				for lb in neighbours : 
+					if lb != tregex.l1 : 
+						newNeighbours.append(lb)
+				
+				self.neighbours[tregex.l2][tregex.tlen + 2] = newNeighbours
+
+
+		# self.dfa = regexList[0].getDFA()
+		# for i in range(1, len(regexList)) :
+		# 	self.dfa = self.dfa & regexList[i].getDFA()
+		# 	self.dfa = self.dfa.minimalHopcroft()
+
+		# self.dfa.completeMinimal()
+		# self.numStates = len(self.dfa.States)
+		# self.dfa.renameStates(range(self.numStates))
+
+		# self.sigma = regexList[0].sigma
+		# self.topology = topology
+		
+
+		# self.sink = None
 
 	def getDFA(self):
 		return self.dfa
@@ -163,7 +213,7 @@ class Tactic(object):
 
 
 	def getPreviousLabels(self, label, Reach) :
-		return self.neighbours[label][Reach + 1]
+		return self.neighbours[label][Reach]
 
 
 

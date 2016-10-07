@@ -702,17 +702,17 @@ class GenesisSynthesiser(object) :
 		#print "total function takes ", time.time() - reachtime
 		
 	# Note This functions take the most time for each pc. Look for ways to improve this. 
-	def addPathConstraints(self, s, pc) :
+	def addPathConstraints(self, src, pc) :
 		swCount = self.topology.getSwitchCount()
 		maxPathLen = self.topology.getMaxPathLength()
 
 		useBridgeSlicing = False
 		if self.topologySlicingFlag : 
-			swList = self.topology.getTopologySlice(self.topology.getSliceNumber(s))
+			swList = self.topology.getTopologySlice(self.topology.getSliceNumber(src))
 		
 		elif self.bridgeSlicingFlag :
 			# Find if exists in a bridge slice. 
-			srcSlice = self.topology.getBridgeSliceNumber(s)
+			srcSlice = self.topology.getBridgeSliceNumber(src)
 			dstSlice = self.topology.getBridgeSliceNumber(self.pdb.getDestinationSwitch(pc))
 
 			if srcSlice == dstSlice and srcSlice <> None : 
@@ -724,11 +724,11 @@ class GenesisSynthesiser(object) :
 		else : 
 			swList = range(1,swCount + 1)
 
-		neighbours = self.topology.getSwitchNeighbours(s, useBridgeSlicing)
+		neighbours = self.topology.getSwitchNeighbours(src, useBridgeSlicing)
 		
 		srcAssertions = []
 		for n in neighbours : 
-			srcAssertions.append(And(self.Fwd(s,n,pc), self.Reach(n, pc, 1)))
+			srcAssertions.append(And(self.Fwd(src,n,pc), self.Reach(n, pc, 1)))
 
 		self.z3numberofadds += 1
 		#addtime = time.time() # Profiling z3 add.
@@ -739,7 +739,7 @@ class GenesisSynthesiser(object) :
 		#constime = 0
 		#addtime = 0
 		for i in swList :
-			if i == s : 
+			if i == src : 
 				continue
 
 			for pathlen in range(1,maxPathLen+1) :
@@ -753,15 +753,20 @@ class GenesisSynthesiser(object) :
 					tactic = self.tactics[pc]
 					labels = tactic.getPreviousLabels(self.topology.getLabel(i), pathlen)
 					labelneighbours = []
-					for n in ineighbours : 
-						if self.topology.getLabel(n) in labels :
-							labelneighbours.append(n)
-					if len(labelneighbours) == 0 :
+					if len(labels) == 0 :
 						# self.Reach(i,pc,pathlen) = False
 						self.z3Solver.add(Not(self.Reach(i,pc,pathlen)))
-						continue
+						continue 
+					elif labels == ["!DST!"] : 
+						if i != self.pdb.getDestinationSwitch(pc) :
+							# self.Reach(i,pc,pathlen) = False
+							self.z3Solver.add(Not(self.Reach(i,pc,pathlen)))
+							continue 	  
 					else :
 						# Modify the ineighbours
+						for n in ineighbours : 
+							if self.topology.getLabel(n) in labels :
+								labelneighbours.append(n)
 						ineighbours = labelneighbours
 				
 				
@@ -2049,25 +2054,32 @@ class GenesisSynthesiser(object) :
 	def useTactic(self) :
 		# SPECIFY Tactics here using the Blacklist (negation of regex), first argument is 
 		# the regular expression, second is the set of switch labels. 
-		b1 = Blacklist("e .* e .* e", ["a","c","e"])
-		b2 = Blacklist("e . . . . . . . . . . .* e", ["a", "c", "e"])
-		#b3 = Blacklist("e a c a c a c .* e", ["a", "c", "e"])
-
-
-		w = Whitelist("e .* e",  ["a","c","e"]) # Used to specify to the tactic module that the path is from edge to edge switches
-		self.topology.assignLabels()
-		
-		# We specify a b1 <and> b2 tactic for all the classes in the workload 
-		t = Tactic([b1, b2, w], self.topology)
-
+		# b1 = Blacklist("e .* e .* e", ["a","c","e"])
+		# b2 = Blacklist("e . . . . . . . . . . .* e", ["a", "c", "e"])
+		# #b3 = Blacklist("e a c a c a c .* e", ["a", "c", "e"])
+		# w = Whitelist("e .* e",  ["a","c","e"]) # Used to specify to the tactic module that the path is from edge to edge switches
+			
 		maxPathLen = self.topology.getMaxPathLength()
+		self.topology.assignLabels()
 
-		st = time.time()
-		t.findValidNeighbours(maxPathLen + 1) # Using the tactic to precompute the pruning of constraints. 
-		et = time.time()
+		# No Edge regular expressions: not (e .* e .* e)
+		noEdge = []
+		for i in range(0, maxPathLen - 1):
+			noEdge.append(TacticRegex("e", "e", i, "e"))
+
+		noEdgeTactic = Tactic(["a", "c", "e"], noEdge, self.topology)
+
+		valleyFree = noEdge
+		valleyFree.append(TacticRegex("e", "e", 5))
+		valleyFreeTactic = Tactic(["a", "c", "e"], valleyFree, self.topology)
+		
+		# st = time.time()
+		# t.findValidNeighbours(maxPathLen + 1)  
+		# et = time.time()
+
 		for pc in range(self.pdb.getPacketClassRange()) :
 			if not self.pdb.hasWaypoints(pc) :  # Dont add the tactic for packet classes with waypoints
-				self.addTactic(t, pc)
+				self.addTactic(valleyFreeTactic, pc)
 
 
 	def addTactic(self, tactic, pc) :
