@@ -2052,13 +2052,9 @@ class GenesisSynthesiser(object) :
 		# print "Number of z3 adds to the solver are ", self.z3numberofadds
 
 	def useTactic(self) :
-		# SPECIFY Tactics here using the Blacklist (negation of regex), first argument is 
-		# the regular expression, second is the set of switch labels. 
-		# b1 = Blacklist("e .* e .* e", ["a","c","e"])
-		# b2 = Blacklist("e . . . . . . . . . . .* e", ["a", "c", "e"])
-		# #b3 = Blacklist("e a c a c a c .* e", ["a", "c", "e"])
-		# w = Whitelist("e .* e",  ["a","c","e"]) # Used to specify to the tactic module that the path is from edge to edge switches
-			
+		# Tactics are specified in this function. In this, we include
+		# the different tactics we mentioned as examples in the POPL17 paper
+		# Details can be found in the evaluation of tactics section in the paper
 		maxPathLen = self.topology.getMaxPathLength()
 		self.topology.assignLabels()
 
@@ -2073,14 +2069,17 @@ class GenesisSynthesiser(object) :
 		valleyFree.append(TacticRegex("e", "e", 5))
 		valleyFreeTactic = Tactic(["a", "c", "e"], valleyFree, self.topology)
 		
-		# st = time.time()
-		# t.findValidNeighbours(maxPathLen + 1)  
-		# et = time.time()
+		len7 = [TacticRegex("e", "e", 7, "e")]
+		len7Tactic = Tactic(["a", "c", "e"], len7, self.topology)
+
+		noEdgeLen7 = len7
+		for i in range(0, maxPathLen - 1):
+			noEdge.append(TacticRegex("e", "e", i, "e"))
+		noEdgeLen7Tactic = Tactic(["a", "c", "e"], noEdgeLen7, self.topology)
 
 		for pc in range(self.pdb.getPacketClassRange()) :
 			if not self.pdb.hasWaypoints(pc) :  # Dont add the tactic for packet classes with waypoints
-				self.addTactic(valleyFreeTactic, pc)
-
+				self.addTactic(noEdgeLen7Tactic, pc)
 
 	def addTactic(self, tactic, pc) :
 		self.tactics[pc] = tactic
