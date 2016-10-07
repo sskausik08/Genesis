@@ -1,21 +1,26 @@
+sudo apt-get update
 git clone https://github.com/Z3Prover/z3.git 
 cd z3; git checkout z3-4.4.1 
 python scripts/mk_make.py
 cd build; make
 sudo make install 
 cd ../
-sudo apt-get install python-pip
+sudo apt-get -y install python-pip
 sudo pip install networkx
 sudo easy_install enum
-wget pages.cs.wisc.edu/~sskausik08/metis-5.1.0.tar.gz
+cd 
+wget pages.cs.wisc.edu/~sskausik08/metis-5.1.0.tar.gz $HOME
 tar -xvf metis-5.1.0.tar.gz
-sudo apt-get install cmake
+sudo apt-get -y install cmake
 cd metis-5.1.0; make config shared=1
 make
 sudo make install
-cd ../
 wget pages.cs.wisc.edu/~sskausik08/metis-0.1a0-py2.7.egg
 sudo pip install FAdo
 sudo easy_install metis-0.1a0-py2.7.egg
+cd
+echo "export METIS_DLL="$HOME/metis-5.1.0/build/Linux-x86_64/libmetis/libmetis.so"" >> .bash_profile
+
+
 
 
