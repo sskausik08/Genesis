@@ -36,10 +36,19 @@ To run Genesis, go to the ~/Genesis folder and use the terminal to run Genesis:
 
 	python -O genesis.py -topo <topology-filename> -gpl <gpl-filename>
 
-To run Genesis with tactic enabled (the tactic to use is set in useTactic() method 
-in GenesisSynthesiser.py, we have provided the tactics mentioned in the paper):
+To run Genesis with tactic enabled:
 	
-	python -O genesis.py -topo <topology-filename> -gpl <gpl-filename> -useTactic
+	python -O genesis.py -topo <topology-filename> -gpl <gpl-filename> -useTactic <tactic>
+
+Our current implementation supports 4 tactics that can be supplied as arguments 
+(implemented in useTactic() method in GenesisSynthesiser.py):
+	"noEdge" : the edge-to-edge path will not contain another edge switch in the path
+	"valleyFree" : valley-free routing, that is paths are of the form eacae
+	"len7" : Length of path <= 7
+	"noEdgeLen7" : Length of path <= 7 and does not contain another path.
+
+[Note: these tactics assume that each paths start and end at edge switches. New tactics
+can be added to generalize these tactics]
 
 To run Genesis using divide-and-conquer synthesis: 
 
@@ -96,19 +105,44 @@ in topologies folder:
 fattree-6.topo: 45 switches 
 fattree-8.topo: 80 switches 
 
-Benchmarks:
-
+Evaluation on Benchmarks:
+We provide scripts pertaining to the experiments ran in the paper. We 
+present the synthesis time taken by the Z3 solver i.e., time taken 
+for Z3 for the check() method. We ignore the total time taken by 
+Genesis (parsing, generating constraints etc.), instead the major bottleneck
+is the solve time (high complexity), thus, we report in the paper 
+the time taken to solve the constraints. The experiments were conducted 
+on a 32-core Intel-Xeon 2.40GHz CPU machine and 128GB of RAM, thus a virtual machine
+may report higher synthesis times. 
 
 Multi-tenant Isolation Workloads - AEC/isolation.py
 Execute the isolation.py (no command-line arguments) from the Genesis directory 
 (it uses genesis.py and GPLGenerator.py, a python program which generates GPL files
-based on different parameter values). 
+based on different parameter values). Refer to Sec8.1 in paper. 
+
 The isolation.py file can be modified to run different multi-tenant isolation workloads. 
-Different parameters are [refer to Sec8.1 in paper : 
+The different parameters are: 
 Number of packet classes = [20,40,60]
 Group size = [2,5,10]
-useTactic = True/False
-useDCSynthesis = True
+useTactic = True/False 
+tactic = The tactic to apply (one of noEdge, valleyFree, len7, noEdgeLen7)
+useDCSynthesis = True/False 
+
+Isolation Workloads for varying topology sizes - AEC/linkcapacity.py
+Execute the linkcapacity.py (no command-line arguments) from the Genesis directory
+with linkcapacity parameter in the script set to False. This script can be 
+used to run the tactic reduction experiments by running 
+the script (linkcapacity=False) with different tactics.
+
+Link Capacity Experiment - AEC/linkcapacity.py
+Execute the linkcapacity.py (no command-line arguments) from the Genesis directory
+with linkcapacity parameter in the script set to True.
+This uses GPLGenerator5.py which generates a isolation workload with 10 additional
+link capacity policies. This script can use to run the link capacity with
+tactics as well [useTactic = True, tactic = noEdge/...]
+
+
+
 
 
 
