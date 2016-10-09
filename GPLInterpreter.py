@@ -5,6 +5,7 @@ import readline
 import ply.lex as lex
 import ply.yacc as yacc
 import os
+import logging
 from GenesisAst import *
 from NetworkPredicate import *
 	
@@ -21,8 +22,8 @@ class GPLInterpreter(object):
 
 		# Build the lexer and parser
 		lex.lex(module=self)
-		self.gplyacc = yacc.yacc(module=self, tabmodule=self.tabmodule)
-		self.topoyacc = yacc.yacc(module=self, tabmodule=self.tabmodule, start = 'topology')
+		self.gplyacc = yacc.yacc(module=self, tabmodule=self.tabmodule, errorlog=yacc.NullLogger())
+		self.topoyacc = yacc.yacc(module=self, tabmodule=self.tabmodule, start = 'topology', errorlog=yacc.NullLogger())
 
 	tokens = (
 		'NAME','NUMBER',

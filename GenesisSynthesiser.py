@@ -201,6 +201,12 @@ class GenesisSynthesiser(object) :
 		if self.bridgeSlicingFlag: 
 			self.bridgeSlicingFlag = self.topology.findTopologyBridges()
 
+		# If there are traffic engineering objectives, use the Optimize() class of Z3
+		if self.pdb.trafficEngineeringEnabled() : 
+			self.z3Solver = Optimize()
+
+		print "==GENESIS==" 
+		print "Input size: "+ str(self.pdb.getPacketClassRange()) + " packet classes "
 		start_t = time.time()
 		self.initializeSATVariables()
 
@@ -251,7 +257,7 @@ class GenesisSynthesiser(object) :
 			self.synthesisSuccessFlag = self.enforceUnicastPolicies()	
 
 		end_t = time.time()
-		print "Time taken to solve the " + str(self.pdb.getPacketClassRange()) + " policies " + str(end_t - start_t)
+		print "Total Time taken (generation and solving of constraints) " + str(self.pdb.getPacketClassRange()) + " packet classes " + str(end_t - start_t)
 
 		if self.synthesisSuccessFlag and self.DCSynthesisFlag: 
 			for pc in self.DCPaths : 
@@ -262,7 +268,7 @@ class GenesisSynthesiser(object) :
 			self.pdb.validatePolicies(self.topology)
 
 		self.pdb.printPaths(self.topology)
-		
+		self.pdb.validatePolicies(self.topology)
 		# Control plane synthesis: outside scope of POPL17 Genesis paper.
 		if self.controlPlaneMode : 
 			from ZeppelinSynthesiser import ZeppelinSynthesiser
@@ -368,7 +374,7 @@ class GenesisSynthesiser(object) :
 					if not self.addGlobalTopoFlag : 
 						#st = time.time()
 						# Add Topology Constraints
-						self.addTopologyConstraints(pc)
+						self.addSinglePathConstraints(pc)
 
 			#isolationtime = time.time()
 			# Add traffic isolation constraints. 
@@ -413,7 +419,7 @@ class GenesisSynthesiser(object) :
 	def enforceUnicastPoliciesNoOptimizations(self) :
 		""" Enforcement of Policies stored in the PDB without any optimizations """
 
-		self.addTopologyConstraints(0, self.pdb.getPacketClassRange())
+		self.addSinglePathConstraints(0, self.pdb.getPacketClassRange())
 
 		switchTableConstraints = self.pdb.getSwitchTableConstraints()
 		self.addSwitchTableConstraints(switchTableConstraints)  # Adding switch table constraints.
@@ -447,7 +453,8 @@ class GenesisSynthesiser(object) :
 			print "Input Policies not realisable"
 
 
-	def addTopologyConstraintsSAT(self, pcStart, pcEnd=0) :
+	def addSinglePathConstraints(self, pcStart, pcEnd=0) :
+		""" Adds constraints used in waypoints to ensure single path"""
 		if pcEnd == 0 :
 			""" Topology Constraint for one packet class"""
 			pcEnd = pcStart + 1
@@ -461,7 +468,7 @@ class GenesisSynthesiser(object) :
 				""" Unicast packet class """
 
 				if not self.pdb.hasWaypoints(pc) :
-					# Dont need to have topology forwarding constraints
+					# Dont need to have topology forwarding constraints for unicast forwarding
 					continue
 				
 				useBridgeSlicing = False
@@ -486,39 +493,25 @@ class GenesisSynthesiser(object) :
 					topoAssertions = []
 					unreachedAssertions = []
 					
-					unreachedAssertionsStr = ""
-					topoAssertStr = ""
 
 					for n in neighbours : 
 						#neighbourAssert = self.F(sw,n,pc,1) == True
 						neighbourAssertions = [self.Fwd(sw,n,pc)]
 						unreachedAssertions.append(Not(self.Fwd(sw,n,pc)))
 
-						neighbourAssertionsStr = self.FwdStr(sw,n,pc)
-						unreachedAssertionsStr += " (not " + self.FwdStr(sw,n,pc) + ") "
-
 						for n1 in neighbours :
 							if n == n1 : 
 								continue
 							else :
 								neighbourAssertions.append(Not(self.Fwd(sw,n1,pc)))
-
-								neighbourAssertionsStr += " (not " + self.FwdStr(sw,n1,pc) + ") "
 						
 						neighbourAssert = And(*neighbourAssertions)
 						topoAssertions.append(neighbourAssert)
 
-						neighbourAssertStr = " (and " + neighbourAssertionsStr + ") "
-						topoAssertStr += neighbourAssertStr
 
 					unreachedAssert = And(*unreachedAssertions)
 					topoAssertions.append(unreachedAssert) # Either one forwarding rule or no forwarding rules.
 					topoAssert = Or(*topoAssertions) 
-
-					unreachedAssertStr = " (and " + unreachedAssertionsStr + ") "
-					topoAssertStr = " (or " + topoAssertStr + " " + unreachedAssertStr +  ") "
-					#self.smtlib2file.write("; Forwarding Rule Constraint for switch " + str(sw) + "\n")
-					#self.smtlib2file.write("( assert " + topoAssertStr + ")\n")
 
 					self.z3numberofadds += 1
 					#addtime = time.time() # Profiling z3 add.
@@ -528,95 +521,95 @@ class GenesisSynthesiser(object) :
 					""" Multicast packet class. No restrictions on forwarding set """
 					pass	
 
-	def addTopologyConstraints(self, pcStart, pcEnd=0) :
-		if self.UseTopoSAT == True :
-			self.addTopologyConstraintsSAT(pcStart, pcEnd)
-			return
+	# def addSinglePathConstraints(self, pcStart, pcEnd=0) :
+	# 	if self.UseTopoSAT == True :
+	# 		self.addSinglePathConstraints(pcStart, pcEnd)
+	# 		return
 
-		if pcEnd == 0 :
-			""" Topology Constraint for one packet class"""
-			pcEnd = pcStart + 1
+		# if pcEnd == 0 :
+		# 	""" Topology Constraint for one packet class"""
+		# 	pcEnd = pcStart + 1
 
-		swCount = self.topology.getSwitchCount()
-		# \forall sw \forall n \in neighbours(sw) and NextHop = {n | F(sw,n,pc,1) = True}. |NextHop| \leq 1 
-		# None or only one of F(sw,n,pc,1) can be true.
-		for sw in range(1,swCount+1) :
-			for pc in range(pcStart, pcEnd) :
-				if not self.pdb.isMulticast(pc) : 
-					""" Unicast packet class """
-					neighbours = self.topology.getSwitchNeighbours(sw)
+		# swCount = self.topology.getSwitchCount()
+		# # \forall sw \forall n \in neighbours(sw) and NextHop = {n | F(sw,n,pc,1) = True}. |NextHop| \leq 1 
+		# # None or only one of F(sw,n,pc,1) can be true.
+		# for sw in range(1,swCount+1) :
+		# 	for pc in range(pcStart, pcEnd) :
+		# 		if not self.pdb.isMulticast(pc) : 
+		# 			""" Unicast packet class """
+		# 			neighbours = self.topology.getSwitchNeighbours(sw)
 
-					fname = "fwdSet" + str(sw) + "#" + str(pc)
-					fwdSet = Function(fname, IntSort(), IntSort(), IntSort(), IntSort())
+		# 			fname = "fwdSet" + str(sw) + "#" + str(pc)
+		# 			fwdSet = Function(fname, IntSort(), IntSort(), IntSort(), IntSort())
 
-					i = 0
-					for n in neighbours :
-						if n == neighbours[0] :
-							self.z3numberofadds += 1
-							addtime = time.time() # Profiling z3 add.
-							self.z3Solver.add(Implies(self.Fwd(sw, n, pc), fwdSet(sw, pc, n) == 1))
-							self.z3addTime += time.time() - addtime
-							self.z3numberofadds += 1
-							addtime = time.time() # Profiling z3 add.
-							self.z3Solver.add(Implies(Not(self.Fwd(sw, n, pc)), fwdSet(sw, pc, n) == 0))
-							self.z3addTime += time.time() - addtime
-						else :
-							prevn = neighbours[i - 1]
-							self.z3numberofadds += 1
-							addtime = time.time() # Profiling z3 add.
-							self.z3Solver.add(Implies(self.Fwd(sw, n, pc), fwdSet(sw, pc, n) == 1 + fwdSet(sw, pc, prevn)))
-							self.z3addTime += time.time() - addtime
-							self.z3numberofadds += 1
-							addtime = time.time() # Profiling z3 add.
-							self.z3Solver.add(Implies(Not(self.Fwd(sw, n, pc)), fwdSet(sw, pc, n) == fwdSet(sw, pc, prevn)))
-							self.z3addTime += time.time() - addtime
-						i +=1
-					n = neighbours[i - 1] # Last element in the list.
-					self.z3numberofadds += 1
-					addtime = time.time() # Profiling z3 add.
-					self.z3Solver.add(fwdSet(sw, pc, n) < 2)
-					self.z3addTime += time.time() - addtime
-				else :
-					""" Multicast packet class. No restrictions on forwarding set """
-					pass	
+		# 			i = 0
+		# 			for n in neighbours :
+		# 				if n == neighbours[0] :
+		# 					self.z3numberofadds += 1
+		# 					addtime = time.time() # Profiling z3 add.
+		# 					self.z3Solver.add(Implies(self.Fwd(sw, n, pc), fwdSet(sw, pc, n) == 1))
+		# 					self.z3addTime += time.time() - addtime
+		# 					self.z3numberofadds += 1
+		# 					addtime = time.time() # Profiling z3 add.
+		# 					self.z3Solver.add(Implies(Not(self.Fwd(sw, n, pc)), fwdSet(sw, pc, n) == 0))
+		# 					self.z3addTime += time.time() - addtime
+		# 				else :
+		# 					prevn = neighbours[i - 1]
+		# 					self.z3numberofadds += 1
+		# 					addtime = time.time() # Profiling z3 add.
+		# 					self.z3Solver.add(Implies(self.Fwd(sw, n, pc), fwdSet(sw, pc, n) == 1 + fwdSet(sw, pc, prevn)))
+		# 					self.z3addTime += time.time() - addtime
+		# 					self.z3numberofadds += 1
+		# 					addtime = time.time() # Profiling z3 add.
+		# 					self.z3Solver.add(Implies(Not(self.Fwd(sw, n, pc)), fwdSet(sw, pc, n) == fwdSet(sw, pc, prevn)))
+		# 					self.z3addTime += time.time() - addtime
+		# 				i +=1
+		# 			n = neighbours[i - 1] # Last element in the list.
+		# 			self.z3numberofadds += 1
+		# 			addtime = time.time() # Profiling z3 add.
+		# 			self.z3Solver.add(fwdSet(sw, pc, n) < 2)
+		# 			self.z3addTime += time.time() - addtime
+		# 		else :
+		# 			""" Multicast packet class. No restrictions on forwarding set """
+		# 			pass	
 
-	def addTopologySliceConstraints(self, slice, pcStart, pcEnd=0) :
-		if pcEnd == 0 :
-			""" Topology Constraint for one packet class"""
-			pcEnd = pcStart + 1
+	# def addTopologySliceConstraints(self, slice, pcStart, pcEnd=0) :
+	# 	if pcEnd == 0 :
+	# 		""" Topology Constraint for one packet class"""
+	# 		pcEnd = pcStart + 1
 
-		topologySlice = self.topology.getTopologySlice(slice)
-		# \forall sw \forall n \in neighbours(sw) and NextHop = {n | F(sw,n,pc,1) = True}. |NextHop| \leq 1 
-		# None or only one of F(sw,n,pc,1) can be true.
-		for sw in topologySlice :
-			for pc in range(pcStart, pcEnd) :
-				if not self.pdb.isMulticast(pc) : 
-					""" Unicast packet class """
-					neighbours = self.topology.getSwitchNeighbours(sw)
+	# 	topologySlice = self.topology.getTopologySlice(slice)
+	# 	# \forall sw \forall n \in neighbours(sw) and NextHop = {n | F(sw,n,pc,1) = True}. |NextHop| \leq 1 
+	# 	# None or only one of F(sw,n,pc,1) can be true.
+	# 	for sw in topologySlice :
+	# 		for pc in range(pcStart, pcEnd) :
+	# 			if not self.pdb.isMulticast(pc) : 
+	# 				""" Unicast packet class """
+	# 				neighbours = self.topology.getSwitchNeighbours(sw)
 
-					# Add assertions to ensure f(sw,*) leads to a valid neighbour. 
-					topoAssert = False
-					unreachedAssert = True
+	# 				# Add assertions to ensure f(sw,*) leads to a valid neighbour. 
+	# 				topoAssert = False
+	# 				unreachedAssert = True
 
-					for n in neighbours : 
-						#neighbourAssert = self.F(sw,n,pc,1) == True
-						neighbourAssert = self.Fwd(sw,n,pc)
-						unreachedAssert = And(unreachedAssert, Not(self.Fwd(sw,n,pc)))
-						for n1 in neighbours :
-							if n == n1 : 
-								continue
-							else :
-								neighbourAssert = And(neighbourAssert, Not(self.Fwd(sw,n1,pc)))
-						topoAssert = Or(topoAssert, neighbourAssert)
+	# 				for n in neighbours : 
+	# 					#neighbourAssert = self.F(sw,n,pc,1) == True
+	# 					neighbourAssert = self.Fwd(sw,n,pc)
+	# 					unreachedAssert = And(unreachedAssert, Not(self.Fwd(sw,n,pc)))
+	# 					for n1 in neighbours :
+	# 						if n == n1 : 
+	# 							continue
+	# 						else :
+	# 							neighbourAssert = And(neighbourAssert, Not(self.Fwd(sw,n1,pc)))
+	# 					topoAssert = Or(topoAssert, neighbourAssert)
 
-					topoAssert = Or(topoAssert, unreachedAssert) # Either one forwarding rule or no forwarding rules.
-					self.z3numberofadds += 1
-					addtime = time.time() # Profiling z3 add.
-					self.z3Solver.add(topoAssert)
-					self.z3addTime += time.time() - addtime
-				else :
-					""" Multicast packet class. No restrictions on forwarding set """
-					pass
+	# 				topoAssert = Or(topoAssert, unreachedAssert) # Either one forwarding rule or no forwarding rules.
+	# 				self.z3numberofadds += 1
+	# 				addtime = time.time() # Profiling z3 add.
+	# 				self.z3Solver.add(topoAssert)
+	# 				self.z3addTime += time.time() - addtime
+	# 			else :
+	# 				""" Multicast packet class. No restrictions on forwarding set """
+	# 				pass
 
 	def addReachabilityConstraints(self, srcIP, srcSw, dstIP, dstSw, pc, W=None, pathlen=0) :
 		#reachtime = time.time()
@@ -667,7 +660,8 @@ class GenesisSynthesiser(object) :
 				currwaypointCount += len(wayptSet)
 				for w in wayptSet :			
 					reachAssertions = []
-					for plen in range(1 + currwaypointCount - len(wayptSet), pathlen - (totalwaypointCount - currwaypointCount)) :
+					#for plen in range(1 + currwaypointCount - len(wayptSet), pathlen - (totalwaypointCount - currwaypointCount)) :
+					for plen in range(1, pathlen + 1):
 						reachAssertions.append(self.Reach(w,pc,plen))
 
 						if prevWayptSet <> None : 
@@ -917,7 +911,7 @@ class GenesisSynthesiser(object) :
 				if not self.addGlobalTopoFlag : 
 					#st = time.time()
 					# Add Topology Constraints
-					self.addTopologyConstraints(pc)
+					self.addSinglePathConstraints(pc)
 					#tprint "Time taken to add Topology constraints is " + str(time.time() - st)
 
 		# Add traffic constraints. 
@@ -1521,7 +1515,7 @@ class GenesisSynthesiser(object) :
 		self.addReachabilityConstraints(srcIP=policy[0][0], srcSw=policy[0][2], dstIP=policy[0][1], dstSw=policy[0][3],pc=pc, W=policy[1], pathlen=policy[2]) 
 
 		# Add Topology Constraints
-		self.addTopologyConstraints(pc)
+		self.addSinglePathConstraints(pc)
 
 		# Add Isolation Constraints 
 		for pno in range(self.pdb.getIsolationPolicyCount()) :
@@ -1689,8 +1683,7 @@ class GenesisSynthesiser(object) :
 				for plen in range(1, maxPathLen + 1):
 					reachAssertions.append(self.Reach(sw,pc,plen))
 				rules = rules + If(Or(*reachAssertions), 1, 0) # If sw is reachable, one forwarding rule required
-			print sw, maxCount
-			self.z3Solver.add(rules < maxCount)
+			self.z3Solver.add(rules <= maxCount)
 
 	def addLinkConstraints(self, pclist, constraints):
 		if len(constraints) == 0 : return
@@ -1947,7 +1940,7 @@ class GenesisSynthesiser(object) :
 					if not self.addGlobalTopoFlag : 
 						#st = time.time()
 						# Add Topology Constraints
-						self.addTopologyConstraints(pc)
+						self.addSinglePathConstraints(pc)
 
 			#isolationtime = time.time()
 			# Add traffic constraints. 
@@ -2079,7 +2072,7 @@ class GenesisSynthesiser(object) :
 
 		for pc in range(self.pdb.getPacketClassRange()) :
 			if not self.pdb.hasWaypoints(pc) :  # Dont add the tactic for packet classes with waypoints
-				self.addTactic(noEdgeLen7Tactic, pc)
+				self.addTactic(noEdgeLen7Tactic, pc) # For Artifact Evaluation: Replace the first arg with any of the tactics defined above 
 
 	def addTactic(self, tactic, pc) :
 		self.tactics[pc] = tactic

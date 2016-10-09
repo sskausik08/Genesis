@@ -37,7 +37,7 @@ class PolicyDatabase(object) :
 	def addReachabilityPolicy(self, predicate, srcSw, dstSw, W=None, len=None) :
 		""" srcSw = source IP next hop switch
 			dstSw = Destination IP next hop switch
-			W = List of Waypoints. """
+			W = List of list of Waypoints. """
 
 		self.endpointTable[self.pc] = [predicate, None, srcSw, dstSw]
 		if W == None : 
@@ -88,20 +88,21 @@ class PolicyDatabase(object) :
 		return self.paths[pc]
 
 	def printPaths(self, topology) :
+		output = open("genesis-paths.txt", 'w')
 		for pc in range(self.getPacketClassRange()) :
 			if pc in self.paths : 
 				if not self.isMulticast(pc) :
 					ep = self.endpointTable[pc]
 					lpath = self.paths[pc]
 					phypath = map(topology.getSwName, lpath)
-					print "PC#" + str(pc) + ": Endpoint Information : " + ep[0].getStr() + " Path : " + str(phypath) 
+					output.write("PC#" + str(pc) + ": Endpoint Information : " + ep[0].getStr() + " Path : " + str(phypath) + "\n")
 				else :
 					policy = self.mutlicastTable[pc]
 					lpaths = self.paths[pc]
 					phypaths = []
 					for lpath in lpaths :
 						phypaths.append(map(topology.getSwName, lpath))
-					print "PC#" + str(pc) + ": Endpoint Information : " + str(policy) + " Path : " + str(phypaths)
+					output.write("PC#" + str(pc) + ": Endpoint Information : " + str(policy) + " Path : " + str(phypaths) + "\n")
 
 	def addIsolationPolicy(self, pc1, pc2) :
 		if pc1 > pc2 : 
@@ -276,20 +277,37 @@ class PolicyDatabase(object) :
 			return False
 		if not path[len(path) - 1] == policy[3]:
 			return False
-		return True
-		# waypoints = self.waypointTable[pc]
-		# if len(waypoints) == 0:
-		# 	return True
+		
+		waypoints = self.waypointTable[pc]
+		if len(waypoints) == 0:
+			return True
 
-		# waypointFlag = True
-		# for w in waypoints : 
-		# 	foundFlag = False
-		# 	for sw in path : 
-		# 		if sw == w :
-		# 			foundFlag = True
-		# 			break
-		# 	waypointFlag = waypointFlag and foundFlag
-		# return waypointFlag 
+		prevWayptPos = -100
+		for wset in waypoints : 
+			# ordered sets 
+			waypointFlag = True
+			wayptPos = -1
+			for w in wset :  
+				foundFlag = False
+				i = 0
+				for sw in path : 
+					if sw == w :
+						foundFlag = True
+						if i < prevWayptPos :
+							# Not ordered correctly 
+							return False
+						if i > wayptPos : 
+							wayptPos = i
+						break
+					i += 1
+				waypointFlag = waypointFlag and foundFlag
+
+			if not waypointFlag :
+				return False
+
+			prevWayptPos = wayptPos
+		
+		return True
 
 	def validateCapacityPolicy(self):
 		for policy in self.linkCapacityConstraints : 
@@ -453,7 +471,7 @@ class PolicyDatabase(object) :
 		self.originalPacketClasses = dict()
 
 	def writeForwardingRulesToFile(self, topology) :
-		self.fwdRulesFile = open(".genesis-forwarding-rules", 'w')
+		self.fwdRulesFile = open("genesis-forwarding-rules.txt", 'w')
 		for pc in self.endpointTable.keys() :
 			policy = self.endpointTable[pc]
 			predicate = policy[0]
