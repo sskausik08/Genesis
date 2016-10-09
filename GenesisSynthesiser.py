@@ -15,7 +15,7 @@ from collections import defaultdict
 
 
 class GenesisSynthesiser(object) :
-	def __init__(self, topo, pdb, DC=True, TopoSlicing=False, pclist=None, useTactic=False, noOptimizations=False, BridgeSlicing=True, weakIsolation=False, repairMode=False, controlPlane=False) :
+	def __init__(self, topo, pdb, DC=True, TopoSlicing=False, pclist=None, useTactic=False, tactic="", noOptimizations=False, BridgeSlicing=True, weakIsolation=False, repairMode=False, controlPlane=False) :
 		self.topology = topo
 
 		# Network Forwarding Function
@@ -87,6 +87,7 @@ class GenesisSynthesiser(object) :
 
 		# Tactic variables 
 		self.useTacticFlag = useTactic
+		self.tactic = tactic
 		self.tactics = dict()
 
 		# Constraint Stores
@@ -257,7 +258,7 @@ class GenesisSynthesiser(object) :
 			self.synthesisSuccessFlag = self.enforceUnicastPolicies()	
 
 		end_t = time.time()
-		print "Total Time taken (generation and solving of constraints) " + str(self.pdb.getPacketClassRange()) + " packet classes " + str(end_t - start_t)
+		print "Total Time taken (generation and solving of constraints) for " + str(self.pdb.getPacketClassRange()) + " packet classes is " + str(end_t - start_t)
 
 		if self.synthesisSuccessFlag and self.DCSynthesisFlag: 
 			for pc in self.DCPaths : 
@@ -2058,21 +2059,34 @@ class GenesisSynthesiser(object) :
 
 		noEdgeTactic = Tactic(["a", "c", "e"], noEdge, self.topology)
 
-		valleyFree = noEdge
+		valleyFree = copy.deepcopy(noEdge)
 		valleyFree.append(TacticRegex("e", "e", 5))
 		valleyFreeTactic = Tactic(["a", "c", "e"], valleyFree, self.topology)
 		
-		len7 = [TacticRegex("e", "e", 7, "e")]
+		len7 = [TacticRegex("e", "e", 7)]
 		len7Tactic = Tactic(["a", "c", "e"], len7, self.topology)
 
-		noEdgeLen7 = len7
+		noEdgeLen7 = copy.deepcopy(len7)
 		for i in range(0, maxPathLen - 1):
-			noEdge.append(TacticRegex("e", "e", i, "e"))
+			noEdgeLen7.append(TacticRegex("e", "e", i, "e"))
+
 		noEdgeLen7Tactic = Tactic(["a", "c", "e"], noEdgeLen7, self.topology)
 
+		if self.tactic == "noEdge" : 
+			tactic = noEdgeTactic
+		elif self.tactic == "valleyFree" : 
+			tactic = valleyFreeTactic
+		elif self.tactic == "len7" : 
+			tactic = len7Tactic
+		elif self.tactic == "noEdgeLen7" : 
+			tactic = noEdgeLen7Tactic
+		else :
+			print "Cant recognise tactic. Exiting."
+			exit(0)
+		
 		for pc in range(self.pdb.getPacketClassRange()) :
 			if not self.pdb.hasWaypoints(pc) :  # Dont add the tactic for packet classes with waypoints
-				self.addTactic(noEdgeLen7Tactic, pc) # For Artifact Evaluation: Replace the first arg with any of the tactics defined above 
+				self.addTactic(tactic, pc) # For Artifact Evaluation: Replace the first arg with any of the tactics defined above 
 
 	def addTactic(self, tactic, pc) :
 		self.tactics[pc] = tactic

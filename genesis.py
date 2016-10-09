@@ -29,6 +29,7 @@ class Genesis(object):
 		useILPFlag = False
 		generateControlPlaneFlag = False
 		repairMode = False
+		tactic = ""
 
 		for arg in sys.argv : 
 			if arg == "-gpl" :
@@ -41,6 +42,7 @@ class Genesis(object):
 				DCFlag = True
 			if arg == "-useTactic" :
 				UseTacticFlag = True
+				tactic = sys.argv[no + 1]
 			if arg == "-noOpt" : 
 				NoOptimizationsFlag = True
 			if arg == "wi" :
@@ -59,7 +61,7 @@ class Genesis(object):
 		self.topology = Topology()
 		self.policyDatabase = PolicyDatabase()
 		if not useILPFlag : 
-			self.genesisSynthesiser = GenesisSynthesiser(topo=self.topology, pdb=self.policyDatabase, DC=DCFlag, TopoSlicing=TopoSlicingFlag, useTactic=UseTacticFlag, noOptimizations=NoOptimizationsFlag, weakIsolation=WeakIsolationFlag, repairMode=repairMode, controlPlane=generateControlPlaneFlag)
+			self.genesisSynthesiser = GenesisSynthesiser(topo=self.topology, pdb=self.policyDatabase, DC=DCFlag, TopoSlicing=TopoSlicingFlag, useTactic=UseTacticFlag, tactic=tactic, noOptimizations=NoOptimizationsFlag, weakIsolation=WeakIsolationFlag, repairMode=repairMode, controlPlane=generateControlPlaneFlag)
 		else : #ignore
 			self.genesisSynthesiser = GenesisILPSynthesiser(topo=self.topology, DC=DCFlag, TopoSlicing=TopoSlicingFlag, useTactic=UseTacticFlag, noOptimizations=NoOptimizationsFlag, weakIsolation=WeakIsolationFlag)
 		self.gplparser = GPLInterpreter(self.gplfile, self.topofile, self.genesisSynthesiser, self.topology)
