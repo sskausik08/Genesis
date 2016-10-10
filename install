@@ -19,7 +19,8 @@ wget pages.cs.wisc.edu/~sskausik08/metis-0.1a0-py2.7.egg
 sudo pip install FAdo
 sudo easy_install metis-0.1a0-py2.7.egg
 cd
-echo "export METIS_DLL="$HOME/metis-5.1.0/build/Linux-x86_64/libmetis/libmetis.so"" >> .bash_profile
+cp $HOME/metis-5.1.0/build/Linux*/libmetis/libmetis.so .
+echo "export METIS_DLL="$HOME/libmetis.so"" >> .bash_profile
 
 
 

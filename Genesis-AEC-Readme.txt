@@ -93,6 +93,7 @@ the time taken to solve the constraints. The experiments were conducted
 on a 32-core Intel-Xeon 2.40GHz CPU machine and 128GB of RAM, thus a virtual machine
 may report higher synthesis times. 
 
+================
 Multi-tenant Isolation Workloads - AEC/isolation.py
 Execute the isolation.py (no command-line arguments) from the Genesis directory 
 (it uses genesis.py and GPLGenerator.py, a python program which generates GPL files
@@ -106,12 +107,14 @@ useTactic = True/False
 tactic = The tactic to apply (one of noEdge, valleyFree, len7, noEdgeLen7)
 useDCSynthesis = True/False 
 
+================
 Isolation Workloads for varying topology sizes - AEC/linkcapacity.py
 Execute the linkcapacity.py (no command-line arguments) from the Genesis directory
 with linkcapacity parameter in the script set to False. This script can be 
 used to run the tactic reduction experiments by running 
 the script (linkcapacity=False) with different tactics.
 
+================
 Link Capacity Experiment - AEC/linkcapacity.py
 Execute the linkcapacity.py (no command-line arguments) from the Genesis directory
 with linkcapacity parameter in the script set to True.
@@ -119,6 +122,7 @@ This uses GPLGenerator5.py which generates a isolation workload with 10 addition
 link capacity policies. This script can use to run the link capacity with
 tactics as well [useTactic = True, tactic = noEdge/...]
 
+================
 Waypoint Experiment - AEC/waypoint.py
 Execute the waypoint.py (no command-line arguments) from the Genesis directory.
 
@@ -130,6 +134,7 @@ This is set in the Topology class (in Topology.py) variable
 This experiment uses GPLGenerator6.py to generate the waypoint GPL files as
 described in the paper. 
 
+================
 Optimization Experiments - AEC/optimization.py
 Execute the optimization.py (no command-line arguments) from the Genesis directory.
 It contains three different experiments: measuring performance of TE 
@@ -137,6 +142,7 @@ objectives: minimizing average link utilization and minimizing max link utilizat
 and a network repair experiment. 
 
 This experiment uses GPLGenerator3.py for generating the TE workloads.
+
 ======================================
 Pointers to code corresponding to the different sections of the paper:
 Section 2: Genesis Policy Language - GPLInterpreter.py
@@ -165,3 +171,16 @@ Section 6: Tactics - Tactic.py
 
 Section 7: Divide-and-Conquer Synthesis - enforceGraphPoliciesDC() in GenesisSynthesiser.py 
 			Solution Recovery - differentSolutionRecovery()
+
+========================================
+
+Installing Genesis on Ubuntu 14.04
+
+Genesis comes with a install script intended to install 
+all dependencies of Genesis. The install script can be found
+in the Genesis directory - install 
+
+Copy install to $HOME, and from $HOME, run:
+	
+	chmod +x install
+	sudo ./install
