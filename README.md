@@ -1,45 +1,12 @@
 
-Genesis : Flow Table Synthesis
+Genesis: Data Plane Synthesis in Multi-tenant Networks
 ====================
 Authors:
 - Kausik Subramanian 
 - Loris D'Antoni
 - Aditya Akella
 
+To appear in Proc. of the ACM Symposium on Principles of Programming Languages (POPL), 2017
 
-Input
------
--   Network topology graph (comprising of hosts, switches, links)
-
--   End-point (for a pair of end-points) based network-wide policies.
-    For eg.
-
-    -   ALLOW flows : $\exists Path(h1,h2)$ (Furthermore we can try to
-        reason about shortest path)
-
-    -   DENY flows : $\neg (\exists Path(h2,h3))$
-
-    -   No infinite loops in the graph for a flow :
-        $\forall s. \neg (\exists Path(s,s))$ (This is implicitly
-        inferred if we can guarantee reachability. However, we can have
-        valid finite loops in the graph (service chaining for example).
-        We don’t need to check for loops in the graph now. )
-
-    -   Traffic isolation : Flows f1, f2 should not share a link in the
-        path :
-        $\neg (\exists l. l \in Links(f1) \wedge l \in Links(f2))$
-
-    -   Flows pass through a waypoint (e.g Middlebox, firewall etc.) A
-        extension of this is middlebox service chaining $\rightarrow$
-        flow has to pass through a sequence of nodes.
-
-    -   Support for multi-path for a single flow, where the multiple
-        paths are isolated (no common links). For example, the policy
-        can be that for Flow $f$, $f.tag = 1$ and $.f.tag =2$ traverse
-        different paths in the network.
-
-Output
-------
-
-The flow tables in the switches satisfying input policies.
-
+Abstract: 
+Operators in multi-tenant cloud datacenters re- quire support for diverse and complex end-to-end policies, such as, reachability, middlebox traversals, isolation, traffic engineering, and network resource management. We present Genesis, a data-center network management system which allows policies to be specified in a declarative manner without explicitly programming the network data plane. Genesis tackles the problem of enforcing policies by synthesizing switch forwarding tables. It uses the formal foundations of constraint solving in combination with fast off-the-shelf SMT solvers. To improve synthesis performance, Genesis incorporates a novel search strategy that uses regular expressions to specify properties that leverage the structure of datacenter networks, and a divide-and-conquer synthesis procedure which exploits the structure of policy relationships. We have prototyped Genesis, and conducted experiments with a variety of workloads on real-world topologies to demonstrate its performance.
