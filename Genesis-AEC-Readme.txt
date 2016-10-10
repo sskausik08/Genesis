@@ -141,9 +141,13 @@ This uses GPLGenerator5.py which generates a isolation workload with 10 addition
 link capacity policies. This script can use to run the link capacity with
 tactics as well [useTactic = True, tactic = noEdge/...]
 
-
-
-
+Waypoint Experiment - AEC/waypoint.py
+Execute the waypoint.py (no command-line arguments) from the Genesis directory.
+One change from other experiments is that max path length is set to 15 for these
+experiments. This is set in the Topology class (in Topology.py) variable 
+			self.maxPathLength = 15
+This experiment uses GPLGenerator6.py to generate the waypoint GPL files as
+described in the paper. 
 
 
 
