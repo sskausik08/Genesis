@@ -23,7 +23,7 @@ if __name__ == "__main__":
 				subprocess.call(["python", "GPLGenerator.py", "./topologies/" + w[0], str(w[1]), str(groupsize), "1.gpl"])
 			
 			# Workload Args to Genesis
-			workloadArgs = ["python", "-O", "genesis.py", "-os", "-topo", "./topologies/" + w[0], "-gpl", "1.gpl"]
+			workloadArgs = ["python", "-O", "genesis.py", "-topo", "./topologies/" + w[0], "-gpl", "1.gpl"]
 			if useTactic :
 				workloadArgs.append("-useTactic")
 				workloadArgs.append(tactic)

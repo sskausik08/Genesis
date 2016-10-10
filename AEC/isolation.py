@@ -16,7 +16,7 @@ if __name__ == "__main__":
 			print " "
 			print "Benchmark: " + str(pcs) + " packet classes, " + str(group) + " group size"
 			subprocess.call(["python", "GPLGenerator.py", topofile, str(pcs), str(group), "1.gpl"])
-			workloadArgs = ["python", "-O", "genesis.py", "-os", "-topo", topofile, "-gpl", "1.gpl"]
+			workloadArgs = ["python", "-O", "genesis.py", "-topo", topofile, "-gpl", "1.gpl"]
 			if useTactic :
 				workloadArgs.append("-useTactic")
 				workloadArgs.append(tactic)
