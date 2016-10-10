@@ -180,7 +180,9 @@ Genesis comes with a install script intended to install
 all dependencies of Genesis. The install script can be found
 in the Genesis directory - install 
 
-Copy install to $HOME, and from $HOME, run:
+Copy install to $HOME, and from $HOME, run on terminal:
 	
 	chmod +x install
 	sudo ./install
+
+Open a new terminal to run Genesis (.bash_profile updated by install)

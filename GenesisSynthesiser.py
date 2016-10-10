@@ -1,7 +1,7 @@
 from z3 import *
 from Topology import Topology
 from PolicyDatabase import PolicyDatabase
-from NetworkPredicate import *
+#from NetworkPredicate import *
 import time
 import random
 import metis
