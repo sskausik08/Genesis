@@ -1964,7 +1964,7 @@ class GenesisSynthesiser(object) :
 			# Each relational class can be synthesised independently.
 			solvetime = time.time()
 			modelsat = self.z3Solver.check()
-			print time.time() - solvetime, "Time taken for changed policies"
+			print "Genesis: Network repair time is ", time.time() - solvetime
 			#self.z3solveTime += time.time() - solvetime
 			#tprint "Time taken to solve constraints is " + str(time.time() - st)
 
@@ -1978,7 +1978,6 @@ class GenesisSynthesiser(object) :
 						if not is_true(self.fwdmodel.evaluate(self.Fwd(path[i], path[i+1], pc))) :
 							weight += 1
 					self.pdb.addPath(pc, self.getPathFromModel(pc))
-				print weight
 			else :
 				print "Input Policies not realisable"
 

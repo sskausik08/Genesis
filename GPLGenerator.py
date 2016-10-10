@@ -4,10 +4,10 @@ import sys
 import random
 import math
 
-# python GPLGenerator.py <topology-file> <number-of-reachability> <percentage-of-isolation policies> <gpl-filename>
+# python GPLGenerator.py <topology-file> <number-of-packet-classes> <tenant-group-size> <gpl-filename>
 # python GPLGenerator.py ./topologies/fattree-6.topo 50 10 fat6-50-10.gpl
 if len(sys.argv) <> 5 : 
-	print "python GPLGenerator.py <topology-file> <number-of-reachability> <percentage-of-isolation policies> <gpl-filename>"
+	print "python GPLGenerator.py <topology-file> <number-of-packet-classes> <tenant-group-size> <gpl-filename>"
 	exit(0)
 topoFile = sys.argv[1]
 count = int(sys.argv[2])
@@ -51,7 +51,7 @@ for i in range(groups) :
 
 		gplfile.write("p" + str(i) + "_" + str(j) + " := tcp.port = " + str(i) + " : e" + str(s)  + " >> e" + str(d) + "\n")
 
-if count == 1 :
+if count == 1 : # If no of packet classes = group size, then there are no isolation policies
 	exit(0)
 gplfile.write("== \n")	
 sets = dict()

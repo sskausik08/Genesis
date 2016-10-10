@@ -2,34 +2,7 @@ POPL Artifact Evaluation Readme
 ======================================
 #35   Genesis: Data Plane Synthesis in Multi-Tenant Networks
 
-Pointers to code corresponding to the different sections of the paper:
-Section 2: Genesis Policy Language - GPLInterpreter.py
-
-Section 3: Synthesis of Forwarding Rules - GenesisSynthesiser.py     
-Input for synthesis:
-1) Topology data - Topology.py
-2) Policies - PolicyDatabase.py
-
-Functions in GenesisSynthesiser.py for each type of policy:
-
-Section 4.2: Reachability - addReachabilityConstraints(), addPathConstraints()
-
-Section 4.3: Waypoints - addReachabilityConstraints(), addSinglePathConstraints()
-
-Section 4.4: Isolation - addTrafficIsolationConstraints()
-
-Section 5.1: Link/Switch Capacity - addLinkConstraints(), addSwitchTableConstraints()
-
-Section 5.2: Traffic Engineering - addAverageUtilizationMinimizationConstraints(), addMaxUtilizationMinimizationConstraints()
-
-Section 5.3.2: Network Repair - enforceChangedPolicies() 
-[Emulates network repair when the switch with maximum number of rules fails]
-
-Section 6: Tactics - Tactic.py
-
-Section 7: Divide-and-Conquer Synthesis - enforceGraphPoliciesDC() in GenesisSynthesiser.py 
-			Solution Recovery - differentSolutionRecovery()
-
+======================================
 Running Genesis:
 The Virtual Machine (Ubuntu 14.04) comes with all packages installed. 
 To run Genesis, go to the ~/Genesis folder and use the terminal to run Genesis:
@@ -54,15 +27,19 @@ To run Genesis using divide-and-conquer synthesis:
 
 	python -O genesis.py -topo <topology-filename> -gpl <gpl-filename> -dc
 
+To run Genesis for <b>network repair</b>:
+	
+	python -O genesis.py -topo [topology-filename] -gpl [gpl-filename] -repair
 
+======================================
 GPL syntax: 
 To define a packet class(pc) -
 		p0_0 := tcp.port = 0 : e14 >> e17
 
 <pc-name>  <network-predicate> <source-sw> >> <destination-sw>
 The current implementation of Genesis simply uses the network predicate as 
-a string, even deploying the rules to a actual software-defined network, we 
-can 
+a string. For actual network deployments, the network predicate would 
+translate to SDN Match rules.
 
 To add waypoints to a reachability policy:
 		e11 >> [ a29, a24; a20, a28 ] >> e2 
@@ -86,7 +63,7 @@ For traffic engineering, specify:
 or 
 	minimize-max-te 
 
-
+======================================
 Output of Genesis:
 Genesis in its current form gives the paths for each packet class 
 (written to genesis-paths.txt) which satisfy the input policies. From these paths,
@@ -98,13 +75,14 @@ Validation: In PolicyDatabase.py, the output paths of Genesis
 is validated with respect to the input policies to detect violations
 to the policies. This helps us verify the correctness of Genesis's output. 
 
-
+======================================
 Topology Files:
 The fat-tree topology files with varying number of switches can be found
 in topologies folder: 
 fattree-6.topo: 45 switches 
 fattree-8.topo: 80 switches 
 
+======================================
 Evaluation on Benchmarks:
 We provide scripts pertaining to the experiments ran in the paper. We 
 present the synthesis time taken by the Z3 solver i.e., time taken 
@@ -143,13 +121,47 @@ tactics as well [useTactic = True, tactic = noEdge/...]
 
 Waypoint Experiment - AEC/waypoint.py
 Execute the waypoint.py (no command-line arguments) from the Genesis directory.
-One change from other experiments is that max path length is set to 15 for these
-experiments. This is set in the Topology class (in Topology.py) variable 
+
+NOTE: One change from other experiments is that max path length has to be SET to 15 before
+running these experiments.
+This is set in the Topology class (in Topology.py) variable 
 			self.maxPathLength = 15
+
 This experiment uses GPLGenerator6.py to generate the waypoint GPL files as
 described in the paper. 
 
+Optimization Experiments - AEC/optimization.py
+Execute the optimization.py (no command-line arguments) from the Genesis directory.
+It contains three different experiments: measuring performance of TE 
+objectives: minimizing average link utilization and minimizing max link utilization,
+and a network repair experiment. 
 
+This experiment uses GPLGenerator3.py for generating the TE workloads.
+======================================
+Pointers to code corresponding to the different sections of the paper:
+Section 2: Genesis Policy Language - GPLInterpreter.py
 
+Section 3: Synthesis of Forwarding Rules - GenesisSynthesiser.py     
+Input for synthesis:
+1) Topology data - Topology.py
+2) Policies - PolicyDatabase.py
 
+Functions in GenesisSynthesiser.py for each type of policy:
 
+Section 4.2: Reachability - addReachabilityConstraints(), addPathConstraints()
+
+Section 4.3: Waypoints - addReachabilityConstraints(), addSinglePathConstraints()
+
+Section 4.4: Isolation - addTrafficIsolationConstraints()
+
+Section 5.1: Link/Switch Capacity - addLinkConstraints(), addSwitchTableConstraints()
+
+Section 5.2: Traffic Engineering - addAverageUtilizationMinimizationConstraints(), addMaxUtilizationMinimizationConstraints()
+
+Section 5.3.2: Network Repair - enforceChangedPolicies() 
+[Emulates network repair when the switch with maximum number of rules fails]
+
+Section 6: Tactics - Tactic.py
+
+Section 7: Divide-and-Conquer Synthesis - enforceGraphPoliciesDC() in GenesisSynthesiser.py 
+			Solution Recovery - differentSolutionRecovery()
