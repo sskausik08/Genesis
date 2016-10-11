@@ -67,20 +67,23 @@ class OuterZeppelinSynthesiser(object) :
 
 			transitionProbability = math.exp(- self.beta * float(newScore)/float(oldScore))
 
-			if transitionProbability >= 1:
-				# Surely transition to new state
+			# if transitionProbability >= 1:
+			# 	# Surely transition to new state
+			# 	print "Score", oldScore, newScore, " Accept"
+			# 	continue
+			# else:
+			transition = self.flip(transitionProbability) 
+			if transition :	
+				# accept transition to new state
 				print "Score", oldScore, newScore, " Accept"
+
+				# recompute boundaries
+				self.recomputeBoundaries(sw, oldDomain, newDomain)
 				continue
-			else:
-				transition = self.flip(transitionProbability) 
-				if transition :	
-					# Probabilistical accept transition to new state
-					print "Score", oldScore, newScore, " Accept"
-					continue
-				else :
-					# Do not transition. Revert back change.
-					print "Score", oldScore, newScore, " Reject"
-					self.switchDomains[sw] = oldDomain
+			else :
+				# Do not transition. Revert back change.
+				print "Score", oldScore, newScore, " Reject"
+				self.switchDomains[sw] = oldDomain
 
 
 	def flip(self, p):
@@ -133,6 +136,33 @@ class OuterZeppelinSynthesiser(object) :
 					break
 
 		print self.boundarySwitches
+
+	def recomputeBoundaries(self, sw, oldDomain, newDomain):
+		""" Recompute boundaries for change"""
+
+		self.boundarySwitches[oldDomain].remove(sw)
+		self.boundarySwitches[newDomain].append(sw)
+
+		neighbours = self.topology.getSwitchNeighbours(sw)
+
+		for n in neighbours : 
+			# Recompute boundaries for neighbours
+			if self.isBoundarySwitch(n) : 
+				if n not in self.boundarySwitches[self.switchDomains[n]] :
+					self.boundarySwitches[self.switchDomains[n]].append(n)
+			else :
+				if n in self.boundarySwitches[self.switchDomains[n]] :
+					self.boundarySwitches[self.switchDomains[n]].remove(n)
+		
+
+	def isBoundarySwitch(self, sw): 
+		""" Returns if sw is a boundary switch or not"""
+		neighbours = self.topology.getSwitchNeighbours(sw)
+		for n in neighbours : 
+			if self.switchDomains[sw] != self.switchDomains[n] :
+				return True
+
+		return False
 
 	def computeRandomDomainAssignment(self):
 		""" Generate a random domain assignment to start the Metropolis walk"""
@@ -243,7 +273,7 @@ class OuterZeppelinSynthesiser(object) :
 
 	def computeDomainAssignmentScore(self) :
 		""" Computes the score of a particular domain assignment """
-		return random.randint(1,10)
+		
 
 
 
