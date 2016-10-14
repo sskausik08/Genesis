@@ -20,7 +20,7 @@
 %-----------------------------------------------------------------------------
 
 
-\documentclass[9pt,numbers,preprint,nocopyrightspace]{sigplanconf}
+\documentclass[9pt,numbers]{sigplanconf}
 
 % The following \documentclass options may be useful:
 
@@ -110,7 +110,7 @@
 %\setlength{\pdfpageheight}{\paperheight}
 %\setlength{\pdfpagewidth}{\paperwidth}
 %
-%\conferenceinfo{CONF 'yy}{Month d--d, 20yy, City, ST, Country}
+%\conferenceinfo{POPL '17}{January 18--20, 2017, Paris, France}
 %\copyrightyear{20yy}
 %\copyrightdata{978-1-nnnn-nnnn-n/yy/mm}
 %\copyrightdoi{nnnnnnn.nnnnnnn}
@@ -123,17 +123,16 @@
 %\titlebanner{}        % These are ignored unless
 %\preprintfooter{}   % 'preprint' option specified.
 
-\iffull
-\title{Genesis: Data Plane Synthesis in Multi-Tenant Networks}
-\else
-\title{Genesis: Data Plane Synthesis in Multi-Tenant Networks}
-\fi
-
-
-\authorinfo{Omitted for double blind}
-{...}
-{...}
-
+\title{Genesis: Switch Forwarding Table Synthesis in Multi-Tenant Networks}
+\authorinfo{
+  Aditya Akella
+  \and
+  Loris D'Antoni
+  \and
+  Kausik Subramanian
+}
+{University of Wisconsin-Madison}
+{\{akella, loris, sskausik08\}@cs.wisc.edu}
 \maketitle
 
 \input{abstract}
@@ -147,6 +146,7 @@
 \input{evaluation}
 \input{relatedwork}
 \input{conclusion}
+\input{acks}
 
 
 %\category{CR-number}{subcategory}{third-level}
