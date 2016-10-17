@@ -14,9 +14,9 @@
 			\hhline{----}
 			& Link \newline Capacity & \texttt{sw$_1$ $\rightarrow$ sw$_2$ : capacity}  & The weights of flows traversing the link $sw_1 \rightarrow sw_2$ do not exceed $capacity$\\
 			\hhline{~---}
-			\multirow{2}{*}{Operator} & Switch \newline Table Size & $sw : size$ & The number of flows traversing through $sw$ do not exceed $size$ as each flow would require a forwarding rule at $sw$ \\
+			\multirow{2}{*}{Operator} & Switch \newline Table Size & \texttt{sw : size} & The number of flows traversing through $sw$ do not exceed $size$ as each flow would require a forwarding rule at $sw$ \\
 			\hhline{~---}
-			& Traffic \newline Engineering & $minimize-tot-te$,\newline $minimize-max-te$ & TE objectives: minimize total/max link utilization \\
+			& Traffic \newline Engineering & \texttt{minimize-tot-te},\newline \texttt{minimize-max-te} & TE objectives: minimize total/max link utilization \\
 		\end{tabular}
 	\end{center}
 	\compactcaption{Genesis Policy Support with Genesis Policy Language (GPL) syntax} \label{tab:policysupport} 
