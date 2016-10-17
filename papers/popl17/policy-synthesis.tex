@@ -127,7 +127,7 @@ Finally, we add implication constraints that propagate reachability backward fro
 If a node $n_1$ is reachable in $k$ steps, there must be a node $n_2$ reachable in  $k-1$ steps and 
 a forwarding rule $n_2 \rightarrow n_1$.
 \begin{multline} \label{eq:bckprop}
-\forall n_1,k.~ Reach(n_1,pc,k) \implies \exists n_2.  n_2 \in N(n_1) \wedge \\ Reach(n_2,pc,k-1) \wedge Fwd(n_2,n_1,pc).
+\forall n_1.\forall k \geq 1.~ Reach(n_1,pc,k) \implies \exists n_2.  n_2 \in N(n_1) \wedge \\ Reach(n_2,pc,k-1) \wedge Fwd(n_2,n_1,pc).
 \end{multline} 
 When combined together, these constraints %can only be satisfied if there is a valid path from $s$ to $d$.
 % to destination by using the unit clauses in \cref{eq:dst}, and finding a path from destination back to a switch $sw$ which is a neighbour of $src$. $Reach(sw,pc,1)$ would be true from \cref{eq:src} and the reachability policy would be satisfied. 
