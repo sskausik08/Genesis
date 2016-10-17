@@ -77,8 +77,13 @@ In this section, we describe the transformation of input policies to
 provide dataplane \emph{t-resilience}~\cite{plinko}, i.e., in the event of
 up to $t$ arbitrary link failures, the synthesized data plane still has
 a path for each packet class satisfying all policies which is achieved
-by synthesizing backup paths that satisfy input policies.  We only
-consider reachability, waypoint, and isolation policies in the input.
+by synthesizing backup paths that satisfy input policies. 
+\kausik{This approach differs 
+from randomized routing algorithms which provide resiliency~\cite{randrouting}
+but do not take into account policy-compliance of the backup paths.}
+
+We only consider reachability, 
+waypoint, and isolation policies in the input.
 Global policies like capacity policies and traffic engineering pose a
 difficulty in synthesis. For example, consider a packet class $pc$
 with a traffic rate of $\sigma(pc)$. By considering the backup paths

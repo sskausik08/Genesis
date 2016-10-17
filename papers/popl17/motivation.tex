@@ -14,8 +14,9 @@
 We describe the type of policies desired in multi-tenant data centers
 that \Name supports. We use \Cref{fig:architecture} as a running
 example. In our setting, an ``operator'' manages a multi-tenant
-datacenter, which could be either a public datacenter (E.g., Azure),
-or a private datacenter. The operator specifies ``operator policies''
+datacenter, \sout{which could be either a public datacenter (E.g., Azure),}
+like an enterprise network or a private datacenter. 
+The operator specifies ``operator policies''
 which reflect important global objectives pertaining to how she wishes
 to manage her overall infrastructure.
 %% For simplicity, we assume a multi-tenant cloud set up, where both
@@ -30,11 +31,20 @@ to manage her overall infrastructure.
  opposed to operator's global policies). Tenant policies define
  whether paths can exist among its hosts, and if so, what additional
  properties the paths must satisfy for security, performance or access
- control reasons. \Cref{fig:architecture} shows several tenants who
+ control reasons. 
+ \kausik{Given the policies, the cloud operator 
+ solves the VM placement problem separately. 
+ The resulting tenant VM locations, along with the policies 
+ to apply on paths between locations are then 
+ provided as input to Genesis.  
+ Tenants are \emph{unaware} of the physical topology and 
+ cannot program physical switches directly, maintaining the virtual
+ network abstraction.}
+ 
+ 
+ \Cref{fig:architecture} shows several tenants who
  differ in the nature of policies they wish to realize; we also show
- the operator policies.
-
- The policies  supported by \Name are described
+ the operator policies. The policies  supported by \Name are described
  below. Notice that these reflect and, in some cases, extend policies
  that today's enterprises and datacenter operators
  realize in their networks~\cite{mpa-imc15}.
@@ -60,9 +70,9 @@ to manage her overall infrastructure.
   between specific pairs of tenant's virtual instances (VMs),
   applications, or hosts.  In our example, one tenant has defined a
   reachability policy (R2) for its two VMs: \texttt{V1 >> V2}, which
-  is translated after VM placement (which is handled transparently by
-  the operator) to the source and destination switches
-   $E2 >> E4$. A pair of VMs, applications or hosts
+  is translated after VM placement  
+  to the source and destination switches
+   \texttt{E2 >> E4}. A pair of VMs, applications or hosts
   that are allowed to communicate by means of a reachability policy
   defines a flow or a ``packet class''; we use these terms
   interchangeably. Any communication that is not defined by a
@@ -85,7 +95,7 @@ to manage her overall infrastructure.
     fact that middleboxes without dependencies in their traffic
     processing behavior can be placed in any order relative to each
     other~\cite{pga}.} For example, one of the tenants defines a
-  traversal policy (R1): $V1 >> FW; [IDS,BC] >> V2$ which specifies
+  traversal policy (R1): \texttt{V1 >> FW; [IDS,BC] >> V2} which specifies
   that traffic must first pass through the firewall (FW), and then
   through the Intrusion detection system (IDS) and the byte counter
   (BC) in any order.
@@ -101,8 +111,8 @@ to manage her overall infrastructure.
   tenant could require that her flows are not affected in any manner
   by any other tenant by strictly isolating the path of the tenant's
   flows from others' flows. In \Cref{fig:architecture}, we have two
-  tenants whose traffic will be isolated from one another ($R1||R2$), 
-  i.e., the
+  tenants whose traffic will be isolated from one another 
+  (\texttt{R1||R2}), i.e., the
   network paths used by the tenants will not share any links in the
   topology.  A tenant could also specify isolation for a subset of her
   (performance-sensitive) flows from other flows of the same tenant or
@@ -134,7 +144,6 @@ to manage her overall infrastructure.
 %%   Thus, support for isolation is an important feature in multi-tenant 
 %%   networks. 
  
-%TODO : MODIFY Synthesis of waypoints to support logical waypoints
 %% Since, cloud tenants do not have a view of the actual physical
 %% topology, the policy requirements for tenants are at a coarser level
 %% of control. While support for the above policies can be used to satisfy tenant
@@ -147,7 +156,11 @@ to manage her overall infrastructure.
 \item \textbf{Operator Policy: Managing Capacity Constraints}. While
   support for the above policies can be used to satisfy tenant 
   requirements, network operators often wish to
-  carefully manage constrained resources. Common examples that \Name
+  carefully manage constrained resources\footnote{
+  \kausik{
+  This can also be used to provide QoS guarantees to tenants like minimum
+  bandwidth guarantees.	
+  	}}. Common examples that \Name
   supports include enforcing strict constraints on aggregate number of
   flows traversing a switch (due to all tenants) so as to adhere to
   switch memory constraints, and ensuring that the total load on
@@ -156,7 +169,7 @@ to manage her overall infrastructure.
   uses). In our example in \Cref{fig:architecture}, A2-C2 and A4-C2
   links are of low bandwidth, and the operator wants to ensure that
   total load on these links does not exceed 100 
-  ($A2\rightarrow C2: 100, A4 \rightarrow C2:100$).
+  (\texttt{A2 $\rightarrow$ C2: 100, A4 $\rightarrow$ C2:100}).
 
 \item \textbf{Operator Policy: Traffic Engineering}. As an alternative to
   managing strict (link) capacity constraints, operates may also want
