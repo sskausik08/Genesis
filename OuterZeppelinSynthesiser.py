@@ -27,12 +27,18 @@ class OuterZeppelinSynthesiser(object) :
 		# BGP compatibility
 		self.nonBGPCompatibleSwitches = []
 		# MCMC variables 
-		self.MCMC_MAX_ITER = 50000
+		self.MCMC_MAX_ITER = 5000
 		self.beta = 1.00 # Constant
 
-	def enforceDAGs(self, dags, endpoints, numDomains=5):
+		# Profiling variables
+		self.worstConfScore = 0
+		self.bestConfScore = 1000000000000000000
+
+
+	def enforceDAGs(self, dags, paths, endpoints, numDomains=5):
 		""" Enforce the input destination dags """
 		self.destinationDAGs = copy.deepcopy(dags)
+		self.paths = copy.deepcopy(paths)
 		self.endpoints = copy.deepcopy(endpoints)
 		self.numDomains = numDomains
 
@@ -102,7 +108,8 @@ class OuterZeppelinSynthesiser(object) :
 				self.switchDomains[sw] = oldDomain
 				self.recomputeBoundaries(sw, newDomain, oldDomain)
 
-		print "Best score", bestScore, "Worst Score", worstScore
+		print "Best score", bestScore, "Worst score", worstScore
+		print "Best configuration score", self.bestConfScore, "Worst configuration score", self.worstConfScore
 		print self.domains
 
 	def flip(self, p):
@@ -337,6 +344,14 @@ class OuterZeppelinSynthesiser(object) :
 		score += self.BGPCompabitityScore()
 		score += 1*self.numberBGPRoutersScore()
 		score += 10*self.domainSizeDeviationScore()
+
+		confScore = self.configurationScore()
+		if confScore > self.worstConfScore : 
+			self.worstConfScore = confScore
+		if confScore < self.bestConfScore : 
+			self.bestConfScore = confScore
+		
+		score += 2*confScore
 		return score
 		
 
@@ -375,9 +390,154 @@ class OuterZeppelinSynthesiser(object) :
 
 		return score
 
-	def calculateLocalPreferences(self) : 
-		dsts = self.pdb.getDestinations() 
-		return 5;
+	def configurationScore(self) : 
+		""" Computes the extra lines of BGP required to enforce policy routing 
+		in the inter-domain setting """
+		self.destinationRoute = dict()
+
+		score = 0
+
+		for path in self.paths.values() : 
+			src = path[0]
+			dst = path[len(path) - 1]
+
+			aspath = [self.switchDomains[src]]
+			aspositions = [0] # Store the positions when the AS first starts.
+			for i in range(1, len(path)) : 
+				domain = self.switchDomains[path[i]]
+				if domain != aspath[len(aspath) - 1] : 
+					# Next AS. Add to AS path
+					aspath.append(domain)
+					aspositions.append(i)
+
+			if len(aspath) == 1 : 
+				# The entire path is the same domain, there is no BGP configuration required for this path
+				score += 0
+
+			else : 
+				# Find longest path from destination which does not contain loops
+				i = len(aspath) - 1
+				lastNonLoopDownstreamPath = -1
+				while i > 0:
+					domain = aspath[i]
+					if aspath.count(domain) > 1 : 
+						# Domain part of loop.
+						for j in range(i - 1, -1, -1) :
+							if aspath[j] == domain :
+								# First repitition from the end. 
+								if j > lastNonLoopDownstreamPath :
+									lastNonLoopDownstreamPath = j
+					i -= 1
+
+
+				if lastNonLoopDownstreamPath > -1 : 
+					# A looped path. Add static routing till start of (lastNonLoopDownstreamPath + 1)th AS
+					# Routing from (lastNonLoopDownstreamPath + 1)th AS to destination is loop-free
+					posSw = aspositions[lastNonLoopDownstreamPath + 1] 
+					
+					# Static routing cost is the number of rules required till posSw
+					score += posSw
+
+					# Truncate as path to loop-free to find local pref scores
+					aspath = aspath[lastNonLoopDownstreamPath + 1:] 
+
+				# Local preference scores	
+				for i in range(len(aspath) - 1) :
+					domain1 = aspath[i]
+					domain2 = aspath[i + 1]		
+					
+					boundary1 = self.boundarySwitches[domain1]
+					boundary2 = self.boundarySwitches[domain2]
+
+					linkCount = 0 # Denotes the number of links connecting domains 1 & 2
+					for sw in boundary1 : 
+						neighbours = self.topology.getSwitchNeighbours(sw)
+						for n in neighbours : 
+							if n in boundary2 : 
+								linkCount += 1 # AS1-AS2 link
+
+				if linkCount > 1 : 
+					# Multiple links connecting the AS. Require 1 local preference entry
+					score += 1
+				else : 
+					# Check if d1-d2 is on the unique shortest AS path to destination AS
+					[uniqueness, aspath1] = self.findShortestASPath(domain1, aspath[len(aspath) - 1])
+					if not uniqueness : 
+						# Shortest AS path not unique. Require 1 local preference entry
+						score += 1
+					else: 
+						# Shortest AS path is unique, see if it contains d1->d2
+						if aspath1[1] == domain2 : 
+							# Unique shortest AS path goes from d1 to d2. 
+							score += 0
+						else : 
+							# d1 -> d2 not on shortest AS path. Require 1 local preference entry
+							score += 1
+
+		return score
+
+
+	def findShortestASPath(self, srcDomain, dstDomain) :
+		""" Find shortest path from src to dst domains. Return uniqueness of shortest path as well"""
+		srcBoundary = self.boundarySwitches[srcDomain]
+		dstBoundary = self.boundarySwitches[dstDomain]
+
+		# Do a Breadth-first search from srcDomain to dstDomain
+		domainQueue1 = [srcDomain]
+		domainQueue2 = []
+		visited = dict()
+		bfstree = dict()
+		paths = dict()
+		paths[srcDomain] = 1
+
+		while len(domainQueue1) > 0 :
+			# Explore one level of tree
+			while len(domainQueue1) > 0:
+				d = domainQueue1.pop(0)
+				visited[d] = True 
+
+				if d == dstDomain : 
+					if paths[d] > 1 :
+						# Multiple shortest paths to dstDomain. 
+						return [False, None]
+					else : 
+						# Single Unique shortest path to dstDomain. 
+						# Trace back path to src and return.
+						aspath = [dstDomain]
+						nextas = bfstree[dstDomain]
+						while nextas != srcDomain :
+							aspath.append(nextas)
+							nextas = bfstree[nextas]
+						aspath.append(srcDomain)
+						# Reverse aspath.
+						aspath.reverse()
+						return [True, aspath]
+
+				# Find neighbouring domains
+				neighbouringDomains = []
+				boundary = self.boundarySwitches[d]
+				for sw in boundary :
+					for n in self.topology.getSwitchNeighbours(sw) :
+						nd = self.switchDomains[n]
+						if nd != d and nd not in neighbouringDomains:
+							neighbouringDomains.append(nd)
+					
+				for nd in neighbouringDomains :
+					if nd not in visited :
+						if nd not in domainQueue2 : 
+							domainQueue2.append(nd)
+							paths[nd] = paths[d]
+							bfstree[nd] = d
+						else : 
+							paths[nd] += paths[d]
+
+			domainQueue1 = domainQueue2
+			domainQueue2 = []
+
+
+
+		
+
 
 	def domainSizeDeviationScore(self) : 
 		# Score to ensure deviation of domain sizes is small. 

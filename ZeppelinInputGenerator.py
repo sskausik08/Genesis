@@ -19,12 +19,12 @@ class ZeppelinInputGenerator(object) :
 		edgeSwitches = (self.topology.getSwitchCount() * 2/ 5) - 1  
 		self.endpoints = []
 		self.destinationDAGs = dict()
+		self.paths = dict()
 
 
 		currpc = 0
 		while currpc < pcRange : 
-			d = random.randint(0,edgeSwitches)
-			dst = self.topology.getSwID("e" + str(d))
+			dst = random.randint(1, swCount)
 
 			length = random.randint(2, self.topology.getMaxPathLength())
 
@@ -99,6 +99,7 @@ class ZeppelinInputGenerator(object) :
 				self.endpoints.append([sw, dst])
 				pc = self.pdb.addReachabilityPolicy(None, sw, dst)
 				self.pdb.addPath(pc, path)
+				self.paths[pc] = path
 
 				currpc += 1
 
@@ -112,6 +113,9 @@ class ZeppelinInputGenerator(object) :
 
 	def getEndpoints(self) :
 		return self.endpoints
+
+	def getPaths(self) :
+		return self.paths
 
 
 
