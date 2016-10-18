@@ -33,6 +33,8 @@ class OuterZeppelinSynthesiser(object) :
 		# Profiling variables
 		self.worstConfScore = 0
 		self.bestConfScore = 1000000000000000000
+		self.worstRFScore = 0
+		self.bestRFScore = 1000000000000000000
 
 
 	def enforceDAGs(self, dags, paths, endpoints, numDomains=5):
@@ -57,7 +59,10 @@ class OuterZeppelinSynthesiser(object) :
 		
 		# MCMC Algorithm initial step: start with a preliminary domain assignment (chosen at random)
 		self.computeRandomDomainAssignment()
-		self.computeBoundaries() # boundary bookkeeping for efficiency
+		self.computeBoundaries() # boundary bookkeeping for efficiency 
+
+		# Find diamonds for route-filter calculations. 
+		self.findDiamonds()
 
 		worstScore = 0
 		bestScore = 1000000000000000000
@@ -110,6 +115,7 @@ class OuterZeppelinSynthesiser(object) :
 
 		print "Best score", bestScore, "Worst score", worstScore
 		print "Best configuration score", self.bestConfScore, "Worst configuration score", self.worstConfScore
+		print "Best RF score", self.bestRFScore, "Worst RF score", self.worstRFScore
 		print self.domains
 
 	def flip(self, p):
@@ -342,8 +348,8 @@ class OuterZeppelinSynthesiser(object) :
 
 		score += 0.1*self.domainSizeScore()
 		score += self.BGPCompabitityScore()
-		score += 1*self.numberBGPRoutersScore()
-		score += 10*self.domainSizeDeviationScore()
+		score += 2*self.numberBGPRoutersScore()
+		score += 5*self.domainSizeDeviationScore()
 
 		confScore = self.configurationScore()
 		if confScore > self.worstConfScore : 
@@ -352,8 +358,16 @@ class OuterZeppelinSynthesiser(object) :
 			self.bestConfScore = confScore
 		
 		score += 2*confScore
+
+		rfScore = self.routeFilterScore()
+		if rfScore > self.worstRFScore : 
+			self.worstRFScore = rfScore
+		if rfScore < self.bestRFScore : 
+			self.bestRFScore = rfScore
+
+		score += 2*rfScore
+
 		return score
-		
 
 	def domainSizeScore(self) : 
 		# compute domain size (if in range or not).
@@ -534,10 +548,64 @@ class OuterZeppelinSynthesiser(object) :
 			domainQueue1 = domainQueue2
 			domainQueue2 = []
 
-
-
+	def findDiamonds(self) :
+		""" Detecting diamonds in the different dags. A diamond is 
+		defined as a subgraph of the overlay where there are two paths from s to t
+		such that the two paths belong to different destination Dags. This implies that
+		there are two shortest paths from s to t which is not enforceable with route filtering """
+		swCount = self.topology.getSwitchCount()
+		dsts = self.pdb.getDestinations()
 		
+		self.diamondPaths = [[0 for x in range(swCount + 1)] for x in range(swCount + 1)]
+		
+		for dst1 in dsts :
+			for dst2 in dsts : 
+				if dst1 >= dst2 : continue 
+				dag1 = self.destinationDAGs[dst1]
+				dag2 = self.destinationDAGs[dst2]
 
+				for swDiv in dag1 : 
+					if dag1[swDiv] == None : continue 
+					# Detect a diamond
+					if swDiv in dag2 : 
+						if dag2[swDiv] == None : continue
+						# swDiv in the dag. Check if both dags diverge
+						if dag1[swDiv] != dag2[swDiv] : 
+							# Diverging common switches, search for intersecting switch
+							dstpath1 = [dag1[swDiv]] 
+							nextsw = dag1[dag1[swDiv]]
+							while nextsw != None:
+								dstpath1.append(nextsw)
+								nextsw = dag1[nextsw]
+							dstpath2 = [dag2[swDiv]]
+							nextsw = dag2[dag2[swDiv]]
+							while nextsw != None:
+								dstpath2.append(nextsw)
+								nextsw = dag2[nextsw]
+							# dstpath1 and dstpath2 are paths from sw to their respective destinations
+							# Find intersection
+
+							for swConv in dstpath1 : 
+								if swConv in dstpath2 : 
+									# Intersection! This is the smallest diamond starting at swDiv
+									self.diamondPaths[swDiv][swConv] += 1
+									break
+
+
+	def routeFilterScore(self) :
+		# Score based on number of OSPF filters required in each domain.
+		# This is overapproximated by number of diamonds in each domain.
+
+		score = 0
+		for domain in range(self.numDomains) :
+			for sw1 in self.domains[domain] : 
+				for sw2 in self.domains[domain] :
+					if self.diamondPaths[sw1][sw2] != 0 : 
+						# There are diamonds in the domain. 
+						# Will require atmost 1 route filter for each diamond.
+						score += self.diamondPaths[sw1][sw2]
+
+		return score
 
 	def domainSizeDeviationScore(self) : 
 		# Score to ensure deviation of domain sizes is small. 
