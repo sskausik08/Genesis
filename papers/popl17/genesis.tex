@@ -37,6 +37,8 @@
 \usepackage{mathtools}
 \usepackage{amsmath}
 \usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{microtype}
 \usepackage{cleveref}
 \usepackage{listings}
 \usepackage{array}
@@ -67,11 +69,12 @@
 \usepackage{enumitem}
 \usepackage[normalem]{ulem}
 \usepackage[export]{adjustbox}
-\usepackage{subfig}
+\usepackage[caption=false]{subfig}
 \usepackage{mathtools}
 \usepackage{amsthm}
 \usepackage{multirow}% http://ctan.org/pkg/multirow
 \usepackage{hhline}
+\usepackage{flushend}
 \input{defs}
 %\usepackage[small,compact]{titlesec}
 %\usepackage[font={bf,small}]{caption}
@@ -104,6 +107,10 @@
 \usepackage{float}
 
 \newcommand{\cL}{{\cal L}}
+
+\clubpenalty = 10000
+\widowpenalty = 10000
+\displaywidowpenalty = 10000
 
 \begin{document}
 \toappear{}
