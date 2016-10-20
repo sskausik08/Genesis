@@ -491,7 +491,20 @@ class PolicyDatabase(object) :
 				dsts.append(policy[3])
 
 		return dsts 
-		
+
+	def getDestinationSubnet(self, pc) :
+		""" Return the destination subnet label (predicate) for pc """
+		return self.endpointTable[pc][0]
+
+	def getDestinationSubnets(self) :
+		""" Zeppelin Function: return destination subnet labels """
+		dstSubnets = []
+		for policy in self.endpointTable.values() : 
+			if policy[0] not in dstSubnets : 
+				dstSubnets.append(policy[0])
+
+		return dstSubnets 
+
 	def getDAGSources(self, dst, dStart) :
 		# Return all sources which have dStart in the path
 		srcs = []
@@ -514,8 +527,9 @@ class PolicyDatabase(object) :
 		violationCount = 0
 		for pc in range(self.getPacketClassRange()) :
 			src = self.getSourceSwitch(pc)
-			dst = self.getDestinationSwitch(pc)
-			zpath = topology.getShortestPath(src, dst, routefilters[dst])
+			dstSw = self.getDestinationSwitch(pc)
+			dst = self.getDestinationSubnet(pc)
+			zpath = topology.getShortestPath(src, dstSw, routefilters[dst])
 			dag = self.dags[dst]
 			gpath = []
 			nextsw = src
@@ -528,7 +542,7 @@ class PolicyDatabase(object) :
 					print "Path is not uniquely shortest for PC", pc
 					violationCount += 1
 				else :
-					print "G", gpath, "Z", zpath, "shortest path is", topology.getShortestPath(src,dst)
+					print "G", gpath, "Z", zpath, "shortest path is", topology.getShortestPath(src,dstSw)
 					print "Not Shortest Path in control plane for class", pc
 					print "Genesis path distance:", topology.getPathDistance(gpath), " Zeppelin: ", topology.getPathDistance(zpath)
 					violationCount += 1
@@ -537,7 +551,7 @@ class PolicyDatabase(object) :
 				print zpath, 
 				violationCount += 1
 			if t_res > 0 :
-				if not topology.checkResilience(src, dst, t_res, copy.deepcopy(routefilters[dst])) : 
+				if not topology.checkResilience(src, dstSw, t_res, copy.deepcopy(routefilters[dst])) : 
 					print "Not resilient", pc, self.getSourceSwitch(pc)
 					violationCount += 1
 		print "Number of Violations is", violationCount

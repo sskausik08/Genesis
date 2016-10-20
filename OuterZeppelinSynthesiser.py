@@ -9,6 +9,7 @@ from collections import deque
 import math
 import copy
 from collections import defaultdict
+from ZeppelinSynthesiser import ZeppelinSynthesiser
 
 class OuterZeppelinSynthesiser(object) :
 	def __init__(self, topology, pdb) :
@@ -27,8 +28,8 @@ class OuterZeppelinSynthesiser(object) :
 		# BGP compatibility
 		self.nonBGPCompatibleSwitches = []
 		# MCMC variables 
-		self.MCMC_MAX_ITER = 5000
-		self.beta = 1.00 # Constant
+		self.MCMC_MAX_ITER = 5000		
+		self.beta = 0.5 # Constant
 
 		# Profiling variables
 		self.worstConfScore = 0
@@ -50,7 +51,28 @@ class OuterZeppelinSynthesiser(object) :
 
 		self.MCMCWalk()
 
-	
+		RFCount = 0
+		# Found a domain assignment from MCMC. Solve the OSPF domains now.
+		for domain in range(self.numDomains) :
+			topo = self.getDomainTopology(domain)
+
+			pdb = PolicyDatabase()
+			print "domain", domain
+			[dags, endpoints] = self.getDomainDAGs(domain, pdb, topo)
+
+			for dst in dags : 
+				pdb.addDestinationDAG(dst, dags[dst])
+
+			zepSynthesiser = ZeppelinSynthesiser(topo, pdb)
+			routeFilters = zepSynthesiser.enforceDAGs(dags, endpoints)
+
+			for dst in routeFilters : 
+				RFCount += len(routeFilters[dst])
+
+		print "RF Count is", RFCount
+		print self.domains
+		print "Best configuration score", self.bestConfScore, "Worst configuration score", self.worstConfScore
+		print "Best RF score", self.bestRFScore, "Worst RF score", self.worstRFScore
 
 	def MCMCWalk(self) :
 		# Start a MCMC sampling walk with number of domains=self.numDomains. 
@@ -340,7 +362,6 @@ class OuterZeppelinSynthesiser(object) :
 
 		return True	
 
-
 	def computeDomainAssignmentScore(self) :
 		""" Computes the score of a particular domain assignment """
 		
@@ -357,7 +378,7 @@ class OuterZeppelinSynthesiser(object) :
 		if confScore < self.bestConfScore : 
 			self.bestConfScore = confScore
 		
-		score += 2*confScore
+		score += 10*confScore
 
 		rfScore = self.routeFilterScore()
 		if rfScore > self.worstRFScore : 
@@ -472,13 +493,15 @@ class OuterZeppelinSynthesiser(object) :
 
 				if linkCount > 1 : 
 					# Multiple links connecting the AS. Require 1 local preference entry
-					score += 1
+					# score += 1 
+					score += 0
 				else : 
 					# Check if d1-d2 is on the unique shortest AS path to destination AS
 					[uniqueness, aspath1] = self.findShortestASPath(domain1, aspath[len(aspath) - 1])
 					if not uniqueness : 
 						# Shortest AS path not unique. Require 1 local preference entry
-						score += 1
+						# score += 1
+						score += 0
 					else: 
 						# Shortest AS path is unique, see if it contains d1->d2
 						if aspath1[1] == domain2 : 
@@ -486,7 +509,8 @@ class OuterZeppelinSynthesiser(object) :
 							score += 0
 						else : 
 							# d1 -> d2 not on shortest AS path. Require 1 local preference entry
-							score += 1
+							# score += 1
+							score += 0
 
 		return score
 
@@ -554,7 +578,7 @@ class OuterZeppelinSynthesiser(object) :
 		such that the two paths belong to different destination Dags. This implies that
 		there are two shortest paths from s to t which is not enforceable with route filtering """
 		swCount = self.topology.getSwitchCount()
-		dsts = self.pdb.getDestinations()
+		dsts = self.pdb.getDestinationSubnets()
 		
 		self.diamondPaths = [[0 for x in range(swCount + 1)] for x in range(swCount + 1)]
 		
@@ -624,15 +648,118 @@ class OuterZeppelinSynthesiser(object) :
 		return deviation
 
 
+	def getDomainTopology(self, domain) :
+		""" Constructs the topology object for domain"""
+		topo = Topology(name="domain"+str(domain))
 
+		for sw in self.domains[domain] :
+			domainNeighbours = []
+			for n in self.topology.getSwitchNeighbours(sw) :
+				if self.switchDomains[n] == domain : 
+					domainNeighbours.append(self.topology.getSwName(n))
+			topo.addSwitch(self.topology.getSwName(sw), domainNeighbours)
+			
+		return topo
 
+	def getDomainDAGs(self, domain, pdb, topology) : 
+		""" Returns DAGs and endpoints for domain. Side-effect: Sets up pdb with the paths """
+	
+		# endpoints.append([sw, dst])
+		# pc = self.pdb.addReachabilityPolicy(dst, sw, dstSw)
+		# pdb.addPath(pc, path)
+		dags = dict()
+		endpoints = []
 
+		for pc in self.paths.keys() : 
+			path = self.paths[pc]
+			src = path[0]
+			dst = path[len(path) - 1]
 
+			aspath = [self.switchDomains[src]]
+			aspositions = [0] # Store the positions when the AS first starts.
+			for i in range(1, len(path)) : 
+				d = self.switchDomains[path[i]]
+				if d != aspath[len(aspath) - 1] : 
+					# Next AS. Add to AS path
+					aspath.append(d)
+					aspositions.append(i)
 
+			if len(aspath) == 1 : 
+				# The entire path is the same domain
+				if aspath[0] == domain : 
+					# Add this to pdb. 
+					domainpath = path
+					
+					topopath = []
+					for sw in domainpath :
+						if self.switchDomains[sw] != domain :
+							print sw, self.topology.getSwName(sw), self.switchDomains[sw], domain
+						topopath.append(topology.getSwID(self.topology.getSwName(sw)))
 
+					subnet = self.pdb.getDestinationSubnet(pc)
+					dpc = pdb.addReachabilityPolicy(subnet, topopath[0], topopath[len(topopath) - 1])
+					pdb.addPath(dpc, topopath)
+					endpoints.append([topopath[0], subnet])
 
+					# Add path to Dag of subnet
+					if subnet not in dags :
+						dags[subnet] = dict()
+					
+					dags[subnet][topopath[len(topopath) - 1]] = None
+					for i in range(len(topopath) - 1) :
+						dags[subnet][topopath[i]] = topopath[i + 1]
 
+			else : 
+				# Find longest path from destination which does not contain loops
+				i = len(aspath) - 1
+				lastNonLoopDownstreamPath = -1
+				while i > 0:
+					d = aspath[i]
+					if aspath.count(d) > 1 : 
+						# Domain part of loop.
+						for j in range(i - 1, -1, -1) :
+							if aspath[j] == d :
+								# First repitition from the end. 
+								if j > lastNonLoopDownstreamPath :
+									lastNonLoopDownstreamPath = j
+					i -= 1
 
+				# A looped path. Add static routing till start of (lastNonLoopDownstreamPath + 1)th AS
+				# Routing from (lastNonLoopDownstreamPath + 1)th AS to destination is loop-free
+				index = -1
+				for j in range(lastNonLoopDownstreamPath + 1, len(aspath)) : 
+					if aspath[j] == domain : 
+						index = j
+					break
+
+				if index > -1 : 
+					if index == len(aspath) - 1: 
+						domainpath = path[aspositions[index]:] # Extracts the path in the last domain.
+					else :
+						domainpath = path[aspositions[index]:aspositions[index + 1]] # Extracts the path in the domain.
+
+					topopath = []
+					for sw in domainpath :
+						if self.switchDomains[sw] != domain :
+							print sw, self.topology.getSwName(sw), self.switchDomains[sw], domain
+							exit(0)
+						topopath.append(topology.getSwID(self.topology.getSwName(sw)))
+
+					subnet = self.pdb.getDestinationSubnet(pc)
+					dpc = pdb.addReachabilityPolicy(subnet, topopath[0], topopath[len(topopath) - 1])
+					pdb.addPath(dpc, topopath)
+					endpoints.append([topopath[0], subnet])
+
+					# print aspath, lastNonLoopDownstreamPath, path, self.pdb.getDestinationSubnet(pc), domainpath
+					# Add path to Dag of subnet
+					if subnet not in dags :
+						dags[subnet] = dict()
+					
+					dags[subnet][topopath[len(topopath) - 1]] = None
+					for i in range(len(topopath) - 1) :
+						dags[subnet][topopath[i]] = topopath[i + 1]
+		# print dags
+		return [dags, endpoints]
 		
 
 

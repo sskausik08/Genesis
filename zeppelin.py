@@ -22,19 +22,22 @@ class Zeppelin(object):
 		# Parse the command line arguments
 		self.pcRange = 10 # default
 		no = 0
-		topoargFlag = False
+		self.topoargFlag = False
+		self.ospfFlag = False
 		for arg in sys.argv : 
 			if arg == "-topo" :
 				self.topofile = sys.argv[no + 1]
-				topoargFlag = True
+				self.topoargFlag = True
 			if arg == "-pc" :
 				self.pcRange = int(sys.argv[no + 1])
+			if arg == "-ospf" : 
+				self.ospfFlag = True # Synthesize a single ospf domain.
+
 			no += 1
 
-		if not topoargFlag : 
+		if not self.topoargFlag : 
 			print "Topology arguments not specified"
 			exit(0)
-
 
 		self.topology = Topology()
 		self.policyDatabase = PolicyDatabase()
@@ -43,20 +46,16 @@ class Zeppelin(object):
 	def run(self):
 		self.gplparser.parseTopo()
 		self.zepInput = ZeppelinInputGenerator(self.topology, self.policyDatabase, self.pcRange)
-		
-		self.outerZepSynthesizer = OuterZeppelinSynthesiser(self.topology, self.policyDatabase)
-		self.outerZepSynthesizer.enforceDAGs(self.zepInput.getDestinationDAGs(), self.zepInput.getPaths(), self.zepInput.getEndpoints())
+			
+		if self.ospfFlag : 
+			# Synthesize a single OSPF domain.
+			self.zepSynthesiser = ZeppelinSynthesiser(self.topology, self.policyDatabase)
+			self.zepSynthesiser.enforceDAGs(self.zepInput.getDestinationDAGs(), self.zepInput.getEndpoints())
 
-		# exit(0)
-		# self.zepSynthesiser = ZeppelinSynthesiser(self.topology, self.policyDatabase)
-		# self.zepSynthesiser.enforceDAGs(self.zepInput.getDestinationDAGs(), self.zepInput.getEndpoints())
-
-		# self.zepSynthesiser2 = ZeppelinSynthesiser(topology=self.topology, pdb=self.policyDatabase, minimalFilterSolve=True)
-		# self.zepSynthesiser2.enforceDAGs(self.zepInput.getDestinationDAGs(), self.zepInput.getEndpoints())
-
-		exit(0)
-
-
+		else : 
+			self.outerZepSynthesizer = OuterZeppelinSynthesiser(self.topology, self.policyDatabase)
+			self.outerZepSynthesizer.enforceDAGs(self.zepInput.getDestinationDAGs(), self.zepInput.getPaths(), self.zepInput.getEndpoints())
+	
 
 zep = Zeppelin()
 zep.run()

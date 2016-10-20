@@ -4,7 +4,6 @@ from PolicyDatabase import PolicyDatabase
 from NetworkPredicate import *
 import time
 import random
-import metis
 import networkx as nx
 from subprocess import *
 from collections import deque
@@ -12,10 +11,10 @@ import math
 import gurobipy as gb
 import copy
 from collections import defaultdict
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 
 class ZeppelinSynthesiser(object) :
-	def __init__(self, topology, pdb) :
+	def __init__(self, topology, pdb, minimalFilterSolve=False) :
 		self.topology = topology
 		self.pdb = pdb
 
@@ -39,11 +38,12 @@ class ZeppelinSynthesiser(object) :
 		
 		self.sums = []
 		# Resilience 
+		self.RFCount = 0
 		self.t_res = 0
 
 		# Constants
 		self.MAX_GUROBI_ITERATIONS = 100
-		self.minimalFilterSolveFlag = False
+		self.minimalFilterSolveFlag = minimalFilterSolve
 
 		self.inconsistentRFs = 0
 
@@ -62,7 +62,7 @@ class ZeppelinSynthesiser(object) :
 		self.routefiltersVars = defaultdict(lambda:defaultdict(lambda:defaultdict(lambda:None)))
 		self.maxFlowVars = defaultdict(lambda:defaultdict(lambda:None))
 
-		dsts = self.pdb.getDestinations()
+		dsts = self.pdb.getDestinationSubnets()
 
 		for sw1 in range(1,swCount+1):
 			for sw2 in self.topology.getSwitchNeighbours(sw1) :
@@ -83,14 +83,14 @@ class ZeppelinSynthesiser(object) :
 			dag = self.destinationDAGs[dst]
 			for sw1 in dag : 
 				for sw2 in self.topology.getSwitchNeighbours(sw1) : 
-					self.routefiltersVars[sw1][sw2][dst] = self.ilpSolver.addVar(lb=0.00, ub=1.00, vtype=gb.GRB.BINARY, name="RF" + "-" + str(sw1)+":"+str(sw2)+"-"+str(dst))
+					self.routefiltersVars[sw1][sw2][dst] = self.ilpSolver.addVar(lb=0.00, ub=1.00, vtype=gb.GRB.CONTINUOUS, name="RF" + "-" + str(sw1)+":"+str(sw2)+"-"+str(dst))
 		
 
 		self.ilpSolver.update()
 
 	def initializeRouteFilters(self) :
 		self.routefilters = dict()
-		for dst in self.pdb.getDestinations() :
+		for dst in self.pdb.getDestinationSubnets() :
 			self.routefilters[dst] = []
 
 		self.routefilters[0] = [] # Default destination val = 0 (Not a s)
@@ -144,7 +144,11 @@ class ZeppelinSynthesiser(object) :
 		self.endpoints = copy.deepcopy(endpoints)
 		
 		swCount = self.topology.getSwitchCount()
-		dsts = self.pdb.getDestinations()
+		dsts = self.pdb.getDestinationSubnets()
+
+		self.f = open('timing', 'a')
+		self.f.write(str(dags))
+		self.f.write("\n\n\n")
 
 		self.constructOverlay()	
 		#self.overlayConnectivity()	
@@ -172,7 +176,8 @@ class ZeppelinSynthesiser(object) :
 		status = self.ilpSolver.status
 
 		if status == gb.GRB.INFEASIBLE :
-			if self.minimalFilterSolveFlag : 
+			if self.minimalFilterSolveFlag :
+				self.routeFilterMode = True 
 				self.minimalFilterSolve()
 			else : 
 				print "solving ILP with routefilters"
@@ -220,7 +225,6 @@ class ZeppelinSynthesiser(object) :
 					print "diamond loss", diamondLoss
 
 			
-		self.f = open('timing', 'a')
 		self.f.write(str(len(endpoints)) + "," + str(time.time() - start_t)+"\n")
 		# Enable Topology Edges
 		self.topology.enableAllEdges()
@@ -230,9 +234,11 @@ class ZeppelinSynthesiser(object) :
 		self.f.close()	
 		#self.pdb.printPaths(self.topology)
 		self.pdb.validateControlPlane(self.topology, self.routefilters, self.t_res)
+
 		#self.topology.printWeights()
 		#self.printProfilingStats()
-		self.printRouteFilterDistribution()
+		#self.printRouteFilterDistribution()
+		return self.routefilters
 
 	"""
 	An IIS is a subset of the constraints and variable bounds of the original model. 
@@ -243,7 +249,7 @@ class ZeppelinSynthesiser(object) :
 		""" Find inconsistent set of equations """
 		self.ilpSolver = gb.Model("C3")
 		self.initializeSMTVariables()
-		dsts = self.pdb.getDestinations()
+		dsts = self.pdb.getDestinationSubnets()
 
 		# Prompted by Gurobi? 
 		# self.ilpSolver.setParam(gb.GRB.Param.BarHomogeneous, 1) 
@@ -437,7 +443,7 @@ class ZeppelinSynthesiser(object) :
 		""" Find inconsistent set of equations """
 		self.ilpSolver = gb.Model("C3")
 		self.initializeSMTVariables()
-		dsts = self.pdb.getDestinations()
+		dsts = self.pdb.getDestinationSubnets()
 
 		# Prompted by Gurobi? 
 		# self.ilpSolver.setParam(gb.GRB.Param.BarHomogeneous, 1) 
@@ -456,7 +462,7 @@ class ZeppelinSynthesiser(object) :
 
 
 	def constructOverlay(self) :
-		dsts = self.pdb.getDestinations()
+		dsts = self.pdb.getDestinationSubnets()
 		swCount = self.topology.getSwitchCount()
 		for sw in range(1, swCount + 1) :
 			self.overlay[sw] = []
@@ -624,14 +630,14 @@ class ZeppelinSynthesiser(object) :
 				neighbours = self.topology.getSwitchNeighbours(sw)
 				for n in neighbours : 
 					if n <> dag[sw] : 
-						self.ilpSolver.addConstr(totalDist <= 100000*self.rf(sw,n,dst) + self.ew(sw, n) + self.dist(n, t) - 1, "C-" + str(dst) + "-" + str(constraintIndex))
+						self.ilpSolver.addConstr(totalDist <= 10*self.rf(sw,n,dst) + self.ew(sw, n) + self.dist(n, t) - 1, "C-" + str(dst) + "-" + str(constraintIndex))
 						constraintIndex += 1
 				
 				t = dag[t]			
 
 	def addMinimalFilterObjective(self) : 
 		totalRouteFilters = 0
-		dsts = self.pdb.getDestinations()
+		dsts = self.pdb.getDestinationSubnets()
 		for dst in dsts:
 			dag = self.destinationDAGs[dst]
 			for sw1 in dag : 
@@ -651,7 +657,7 @@ class ZeppelinSynthesiser(object) :
 			if [sw1, dst] in self.endpoints : 
 				self.endpointResilience[sw1][dst] -= 1
 
-		print "RF",sw1, sw2, dst
+		#print "RF",sw1, sw2, dst
 
 	# def addMaxFlowConstraints(self, src, dst, t_res) :
 	# 	swCount = self.topology.getSwitchCount()
@@ -715,7 +721,7 @@ class ZeppelinSynthesiser(object) :
 	def getEdgeWeightModel(self, routeFilterMode=True) : 
 		self.topology.initializeWeights()
 		swCount = self.topology.getSwitchCount()
-		dsts = self.pdb.getDestinations()
+		dsts = self.pdb.getDestinationSubnets()
 		self.distances = [[0 for x in range(swCount + 1)] for x in range(swCount + 1)]
 
 		for sw in range(1, swCount + 1) :
@@ -752,6 +758,9 @@ class ZeppelinSynthesiser(object) :
 				for n in neighbours : 
 					if n <> dag[sw] : 
 						totalRouteFilters += 1
+						if self.minimalFilterSolveFlag :
+							if self.rf(sw,n,dst).x >= 0.1 : 
+								self.routefilters[dst].append([sw,n])
 					# if [sw,dst] in self.endpoints :
 					# 	rf = self.rf(sw,n,dst).x
 					# 	if rf > 0 and n <> dag[sw]:
@@ -760,32 +769,34 @@ class ZeppelinSynthesiser(object) :
 		
 		for dst in dsts : 
 			setRouteFilters += len(self.routefilters[dst])
+
+		self.RFCount = setRouteFilters
 		self.f.write("Ratio of routefilters : " + str(setRouteFilters) + ":" + str(totalRouteFilters) + "\n") 
 		print "Ratio of routefilters : ", setRouteFilters, totalRouteFilters 
 		self.calculateResilienceLoss()
 
 	def printRouteFilterDistribution(self) :
 		swCount = self.topology.getSwitchCount()
-		dsts = self.pdb.getDestinations()
+		dsts = self.pdb.getDestinationSubnets()
 		distribution = defaultdict(lambda:defaultdict(lambda:None))
 		# Distribution of Route Filters
-		for s in range(1, swCount + 1) :
-			for t in range(1, swCount + 1) :
-				distribution[s][t] = 0
+		# for s in range(1, swCount + 1) :
+		# 	for t in range(1, swCount + 1) :
+		# 		distribution[s][t] = 0
 
-		for s in range(1, swCount + 1) :
-			for t in range(1, swCount + 1) :
-				for dst in dsts :
-					if [s,t] in self.routefilters[dst] :
-						distribution[s][t] += 1
+		# for s in range(1, swCount + 1) :
+		# 	for t in range(1, swCount + 1) :
+		# 		for dst in dsts :
+		# 			if [s,t] in self.routefilters[dst] :
+		# 				distribution[s][t] += 1
 
-		for s in range(1, swCount + 1) :
-			for t in range(1, swCount + 1) :
-				if distribution[s][t] > 0 :
-					print self.topology.getSwName(s), self.topology.getSwName(t), distribution[s][t]
+		# for s in range(1, swCount + 1) :
+		# 	for t in range(1, swCount + 1) :
+		# 		if distribution[s][t] > 0 :
+		# 			print self.topology.getSwName(s), self.topology.getSwName(t), distribution[s][t]
 
 		for dst in dsts : 
-			print dst, len(self.routefilters[dst])
+			self.f.write(str(dst)+ str(len(self.routefilters[dst])))
 
 
 	# def findRouteFilters(self, dst, dag) :
@@ -824,7 +835,7 @@ class ZeppelinSynthesiser(object) :
 		such that the two paths belong to different destination Dags. This implies that
 		there are two shortest paths from s to t which is not enforceable with route filtering """
 		swCount = self.topology.getSwitchCount()
-		dsts = self.pdb.getDestinations()
+		dsts = self.pdb.getDestinationSubnets()
 		
 		if not onlyDetect : 
 			self.dstDiamonds = dict()
@@ -1164,7 +1175,7 @@ class ZeppelinSynthesiser(object) :
 		""" Generate the set of routefilters from diamonds"""
 
 		swCount = self.topology.getSwitchCount()
-		dsts = self.pdb.getDestinations()
+		dsts = self.pdb.getDestinationSubnets()
 
 		# Rerouting process generates route filters for diamond paths. 
 		# However, to ensure the path in the dag is followed, we need
@@ -1211,7 +1222,7 @@ class ZeppelinSynthesiser(object) :
 
 	def generateTrivialRouteFilters(self) :
 		""" Generates trivial route filters """
-		dsts = self.pdb.getDestinations()
+		dsts = self.pdb.getDestinationSubnets()
 		for dst in dsts : 
 			dag = self.destinationDAGs[dst]
 			for sw in dag : 
@@ -1221,7 +1232,7 @@ class ZeppelinSynthesiser(object) :
 
 	def generateResilientRouteFilters(self) :
 		""" Only source routefilters will affect resilience: Edge disjointedness"""
-		dsts = self.pdb.getDestinations()
+		dsts = self.pdb.getDestinationSubnets()
 		for dst in dsts : 
 			dag = self.destinationDAGs[dst]
 			for sw in dag : 
@@ -1251,7 +1262,7 @@ class ZeppelinSynthesiser(object) :
 		print "Branching at ", len(rfs)
 		self.ilpSolver = gb.Model("C3")
 		self.initializeSMTVariables()
-		dsts = self.pdb.getDestinations()
+		dsts = self.pdb.getDestinationSubnets()
 
 		self.routefilters = copy.deepcopy(self.diamondRouteFilters)
 
@@ -1318,7 +1329,7 @@ class ZeppelinSynthesiser(object) :
 		""" Run DFS from rfs limited to depth"""
 		self.ilpSolver = gb.Model("C3")
 		self.initializeSMTVariables()
-		dsts = self.pdb.getDestinations()
+		dsts = self.pdb.getDestinationSubnets()
 
 		self.routefilters = copy.deepcopy(self.diamondRouteFilters)
 
@@ -1414,7 +1425,7 @@ class ZeppelinSynthesiser(object) :
 						disabledEdges.append([end, n])
 
 				# Route Filter disabled edges
-				dsts = self.pdb.getDestinations()
+				dsts = self.pdb.getDestinationSubnets()
 				for dst1 in dsts :
 					dag1 = self.destinationDAGs[dst1]
 					filters = self.routefilters[dst1]
@@ -1449,7 +1460,7 @@ class ZeppelinSynthesiser(object) :
 		spGraph = dict()
 		spGraph[t] = [] # No neighbours for dst
 		
-		dsts = self.pdb.getDestinations()
+		dsts = self.pdb.getDestinationSubnets()
 		for dst in dsts :
 			dstGraph = dict()
 			dstGraph[t] = []
@@ -1499,7 +1510,7 @@ class ZeppelinSynthesiser(object) :
 
 			# Initialize disabled Edges to the requisite route filters
 			disabledEdges = [] 
-			dsts = self.pdb.getDestinations()
+			dsts = self.pdb.getDestinationSubnets()
 			for dst in dsts :
 				dag = self.destinationDAGs[dst]
 				filters = self.routefilters[dst]
@@ -1518,7 +1529,7 @@ class ZeppelinSynthesiser(object) :
 	def findCycle(self, sp1, sp2, disabledEdges) :
 		""" sp1 forward, sp2 backward """ 
 		#print "finding cycles between", sp1, sp2
-		dsts = self.pdb.getDestinations()
+		dsts = self.pdb.getDestinationSubnets()
 		graph = nx.DiGraph()
 		for sw in sp1 : 
 			graph.add_node(sw)
@@ -1672,7 +1683,7 @@ class ZeppelinSynthesiser(object) :
 
 	def checkCycleValidity(self, cycle) :
 		""" Check if cycle indeed is valid (and not filtered) """
-		dsts = self.pdb.getDestinations()
+		dsts = self.pdb.getDestinationSubnets()
 		for i in range(len(cycle)) : 
 			edge = cycle[i]
 			for dst in dsts : 
@@ -1695,7 +1706,7 @@ class ZeppelinSynthesiser(object) :
 	# 	self.origialDestinationDAGs = copy.deepcopy(self.destinationDAGs)
 		
 	# 	swCount = self.topology.getSwitchCount()
-	# 	dsts = self.pdb.getDestinations()
+	# 	dsts = self.pdb.getDestinationSubnets()
 
 	# 	# Rerouting process generates route filters for diamond paths. 
 	# 	# However, to ensure the path in the dag is followed, we need
@@ -1746,7 +1757,7 @@ class ZeppelinSynthesiser(object) :
  
 	# def analyzeDiamonds(self) : 
 	# 	swCount = self.topology.getSwitchCount()
-	# 	dsts = self.pdb.getDestinations()
+	# 	dsts = self.pdb.getDestinationSubnets()
 	# 	for s in range(1, swCount + 1) :
 	# 		for t in range(1, swCount + 1) : 
 	# 			if len(self.diamondPaths[s][t]) > 0 : 

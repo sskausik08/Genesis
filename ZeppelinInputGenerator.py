@@ -24,19 +24,20 @@ class ZeppelinInputGenerator(object) :
 
 		currpc = 0
 		while currpc < pcRange : 
-			dst = random.randint(1, swCount)
+			dst = currpc
+			dstSw = random.randint(1, swCount)
 
-			length = random.randint(2, self.topology.getMaxPathLength())
+			length = random.randint(7, self.topology.getMaxPathLength())
 
 			if dst not in self.destinationDAGs : 
 				self.destinationDAGs[dst] = dict()
-				self.destinationDAGs[dst][dst] = None
+				self.destinationDAGs[dst][dstSw] = None
 			dag = self.destinationDAGs[dst]
 
 			# Do a random DFS from dst to length steps
 			diverged = False
 			depth = 0
-			sw = dst
+			sw = dstSw
 			while depth < length:
 				neighbours = self.topology.getSwitchNeighbours(sw)
 				while True : 
@@ -82,10 +83,10 @@ class ZeppelinInputGenerator(object) :
 					depth += 1
 
 			if depth > 0 : 
-				# sw ->  dst is a valid path
+				# sw ->  dstSw is a valid path
 				path = []
 				nextsw = sw
-				while nextsw <> dst :
+				while nextsw <> dstSw :
 					path.append(nextsw)
 					nextsw = dag[nextsw]
 				path.append(nextsw)
@@ -97,7 +98,7 @@ class ZeppelinInputGenerator(object) :
 					continue
 					
 				self.endpoints.append([sw, dst])
-				pc = self.pdb.addReachabilityPolicy(None, sw, dst)
+				pc = self.pdb.addReachabilityPolicy(dst, sw, dstSw)
 				self.pdb.addPath(pc, path)
 				self.paths[pc] = path
 
