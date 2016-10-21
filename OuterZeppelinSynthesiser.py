@@ -28,14 +28,22 @@ class OuterZeppelinSynthesiser(object) :
 		# BGP compatibility
 		self.nonBGPCompatibleSwitches = []
 		# MCMC variables 
-		self.MCMC_MAX_ITER = 5000		
-		self.beta = 0.5 # Constant
+		self.MCMC_MAX_ITER = 50000	
+		self.beta = 0.3 # Constant
+
+		# Scoring State variables 
+		self.ASPaths = dict()
+		self.ASPositions = dict()
 
 		# Profiling variables
 		self.worstConfScore = 0
 		self.bestConfScore = 1000000000000000000
 		self.worstRFScore = 0
 		self.bestRFScore = 1000000000000000000
+
+		self.confScoreTime = 0
+		self.rfScoreTime = 0
+		self.continuityTime = 0
 
 
 	def enforceDAGs(self, dags, paths, endpoints, numDomains=5):
@@ -73,11 +81,15 @@ class OuterZeppelinSynthesiser(object) :
 		print self.domains
 		print "Best configuration score", self.bestConfScore, "Worst configuration score", self.worstConfScore
 		print "Best RF score", self.bestRFScore, "Worst RF score", self.worstRFScore
+		end_t = time.time()
+		print "Time taken  for MCMC is ", end_t - start_t
+		print "Conf Score Time", self.confScoreTime
+		print "Continuity Time", self.rfScoreTime
 
 	def MCMCWalk(self) :
 		# Start a MCMC sampling walk with number of domains=self.numDomains. 
 		
-		iteration = 0
+		self.MCMCIter = 0	
 		
 		# MCMC Algorithm initial step: start with a preliminary domain assignment (chosen at random)
 		self.computeRandomDomainAssignment()
@@ -91,10 +103,11 @@ class OuterZeppelinSynthesiser(object) :
 
 		# Perform the Metropolis walk using the score functions. 
 		# We consider solutions with a smaller score to be better. 
-		for iteration in range(self.MCMC_MAX_ITER):
-			oldScore = self.computeDomainAssignmentScore()
-			if oldScore > worstScore : worstScore = oldScore
-			if oldScore < bestScore : bestScore = oldScore
+		Score = self.computeDomainAssignmentScore()
+
+		for self.MCMCIter in range(self.MCMC_MAX_ITER):
+			if Score > worstScore : worstScore = Score
+			if Score < bestScore : bestScore = Score
 
 			change = self.giveRandomDomainChange()
 
@@ -108,37 +121,41 @@ class OuterZeppelinSynthesiser(object) :
 			self.recomputeBoundaries(sw, oldDomain, newDomain)
 
 			# Check if domain is continuous
+			s_t = time.time()
 			if not self.checkDomainContinuity(oldDomain) :
 				# Do not accept change. 
 				self.switchDomains[sw] = oldDomain
 				self.recomputeBoundaries(sw, newDomain, oldDomain)
 				continue
 
+			self.continuityTime += time.time() - s_t
+
 			# Compute new score. 
 			newScore = self.computeDomainAssignmentScore()
 
-			transitionProbability = math.exp(- self.beta * (float(newScore) - float(oldScore)))
+			transitionProbability = math.exp(- self.beta * (float(newScore) - float(Score)))
 
 			# if transitionProbability >= 1:
 			# 	# Surely transition to new state
-			# 	print "Score", oldScore, newScore, " Accept"
+			# 	print "Score", Score, newScore, " Accept"
 			# 	continue
 			# else:
 			transition = self.flip(transitionProbability) 
 			if transition :	
 				# accept transition to new state
-				print "Score", oldScore, newScore, " Accept", sw, oldDomain, newDomain, worstScore, bestScore
+				Score = newScore # Update the score as we accept transition
+				#print "Score", Score, newScore, " Accept", sw, oldDomain, newDomain, worstScore, bestScore
 				continue
 			else :
 				# Do not transition. Revert back change.
-				print "Score", oldScore, newScore, " Reject", sw, oldDomain, newDomain, worstScore, bestScore
+				#print "Score", Score, newScore, " Reject", sw, oldDomain, newDomain, worstScore, bestScore
 				self.switchDomains[sw] = oldDomain
 				self.recomputeBoundaries(sw, newDomain, oldDomain)
 
 		print "Best score", bestScore, "Worst score", worstScore
 		print "Best configuration score", self.bestConfScore, "Worst configuration score", self.worstConfScore
 		print "Best RF score", self.bestRFScore, "Worst RF score", self.worstRFScore
-		print self.domains
+		
 
 	def flip(self, p):
 		# random.random() returns a uniformly distributed pseudo-random floating point number in the range [0, 1). 
@@ -230,7 +247,8 @@ class OuterZeppelinSynthesiser(object) :
 
 	def checkDomainContinuity(self, domain) : 
 		domainSwitches = self.domains[domain]
-		reachableSwitches = [domainSwitches[0]]
+		reachableSwitches = dict()
+		reachableSwitches[domainSwitches[0]] = True
 		switchQueue = [domainSwitches[0]]
 
 		while len(reachableSwitches) < len(domainSwitches):
@@ -242,7 +260,7 @@ class OuterZeppelinSynthesiser(object) :
 			for n in neighbours :
 				if self.switchDomains[n] == domain : 
 					if n not in reachableSwitches : 
-						reachableSwitches.append(n)
+						reachableSwitches[n] = True
 						switchQueue.append(n)	
 
 		return True
@@ -362,7 +380,7 @@ class OuterZeppelinSynthesiser(object) :
 
 		return True	
 
-	def computeDomainAssignmentScore(self) :
+	def computeDomainAssignmentScore(self, sw=None, oldDomain=None, newDomain=None) :
 		""" Computes the score of a particular domain assignment """
 		
 		score = 1
@@ -370,15 +388,21 @@ class OuterZeppelinSynthesiser(object) :
 		score += 0.1*self.domainSizeScore()
 		score += self.BGPCompabitityScore()
 		score += 2*self.numberBGPRoutersScore()
-		score += 5*self.domainSizeDeviationScore()
+		score += 2*self.domainSizeDeviationScore()
 
-		confScore = self.configurationScore()
+		start_t = time.time()
+		if self.MCMCIter % 100 == 0 : 
+			confScore = self.configurationScore()
+			self.prevConfScore = confScore
+		else : 
+			confScore = self.prevConfScore + self.findConfScoreDiff(sw, oldDomain, newDomain)
+		self.confScoreTime += time.time() - start_t
 		if confScore > self.worstConfScore : 
 			self.worstConfScore = confScore
 		if confScore < self.bestConfScore : 
 			self.bestConfScore = confScore
 		
-		score += 10*confScore
+		score += 2*confScore
 
 		rfScore = self.routeFilterScore()
 		if rfScore > self.worstRFScore : 
@@ -428,11 +452,10 @@ class OuterZeppelinSynthesiser(object) :
 	def configurationScore(self) : 
 		""" Computes the extra lines of BGP required to enforce policy routing 
 		in the inter-domain setting """
-		self.destinationRoute = dict()
-
 		score = 0
 
-		for path in self.paths.values() : 
+		for pc in self.paths.keys() :
+			path = self.paths[pc] 
 			src = path[0]
 			dst = path[len(path) - 1]
 
@@ -445,51 +468,63 @@ class OuterZeppelinSynthesiser(object) :
 					aspath.append(domain)
 					aspositions.append(i)
 
-			if len(aspath) == 1 : 
-				# The entire path is the same domain, there is no BGP configuration required for this path
-				score += 0
+			# Store computations in state
+			self.ASPaths[pc] = aspath
+			self.ASPositions[pc] = aspositions
 
-			else : 
-				# Find longest path from destination which does not contain loops
-				i = len(aspath) - 1
-				lastNonLoopDownstreamPath = -1
-				while i > 0:
-					domain = aspath[i]
-					if aspath.count(domain) > 1 : 
-						# Domain part of loop.
-						for j in range(i - 1, -1, -1) :
-							if aspath[j] == domain :
-								# First repitition from the end. 
-								if j > lastNonLoopDownstreamPath :
-									lastNonLoopDownstreamPath = j
-					i -= 1
+			score += self.findConfScore(path, aspath, aspositions)
+
+		return score
+
+	def findConfScore(self, path, aspath, aspositions) :
+		""" Find conf score for a single path """
+		src = path[0]
+		dst = path[len(path) - 1]
+
+		score = 0
+
+		if len(aspath) == 1 : 
+			# The entire path is the same domain, there is no BGP configuration required for this path
+			score += 0
+
+		else : 
+			# Find longest path from destination which does not contain loops
+			i = len(aspath) - 1
+			lastNonLoopDownstreamPath = -1
+			while i > 0:
+				domain = aspath[i]
+				if aspath.count(domain) > 1 : 
+					# Domain part of loop.
+					for j in range(i - 1, -1, -1) :
+						if aspath[j] == domain :
+							# First repitition from the end. 
+							if j > lastNonLoopDownstreamPath :
+								lastNonLoopDownstreamPath = j
+				i -= 1
 
 
-				if lastNonLoopDownstreamPath > -1 : 
-					# A looped path. Add static routing till start of (lastNonLoopDownstreamPath + 1)th AS
-					# Routing from (lastNonLoopDownstreamPath + 1)th AS to destination is loop-free
-					posSw = aspositions[lastNonLoopDownstreamPath + 1] 
-					
-					# Static routing cost is the number of rules required till posSw
-					score += posSw
+			if lastNonLoopDownstreamPath > -1 : 
+				# A looped path. Add static routing till start of (lastNonLoopDownstreamPath + 1)th AS
+				# Routing from (lastNonLoopDownstreamPath + 1)th AS to destination is loop-free
+				posSw = aspositions[lastNonLoopDownstreamPath + 1] 
+				
+				# Static routing cost is the number of rules required till posSw
+				score += posSw
 
-					# Truncate as path to loop-free to find local pref scores
-					aspath = aspath[lastNonLoopDownstreamPath + 1:] 
+			# Local preference scores	
+			for i in range(lastNonLoopDownstreamPath+1, len(aspath) - 1) :
+				domain1 = aspath[i]
+				domain2 = aspath[i + 1]		
+				
+				boundary1 = self.boundarySwitches[domain1]
+				boundary2 = self.boundarySwitches[domain2]
 
-				# Local preference scores	
-				for i in range(len(aspath) - 1) :
-					domain1 = aspath[i]
-					domain2 = aspath[i + 1]		
-					
-					boundary1 = self.boundarySwitches[domain1]
-					boundary2 = self.boundarySwitches[domain2]
-
-					linkCount = 0 # Denotes the number of links connecting domains 1 & 2
-					for sw in boundary1 : 
-						neighbours = self.topology.getSwitchNeighbours(sw)
-						for n in neighbours : 
-							if n in boundary2 : 
-								linkCount += 1 # AS1-AS2 link
+				linkCount = 0 # Denotes the number of links connecting domains 1 & 2
+				for sw in boundary1 : 
+					neighbours = self.topology.getSwitchNeighbours(sw)
+					for n in neighbours : 
+						if n in boundary2 : 
+							linkCount += 1 # AS1-AS2 link
 
 				if linkCount > 1 : 
 					# Multiple links connecting the AS. Require 1 local preference entry
@@ -514,9 +549,44 @@ class OuterZeppelinSynthesiser(object) :
 
 		return score
 
+	def findConfScoreDiff(self, sw, oldDomain, newDomain) :
+		""" Find difference in scores as sw oldDomain -> newDomain """
+		scoreDiff = 0
+
+		for pc in self.paths.keys() : 
+			path = self.paths[pc]
+			src = path[0]
+			dst = path[len(path) - 1]
+
+			if sw not in path : 
+				# Not change in score? 
+				continue
+
+			# sw is in path, so domain has changed. Check if affected. 
+			oldaspath = self.ASPaths[pc]
+			oldaspositions = self.ASPositions[pc]
+			oldScore = self.findConfScore(path, oldaspath, oldaspositions)
+
+			newaspath = [self.switchDomains[src]]
+			newaspositions = [0] # Store the positions when the AS first starts.
+			for i in range(1, len(path)) : 
+				domain = self.switchDomains[path[i]]
+				if domain != newaspath[len(newaspath) - 1] : 
+					# Next AS. Add to AS path
+					newaspath.append(domain)
+					newaspositions.append(i)
+
+			newscore = self.findConfScore(path, newaspath, newaspositions)
+
+			scoreDiff = scoreDiff - oldScore + newScore
+
+
+		return scoreDiff
+			
 
 	def findShortestASPath(self, srcDomain, dstDomain) :
 		""" Find shortest path from src to dst domains. Return uniqueness of shortest path as well"""
+		s_t = time.time()
 		srcBoundary = self.boundarySwitches[srcDomain]
 		dstBoundary = self.boundarySwitches[dstDomain]
 
@@ -536,7 +606,8 @@ class OuterZeppelinSynthesiser(object) :
 
 				if d == dstDomain : 
 					if paths[d] > 1 :
-						# Multiple shortest paths to dstDomain. 
+						# Multiple shortest paths to dstDomain.
+						self.rfScoreTime += time.time() - s_t 
 						return [False, None]
 					else : 
 						# Single Unique shortest path to dstDomain. 
@@ -549,6 +620,7 @@ class OuterZeppelinSynthesiser(object) :
 						aspath.append(srcDomain)
 						# Reverse aspath.
 						aspath.reverse()
+						self.rfScoreTime += time.time() - s_t 
 						return [True, aspath]
 
 				# Find neighbouring domains
@@ -571,6 +643,7 @@ class OuterZeppelinSynthesiser(object) :
 
 			domainQueue1 = domainQueue2
 			domainQueue2 = []
+
 
 	def findDiamonds(self) :
 		""" Detecting diamonds in the different dags. A diamond is 
