@@ -27,7 +27,7 @@ class ZeppelinInputGenerator(object) :
 			dst = currpc
 			dstSw = random.randint(1, swCount)
 
-			length = random.randint(7, self.topology.getMaxPathLength())
+			length = random.randint(3, self.topology.getMaxPathLength())
 
 			if dst not in self.destinationDAGs : 
 				self.destinationDAGs[dst] = dict()

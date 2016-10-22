@@ -182,9 +182,9 @@ class ZeppelinSynthesiser(object) :
 			else : 
 				print "solving ILP with routefilters"
 				self.routeFilterMode = True
-				self.detectDiamonds()
+				#self.detectDiamonds()
 
-				diamondLoss = self.calculateResilienceLoss()
+				#diamondLoss = self.calculateResilienceLoss()
 
 				#self.findValidCycles()
 				self.ilpSolver = gb.Model("C3")
@@ -222,7 +222,7 @@ class ZeppelinSynthesiser(object) :
 						if attempts > self.MAX_GUROBI_ITERATIONS :
 							break
 					print "inconsistency attempts", attempts
-					print "diamond loss", diamondLoss
+					#print "diamond loss", diamondLoss
 
 			
 		self.f.write(str(len(endpoints)) + "," + str(time.time() - start_t)+"\n")

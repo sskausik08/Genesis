@@ -141,6 +141,8 @@ class Topology(object):
 		"""Returns all enabled/disabled edges neighbours  """
 		return self.neighbours[swID]
 
+	def getNeighbours(self) :
+		return self.neighbours
 
 	def findTopologyBridges(self) :
 		""" Uses Schmidt Chain Decomposition Algorithm to find the bridges in the topology """ 

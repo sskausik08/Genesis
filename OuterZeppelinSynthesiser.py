@@ -25,15 +25,23 @@ class OuterZeppelinSynthesiser(object) :
 		self.domainUpperLimit = 50
 		self.domainLowerLimit = 10
 
+		# Domain Assignments
+		self.bestDomainAssignment = None
+		self.worstDomainAssigmentRF = None
+
 		# BGP compatibility
 		self.nonBGPCompatibleSwitches = []
 		# MCMC variables 
-		self.MCMC_MAX_ITER = 50000	
-		self.beta = 0.3 # Constant
+		self.MCMC_MAX_ITER = 1000000	
+		self.MCMC_MAX_TIME = 300 # in seconds
+		self.beta = 0.1 # Constant
 
 		# Scoring State variables 
 		self.ASPaths = dict()
 		self.ASPositions = dict()
+
+		# Cache neighbours for reduced times.
+		self.topologyNeighbours = None
 
 		# Profiling variables
 		self.worstConfScore = 0
@@ -44,6 +52,7 @@ class OuterZeppelinSynthesiser(object) :
 		self.confScoreTime = 0
 		self.rfScoreTime = 0
 		self.continuityTime = 0
+		self.domainChangeTime = 0
 
 
 	def enforceDAGs(self, dags, paths, endpoints, numDomains=5):
@@ -52,39 +61,40 @@ class OuterZeppelinSynthesiser(object) :
 		self.paths = copy.deepcopy(paths)
 		self.endpoints = copy.deepcopy(endpoints)
 		self.numDomains = numDomains
-
-		swCount = self.topology.getSwitchCount()
+		self.topologyNeighbours = self.topology.getNeighbours()
+		self.swCount = self.topology.getSwitchCount()
 
 		start_t = time.time() 	
-
 		self.MCMCWalk()
+		mcmcTime = time.time() - start_t
 
-		RFCount = 0
-		# Found a domain assignment from MCMC. Solve the OSPF domains now.
-		for domain in range(self.numDomains) :
-			topo = self.getDomainTopology(domain)
+		print "Best Configuration"
+		start_t = time.time() 
+		bestRFCount = self.synthesizeOSPFConfigurations()
+		ospfTime = time.time() - start_t
 
-			pdb = PolicyDatabase()
-			print "domain", domain
-			[dags, endpoints] = self.getDomainDAGs(domain, pdb, topo)
+		print "Worst RF Configuration"
+		worstRFCount = self.synthesizeOSPFConfigurations(self.worstDomainAssigmentRF)
 
-			for dst in dags : 
-				pdb.addDestinationDAG(dst, dags[dst])
-
-			zepSynthesiser = ZeppelinSynthesiser(topo, pdb)
-			routeFilters = zepSynthesiser.enforceDAGs(dags, endpoints)
-
-			for dst in routeFilters : 
-				RFCount += len(routeFilters[dst])
-
-		print "RF Count is", RFCount
 		print self.domains
-		print "Best configuration score", self.bestConfScore, "Worst configuration score", self.worstConfScore
-		print "Best RF score", self.bestRFScore, "Worst RF score", self.worstRFScore
+		print "Config Improvement", float(self.bestConfScore)/float(self.worstConfScore), self.bestConfScore, self.worstConfScore
+		print "RF Improvement", float(bestRFCount)/float(worstRFCount), bestRFCount, worstRFCount
+		print "RF scores", self.worstRFScore, self.bestRFScore
 		end_t = time.time()
-		print "Time taken  for MCMC is ", end_t - start_t
+		print "Time taken  for MCMC is (and iterations), and OSPF time", end_t - start_t, self.MCMCIter
 		print "Conf Score Time", self.confScoreTime
-		print "Continuity Time", self.rfScoreTime
+		print "RF Score Time", self.rfScoreTime
+		print "Continuity Time", self.continuityTime
+		print "Domain Change Time", self.domainChangeTime
+
+
+		self.zepFile = open("zeppelin-timing", 'a')
+		self.zepFile.write("Time taken  for MCMC is (and iterations), and OSPF time " + str(mcmcTime) + " " + str(self.MCMCIter) + " " + str(ospfTime))
+		self.zepFile.write("\n")
+		self.zepFile.write("Config Improvement " + str(float(self.bestConfScore)/float(self.worstConfScore)) + " " + str(self.bestConfScore) + " " + str(self.worstConfScore))
+		self.zepFile.write("\n")
+		self.zepFile.write("RF Improvement " + str(float(bestRFCount)/float(worstRFCount)) + " " + str(bestRFCount) + " " + str(worstRFCount))
+		self.zepFile.write("\n")
 
 	def MCMCWalk(self) :
 		# Start a MCMC sampling walk with number of domains=self.numDomains. 
@@ -105,11 +115,22 @@ class OuterZeppelinSynthesiser(object) :
 		# We consider solutions with a smaller score to be better. 
 		Score = self.computeDomainAssignmentScore()
 
+
+		MCMCStartTime = time.time()
 		for self.MCMCIter in range(self.MCMC_MAX_ITER):
+			
+			# Check if timed out every 10000 iteration
+			if self.MCMCIter % 10000 == 0 :
+				if time.time() - MCMCStartTime > self.MCMC_MAX_TIME : 
+					# MCMC timed out. 
+					break
+
 			if Score > worstScore : worstScore = Score
 			if Score < bestScore : bestScore = Score
 
+			s_t = time.time()
 			change = self.giveRandomDomainChange()
+			self.domainChangeTime += time.time() - s_t
 
 			# Make the random change to domain assignment.
 			sw = change[0]
@@ -164,16 +185,15 @@ class OuterZeppelinSynthesiser(object) :
 	
 	def giveRandomDomainChange(self) :
 		""" Returns a random change of domain for a boundary switch"""
-		swCount = self.topology.getSwitchCount()
 		
 		iteration = 0
 		iterationCount = 5000 # Not assigned based on anything! 
 
 		for iteration in range(iterationCount) : 
-			sw = random.randint(1, swCount) 
+			sw = random.randint(1, self.swCount) 
 			domain = self.switchDomains[sw]
 			
-			if len(self.domains[domain]) == 1 : 
+			if len(self.domains[domain]) <= self.domainLowerLimit: 
 				# Domain size is 1, dont change it (to preserve number of domains)
 				continue
 
@@ -182,7 +202,7 @@ class OuterZeppelinSynthesiser(object) :
 				continue
 			else : 
 				# sw is a boundary switch. Check if sw partitions the domain.
-				neighbours = self.topology.getSwitchNeighbours(sw)
+				neighbours = self.topologyNeighbours[sw]
 				neighbouringDomains = []
 				for n in neighbours : 
 					ndomain = self.switchDomains[n]
@@ -192,19 +212,27 @@ class OuterZeppelinSynthesiser(object) :
 				if len(neighbouringDomains) == 0 : 
 					# ERROR! 
 					print sw, domain, neighbours
+					exit(0)
 
 				# pick one neighbouring domain by random and change sw's domain
 				newDomain = neighbouringDomains[random.randint(0, len(neighbouringDomains) - 1)]
+
+				if len(self.domains[newDomain]) + 1 >= self.domainUpperLimit :
+					# New domain's size would exceed upper limit. Reject change.
+					continue
+
 				# Return the random domain change picked. 
 				return [sw, newDomain] 
 
+		# Could not find a random change.
+		print "ERROR: No change in domain found"
+		exit(0)
 
 	def computeBoundaries(self) : 
 		""" Computes the boundaries of the domains"""
 		self.boundarySwitches = dict()
-		swCount = self.topology.getSwitchCount()
-		for sw in range(1, swCount + 1) :
-			neighbours = self.topology.getSwitchNeighbours(sw)
+		for sw in range(1, self.swCount + 1) :
+			neighbours = self.topologyNeighbours[sw]
 			for n in neighbours : 
 				if self.switchDomains[sw] != self.switchDomains[n] :
 					# Boundary
@@ -214,7 +242,7 @@ class OuterZeppelinSynthesiser(object) :
 						self.boundarySwitches[self.switchDomains[sw]].append(sw)
 					break
 
-		for sw in range(1, swCount + 1) :
+		for sw in range(1, self.swCount + 1) :
 			if self.switchDomains[sw] not in self.domains : 
 				self.domains[self.switchDomains[sw]] = [sw]
 			else : 
@@ -233,7 +261,7 @@ class OuterZeppelinSynthesiser(object) :
 		self.boundarySwitches[oldDomain].remove(sw)
 		self.boundarySwitches[newDomain].append(sw)
 
-		neighbours = self.topology.getSwitchNeighbours(sw)
+		neighbours = self.topologyNeighbours[sw]
 
 		for n in neighbours : 
 			# Recompute boundaries for neighbours
@@ -256,7 +284,7 @@ class OuterZeppelinSynthesiser(object) :
 				# Partition in domain. Not valid! 
 				return False
 			sw = switchQueue.pop(0)
-			neighbours = self.topology.getSwitchNeighbours(sw)
+			neighbours = self.topologyNeighbours[sw]
 			for n in neighbours :
 				if self.switchDomains[n] == domain : 
 					if n not in reachableSwitches : 
@@ -267,7 +295,7 @@ class OuterZeppelinSynthesiser(object) :
 
 	def isBoundarySwitch(self, sw): 
 		""" Returns if sw is a boundary switch or not"""
-		neighbours = self.topology.getSwitchNeighbours(sw)
+		neighbours = self.topologyNeighbours[sw]
 		for n in neighbours : 
 			if self.switchDomains[sw] != self.switchDomains[n] :
 				return True
@@ -277,14 +305,13 @@ class OuterZeppelinSynthesiser(object) :
 	def computeRandomDomainAssignment(self):
 		""" Generate a random domain assignment to start the Metropolis walk"""
 
-		swCount = self.topology.getSwitchCount()
-		domainSize = swCount / self.numDomains # We divide the routers equally across the domains
+		domainSize = self.swCount / self.numDomains # We divide the routers equally across the domains
 
-		switches = range(1, swCount + 1)
+		switches = range(1, self.swCount + 1)
 
 		currDomain = 0
 
-		while len(self.switchDomains) != swCount:
+		while len(self.switchDomains) != self.swCount:
 			random.shuffle(switches)
 			for sw in switches :
 				if sw in self.switchDomains and self.switchDomains[sw] > -1 :
@@ -292,7 +319,7 @@ class OuterZeppelinSynthesiser(object) :
 					continue
 				else : 
 					# Switch not assigned.
-					neighbours = self.topology.getSwitchNeighbours(sw)
+					neighbours = self.topologyNeighbours[sw]
 					neighbouringDomains = dict()
 					unassignedNeighbour = False
 					for n in neighbours : 
@@ -338,9 +365,8 @@ class OuterZeppelinSynthesiser(object) :
 
 	def checkValidDomainAssignment(self) :	
 		# Checks the validity of a particular domain assignment. 
-		swCount = self.topology.getSwitchCount()
 
-		for sw in range(1, swCount + 1) :
+		for sw in range(1, self.swCount + 1) :
 			if self.switchDomains[sw] not in self.domains : 
 				self.domains[self.switchDomains[sw]] = [sw]
 			else : 
@@ -348,7 +374,7 @@ class OuterZeppelinSynthesiser(object) :
 					self.domains[self.switchDomains[sw]].append(sw)
 
 			# A switch must be connected to atleast one switch of the same domain. (Assuming no single switch domains)
-			neighbours = self.topology.getSwitchNeighbours(sw)
+			neighbours = self.topologyNeighbours[sw]
 			isConnected = False
 			for n in neighbours : 
 				if self.switchDomains[sw] == self.switchDomains[n] :
@@ -370,7 +396,7 @@ class OuterZeppelinSynthesiser(object) :
 					# Partition in domain. Not valid! 
 					return False
 				sw = switchQueue.pop(0)
-				neighbours = self.topology.getSwitchNeighbours(sw)
+				neighbours = self.topologyNeighbours[sw]
 				for n in neighbours :
 					if self.switchDomains[n] == domain : 
 						if n not in reachableSwitches : 
@@ -385,10 +411,10 @@ class OuterZeppelinSynthesiser(object) :
 		
 		score = 1
 
-		score += 0.1*self.domainSizeScore()
+		#score += 0.1*self.domainSizeScore()
 		score += self.BGPCompabitityScore()
 		score += 2*self.numberBGPRoutersScore()
-		score += 2*self.domainSizeDeviationScore()
+		#score += 2*self.domainSizeDeviationScore()
 
 		start_t = time.time()
 		if self.MCMCIter % 100 == 0 : 
@@ -404,20 +430,22 @@ class OuterZeppelinSynthesiser(object) :
 		
 		score += 2*confScore
 
+		start_t = time.time()
 		rfScore = self.routeFilterScore()
+		self.rfScoreTime = time.time() - start_t
 		if rfScore > self.worstRFScore : 
 			self.worstRFScore = rfScore
+			self.worstDomainAssigmentRF = copy.deepcopy(self.switchDomains) # Copy the worst RF domain assignment.
 		if rfScore < self.bestRFScore : 
 			self.bestRFScore = rfScore
 
-		score += 2*rfScore
+		score += 0.25*rfScore
 
 		return score
 
 	def domainSizeScore(self) : 
 		# compute domain size (if in range or not).
-		score = 0
-		swCount = self.topology.getSwitchCount() 
+		score = 0 
 		
 		for domain in range(self.numDomains) :
 			domainSize = len(self.domains[domain])
@@ -521,7 +549,7 @@ class OuterZeppelinSynthesiser(object) :
 
 				linkCount = 0 # Denotes the number of links connecting domains 1 & 2
 				for sw in boundary1 : 
-					neighbours = self.topology.getSwitchNeighbours(sw)
+					neighbours = self.topologyNeighbours[sw]
 					for n in neighbours : 
 						if n in boundary2 : 
 							linkCount += 1 # AS1-AS2 link
@@ -580,7 +608,6 @@ class OuterZeppelinSynthesiser(object) :
 
 			scoreDiff = scoreDiff - oldScore + newScore
 
-
 		return scoreDiff
 			
 
@@ -627,7 +654,7 @@ class OuterZeppelinSynthesiser(object) :
 				neighbouringDomains = []
 				boundary = self.boundarySwitches[d]
 				for sw in boundary :
-					for n in self.topology.getSwitchNeighbours(sw) :
+					for n in self.topologyNeighbours[sw] :
 						nd = self.switchDomains[n]
 						if nd != d and nd not in neighbouringDomains:
 							neighbouringDomains.append(nd)
@@ -650,10 +677,9 @@ class OuterZeppelinSynthesiser(object) :
 		defined as a subgraph of the overlay where there are two paths from s to t
 		such that the two paths belong to different destination Dags. This implies that
 		there are two shortest paths from s to t which is not enforceable with route filtering """
-		swCount = self.topology.getSwitchCount()
 		dsts = self.pdb.getDestinationSubnets()
 		
-		self.diamondPaths = [[0 for x in range(swCount + 1)] for x in range(swCount + 1)]
+		self.diamondPaths = [[0 for x in range(self.swCount + 1)] for x in range(self.swCount + 1)]
 		
 		for dst1 in dsts :
 			for dst2 in dsts : 
@@ -721,25 +747,29 @@ class OuterZeppelinSynthesiser(object) :
 		return deviation
 
 
-	def getDomainTopology(self, domain) :
+	def getDomainTopology(self, domain, switchDomains=None) :
 		""" Constructs the topology object for domain"""
 		topo = Topology(name="domain"+str(domain))
 
-		for sw in self.domains[domain] :
+		if switchDomains == None :
+			switchDomains = self.switchDomains
+
+		for sw in range(1,self.swCount+1) :
+			if switchDomains[sw] != domain : continue # sw not in domain
 			domainNeighbours = []
-			for n in self.topology.getSwitchNeighbours(sw) :
-				if self.switchDomains[n] == domain : 
+			for n in self.topologyNeighbours[sw] :
+				if switchDomains[n] == domain : 
 					domainNeighbours.append(self.topology.getSwName(n))
 			topo.addSwitch(self.topology.getSwName(sw), domainNeighbours)
 			
 		return topo
 
-	def getDomainDAGs(self, domain, pdb, topology) : 
+	def getDomainDAGs(self, domain, pdb, topology, switchDomains=None) : 
 		""" Returns DAGs and endpoints for domain. Side-effect: Sets up pdb with the paths """
-	
-		# endpoints.append([sw, dst])
-		# pc = self.pdb.addReachabilityPolicy(dst, sw, dstSw)
-		# pdb.addPath(pc, path)
+		
+		if switchDomains == None :
+			switchDomains = self.switchDomains
+
 		dags = dict()
 		endpoints = []
 
@@ -748,10 +778,10 @@ class OuterZeppelinSynthesiser(object) :
 			src = path[0]
 			dst = path[len(path) - 1]
 
-			aspath = [self.switchDomains[src]]
+			aspath = [switchDomains[src]]
 			aspositions = [0] # Store the positions when the AS first starts.
 			for i in range(1, len(path)) : 
-				d = self.switchDomains[path[i]]
+				d = switchDomains[path[i]]
 				if d != aspath[len(aspath) - 1] : 
 					# Next AS. Add to AS path
 					aspath.append(d)
@@ -765,8 +795,8 @@ class OuterZeppelinSynthesiser(object) :
 					
 					topopath = []
 					for sw in domainpath :
-						if self.switchDomains[sw] != domain :
-							print sw, self.topology.getSwName(sw), self.switchDomains[sw], domain
+						if switchDomains[sw] != domain :
+							print sw, self.topology.getSwName(sw), switchDomains[sw], domain
 						topopath.append(topology.getSwID(self.topology.getSwName(sw)))
 
 					subnet = self.pdb.getDestinationSubnet(pc)
@@ -813,8 +843,8 @@ class OuterZeppelinSynthesiser(object) :
 
 					topopath = []
 					for sw in domainpath :
-						if self.switchDomains[sw] != domain :
-							print sw, self.topology.getSwName(sw), self.switchDomains[sw], domain
+						if switchDomains[sw] != domain :
+							print sw, self.topology.getSwName(sw), switchDomains[sw], domain
 							exit(0)
 						topopath.append(topology.getSwID(self.topology.getSwName(sw)))
 
@@ -835,7 +865,25 @@ class OuterZeppelinSynthesiser(object) :
 		return [dags, endpoints]
 		
 
+	def synthesizeOSPFConfigurations(self, switchDomains=None) : 
+		# Found a domain assignment from MCMC. Solve the OSPF domains now.
+		RFCount = 0
+		for domain in range(self.numDomains) :
+			topo = self.getDomainTopology(domain, switchDomains)
 
+			pdb = PolicyDatabase()
+			print "domain", domain
+			[dags, endpoints] = self.getDomainDAGs(domain, pdb, topo, switchDomains)
 
+			for dst in dags : 
+				pdb.addDestinationDAG(dst, dags[dst])
 
+			zepSynthesiser = ZeppelinSynthesiser(topo, pdb)
+			routeFilters = zepSynthesiser.enforceDAGs(dags, endpoints)
+
+			for dst in routeFilters : 
+				RFCount += len(routeFilters[dst])
+
+		print "Number of route filters are ", RFCount
+		return RFCount
 
