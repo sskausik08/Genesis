@@ -33,6 +33,7 @@ class ZeppelinSynthesiser(object) :
 
 		# ILP
 		self.ilpSolver = gb.Model("C3")
+		self.ilpSolver.setParam('OutputFlag', 0)
 
 		self.routefilters = dict()
 		
@@ -42,7 +43,7 @@ class ZeppelinSynthesiser(object) :
 		self.t_res = 0
 
 		# Constants
-		self.MAX_GUROBI_ITERATIONS = 100
+		self.MAX_GUROBI_ITERATIONS = 600
 		self.minimalFilterSolveFlag = minimalFilterSolve
 
 		self.inconsistentRFs = 0
@@ -166,7 +167,7 @@ class ZeppelinSynthesiser(object) :
 			self.addDestinationDAGConstraints(dst, dag, False)
 
 
-		print "Solving ILP without routefilters"
+		#print "Solving ILP without routefilters"
 		solvetime = time.time()
 		#modelsat = self.z3Solver.check()
 		self.ilpSolver.optimize()
@@ -180,7 +181,7 @@ class ZeppelinSynthesiser(object) :
 				self.routeFilterMode = True 
 				self.minimalFilterSolve()
 			else : 
-				print "solving ILP with routefilters"
+				#print "solving ILP with routefilters"
 				self.routeFilterMode = True
 				#self.detectDiamonds()
 
@@ -188,6 +189,7 @@ class ZeppelinSynthesiser(object) :
 
 				#self.findValidCycles()
 				self.ilpSolver = gb.Model("C3")
+				self.ilpSolver.setParam('OutputFlag', 0)
 				self.initializeSMTVariables()
 
 				self.addDjikstraShortestPathConstraints()
@@ -221,7 +223,7 @@ class ZeppelinSynthesiser(object) :
 						attempts += 1
 						if attempts > self.MAX_GUROBI_ITERATIONS :
 							break
-					print "inconsistency attempts", attempts
+					#print "inconsistency attempts", attempts
 					#print "diamond loss", diamondLoss
 
 			
@@ -248,6 +250,7 @@ class ZeppelinSynthesiser(object) :
 	def findInconsistency(self) :
 		""" Find inconsistent set of equations """
 		self.ilpSolver = gb.Model("C3")
+		self.ilpSolver.setParam('OutputFlag', 0)
 		self.initializeSMTVariables()
 		dsts = self.pdb.getDestinationSubnets()
 
@@ -277,15 +280,6 @@ class ZeppelinSynthesiser(object) :
 			#self.maximizeResilienceRouteFilter()
 			return True
 		else :
-			print "Consistent!!!"
-			# swCount = self.topology.getSwitchCount()
-			# for i in range(1, swCount + 1) :
-			# 	for j in range(1, swCount + 1) :
-			# 		for k in range(1, swCount + 1) :
-			# 			if k in self.filterDependencies[i][j] :
-			# 				print i,j,k, self.filterDependencies[i][j][k]
-			# 				if k in self.routefilters :
-			# 					print [i,j] in self.routefilters[k]
 			return False
 
 	def greedyRouteFilter(self) :
@@ -367,7 +361,7 @@ class ZeppelinSynthesiser(object) :
 			totalres = len(self.topology.getAllSwitchNeighbours(endpt[0]))
 			loss += totalres - self.endpointResilience[endpt[0]][endpt[1]] 
 
-		print "Loss of resilience :", loss
+		#print "Loss of resilience :", loss
 		return loss
 
 	def plotUnsatCore(self) :
@@ -442,6 +436,7 @@ class ZeppelinSynthesiser(object) :
 	def minimalFilterSolve(self) :
 		""" Find inconsistent set of equations """
 		self.ilpSolver = gb.Model("C3")
+		self.ilpSolver.setParam('OutputFlag', 0)
 		self.initializeSMTVariables()
 		dsts = self.pdb.getDestinationSubnets()
 
@@ -1261,6 +1256,7 @@ class ZeppelinSynthesiser(object) :
 		""" Find inconsistent set of equations """
 		print "Branching at ", len(rfs)
 		self.ilpSolver = gb.Model("C3")
+		self.ilpSolver.setParam('OutputFlag', 0)
 		self.initializeSMTVariables()
 		dsts = self.pdb.getDestinationSubnets()
 
@@ -1328,6 +1324,7 @@ class ZeppelinSynthesiser(object) :
 	def DLS(self, rfs, depth) :
 		""" Run DFS from rfs limited to depth"""
 		self.ilpSolver = gb.Model("C3")
+		self.ilpSolver.setParam('OutputFlag', 0)
 		self.initializeSMTVariables()
 		dsts = self.pdb.getDestinationSubnets()
 

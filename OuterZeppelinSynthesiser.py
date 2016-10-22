@@ -22,7 +22,7 @@ class OuterZeppelinSynthesiser(object) :
 		self.boundarySwitches = dict()
 
 		# Domain size variables
-		self.domainUpperLimit = 50
+		self.domainUpperLimit = 40
 		self.domainLowerLimit = 10
 
 		# Domain Assignments
@@ -98,7 +98,7 @@ class OuterZeppelinSynthesiser(object) :
 
 	def MCMCWalk(self) :
 		# Start a MCMC sampling walk with number of domains=self.numDomains. 
-		
+		print "Starting MCMC Walk"
 		self.MCMCIter = 0	
 		
 		# MCMC Algorithm initial step: start with a preliminary domain assignment (chosen at random)
@@ -194,7 +194,8 @@ class OuterZeppelinSynthesiser(object) :
 			domain = self.switchDomains[sw]
 			
 			if len(self.domains[domain]) <= self.domainLowerLimit: 
-				# Domain size is 1, dont change it (to preserve number of domains)
+				# Domain size will be violated if we change a switch of this domain. 
+				# Dont change it (to preserve number of domains)
 				continue
 
 			if sw not in self.boundarySwitches[domain] : 
@@ -305,63 +306,62 @@ class OuterZeppelinSynthesiser(object) :
 	def computeRandomDomainAssignment(self):
 		""" Generate a random domain assignment to start the Metropolis walk"""
 
-		domainSize = self.swCount / self.numDomains # We divide the routers equally across the domains
-
 		switches = range(1, self.swCount + 1)
-
 		currDomain = 0
+		iterations = 5000
+		domainSizes = dict()
+		for domain in range(self.numDomains) : 
+			domainSizes[domain] = 0
 
-		while len(self.switchDomains) != self.swCount:
-			random.shuffle(switches)
-			for sw in switches :
-				if sw in self.switchDomains and self.switchDomains[sw] > -1 :
-					# Switch assigned. 
-					continue
-				else : 
-					# Switch not assigned.
-					neighbours = self.topologyNeighbours[sw]
-					neighbouringDomains = dict()
-					unassignedNeighbour = False
-					for n in neighbours : 
-						if n in self.switchDomains and self.switchDomains[n] > -1 :
-							# Neighbour assigned
-							neighbouringDomains[self.switchDomains[n]] = True
-						else : 
-							unassignedNeighbour = True
-
-					if len(neighbouringDomains.keys()) == 0 : 
-						# No neighbour assigned. Assign a new domain to this switch
-						if currDomain >= self.numDomains : continue
-						self.switchDomains[sw] = currDomain 
-						currDomain += 1
-
-					elif len(neighbouringDomains.keys()) == 1 and not unassignedNeighbour:
-						# All neighbours are assigned to same domain, assign this to same domain
-						self.switchDomains[sw] = self.switchDomains[neighbours[0]]
+		for iter in range(iterations) :
+			while len(self.switchDomains) != self.swCount:
+				random.shuffle(switches)
+				for sw in switches :
+					if sw in self.switchDomains and self.switchDomains[sw] > -1 :
+						# Switch assigned. 
+						continue
 					else : 
-						# Some neighbours are assigned, some are not. 
-						# Pick one of the domains, or a new one by random
-						totalNeighbourDomains = len(neighbouringDomains.keys())
-						self.switchDomains[sw] = neighbouringDomains.keys()[random.randint(0, totalNeighbourDomains - 1)]
+						# Switch not assigned.
+						neighbours = self.topologyNeighbours[sw]
+						neighbouringDomains = dict()
+						unassignedNeighbour = False
+						for n in neighbours : 
+							if n in self.switchDomains and self.switchDomains[n] > -1 :
+								# Neighbour assigned
+								neighbouringDomains[self.switchDomains[n]] = True
+							else : 
+								unassignedNeighbour = True
 
-						# assignedDomain = -1
-						# for domain in neighbouringDomains.keys() : 
-						# 	if random.randint(0, totalNeighbourDomains - 1) == i : 
-						# 		self.switchDomains[sw] = domain
-						# 		assignedDomain = domain
-						# 		break
-						# 	i += 1
-						# if assignedDomain == -1 :
-						# 	if unassignedNeighbour and len(neighbouringDomains.keys()) <= 1: 
-						# 		# Assign a random domain
-						# 		self.switchDomains[sw] = random.randint(0, self.numDomains - 1)
-						# 	else : 
-						# 		# Assign one neighbour's domain by random.
-						# 		self.switchDomains[sw] = self.switchDomains[neighbours[random.randint(0, len(neighbours) - 1)]]
+						if len(neighbouringDomains.keys()) == 0 : 
+							# No neighbour assigned. Assign a new domain to this switch
+							if currDomain >= self.numDomains : continue
+							self.switchDomains[sw] = currDomain 
+							domainSizes[currDomain] += 1
+							currDomain += 1
 
-		print self.switchDomains
-		# Check validity
-		print "Validity ", self.checkValidDomainAssignment()
+						elif len(neighbouringDomains.keys()) == 1 and not unassignedNeighbour:
+							# All neighbours are assigned to same domain, assign this to same domain
+							self.switchDomains[sw] = self.switchDomains[neighbours[0]]
+							domainSizes[self.switchDomains[neighbours[0]]] += 1
+						else : 
+							# Some neighbours are assigned, some are not. 
+							# Pick a domain which violated lower bound, or else others randomly
+							totalNeighbourDomains = len(neighbouringDomains)
+							for nd in neighbouringDomains : 
+								if domainSizes[nd] < self.domainLowerLimit : 
+									self.switchDomains[sw] = nd
+									domainSizes[nd] += 1
+									continue 
+							
+							self.switchDomains[sw] = neighbouringDomains.keys()[random.randint(0, totalNeighbourDomains - 1)]
+		
+			# Check validity
+			if not self.checkValidDomainAssignment() : 
+				# Not a valid domain assignment. Retry
+				self.switchDomains = dict()
+				continue
+			else :
+				break
 
 	def checkValidDomainAssignment(self) :	
 		# Checks the validity of a particular domain assignment. 
@@ -372,6 +372,11 @@ class OuterZeppelinSynthesiser(object) :
 			else : 
 				if sw not in self.domains[self.switchDomains[sw]] : 
 					self.domains[self.switchDomains[sw]].append(sw)
+
+			# for domain in range(self.numDomains) :
+			# 	if len(self.domains[domain]) < self.domainLowerLimit or len(self.domains[domain]) > self.domainUpperLimit:
+			# 		# Domain size violated.
+			# 		return False
 
 			# A switch must be connected to atleast one switch of the same domain. (Assuming no single switch domains)
 			neighbours = self.topologyNeighbours[sw]
@@ -439,7 +444,7 @@ class OuterZeppelinSynthesiser(object) :
 		if rfScore < self.bestRFScore : 
 			self.bestRFScore = rfScore
 
-		score += 0.25*rfScore
+		score += 0.5*rfScore
 
 		return score
 

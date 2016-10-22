@@ -554,7 +554,11 @@ class PolicyDatabase(object) :
 				if not topology.checkResilience(src, dstSw, t_res, copy.deepcopy(routefilters[dst])) : 
 					print "Not resilient", pc, self.getSourceSwitch(pc)
 					violationCount += 1
-		print "Number of Violations is", violationCount
+
+		if violationCount > 0 :
+			print "Error: incorrect OSPF configuration"
+			print "Number of Violations is", violationCount
+			exit(0)
 
 	# def removeRedundantFilters(self, topology, routefilters) : 
 
