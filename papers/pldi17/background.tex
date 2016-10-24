@@ -1,0 +1,40 @@
+\section{Background}
+\subsection{OSPF}
+
+\subsection{BGP}
+BGP is a path-vector routing protocol that connects 
+different autonomous systems (ASes), where each AS
+comprises of one or more routers (typically managed
+by a single entity). 
+\minisection{eBGP}
+\\
+\minisection{iBGP}
+
+\subsection{BGP Best Path Selection Algorithm}
+A BGP router receives multiple paths to the destination: (1)
+external routes from border routers of neighbouring domains using
+eBGP, and (2) routes learned by other BGP routers 
+of the domain which are advertised using iBGP. 
+BGP decides the best path to install in the 
+forwarding table based on different metrics like local preferences,
+AS path lengths and type of routes. BGP uses the
+rules specified in \Cref{alg:bgppathrules} 
+in decreasing order of preference to select the best path
+from the received announcements. If all paths result in a tie
+at $i^{th}$ rule, then the $i+1^{th}$ rule is considered.
+\begin{algorithm}
+	\begin{footnotesize}
+		\caption{BGP Best Path Selection Rules}
+		\label{alg:bgppathrules}
+		\begin{algorithmic}[1]
+				\State{Prefer the path with the highest \emph{local preference}.}
+				\State{ Prefer the path with the smallest AS Path length. }
+				\State{Prefer the path with the lowest \emph{multi-exit discriminator} (MED).}
+				\State{Prefer eBGP over iBGP paths.}
+				\State{When both paths are external, prefer the path that was received \emph{first} (the oldest one).}
+				\State{Prefer the route that comes from the BGP router with the lowest \emph{router ID}.}
+		\end{algorithmic}
+	\end{footnotesize}
+\end{algorithm}
+
+
