@@ -547,7 +547,25 @@ class Topology(object):
 		
 
 
-		
+	def checkTopologyContinuity(self) : 
+		""" Check if all switches in the topology are connected"""
+		reachableSwitches = dict()
+		swCount = self.getSwitchCount()
+		reachableSwitches[1] = True
+		switchQueue = [1]
+
+		while len(reachableSwitches) < swCount:
+			if len(switchQueue) == 0 : 
+				# Partition in domain. Not valid! 
+				return False
+			sw = switchQueue.pop(0)
+			neighbours = self.getSwitchNeighbours(sw)
+			for n in neighbours :
+				if n not in reachableSwitches and n not in switchQueue: 
+					reachableSwitches[n] = True
+					switchQueue.append(n)	
+
+		return True
 
 
 

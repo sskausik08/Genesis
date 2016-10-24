@@ -23,7 +23,7 @@ class OuterZeppelinSynthesiser(object) :
 
 		# Domain size variables
 		self.domainUpperLimit = 40
-		self.domainLowerLimit = 10
+		self.domainLowerLimit = 5
 
 		# Domain Assignments
 		self.bestDomainAssignment = None
@@ -32,9 +32,9 @@ class OuterZeppelinSynthesiser(object) :
 		# BGP compatibility
 		self.nonBGPCompatibleSwitches = []
 		# MCMC variables 
-		self.MCMC_MAX_ITER = 1000000	
+		self.MCMC_MAX_ITER = 10000000	
 		self.MCMC_MAX_TIME = 300 # in seconds
-		self.beta = 0.1 # Constant
+		self.beta = 0.045 # Constant
 
 		# Scoring State variables 
 		self.ASPaths = dict()
@@ -64,19 +64,26 @@ class OuterZeppelinSynthesiser(object) :
 		self.topologyNeighbours = self.topology.getNeighbours()
 		self.swCount = self.topology.getSwitchCount()
 
-		start_t = time.time() 	
+		if not self.topology.checkTopologyContinuity() :
+			print "Topology not connected"
+			exit(0)
+
+		start_t = time.time() 		
 		self.MCMCWalk()
 		mcmcTime = time.time() - start_t
 
 		print "Best Configuration"
+		self.switchDomains = self.bestDomainAssignment 
+		self.computeBoundaries()
+		print self.domains
 		start_t = time.time() 
 		bestRFCount = self.synthesizeOSPFConfigurations()
+		self.bestConfScore = self.configurationScore()
 		ospfTime = time.time() - start_t
 
 		print "Worst RF Configuration"
 		worstRFCount = self.synthesizeOSPFConfigurations(self.worstDomainAssigmentRF)
 
-		print self.domains
 		print "Config Improvement", float(self.bestConfScore)/float(self.worstConfScore), self.bestConfScore, self.worstConfScore
 		print "RF Improvement", float(bestRFCount)/float(worstRFCount), bestRFCount, worstRFCount
 		print "RF scores", self.worstRFScore, self.bestRFScore
@@ -115,7 +122,7 @@ class OuterZeppelinSynthesiser(object) :
 		# We consider solutions with a smaller score to be better. 
 		Score = self.computeDomainAssignmentScore()
 
-
+		print "Started MCMC walk"
 		MCMCStartTime = time.time()
 		for self.MCMCIter in range(self.MCMC_MAX_ITER):
 			
@@ -126,7 +133,9 @@ class OuterZeppelinSynthesiser(object) :
 					break
 
 			if Score > worstScore : worstScore = Score
-			if Score < bestScore : bestScore = Score
+			if Score < bestScore : 
+				bestScore = Score
+				self.bestDomainAssignment = copy.deepcopy(self.switchDomains)
 
 			s_t = time.time()
 			change = self.giveRandomDomainChange()
@@ -156,20 +165,15 @@ class OuterZeppelinSynthesiser(object) :
 
 			transitionProbability = math.exp(- self.beta * (float(newScore) - float(Score)))
 
-			# if transitionProbability >= 1:
-			# 	# Surely transition to new state
-			# 	print "Score", Score, newScore, " Accept"
-			# 	continue
-			# else:
 			transition = self.flip(transitionProbability) 
 			if transition :	
 				# accept transition to new state
 				Score = newScore # Update the score as we accept transition
-				#print "Score", Score, newScore, " Accept", sw, oldDomain, newDomain, worstScore, bestScore
+				#print "Score", Score, newScore, " Accept", sw, oldDomain, newDomain, worstScore, bestScore, transitionProbability
 				continue
 			else :
 				# Do not transition. Revert back change.
-				#print "Score", Score, newScore, " Reject", sw, oldDomain, newDomain, worstScore, bestScore
+				#print "Score", Score, newScore, " Reject", sw, oldDomain, newDomain, worstScore, bestScore, transitionProbability
 				self.switchDomains[sw] = oldDomain
 				self.recomputeBoundaries(sw, newDomain, oldDomain)
 
@@ -288,7 +292,7 @@ class OuterZeppelinSynthesiser(object) :
 			neighbours = self.topologyNeighbours[sw]
 			for n in neighbours :
 				if self.switchDomains[n] == domain : 
-					if n not in reachableSwitches : 
+					if n not in reachableSwitches and n not in switchQueue : 
 						reachableSwitches[n] = True
 						switchQueue.append(n)	
 
@@ -307,65 +311,116 @@ class OuterZeppelinSynthesiser(object) :
 		""" Generate a random domain assignment to start the Metropolis walk"""
 
 		switches = range(1, self.swCount + 1)
-		currDomain = 0
-		iterations = 5000
-		domainSizes = dict()
-		for domain in range(self.numDomains) : 
-			domainSizes[domain] = 0
+		iterations = 50000
+		
+		self.switchDomains = dict()
+		for itr in range(iterations) :
+			# print "Iteration", itr
+			currDomain = 0
+			self.switchDomains = dict()
+			domainSizes = dict()
+			for domain in range(self.numDomains) : 
+				domainSizes[domain] = 0
 
-		for iter in range(iterations) :
 			while len(self.switchDomains) != self.swCount:
 				random.shuffle(switches)
+				assignedSwitchCount = len(self.switchDomains)
 				for sw in switches :
-					if sw in self.switchDomains and self.switchDomains[sw] > -1 :
+					if sw in self.switchDomains:
 						# Switch assigned. 
 						continue
-					else : 
-						# Switch not assigned.
-						neighbours = self.topologyNeighbours[sw]
-						neighbouringDomains = dict()
-						unassignedNeighbour = False
-						for n in neighbours : 
-							if n in self.switchDomains and self.switchDomains[n] > -1 :
-								# Neighbour assigned
-								neighbouringDomains[self.switchDomains[n]] = True
-							else : 
-								unassignedNeighbour = True
 
-						if len(neighbouringDomains.keys()) == 0 : 
-							# No neighbour assigned. Assign a new domain to this switch
-							if currDomain >= self.numDomains : continue
-							self.switchDomains[sw] = currDomain 
-							domainSizes[currDomain] += 1
-							currDomain += 1
+					neighbours = self.topologyNeighbours[sw]
+					neighbouringDomains = dict()
+					assignedNeighbour = False
+					for n in neighbours : 
+						if n in self.switchDomains:
+							# Neighbour assigned
+							neighbouringDomains[self.switchDomains[n]] = True
+							assignedNeighbour = True
 
-						elif len(neighbouringDomains.keys()) == 1 and not unassignedNeighbour:
-							# All neighbours are assigned to same domain, assign this to same domain
-							self.switchDomains[sw] = self.switchDomains[neighbours[0]]
-							domainSizes[self.switchDomains[neighbours[0]]] += 1
+					if currDomain >= self.numDomains : 						
+						if len(neighbouringDomains.keys()) == 0 :
+							# No neighbour assigned
+							continue
 						else : 
-							# Some neighbours are assigned, some are not. 
-							# Pick a domain which violated lower bound, or else others randomly
-							totalNeighbourDomains = len(neighbouringDomains)
-							for nd in neighbouringDomains : 
-								if domainSizes[nd] < self.domainLowerLimit : 
-									self.switchDomains[sw] = nd
-									domainSizes[nd] += 1
-									continue 
+							# Pick domain with minimum size 
+							sortedDomains = []
+
+							for d in neighbouringDomains.keys() :
+								sortedDomains.append([d, neighbouringDomains[d]])
+
+							sortedDomains = sorted(sortedDomains, key=lambda p: p[1])
+
+							for d in sortedDomains :
+								domain = d[0]
+								currentSize = domainSizes[domain]
+								newSize = min(self.domainUpperLimit, currentSize + 2) # Weird constant
+								switchQueue = [sw]
+
+								while len(switchQueue) > 0 and domainSizes[domain] < newSize :
+									sw1 = switchQueue.pop(0)
+									neighbours = self.topologyNeighbours[sw1]
+									if sw1 not in self.switchDomains : 
+										# switch not assigned
+										self.switchDomains[sw1] = domain
+										# print sw1, domain
+										domainSizes[domain] += 1
+
+									for n in neighbours : 
+										if n not in self.switchDomains and n not in switchQueue:
+											switchQueue.append(n) 
+						
+					else : 
+						# Check if any neighbours are assigned to some domain. Then dont assign.
+						if len(neighbouringDomains.keys()) > 0 :
+							continue 
+
+						self.switchDomains[sw] = currDomain
+						domainSizes[currDomain] += 1
+						# Do a BFS from this switch till we exceed lower limit
+						switchQueue = [sw]
+						while len(switchQueue) > 0 and domainSizes[currDomain] < self.domainLowerLimit :
+							sw1 = switchQueue.pop(0)
+							neighbours = self.topologyNeighbours[sw1]
+							if sw1 not in self.switchDomains : 
+								# switch not assigned
+								self.switchDomains[sw1] = currDomain
+								# print sw1, currDomain
+								domainSizes[currDomain] += 1
+							for n in neighbours : 
+								if n not in self.switchDomains and n not in switchQueue:
+									switchQueue.append(n) 
+
+						if domainSizes[currDomain] < self.domainLowerLimit :
+							# BFS could not find a domain with size greater than lower limit, Find a new assignment
+							break
 							
-							self.switchDomains[sw] = neighbouringDomains.keys()[random.randint(0, totalNeighbourDomains - 1)]
-		
+						# print "Size", currDomain, domainSizes[currDomain]
+						currDomain += 1
+
+				if len(self.switchDomains) == assignedSwitchCount and len(self.switchDomains) != self.swCount:
+					# No switch assigned in this pass. Find a new assignment
+					break
+
+
 			# Check validity
 			if not self.checkValidDomainAssignment() : 
-				# Not a valid domain assignment. Retry
-				self.switchDomains = dict()
 				continue
 			else :
 				break
+		if itr >= iterations - 1 : 
+			print "Cannot find a random domain assignment satisfying input policies even after 20k iterations"
+			exit(0)
+
 
 	def checkValidDomainAssignment(self) :	
-		# Checks the validity of a particular domain assignment. 
+		# Checks the validity of a particular domain assignment.
+		if len(self.switchDomains) != self.swCount :
+			# print "Size"
+			return False
 
+		self.domains = dict()
 		for sw in range(1, self.swCount + 1) :
 			if self.switchDomains[sw] not in self.domains : 
 				self.domains[self.switchDomains[sw]] = [sw]
@@ -373,10 +428,6 @@ class OuterZeppelinSynthesiser(object) :
 				if sw not in self.domains[self.switchDomains[sw]] : 
 					self.domains[self.switchDomains[sw]].append(sw)
 
-			# for domain in range(self.numDomains) :
-			# 	if len(self.domains[domain]) < self.domainLowerLimit or len(self.domains[domain]) > self.domainUpperLimit:
-			# 		# Domain size violated.
-			# 		return False
 
 			# A switch must be connected to atleast one switch of the same domain. (Assuming no single switch domains)
 			neighbours = self.topologyNeighbours[sw]
@@ -386,7 +437,13 @@ class OuterZeppelinSynthesiser(object) :
 					isConnected = True
 			if not isConnected :
 				# No neighbour in same domain. Not a valid assignment
-				print sw, self.switchDomains[sw], neighbours
+				# print "No neighbours"
+				return False
+
+		for domain in range(self.numDomains) :
+			if len(self.domains[domain]) < self.domainLowerLimit or len(self.domains[domain]) > self.domainUpperLimit:
+				# Domain size violated.
+				# print "Domain size violated"
 				return False
 
 		# Check if domains are contiguous. We do this by starting at a switch, and
@@ -398,7 +455,8 @@ class OuterZeppelinSynthesiser(object) :
 
 			while len(reachableSwitches) < len(domainSwitches):
 				if len(switchQueue) == 0 : 
-					# Partition in domain. Not valid! 
+					# Partition in domain. Not valid!
+					# print "Partition" 
 					return False
 				sw = switchQueue.pop(0)
 				neighbours = self.topologyNeighbours[sw]
@@ -427,13 +485,14 @@ class OuterZeppelinSynthesiser(object) :
 			self.prevConfScore = confScore
 		else : 
 			confScore = self.prevConfScore + self.findConfScoreDiff(sw, oldDomain, newDomain)
+			self.prevConfScore = confScore
 		self.confScoreTime += time.time() - start_t
 		if confScore > self.worstConfScore : 
 			self.worstConfScore = confScore
 		if confScore < self.bestConfScore : 
 			self.bestConfScore = confScore
 		
-		score += 2*confScore
+		score += confScore
 
 		start_t = time.time()
 		rfScore = self.routeFilterScore()
@@ -444,7 +503,7 @@ class OuterZeppelinSynthesiser(object) :
 		if rfScore < self.bestRFScore : 
 			self.bestRFScore = rfScore
 
-		score += 0.5*rfScore
+		score += 0.05*rfScore
 
 		return score
 
@@ -561,15 +620,14 @@ class OuterZeppelinSynthesiser(object) :
 
 				if linkCount > 1 : 
 					# Multiple links connecting the AS. Require 1 local preference entry
-					# score += 1 
-					score += 0
+					score += 1 
+
 				else : 
 					# Check if d1-d2 is on the unique shortest AS path to destination AS
 					[uniqueness, aspath1] = self.findShortestASPath(domain1, aspath[len(aspath) - 1])
 					if not uniqueness : 
 						# Shortest AS path not unique. Require 1 local preference entry
-						# score += 1
-						score += 0
+						score += 1
 					else: 
 						# Shortest AS path is unique, see if it contains d1->d2
 						if aspath1[1] == domain2 : 
@@ -577,8 +635,7 @@ class OuterZeppelinSynthesiser(object) :
 							score += 0
 						else : 
 							# d1 -> d2 not on shortest AS path. Require 1 local preference entry
-							# score += 1
-							score += 0
+							score += 1
 
 		return score
 
@@ -800,8 +857,6 @@ class OuterZeppelinSynthesiser(object) :
 					
 					topopath = []
 					for sw in domainpath :
-						if switchDomains[sw] != domain :
-							print sw, self.topology.getSwName(sw), switchDomains[sw], domain
 						topopath.append(topology.getSwID(self.topology.getSwName(sw)))
 
 					subnet = self.pdb.getDestinationSubnet(pc)
@@ -848,9 +903,6 @@ class OuterZeppelinSynthesiser(object) :
 
 					topopath = []
 					for sw in domainpath :
-						if switchDomains[sw] != domain :
-							print sw, self.topology.getSwName(sw), switchDomains[sw], domain
-							exit(0)
 						topopath.append(topology.getSwID(self.topology.getSwName(sw)))
 
 					subnet = self.pdb.getDestinationSubnet(pc)
