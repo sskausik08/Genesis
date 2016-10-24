@@ -523,6 +523,9 @@ class PolicyDatabase(object) :
 	def getDestinationDAGs(self) : 
 		return self.dags
 
+	def addBGPExtensions(self, bgpExtensions) :
+		self.bgpExtensions = copy.deepcopy(bgpExtensions)
+
 	def validateControlPlane(self, topology, routefilters, t_res) :
 		violationCount = 0
 		for pc in range(self.getPacketClassRange()) :
@@ -555,12 +558,21 @@ class PolicyDatabase(object) :
 					print "Not resilient", pc, self.getSourceSwitch(pc)
 					violationCount += 1
 
+			for tup in self.bgpExtensions : 
+				if tup[3] != dst : continue
+				if tup[1] != dstSw : continue
+				zpath2 = topology.getShortestPath(src, tup[2], routefilters[dst]) # Find path to other BGP gateway
+				if topology.getPathDistance(gpath) > topology.getPathDistance(zpath2) : 
+					print "Destination switch isnt closest gateway"
+					violationCount += 1
+
+
 		if violationCount > 0 :
 			print "Error: incorrect OSPF configuration"
 			print "Number of Violations is", violationCount
 			exit(0)
 
-	# def removeRedundantFilters(self, topology, routefilters) : 
+	
 
 
 	def addTrafficEngineeringObjective(self, minavg=False, minmax=False) :

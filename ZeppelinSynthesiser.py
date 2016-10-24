@@ -124,23 +124,20 @@ class ZeppelinSynthesiser(object) :
 			return 0.0
 		return self.distVars[sw1][sw2][dst]
 
-	def enforceDAGs(self, dags, endpoints):
+	def enforceDAGs(self, dags, endpoints, bgpExtensions=None):
 		""" Enforce the input destination dags """
 		start_t = time.time()
 		self.overlay = dict()
 		self.destinationDAGs = copy.deepcopy(dags)
 		self.spGraphs = []
-
-		# Create list of dags 
-		# for dag in self.destinationDAGs.values() : 
-		# 	# print dag
-		# 	spGraph = dict()
-		# 	for sw in dag :
-		# 		spGraph[sw] = []
-		# 		if dag[sw] <> None : 
-		# 			spGraph[sw].append(dag[sw])
-
-		# 	self.spGraphs.append(spGraph)
+		self.bgpExtensions = []
+		if bgpExtensions != None : 
+			# For an inter-domain setting, there are instances when 
+			# a source must have distance to its endpoint smaller 
+			# than another endpoint in the topology. 
+			# BGPextensions is a list of [src, end1, end2, dst] tuples 
+			# which specifies src1 -> end1 path is smaller than src1 -> end2
+			self.bgpExtensions = copy.deepcopy(bgpExtensions)
 
 		self.endpoints = copy.deepcopy(endpoints)
 		
@@ -387,7 +384,7 @@ class ZeppelinSynthesiser(object) :
 					# find a color based on dst
 					color = dst * 45 % 256
 					sw = s
-					while sw <> t:
+					while sw != t:
 						graph.add_node(sw)
 						graph.add_edge(sw, dag[sw])
 						# Assign color to edges
@@ -466,7 +463,7 @@ class ZeppelinSynthesiser(object) :
 			dag = self.destinationDAGs[dst]
 			for sw1 in dag :
 				sw2 = dag[sw1] # Edge sw1 -> sw2
-				if sw2 <> None : 
+				if sw2 != None : 
 					if sw2 not in self.overlay[sw1] : 
 						self.overlay[sw1].append(sw2)
 
@@ -556,7 +553,7 @@ class ZeppelinSynthesiser(object) :
 
 	# 	for sw in dag : 
 	# 		nextsw = dag[sw]
-	# 		while nextsw <> None :				
+	# 		while nextsw != None :				
 	# 			if nextsw == dag[sw] :
 	# 				self.ilpSolver.addConstr(self.dist(sw, nextsw) == self.ew(sw, dag[sw]))
 	# 			else : 
@@ -564,7 +561,7 @@ class ZeppelinSynthesiser(object) :
 				
 	# 			neighbours = self.topology.getSwitchNeighbours(sw)
 	# 			for n in neighbours : 
-	# 				if n <> dag[sw] : 
+	# 				if n != dag[sw] : 
 	# 					self.ilpSolver.addConstr(self.dist(sw, nextsw) <= self.ew(sw, n) + self.dist(n, nextsw) - 1)
 
 	# 			nextsw = dag[nextsw]
@@ -575,12 +572,12 @@ class ZeppelinSynthesiser(object) :
 		if not routeFilterMode :
 			for sw in dag : 
 				t = dag[sw]
-				while t <> None :				
+				while t != None :				
 					self.ilpSolver.addConstr(self.dist(sw, t) == self.ew(sw, dag[sw]) + self.dist(dag[sw], t))
 
 					neighbours = self.topology.getSwitchNeighbours(sw)
 					for n in neighbours : 
-						if n <> dag[sw] : 
+						if n != dag[sw] : 
 							self.ilpSolver.addConstr(self.dist(sw, t) <= self.ew(sw, n) + self.dist(n, t) - 1)
 							
 					t = dag[t]
@@ -588,10 +585,10 @@ class ZeppelinSynthesiser(object) :
 			constraintIndex = 0
 			for sw in dag :
 				t = dag[sw]
-				while t <> None :							
+				while t != None :							
 					nextsw = sw
 					totalDist = 0 # Store the distance from sw to t along dag.
-					while nextsw <> t : 
+					while nextsw != t : 
 						totalDist += self.ew(nextsw, dag[nextsw])
 						nextsw = dag[nextsw]
 
@@ -599,12 +596,43 @@ class ZeppelinSynthesiser(object) :
  
 					neighbours = self.topology.getSwitchNeighbours(sw)
 					for n in neighbours : 
-						if n <> dag[sw] and [sw, n] not in self.routefilters[dst] : 
+						if n != dag[sw] and [sw, n] not in self.routefilters[dst] : 
 							self.ilpSolver.addConstr(totalDist <= self.ew(sw, n) + self.dist(n, t) - 1, "RF-" + str(sw) + "-" 
 								+ str(n) + "-" + str(t) + "-" + str(dst) + "-" + str(constraintIndex))
 							constraintIndex += 1
 					
-					t = dag[t]			
+					t = dag[t]	
+
+		self.addBGPExtensionConstraints(dst, dag, routeFilterMode)		
+
+	def addBGPExtensionConstraints(self, dst, dag, routeFilterMode=True) :
+		for tup in self.bgpExtensions: 
+			if tup[3] != dst : continue
+			src = tup[0]
+			end1 = tup[1]
+			end2 = tup[2]
+			if not routeFilterMode :
+				while src != None:
+					self.ilpSolver.addConstr(self.dist(src, end1) <= self.dist(src, end2) - 1)
+					src = dag[src]
+			else:
+				constraintIndex = 0
+				while src != None:			
+					nextsw = src
+					totalDist = 0 # Store the distance from sw to end1 along dag.
+					while nextsw != end1 : 
+						totalDist += self.ew(nextsw, dag[nextsw])
+						nextsw = dag[nextsw]
+ 
+					neighbours = self.topology.getSwitchNeighbours(src)
+					for n in neighbours : 
+						if n != dag[src] and [src, n] not in self.routefilters[dst] : 
+							self.ilpSolver.addConstr(totalDist <= self.ew(src, n) + self.dist(n, end2) - 1, "RF-" + str(src) + "-" 
+								+ str(n) + "-" + str(end2) + "-" + str(dst) + "-" + str(constraintIndex))
+							constraintIndex += 1
+					
+					src = dag[src]
+					
 
 	def addDestinationDAGConstraintsRF(self, dst, dag) :
 		""" Adds constraints such that dag weights are what we want them to be with route filtering disabled/enabled """
@@ -612,10 +640,10 @@ class ZeppelinSynthesiser(object) :
 		constraintIndex = 0
 		for sw in dag : 
 			t = dag[sw]
-			while t <> None :			
+			while t != None :			
 				nextsw = sw
 				totalDist = 0 # Store the distance from sw to t along dag.
-				while nextsw <> t : 
+				while nextsw != t : 
 					totalDist += self.ew(nextsw, dag[nextsw])
 					nextsw = dag[nextsw]
 
@@ -624,7 +652,7 @@ class ZeppelinSynthesiser(object) :
 				# Route filtering equations
 				neighbours = self.topology.getSwitchNeighbours(sw)
 				for n in neighbours : 
-					if n <> dag[sw] : 
+					if n != dag[sw] : 
 						self.ilpSolver.addConstr(totalDist <= 10*self.rf(sw,n,dst) + self.ew(sw, n) + self.dist(n, t) - 1, "C-" + str(dst) + "-" + str(constraintIndex))
 						constraintIndex += 1
 				
@@ -707,7 +735,7 @@ class ZeppelinSynthesiser(object) :
 
 	# 	filters = []
 	# 	for n in neighbours :
-	# 		if n <> dag[src] :
+	# 		if n != dag[src] :
 	# 			filters.append(self.rf(src, n, dst))
 		
 	# 	self.leastSubsetFilters(filters, t_res) # Atleast t_res filters must be zero for t_res + 1 paths (one through dag).
@@ -717,7 +745,7 @@ class ZeppelinSynthesiser(object) :
 		self.topology.initializeWeights()
 		swCount = self.topology.getSwitchCount()
 		dsts = self.pdb.getDestinationSubnets()
-		self.distances = [[0 for x in range(swCount + 1)] for x in range(swCount + 1)]
+		# self.distances = [[0 for x in range(swCount + 1)] for x in range(swCount + 1)]
 
 		for sw in range(1, swCount + 1) :
 			for n in self.topology.getSwitchNeighbours(sw) : 
@@ -733,10 +761,10 @@ class ZeppelinSynthesiser(object) :
 					self.topology.addWeight(sw, n, float(ew))
 					#print sw, n,  float(ew)
 
-		for s in range(1, swCount + 1) :
-			for t in range(1, swCount + 1) :
-				if s == t : continue
-				self.distances[s][t] = self.dist(s,t).x
+		# for s in range(1, swCount + 1) :
+		# 	for t in range(1, swCount + 1) :
+		# 		if s == t : continue
+		# 		self.distances[s][t] = self.dist(s,t).x
 		# 		#print s,t, self.distances[s][t]
 
 		if not routeFilterMode :
@@ -748,17 +776,17 @@ class ZeppelinSynthesiser(object) :
 		for dst in dsts : 
 			dag = self.destinationDAGs[dst]
 			for sw in dag : 
-				if sw == dst : continue
+				if dag[sw] == None : continue
 				neighbours = self.overlay[sw]
 				for n in neighbours : 
-					if n <> dag[sw] : 
+					if n != dag[sw] : 
 						totalRouteFilters += 1
 						if self.minimalFilterSolveFlag :
 							if self.rf(sw,n,dst).x >= 0.1 : 
 								self.routefilters[dst].append([sw,n])
 					# if [sw,dst] in self.endpoints :
 					# 	rf = self.rf(sw,n,dst).x
-					# 	if rf > 0 and n <> dag[sw]:
+					# 	if rf > 0 and n != dag[sw]:
 					# 		if [sw, n] not in self.routefilters[dst] :
 					# 			self.routefilters[dst].append([sw,n])
 		
@@ -799,10 +827,10 @@ class ZeppelinSynthesiser(object) :
 	
 	# 	for sw in dag : 
 	# 		t = dag[sw]
-	# 		while t <> None :			
+	# 		while t != None :			
 	# 			nextsw = sw
 	# 			totalDist = 0 # Store the distance from sw to t along dag.
-	# 			while nextsw <> t : 
+	# 			while nextsw != t : 
 	# 				totalDist += self.ew(nextsw, dag[nextsw]).x
 	# 				nextsw = dag[nextsw]
 
@@ -810,7 +838,7 @@ class ZeppelinSynthesiser(object) :
 	# 				# Route filtering equations
 	# 				neighbours = self.overlay[sw]
 	# 				for n in neighbours : 
-	# 					if n <> dag[sw] : 
+	# 					if n != dag[sw] : 
 	# 						if n == t : 
 	# 							distvar = 0
 	# 						else : 
@@ -859,16 +887,16 @@ class ZeppelinSynthesiser(object) :
 					if swDiv in dag2 : 
 						if dag2[swDiv] == None : continue
 						# swDiv in the dag. Check if both dags diverge
-						if dag1[swDiv] <> dag2[swDiv] : 
+						if dag1[swDiv] != dag2[swDiv] : 
 							# Diverging common switches, search for intersecting switch
 							dstpath1 = [dag1[swDiv]] 
 							nextsw = dag1[dag1[swDiv]]
-							while nextsw <> None:
+							while nextsw != None:
 								dstpath1.append(nextsw)
 								nextsw = dag1[nextsw]
 							dstpath2 = [dag2[swDiv]]
 							nextsw = dag2[dag2[swDiv]]
-							while nextsw <> None:
+							while nextsw != None:
 								dstpath2.append(nextsw)
 								nextsw = dag2[nextsw]
 							# dstpath1 and dstpath2 are paths from sw to their respective destinations
@@ -892,7 +920,7 @@ class ZeppelinSynthesiser(object) :
 
 									exists = False
 									for dst in self.diamondPaths[swDiv][swConv] :
-										if self.diamondPaths[swDiv][swConv][dst] == dstpath1 and dst <> dst1 :
+										if self.diamondPaths[swDiv][swConv][dst] == dstpath1 and dst != dst1 :
 											# dstpath1's diamond already exists, ignore. 
 											exists = True
 											break
@@ -904,7 +932,7 @@ class ZeppelinSynthesiser(object) :
 
 									exists = False
 									for dst in self.diamondPaths[swDiv][swConv] :
-										if self.diamondPaths[swDiv][swConv][dst] == dstpath2 and dst <> dst2 :
+										if self.diamondPaths[swDiv][swConv][dst] == dstpath2 and dst != dst2 :
 											# dstpath1's diamond already exists, ignore. 
 											exists = True
 											break
@@ -946,7 +974,7 @@ class ZeppelinSynthesiser(object) :
 		# 	# Find a suitable source-dst pair to assign ranks
 		# 	for s in range(1, swCount + 1) : 
 		# 		for t in range(1, swCount + 1) : 
-		# 			if len(self.diamondPaths[s][t]) > 0 and len(self.switchRanks[s][t]) <> len(self.diamondPaths[s][t]): 
+		# 			if len(self.diamondPaths[s][t]) > 0 and len(self.switchRanks[s][t]) != len(self.diamondPaths[s][t]): 
 		# 				subsetOnlyEdges = []
 		# 				supersetOnlyEdges = []
 		# 				unConstrainedEdges = []
@@ -1118,7 +1146,7 @@ class ZeppelinSynthesiser(object) :
 			dpaths2 = self.dependencyList[key2]
 			newdpaths2 = []
 			for dpath2 in dpaths2 : 
-				if dpath2 <> path1 :
+				if dpath2 != path1 :
 					newdpaths2.append(dpath2)
 			if len(newdpaths2) == 0 :
 				# Unconstrained 
@@ -1159,7 +1187,7 @@ class ZeppelinSynthesiser(object) :
 		dag = self.destinationDAGs[dst]
 		diamonds = self.dstDiamonds[dst]
 		nextsw = src
-		while nextsw <> None:
+		while nextsw != None:
 			for dpath in diamonds : 
 				if nextsw in dpath : 
 					return True
@@ -1197,7 +1225,7 @@ class ZeppelinSynthesiser(object) :
 								nextsw2 = diamond[1]
 								#rank2 = self.getSwitchRank(s,t,nextsw2)
 
-								if nextsw1 <> nextsw2 : 
+								if nextsw1 != nextsw2 : 
 									# add s-nextsw2 to dst's route filters
 									self.addRouteFilter(s, nextsw2, dst)
 
@@ -1222,7 +1250,7 @@ class ZeppelinSynthesiser(object) :
 			dag = self.destinationDAGs[dst]
 			for sw in dag : 
 				for n in self.topology.getSwitchNeighbours(sw) :
-					if n <> dag[sw] and [sw, n] not in self.routefilters[dst] : 
+					if n != dag[sw] and [sw, n] not in self.routefilters[dst] : 
 						self.routefilters[dst].append([sw,n])
 
 	def generateResilientRouteFilters(self) :
@@ -1234,7 +1262,7 @@ class ZeppelinSynthesiser(object) :
 				if sw == dst : continue
 				if [sw, dst] not in self.endpoints : 
 					for n in self.topology.getSwitchNeighbours(sw) :
-						if n <> dag[sw] and [sw, n] not in self.routefilters[dst] : 
+						if n != dag[sw] and [sw, n] not in self.routefilters[dst] : 
 							self.routefilters[dst].append([sw,n])
 
 	def branchingFilters(self) :
@@ -1245,7 +1273,7 @@ class ZeppelinSynthesiser(object) :
 		while len(self.routefilterSetQueue) > 0 :
 			rfSet = self.routefilterSetQueue.pop(0)
 			rfBranchs = self.branch(rfSet)
-			if rfBranchs <> None :
+			if rfBranchs != None :
 				self.routefilterSetQueue.extend(rfBranchs)
 			else :
 				# Consistent
@@ -1315,7 +1343,7 @@ class ZeppelinSynthesiser(object) :
 		depth = 0
 		while True :
 			val = self.DLS([], depth)
-			if val <> None :
+			if val != None :
 				break 
 			else :
 				depth = depth + 1
@@ -1369,7 +1397,7 @@ class ZeppelinSynthesiser(object) :
 					rfs1 = copy.deepcopy(rfs)
 					rfs1.append(rf)
 					val = self.DLS(rfs1, depth - 1)		
-					if val <> None :
+					if val != None :
 						return val
 				return None	
 		else : 
@@ -1391,7 +1419,7 @@ class ZeppelinSynthesiser(object) :
 
 		swBacks = [] 
 		swBack = vcDag[vcRF[0]]
-		while swBack <> None :
+		while swBack != None :
 			swBacks.append(swBack)
 			swBack = vcDag[swBack]
 
@@ -1418,7 +1446,7 @@ class ZeppelinSynthesiser(object) :
 					exit(0)
 					continue
 				for n in self.topology.getSwitchNeighbours(end) :
-					if n <> vcDag[end] :
+					if n != vcDag[end] :
 						disabledEdges.append([end, n])
 
 				# Route Filter disabled edges
@@ -1483,7 +1511,7 @@ class ZeppelinSynthesiser(object) :
 					spGraph[sw] = dstGraph[sw]
 
 		# Check if target is still empty
-		if spGraph[t] <> [] :
+		if spGraph[t] != [] :
 			print "Some error!"
 
 		return spGraph
@@ -1590,7 +1618,7 @@ class ZeppelinSynthesiser(object) :
 						if edge[0] in dag and edge[1] == dag[edge[0]] :
 							sw = edge[1]
 							count = 1
-							while sw <> None :
+							while sw != None :
 								if (sw, dag[sw]) in cycle : 
 									count += 1
 								else :
@@ -1632,7 +1660,7 @@ class ZeppelinSynthesiser(object) :
 							if cycle[0][0] in dag and cycle[0][1] == dag[cycle[0][0]] :
 								sw = cycle[0][1]
 								count = 1
-								while sw <> None :
+								while sw != None :
 									if (sw, dag[sw]) in cycle : 
 										count += 1
 									else :
@@ -1737,7 +1765,7 @@ class ZeppelinSynthesiser(object) :
 	# 		# Add route filters such that path from src-> dst is genesisPath
 	# 		path = self.topology.getShortestPath(src, dst, self.routefilters[dst])
 
-	# 		while genesisPath <> path:
+	# 		while genesisPath != path:
 	# 			# Find first divergence
 	# 			print path, genesisPath
 	# 			i = 0
@@ -1782,7 +1810,7 @@ class ZeppelinSynthesiser(object) :
 
 	# 	newFilters = []
 	# 	maxX = filters.pop()
-	# 	while len(filters) <> 0 :
+	# 	while len(filters) != 0 :
 	# 		x = filters.pop()
 	# 		xmax = self.ilpSolver.addVar(lb=0.00, ub=1.00, vtype=gb.GRB.CONTINUOUS)
 	# 		xmin = self.ilpSolver.addVar(lb=0.00, ub=1.00, vtype=gb.GRB.CONTINUOUS)

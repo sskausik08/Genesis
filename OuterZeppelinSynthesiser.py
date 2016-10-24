@@ -12,10 +12,11 @@ from collections import defaultdict
 from ZeppelinSynthesiser import ZeppelinSynthesiser
 
 class OuterZeppelinSynthesiser(object) :
-	def __init__(self, topology, pdb) :
+	def __init__(self, topology, pdb, numDomains=5, timeout=300) :
 		self.topology = topology
 		self.pdb = pdb
 	
+
 		# Store switch domains for each switch
 		self.switchDomains = dict()
 		self.domains = dict()
@@ -23,7 +24,7 @@ class OuterZeppelinSynthesiser(object) :
 
 		# Domain size variables
 		self.domainUpperLimit = 40
-		self.domainLowerLimit = 5
+		self.domainLowerLimit = 10
 
 		# Domain Assignments
 		self.bestDomainAssignment = None
@@ -31,9 +32,12 @@ class OuterZeppelinSynthesiser(object) :
 
 		# BGP compatibility
 		self.nonBGPCompatibleSwitches = []
+		
+
 		# MCMC variables 
+		self.numDomains = numDomains
 		self.MCMC_MAX_ITER = 10000000	
-		self.MCMC_MAX_TIME = 300 # in seconds
+		self.MCMC_MAX_TIME = timeout # in seconds
 		self.beta = 0.045 # Constant
 
 		# Scoring State variables 
@@ -55,12 +59,11 @@ class OuterZeppelinSynthesiser(object) :
 		self.domainChangeTime = 0
 
 
-	def enforceDAGs(self, dags, paths, endpoints, numDomains=5):
+	def enforceDAGs(self, dags, paths, endpoints):
 		""" Enforce the input destination dags """
 		self.destinationDAGs = copy.deepcopy(dags)
 		self.paths = copy.deepcopy(paths)
 		self.endpoints = copy.deepcopy(endpoints)
-		self.numDomains = numDomains
 		self.topologyNeighbours = self.topology.getNeighbours()
 		self.swCount = self.topology.getSwitchCount()
 
@@ -503,7 +506,7 @@ class OuterZeppelinSynthesiser(object) :
 		if rfScore < self.bestRFScore : 
 			self.bestRFScore = rfScore
 
-		score += 0.05*rfScore
+		score += 0.02*rfScore
 
 		return score
 
@@ -827,7 +830,7 @@ class OuterZeppelinSynthesiser(object) :
 		return topo
 
 	def getDomainDAGs(self, domain, pdb, topology, switchDomains=None) : 
-		""" Returns DAGs and endpoints for domain. Side-effect: Sets up pdb with the paths """
+		""" Returns DAGs, endpoints and bgpExtensions for domain. Side-effect: Sets up pdb with the paths """
 		
 		if switchDomains == None :
 			switchDomains = self.switchDomains
@@ -918,8 +921,28 @@ class OuterZeppelinSynthesiser(object) :
 					dags[subnet][topopath[len(topopath) - 1]] = None
 					for i in range(len(topopath) - 1) :
 						dags[subnet][topopath[i]] = topopath[i + 1]
+		
+		bgpExtensions = []
+		# Find BGP extensions
+		for subnet in dags : 
+			bgpRouters = []
+			dag = dags[subnet]
+			# extract the bgp routers. 
+			for sw in dag : 
+				if dag[sw] == None : 
+					bgpRouters.append(sw)
+
+			if len(bgpRouters) > 1 :
+				# More than one endpoint. 
+				for pc in range(pdb.getPacketClassRange()) : 
+					if pdb.getDestinationSubnet(pc) == subnet : 
+						for bgpr in bgpRouters : 
+							if bgpr != pdb.getDestinationSwitch(pc) : 
+								bgpExtensions.append([pdb.getSourceSwitch(pc), pdb.getDestinationSwitch(pc), bgpr, subnet])
+
+		pdb.addBGPExtensions(bgpExtensions)
 		# print dags
-		return [dags, endpoints]
+		return [dags, endpoints, bgpExtensions]
 		
 
 	def synthesizeOSPFConfigurations(self, switchDomains=None) : 
@@ -930,13 +953,13 @@ class OuterZeppelinSynthesiser(object) :
 
 			pdb = PolicyDatabase()
 			print "domain", domain
-			[dags, endpoints] = self.getDomainDAGs(domain, pdb, topo, switchDomains)
+			[dags, endpoints, bgpExtensions] = self.getDomainDAGs(domain, pdb, topo, switchDomains)
 
 			for dst in dags : 
 				pdb.addDestinationDAG(dst, dags[dst])
 
 			zepSynthesiser = ZeppelinSynthesiser(topo, pdb)
-			routeFilters = zepSynthesiser.enforceDAGs(dags, endpoints)
+			routeFilters = zepSynthesiser.enforceDAGs(dags, endpoints, bgpExtensions)
 
 			for dst in routeFilters : 
 				RFCount += len(routeFilters[dst])
