@@ -11,28 +11,31 @@ import math
 """ Generating random dags for Zeppelin """
 
 class ZeppelinInputGenerator(object) :
-	def __init__(self, topo, pdb, pcRange) :
+	def __init__(self, topo, pdb, pcRange, subnets) :
 		self.topology = topo
 		self.pdb = pdb
 
 		swCount = self.topology.getSwitchCount()
-		edgeSwitches = (self.topology.getSwitchCount() * 2/ 5) - 1  
 		self.endpoints = []
 		self.destinationDAGs = dict()
+		self.destinationSwitches = dict()
 		self.paths = dict()
 
+		destinationSubnets = subnets
 
 		currpc = 0
 		while currpc < pcRange : 
-			dst = currpc
-			dstSw = random.randint(1, swCount)
+			dst = currpc % destinationSubnets
 
 			length = random.randint(3, self.topology.getMaxPathLength())
 
 			if dst not in self.destinationDAGs : 
 				self.destinationDAGs[dst] = dict()
+				dstSw = random.randint(1, swCount)
 				self.destinationDAGs[dst][dstSw] = None
+				self.destinationSwitches[dst] = dstSw
 			dag = self.destinationDAGs[dst]
+			dstSw = self.destinationSwitches[dst]
 
 			# Do a random DFS from dst to length steps
 			diverged = False

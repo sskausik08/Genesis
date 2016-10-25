@@ -21,6 +21,7 @@ class Zeppelin(object):
 		"""
 		# Parse the command line arguments
 		self.pcRange = 10 # default
+		self.subnets = 10 
 		no = 0
 		self.topoargFlag = False
 		self.ospfFlag = False
@@ -31,6 +32,8 @@ class Zeppelin(object):
 				self.topoargFlag = True
 			if arg == "-pc" :
 				self.pcRange = int(sys.argv[no + 1])
+			if arg == "-subnets" :
+				self.subnets = int(sys.argv[no + 1])
 			if arg == "-ospf" : 
 				self.ospfFlag = True # Synthesize a single ospf domain.
 			if arg == "-to" :
@@ -48,7 +51,7 @@ class Zeppelin(object):
 		
 	def run(self):
 		self.gplparser.parseTopo()
-		self.zepInput = ZeppelinInputGenerator(self.topology, self.policyDatabase, self.pcRange)
+		self.zepInput = ZeppelinInputGenerator(self.topology, self.policyDatabase, self.pcRange, self.subnets)
 			
 		if self.ospfFlag : 
 			# Synthesize a single OSPF domain.
