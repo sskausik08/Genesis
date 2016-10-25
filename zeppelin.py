@@ -7,6 +7,7 @@ from Topology import Topology
 from PolicyDatabase import PolicyDatabase
 from ZeppelinSynthesiser import ZeppelinSynthesiser
 from OuterZeppelinSynthesiser import OuterZeppelinSynthesiser
+from ZeppelinSynthesiser2 import ZeppelinSynthesiser2
 from ZeppelinInputGenerator import ZeppelinInputGenerator
 import sys
 
@@ -23,6 +24,7 @@ class Zeppelin(object):
 		no = 0
 		self.topoargFlag = False
 		self.ospfFlag = False
+		self.timeout = 300
 		for arg in sys.argv : 
 			if arg == "-topo" :
 				self.topofile = sys.argv[no + 1]
@@ -31,6 +33,8 @@ class Zeppelin(object):
 				self.pcRange = int(sys.argv[no + 1])
 			if arg == "-ospf" : 
 				self.ospfFlag = True # Synthesize a single ospf domain.
+			if arg == "-to" :
+				self.timeout = int(sys.argv[no + 1])
 
 			no += 1
 
@@ -52,7 +56,7 @@ class Zeppelin(object):
 			self.zepSynthesiser.enforceDAGs(self.zepInput.getDestinationDAGs(), self.zepInput.getEndpoints())
 
 		else : 
-			self.outerZepSynthesizer = OuterZeppelinSynthesiser(self.topology, self.policyDatabase)
+			self.outerZepSynthesizer = OuterZeppelinSynthesiser(topology=self.topology, pdb=self.policyDatabase, timeout=self.timeout)
 			self.outerZepSynthesizer.enforceDAGs(self.zepInput.getDestinationDAGs(), self.zepInput.getPaths(), self.zepInput.getEndpoints())
 	
 

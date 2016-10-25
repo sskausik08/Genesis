@@ -675,6 +675,8 @@ class OuterZeppelinSynthesiser(object) :
 
 		return scoreDiff
 			
+	def findBestBGPPath(self, srcDomain, dstDomain) : 
+		pass
 
 	def findShortestASPath(self, srcDomain, dstDomain) :
 		""" Find shortest path from src to dst domains. Return uniqueness of shortest path as well"""
@@ -908,19 +910,21 @@ class OuterZeppelinSynthesiser(object) :
 					for sw in domainpath :
 						topopath.append(topology.getSwID(self.topology.getSwName(sw)))
 
-					subnet = self.pdb.getDestinationSubnet(pc)
-					dpc = pdb.addReachabilityPolicy(subnet, topopath[0], topopath[len(topopath) - 1])
-					pdb.addPath(dpc, topopath)
-					endpoints.append([topopath[0], subnet])
+					if len(topopath) > 1 : 
+						# If len == 1, then path will not use OSPF
+						subnet = self.pdb.getDestinationSubnet(pc)
+						dpc = pdb.addReachabilityPolicy(subnet, topopath[0], topopath[len(topopath) - 1])
+						pdb.addPath(dpc, topopath)
+						endpoints.append([topopath[0], subnet])
 
-					# print aspath, lastNonLoopDownstreamPath, path, self.pdb.getDestinationSubnet(pc), domainpath
-					# Add path to Dag of subnet
-					if subnet not in dags :
-						dags[subnet] = dict()
-					
-					dags[subnet][topopath[len(topopath) - 1]] = None
-					for i in range(len(topopath) - 1) :
-						dags[subnet][topopath[i]] = topopath[i + 1]
+						# print aspath, lastNonLoopDownstreamPath, path, self.pdb.getDestinationSubnet(pc), domainpath
+						# Add path to Dag of subnet
+						if subnet not in dags :
+							dags[subnet] = dict()
+						
+						dags[subnet][topopath[len(topopath) - 1]] = None
+						for i in range(len(topopath) - 1) :
+							dags[subnet][topopath[i]] = topopath[i + 1]
 		
 		bgpExtensions = []
 		# Find BGP extensions

@@ -390,6 +390,9 @@ class Topology(object):
 
 	def getPathDistance(self, path) :
 		""" Returns the distance of path """
+		if len(path) == 0 :
+			return 1000000000
+
 		i = 0
 		dist = 0
 		while i < len(path) - 1 :

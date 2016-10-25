@@ -558,14 +558,17 @@ class PolicyDatabase(object) :
 					print "Not resilient", pc, self.getSourceSwitch(pc)
 					violationCount += 1
 
+
 			for tup in self.bgpExtensions : 
 				if tup[3] != dst : continue
 				if tup[1] != dstSw : continue
 				zpath2 = topology.getShortestPath(src, tup[2], routefilters[dst]) # Find path to other BGP gateway
-				if topology.getPathDistance(gpath) > topology.getPathDistance(zpath2) : 
+				if topology.getPathDistance(gpath) >= topology.getPathDistance(zpath2) : 
 					print "Destination switch isnt closest gateway"
+					print tup
+					print routefilters[dst]
+					print gpath, zpath2
 					violationCount += 1
-
 
 		if violationCount > 0 :
 			print "Error: incorrect OSPF configuration"

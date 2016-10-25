@@ -21,6 +21,7 @@ class ZeppelinSynthesiser(object) :
 		self.fwdmodel = None 
 		
 		# Route Filters
+		self.constraintIndex = 0
 		self.DISABLE_ROUTE_FILTERS = True
 
 		# Profiling Information.
@@ -522,7 +523,6 @@ class ZeppelinSynthesiser(object) :
 	# These constraints are solved fast, does exponentially increase synthesis time.
 	def addDjikstraShortestPathConstraints(self) :
 		swCount = self.topology.getSwitchCount()
-		constraintIndex = 0
 
 		for s in range(1, swCount + 1):
 			if self.topology.isSwitchDisabled(s) :
@@ -541,8 +541,8 @@ class ZeppelinSynthesiser(object) :
 				# 		self.ilpSolver.addConstr(self.dist(s, t, dst) <= self.ew(s, n) + self.dist(n, t, dst))
 
 				for sw in self.topology.getSwitchNeighbours(s) :
-					self.ilpSolver.addConstr(self.dist(s, t) <= self.ew(s, sw) + self.dist(sw, t), "D-" + str(constraintIndex) + " ")	
-					constraintIndex += 1
+					self.ilpSolver.addConstr(self.dist(s, t) <= self.ew(s, sw) + self.dist(sw, t), "D-" + str(self.constraintIndex) + " ")	
+					self.constraintIndex += 1
 
 
 	# def addDestinationDAGConstraints(self, dst, dag) :
@@ -582,7 +582,6 @@ class ZeppelinSynthesiser(object) :
 							
 					t = dag[t]
 		else:
-			constraintIndex = 0
 			for sw in dag :
 				t = dag[sw]
 				while t != None :							
@@ -598,8 +597,8 @@ class ZeppelinSynthesiser(object) :
 					for n in neighbours : 
 						if n != dag[sw] and [sw, n] not in self.routefilters[dst] : 
 							self.ilpSolver.addConstr(totalDist <= self.ew(sw, n) + self.dist(n, t) - 1, "RF-" + str(sw) + "-" 
-								+ str(n) + "-" + str(t) + "-" + str(dst) + "-" + str(constraintIndex))
-							constraintIndex += 1
+								+ str(n) + "-" + str(t) + "-" + str(dst) + "-" + str(self.constraintIndex))
+							self.constraintIndex += 1
 					
 					t = dag[t]	
 
@@ -616,20 +615,20 @@ class ZeppelinSynthesiser(object) :
 					self.ilpSolver.addConstr(self.dist(src, end1) <= self.dist(src, end2) - 1)
 					src = dag[src]
 			else:
-				constraintIndex = 0
-				while src != None:			
+				while src != end1:			
 					nextsw = src
 					totalDist = 0 # Store the distance from sw to end1 along dag.
 					while nextsw != end1 : 
 						totalDist += self.ew(nextsw, dag[nextsw])
 						nextsw = dag[nextsw]
+
  
 					neighbours = self.topology.getSwitchNeighbours(src)
 					for n in neighbours : 
 						if n != dag[src] and [src, n] not in self.routefilters[dst] : 
 							self.ilpSolver.addConstr(totalDist <= self.ew(src, n) + self.dist(n, end2) - 1, "RF-" + str(src) + "-" 
-								+ str(n) + "-" + str(end2) + "-" + str(dst) + "-" + str(constraintIndex))
-							constraintIndex += 1
+								+ str(n) + "-" + str(end2) + "-" + str(dst) + "-" + str(self.constraintIndex))
+							self.constraintIndex += 1
 					
 					src = dag[src]
 					
@@ -637,7 +636,6 @@ class ZeppelinSynthesiser(object) :
 	def addDestinationDAGConstraintsRF(self, dst, dag) :
 		""" Adds constraints such that dag weights are what we want them to be with route filtering disabled/enabled """
 		
-		constraintIndex = 0
 		for sw in dag : 
 			t = dag[sw]
 			while t != None :			
@@ -653,8 +651,8 @@ class ZeppelinSynthesiser(object) :
 				neighbours = self.topology.getSwitchNeighbours(sw)
 				for n in neighbours : 
 					if n != dag[sw] : 
-						self.ilpSolver.addConstr(totalDist <= 10*self.rf(sw,n,dst) + self.ew(sw, n) + self.dist(n, t) - 1, "C-" + str(dst) + "-" + str(constraintIndex))
-						constraintIndex += 1
+						self.ilpSolver.addConstr(totalDist <= 10*self.rf(sw,n,dst) + self.ew(sw, n) + self.dist(n, t) - 1, "C-" + str(dst) + "-" + str(self.constraintIndex))
+						self.constraintIndex += 1
 				
 				t = dag[t]			
 
