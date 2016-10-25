@@ -7,7 +7,6 @@ from Topology import Topology
 from PolicyDatabase import PolicyDatabase
 from ZeppelinSynthesiser import ZeppelinSynthesiser
 from OuterZeppelinSynthesiser import OuterZeppelinSynthesiser
-from ZeppelinSynthesiser2 import ZeppelinSynthesiser2
 from ZeppelinInputGenerator import ZeppelinInputGenerator
 import sys
 
