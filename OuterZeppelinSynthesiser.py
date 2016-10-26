@@ -45,6 +45,7 @@ class OuterZeppelinSynthesiser(object) :
 		self.ASPositions = dict()
 		self.lastNonLoopDownstreamPosition = dict()
 		self.bgpRouterCounts = defaultdict(lambda:defaultdict(lambda:None))
+		self.shortestASPaths = defaultdict(lambda:defaultdict(lambda:None))
 
 		# Cache neighbours for reduced times.
 		self.topologyNeighbours = None
@@ -112,13 +113,14 @@ class OuterZeppelinSynthesiser(object) :
 		# Start a MCMC sampling walk with number of domains=self.numDomains. 
 		print "Starting MCMC Walk"
 		self.MCMCIter = 0	
-		
-		# MCMC Algorithm initial step: start with a preliminary domain assignment (chosen at random)
-		self.computeRandomDomainAssignment()
-		self.computeBoundaries() # boundary bookkeeping for efficiency 
 
 		# Find diamonds for route-filter calculations. 
 		self.findDiamonds()
+
+
+		# MCMC Algorithm initial step: start with a preliminary domain assignment (chosen at random)
+		self.computeRandomDomainAssignment()
+		self.computeBoundaries() # boundary bookkeeping for efficiency 
 
 		worstScore = 0
 		bestScore = 1000000000000000000
@@ -550,6 +552,11 @@ class OuterZeppelinSynthesiser(object) :
 		""" Computes the extra lines of BGP required to enforce policy routing 
 		in the inter-domain setting """
 
+		# State resets
+		for subnet in self.destinationDAGs.keys() :
+			for domain in range(self.numDomains) : 
+				self.bgpRouterCounts[domain][subnet] = 0
+ 
 		for pc in self.paths.keys() :
 			path = self.paths[pc] 
 			src = path[0]
@@ -592,6 +599,16 @@ class OuterZeppelinSynthesiser(object) :
 		for pc in self.paths.keys() :
 			score += self.findStaticConfScore(pc, self.paths[pc], self.ASPaths[pc], self.ASPositions[pc], self.lastNonLoopDownstreamPosition[pc])
 
+		# Precompute Shortest AS Paths
+		for domain1 in range(self.numDomains) :
+			for domain2 in range(self.numDomains) :
+				if domain1 == domain2 : continue
+
+				[uniqueness, shortestASPath] = self.findShortestASPath(domain1, domain2)
+				if uniqueness : 
+					self.shortestASPaths[domain1][domain2] = shortestASPath
+				else : 
+					self.shortestASPaths[domain1][domain2] = []
 
 		for domain in range(self.numDomains) : 
 			for subnet in self.destinationDAGs.keys() : 
@@ -658,7 +675,11 @@ class OuterZeppelinSynthesiser(object) :
 		if domain == dstDomain : 
 			return [0,0] # Dont need local prefs
 
-		[uniqueness, shortestASPath] = self.findShortestASPath(domain, dstDomain)
+		shortestASPath = self.shortestASPaths[domain][dstDomain]
+		if shortestASPath == [] :
+			uniqueness = False
+		else :
+			uniqueness = True
 
 		score = 0
 		bgpRouterCount = 0
@@ -700,6 +721,8 @@ class OuterZeppelinSynthesiser(object) :
 			oldaspath = self.ASPaths[pc]
 			oldaspositions = self.ASPositions[pc]
 			oldlastNonLoopDownstreamPosition = self.lastNonLoopDownstreamPosition[pc]
+
+			# Compute old static score.
 			oldScore = self.findStaticConfScore(pc, path, oldaspath, oldaspositions, oldlastNonLoopDownstreamPosition)
 
 			newaspath = [self.switchDomains[src]]
@@ -734,12 +757,22 @@ class OuterZeppelinSynthesiser(object) :
 
 			scoreDiff = scoreDiff - oldScore + newScore
 
-			# # Find local pref difference
-			# for j in range(oldlastNonLoopDownstreamPosition + 1, len(oldaspath)) : 
-			# 	if oldaspath[j] == oldDomain and oldaspath[j+1] == newDomain: 
-			# 		# No change in local preference values
-			# 		scoreDiff += 0
-			# 	elif oldaspath[j] == oldDomain and  
+			# Check to see if sw is not staticly routed.
+			swIndex = path.index(sw)
+			if swIndex < oldaspositions[oldlastNonLoopDownstreamPosition + 1] :
+				# sw statically routed. No change in local pref scores
+				continue
+
+			# Find local pref difference
+			if len(oldaspath) == len(newaspath) :
+				# sw just moved across the domains, no change in local prefs
+				scoreDiff += 0
+			elif len(oldaspath) == len(newaspath) + 1 :
+				# new AS path has reduced length. Decrement oldDomain's local pref entries
+				scoreDiff -= self.bgpRouterCounts[oldDomain][self.pdb.getDestinationSubnet(pc)]
+			elif len(oldaspath) + 1 == len(newaspath) :
+				# new AS path has increased length. Increment newDomain's local pref entries
+				scoreDiff += self.bgpRouterCounts[newDomain][self.pdb.getDestinationSubnet(pc)] + 1
 
 
 		return scoreDiff
@@ -875,6 +908,29 @@ class OuterZeppelinSynthesiser(object) :
 						score += self.diamondPaths[sw1][sw2]
 
 		return score
+
+	# def calibrateFilterScore(self) : 
+	# 	# The RF score computed by number of diamonds is a greater over-approximation.
+	# 	# Find number of filters and try to find the correlation factor between diamonds and RF count.
+		
+	# 	self.computeRandomDomainAssignment()
+	# 	self.computeBoundaries() # boundary bookkeeping for efficiency 
+
+	# 	rfScore = self.routeFilterScore()
+	# 	RFCount = self.synthesizeOSPFConfigurations()
+	# 	rfFactor = float(rfScore)/float(RFCount)
+
+	# 	# Repeat again
+	# 	self.computeRandomDomainAssignment()
+	# 	self.computeBoundaries() # boundary bookkeeping for efficiency 
+
+	# 	rfScore2 = self.routeFilterScore()
+	# 	RFCount2 = self.synthesizeOSPFConfigurations()
+	# 	rfFactor2 = float(rfScore2)/float(RFCount2)
+
+	# 	print rfFactor, rfFactor2
+	# 	exit(0)
+
 
 	def domainSizeDeviationScore(self) : 
 		# Score to ensure deviation of domain sizes is small. 

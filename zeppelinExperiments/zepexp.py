@@ -6,7 +6,7 @@ import os
 if __name__ == "__main__":
 	zpl_sizes = [1000]
 	topofile = "./topologies/ion.topo"
-	timeout = 300
+	timeout = 600
 
 	for pcs in zpl_sizes :
 		print "Benchmark: " + str(pcs)
