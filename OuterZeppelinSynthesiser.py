@@ -43,6 +43,8 @@ class OuterZeppelinSynthesiser(object) :
 		# Scoring State variables 
 		self.ASPaths = dict()
 		self.ASPositions = dict()
+		self.lastNonLoopDownstreamPosition = dict()
+		self.bgpRouterCounts = defaultdict(lambda:defaultdict(lambda:None))
 
 		# Cache neighbours for reduced times.
 		self.topologyNeighbours = None
@@ -506,7 +508,7 @@ class OuterZeppelinSynthesiser(object) :
 		if rfScore < self.bestRFScore : 
 			self.bestRFScore = rfScore
 
-		score += 0.02*rfScore
+		score += 0.025*rfScore
 
 		return score
 
@@ -547,7 +549,6 @@ class OuterZeppelinSynthesiser(object) :
 	def configurationScore(self) : 
 		""" Computes the extra lines of BGP required to enforce policy routing 
 		in the inter-domain setting """
-		score = 0
 
 		for pc in self.paths.keys() :
 			path = self.paths[pc] 
@@ -567,11 +568,71 @@ class OuterZeppelinSynthesiser(object) :
 			self.ASPaths[pc] = aspath
 			self.ASPositions[pc] = aspositions
 
-			score += self.findConfScore(path, aspath, aspositions)
+			# Find largest non-loop path
+			if len(aspath) == 1 : 
+				# The entire path is the same domain, there is no BGP configuration required for this path
+				self.lastNonLoopDownstreamPosition[pc] = -1
+			else : 
+				# Find longest path from destination which does not contain loops
+				i = len(aspath) - 1
+				lastNonLoopDownstreamPosition = -1
+				while i > 0:
+					domain = aspath[i]
+					if aspath.count(domain) > 1 : 
+						# Domain part of loop.
+						for j in range(i - 1, -1, -1) :
+							if aspath[j] == domain :
+								# First repitition from the end. 
+								if j > lastNonLoopDownstreamPosition :
+									lastNonLoopDownstreamPosition = j
+					i -= 1
+				self.lastNonLoopDownstreamPosition[pc] = lastNonLoopDownstreamPosition
+
+		score = 0
+		for pc in self.paths.keys() :
+			score += self.findStaticConfScore(pc, self.paths[pc], self.ASPaths[pc], self.ASPositions[pc], self.lastNonLoopDownstreamPosition[pc])
+
+
+		for domain in range(self.numDomains) : 
+			for subnet in self.destinationDAGs.keys() : 
+				domainpaths = dict()
+				nexthopAS = dict()
+				for pc in self.paths.keys() :
+					if subnet != self.pdb.getDestinationSubnet(pc) : continue
+
+					# Find domain in path
+					index = -1
+					path = self.paths[pc]
+					aspath = self.ASPaths[pc]
+					aspositions = self.ASPositions[pc]
+					for j in range(self.lastNonLoopDownstreamPosition[pc] + 1, len(aspath)) : 
+						if aspath[j] == domain : 
+							index = j
+						break
+					
+					if index == len(aspath) - 1 or index < 0: 
+						continue # No local preferences required
+					else :
+						domainpath = path[aspositions[index]:aspositions[index + 1]] # Extracts the path in the domain.
+
+					if domainpath == [] : 
+						print "Something", path, index, aspath, aspositions
+						exit(0)
+					
+					domainpaths[pc] = domainpath
+					nexthopAS[pc] = aspath[index+1]
+
+				for sw in self.destinationDAGs[subnet] :
+					if self.destinationDAGs[subnet][sw] == None : 
+						dstDomain = self.switchDomains[sw]
+						[localPrefScore, bgpRouterCount] = self.findLocalPrefScore(domain, dstDomain, domainpaths, nexthopAS) 
+						self.bgpRouterCounts[domain][subnet] = bgpRouterCount
+						score += localPrefScore
+						break
 
 		return score
 
-	def findConfScore(self, path, aspath, aspositions) :
+	def findStaticConfScore(self, pc, path, aspath, aspositions, lastNonLoopDownstreamPosition) :
 		""" Find conf score for a single path """
 		src = path[0]
 		dst = path[len(path) - 1]
@@ -583,64 +644,44 @@ class OuterZeppelinSynthesiser(object) :
 			score += 0
 
 		else : 
-			# Find longest path from destination which does not contain loops
-			i = len(aspath) - 1
-			lastNonLoopDownstreamPath = -1
-			while i > 0:
-				domain = aspath[i]
-				if aspath.count(domain) > 1 : 
-					# Domain part of loop.
-					for j in range(i - 1, -1, -1) :
-						if aspath[j] == domain :
-							# First repitition from the end. 
-							if j > lastNonLoopDownstreamPath :
-								lastNonLoopDownstreamPath = j
-				i -= 1
-
-
-			if lastNonLoopDownstreamPath > -1 : 
-				# A looped path. Add static routing till start of (lastNonLoopDownstreamPath + 1)th AS
-				# Routing from (lastNonLoopDownstreamPath + 1)th AS to destination is loop-free
-				posSw = aspositions[lastNonLoopDownstreamPath + 1] 
+			if lastNonLoopDownstreamPosition > -1 : 
+				# A looped path. Add static routing till start of (lastNonLoopDownstreamPosition + 1)th AS
+				# Routing from (lastNonLoopDownstreamPosition + 1)th AS to destination is loop-free
+				posSw = aspositions[lastNonLoopDownstreamPosition + 1] 
 				
 				# Static routing cost is the number of rules required till posSw
 				score += posSw
 
-			# Local preference scores	
-			for i in range(lastNonLoopDownstreamPath+1, len(aspath) - 1) :
-				domain1 = aspath[i]
-				domain2 = aspath[i + 1]		
-				
-				boundary1 = self.boundarySwitches[domain1]
-				boundary2 = self.boundarySwitches[domain2]
-
-				linkCount = 0 # Denotes the number of links connecting domains 1 & 2
-				for sw in boundary1 : 
-					neighbours = self.topologyNeighbours[sw]
-					for n in neighbours : 
-						if n in boundary2 : 
-							linkCount += 1 # AS1-AS2 link
-
-				if linkCount > 1 : 
-					# Multiple links connecting the AS. Require 1 local preference entry
-					score += 1 
-
-				else : 
-					# Check if d1-d2 is on the unique shortest AS path to destination AS
-					[uniqueness, aspath1] = self.findShortestASPath(domain1, aspath[len(aspath) - 1])
-					if not uniqueness : 
-						# Shortest AS path not unique. Require 1 local preference entry
-						score += 1
-					else: 
-						# Shortest AS path is unique, see if it contains d1->d2
-						if aspath1[1] == domain2 : 
-							# Unique shortest AS path goes from d1 to d2. 
-							score += 0
-						else : 
-							# d1 -> d2 not on shortest AS path. Require 1 local preference entry
-							score += 1
-
 		return score
+
+	def findLocalPrefScore(self, domain, dstDomain, domainpaths, nexthopAS) : 
+		if domain == dstDomain : 
+			return [0,0] # Dont need local prefs
+
+		[uniqueness, shortestASPath] = self.findShortestASPath(domain, dstDomain)
+
+		score = 0
+		bgpRouterCount = 0
+		if uniqueness and len(domainpaths) == 1 :
+			for pc in domainpaths.keys() :
+				if nexthopAS[pc] == shortestASPath[1] : 
+					# next hop AS is on unique shortest path
+					# Dont need local prefs
+					score += 0
+
+		else : 
+			# Find number of bgp routers = B
+			bgpRouters = []
+			for dp in domainpaths.values() : 
+				if dp[len(dp) - 1] not in bgpRouters : 
+					bgpRouters.append(dp[len(dp) - 1])
+
+			# Require B local preference entries and B(B-1)/2 number of iBGP filters
+			# to propagate eBGP routes inside the OSPF domain.
+			score += len(bgpRouters)*(len(bgpRouters) + 1)*0.5
+			bgpRouterCount = len(bgpRouters)
+		
+		return [score, bgpRouterCount]
 
 	def findConfScoreDiff(self, sw, oldDomain, newDomain) :
 		""" Find difference in scores as sw oldDomain -> newDomain """
@@ -658,7 +699,8 @@ class OuterZeppelinSynthesiser(object) :
 			# sw is in path, so domain has changed. Check if affected. 
 			oldaspath = self.ASPaths[pc]
 			oldaspositions = self.ASPositions[pc]
-			oldScore = self.findConfScore(path, oldaspath, oldaspositions)
+			oldlastNonLoopDownstreamPosition = self.lastNonLoopDownstreamPosition[pc]
+			oldScore = self.findStaticConfScore(pc, path, oldaspath, oldaspositions, oldlastNonLoopDownstreamPosition)
 
 			newaspath = [self.switchDomains[src]]
 			newaspositions = [0] # Store the positions when the AS first starts.
@@ -669,14 +711,39 @@ class OuterZeppelinSynthesiser(object) :
 					newaspath.append(domain)
 					newaspositions.append(i)
 
-			newscore = self.findConfScore(path, newaspath, newaspositions)
+			# Find largest non-loop path
+			if len(newaspath) == 1 : 
+				# The entire path is the same domain, there is no BGP configuration required for this path
+				newlastNonLoopDownstreamPosition = -1
+			else : 
+				# Find longest path from destination which does not contain loops
+				i = len(newaspath) - 1
+				newlastNonLoopDownstreamPosition = -1
+				while i > 0:
+					domain = newaspath[i]
+					if newaspath.count(domain) > 1 : 
+						# Domain part of loop.
+						for j in range(i - 1, -1, -1) :
+							if newaspath[j] == domain :
+								# First repitition from the end. 
+								if j > newlastNonLoopDownstreamPosition :
+									newlastNonLoopDownstreamPosition = j
+					i -= 1
+
+			newscore = self.findStaticConfScore(pc, path, newaspath, newaspositions, newlastNonLoopDownstreamPosition)
 
 			scoreDiff = scoreDiff - oldScore + newScore
 
+			# # Find local pref difference
+			# for j in range(oldlastNonLoopDownstreamPosition + 1, len(oldaspath)) : 
+			# 	if oldaspath[j] == oldDomain and oldaspath[j+1] == newDomain: 
+			# 		# No change in local preference values
+			# 		scoreDiff += 0
+			# 	elif oldaspath[j] == oldDomain and  
+
+
 		return scoreDiff
 			
-	def findBestBGPPath(self, srcDomain, dstDomain) : 
-		pass
 
 	def findShortestASPath(self, srcDomain, dstDomain) :
 		""" Find shortest path from src to dst domains. Return uniqueness of shortest path as well"""
@@ -701,7 +768,6 @@ class OuterZeppelinSynthesiser(object) :
 				if d == dstDomain : 
 					if paths[d] > 1 :
 						# Multiple shortest paths to dstDomain.
-						self.rfScoreTime += time.time() - s_t 
 						return [False, None]
 					else : 
 						# Single Unique shortest path to dstDomain. 
@@ -714,8 +780,21 @@ class OuterZeppelinSynthesiser(object) :
 						aspath.append(srcDomain)
 						# Reverse aspath.
 						aspath.reverse()
-						self.rfScoreTime += time.time() - s_t 
-						return [True, aspath]
+
+						boundary1 = self.boundarySwitches[aspath[0]]
+						boundary2 = self.boundarySwitches[aspath[1]]
+
+						linkCount = 0 # Denotes the number of links connecting domains 1 & 2
+						for sw in boundary1 : 
+							neighbours = self.topologyNeighbours[sw]
+							for n in neighbours : 
+								if n in boundary2 : 
+									linkCount += 1 # AS1-AS2 link
+
+						if linkCount == 1:
+							return [True, aspath]
+						else : 
+							return [False, None]
 
 				# Find neighbouring domains
 				neighbouringDomains = []
@@ -880,7 +959,7 @@ class OuterZeppelinSynthesiser(object) :
 			else : 
 				# Find longest path from destination which does not contain loops
 				i = len(aspath) - 1
-				lastNonLoopDownstreamPath = -1
+				lastNonLoopDownstreamPosition = -1
 				while i > 0:
 					d = aspath[i]
 					if aspath.count(d) > 1 : 
@@ -888,14 +967,14 @@ class OuterZeppelinSynthesiser(object) :
 						for j in range(i - 1, -1, -1) :
 							if aspath[j] == d :
 								# First repitition from the end. 
-								if j > lastNonLoopDownstreamPath :
-									lastNonLoopDownstreamPath = j
+								if j > lastNonLoopDownstreamPosition :
+									lastNonLoopDownstreamPosition = j
 					i -= 1
 
-				# A looped path. Add static routing till start of (lastNonLoopDownstreamPath + 1)th AS
-				# Routing from (lastNonLoopDownstreamPath + 1)th AS to destination is loop-free
+				# A looped path. Add static routing till start of (lastNonLoopDownstreamPosition + 1)th AS
+				# Routing from (lastNonLoopDownstreamPosition + 1)th AS to destination is loop-free
 				index = -1
-				for j in range(lastNonLoopDownstreamPath + 1, len(aspath)) : 
+				for j in range(lastNonLoopDownstreamPosition + 1, len(aspath)) : 
 					if aspath[j] == domain : 
 						index = j
 					break
@@ -917,7 +996,7 @@ class OuterZeppelinSynthesiser(object) :
 						pdb.addPath(dpc, topopath)
 						endpoints.append([topopath[0], subnet])
 
-						# print aspath, lastNonLoopDownstreamPath, path, self.pdb.getDestinationSubnet(pc), domainpath
+						# print aspath, lastNonLoopDownstreamPosition, path, self.pdb.getDestinationSubnet(pc), domainpath
 						# Add path to Dag of subnet
 						if subnet not in dags :
 							dags[subnet] = dict()
