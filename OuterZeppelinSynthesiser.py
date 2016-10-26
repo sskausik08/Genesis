@@ -858,7 +858,8 @@ class OuterZeppelinSynthesiser(object) :
 		there are two shortest paths from s to t which is not enforceable with route filtering """
 		dsts = self.pdb.getDestinationSubnets()
 		
-		self.diamondPaths = [[0 for x in range(self.swCount + 1)] for x in range(self.swCount + 1)]
+		self.diamondCount = [[0 for x in range(self.swCount + 1)] for x in range(self.swCount + 1)]
+		self.diamondPaths = [[[] for x in range(self.swCount + 1)] for x in range(self.swCount + 1)]
 		
 		for dst1 in dsts :
 			for dst2 in dsts : 
@@ -890,7 +891,14 @@ class OuterZeppelinSynthesiser(object) :
 							for swConv in dstpath1 : 
 								if swConv in dstpath2 : 
 									# Intersection! This is the smallest diamond starting at swDiv
-									self.diamondPaths[swDiv][swConv] += 1
+									self.diamondCount[swDiv][swConv] += 1
+									dstpath1 = dstpath1[:dstpath1.index(swConv) + 1]
+									if dstpath1 not in self.diamondPaths[swDiv][swConv] :
+										self.diamondPaths[swDiv][swConv].append(dstpath1)
+
+									dstpath2 = dstpath2[:dstpath2.index(swConv) + 1]
+									if dstpath2 not in self.diamondPaths[swDiv][swConv] :
+										self.diamondPaths[swDiv][swConv].append(dstpath2)
 									break
 
 
@@ -902,10 +910,20 @@ class OuterZeppelinSynthesiser(object) :
 		for domain in range(self.numDomains) :
 			for sw1 in self.domains[domain] : 
 				for sw2 in self.domains[domain] :
-					if self.diamondPaths[sw1][sw2] != 0 : 
-						# There are diamonds in the domain. 
-						# Will require atmost 1 route filter for each diamond.
-						score += self.diamondPaths[sw1][sw2]
+					if self.diamondCount[sw1][sw2] > 0 : 
+						# There are diamonds in the domain. Check if paths stay in domain or not.
+						domainPathCount = 0
+						for path in self.diamondPaths[sw1][sw2] : 
+							inDomain = True
+							for sw in path : 
+								if self.switchDomains[sw] != domain : 
+									inDomain = False 
+									break
+							if inDomain :
+								domainPathCount += 1
+
+						# There are $n$ paths inside the domain which converge. Require atmost n*n-1*0.5 rfs
+						score += self.diamondCount[sw1][sw2] + (domainPathCount * (domainPathCount - 1) * 0.5) 
 
 		return score
 
