@@ -84,11 +84,15 @@ class OuterZeppelinSynthesiser(object) :
 		print self.domains
 		start_t = time.time() 
 		bestRFCount = self.synthesizeOSPFConfigurations()
+		bestRFScore = self.routeFilterScore()
 		self.bestConfScore = self.configurationScore()
 		ospfTime = time.time() - start_t
 
 		print "Worst RF Configuration"
 		worstRFCount = self.synthesizeOSPFConfigurations(self.worstDomainAssigmentRF)
+		self.switchDomains = self.worstDomainAssigmentRF 
+		self.computeBoundaries()
+		worstRFScore = self.routeFilterScore()
 
 		print "Config Improvement", float(self.bestConfScore)/float(self.worstConfScore), self.bestConfScore, self.worstConfScore
 		print "RF Improvement", float(bestRFCount)/float(worstRFCount), bestRFCount, worstRFCount
@@ -102,12 +106,14 @@ class OuterZeppelinSynthesiser(object) :
 
 
 		self.zepFile = open("zeppelin-timing", 'a')
-		self.zepFile.write("Time taken  for MCMC is (and iterations), and OSPF time " + str(mcmcTime) + " " + str(self.MCMCIter) + " " + str(ospfTime))
+		self.zepFile.write("Time taken  for MCMC is (and iterations), and OSPF time " + str(mcmcTime) + "\t" + str(self.MCMCIter) + "\t" + str(ospfTime))
 		self.zepFile.write("\n")
-		self.zepFile.write("Config Improvement " + str(float(self.bestConfScore)/float(self.worstConfScore)) + " " + str(self.bestConfScore) + " " + str(self.worstConfScore))
+		self.zepFile.write("Config Improvement " + str(float(self.bestConfScore)/float(self.worstConfScore)) + "\t" + str(self.bestConfScore) + "\t" + str(self.worstConfScore))
 		self.zepFile.write("\n")
-		self.zepFile.write("RF Improvement " + str(float(bestRFCount)/float(worstRFCount)) + " " + str(bestRFCount) + " " + str(worstRFCount))
+		self.zepFile.write("RF Improvement " + str(float(bestRFCount)/float(worstRFCount)) + "\t" + str(bestRFCount) + "\t" + str(worstRFCount))
 		self.zepFile.write("\n")
+		self.zepFile.write("RF Scores " + "\t" + str(bestRFScore) + "\t" + str(worstRFScore))
+
 
 	def MCMCWalk(self) :
 		# Start a MCMC sampling walk with number of domains=self.numDomains. 
