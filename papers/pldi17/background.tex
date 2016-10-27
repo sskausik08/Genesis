@@ -17,8 +17,11 @@ eBGP, and (2) routes learned by other BGP routers
 of the domain which are advertised using iBGP. 
 BGP decides the best path to install in the 
 forwarding table based on different metrics like local preferences,
-AS path lengths and type of routes. BGP uses the
-rules specified in \Cref{alg:bgppathrules} 
+AS path lengths and type of routes~\cite{bgp}. BGP uses the
+rules specified in \Cref{alg:bgppathrules}\footnote{
+For ease of presentation, we specify an abridged ruleset; 
+the synthesized configurations will not use the other rules. 
+} 
 in decreasing order of preference to select the best path
 from the received announcements. If all paths result in a tie
 at $i^{th}$ rule, then the $i+1^{th}$ rule is considered.
@@ -31,7 +34,6 @@ at $i^{th}$ rule, then the $i+1^{th}$ rule is considered.
 				\State{ Prefer the path with the smallest AS Path length. }
 				\State{Prefer the path with the lowest \emph{multi-exit discriminator} (MED).}
 				\State{Prefer eBGP over iBGP paths.}
-				\State{When both paths are external, prefer the path that was received \emph{first} (the oldest one).}
 				\State{Prefer the route that comes from the BGP router with the lowest \emph{router ID}.}
 		\end{algorithmic}
 	\end{footnotesize}

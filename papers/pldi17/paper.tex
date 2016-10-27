@@ -47,7 +47,7 @@
 \usepackage{algpseudocode}
 \usepackage{pifont,xspace}
 \usetikzlibrary{automata,positioning}
-\newcommand{\name}{Genesis\xspace}
+\newcommand{\name}{Zeppelin\xspace}
 \newcommand{\Name}{\name}
 \newcommand{\pushcode}[1][1]{\hskip\dimexpr#1\algorithmicindent\relax}
 \newcolumntype{P}[1]{>{\centering\arraybackslash}p{#1}}
@@ -80,6 +80,7 @@
 %\titlespacing*{\subsubsection}{1pt}{3pt}{2pt}
 \newtheorem{example}{Example}
 \newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}{Lemma}[section]
 \lstset{
 	basicstyle=\itshape,
 	xleftmargin=2em,
@@ -87,7 +88,6 @@
 	{α}{$\alpha$}{1}
 	{δ}{$\delta$}{1}
 }
-
 
 \crefname{Section}{§}{§§}
 \Crefname{Section}{§}{§§}
@@ -133,6 +133,7 @@
 \input{introduction}
 \input{background}
 \input{synthesis}
+\input{filtering}
 \input{configurations}
 \input{complexity}
 %\category{CR-number}{subcategory}{third-level}
