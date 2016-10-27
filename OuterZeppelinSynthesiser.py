@@ -122,6 +122,9 @@ class OuterZeppelinSynthesiser(object) :
 
 		# Find diamonds for route-filter calculations. 
 		self.findDiamonds()
+		
+		# Find Configuration Score Upper Bound
+		self.findConfigurationScoreUpperBound()
 
 
 		# MCMC Algorithm initial step: start with a preliminary domain assignment (chosen at random)
@@ -130,6 +133,7 @@ class OuterZeppelinSynthesiser(object) :
 
 		worstScore = 0
 		bestScore = 1000000000000000000
+		hillClimb = 0
 
 		# Perform the Metropolis walk using the score functions. 
 		# We consider solutions with a smaller score to be better. 
@@ -174,15 +178,17 @@ class OuterZeppelinSynthesiser(object) :
 			self.continuityTime += time.time() - s_t
 
 			# Compute new score. 
-			newScore = self.computeDomainAssignmentScore()
+			newScore = self.computeDomainAssignmentScore(sw, newDomain, oldDomain)
 
 			transitionProbability = math.exp(- self.beta * (float(newScore) - float(Score)))
 
 			transition = self.flip(transitionProbability) 
 			if transition :	
+				if newScore > Score :
+					hillClimb += 1
+				#print "Score", Score, newScore, " Accept", sw, oldDomain, newDomain, worstScore, bestScore, transitionProbability, hillClimb, self.MCMCIter
 				# accept transition to new state
-				Score = newScore # Update the score as we accept transition
-				#print "Score", Score, newScore, " Accept", sw, oldDomain, newDomain, worstScore, bestScore, transitionProbability
+				Score = newScore # Update the score as we accept transition				
 				continue
 			else :
 				# Do not transition. Revert back change.
@@ -199,7 +205,7 @@ class OuterZeppelinSynthesiser(object) :
 		# random.random() returns a uniformly distributed pseudo-random floating point number in the range [0, 1). 
 		# This number is less than a given number p in the range [0,1) with probability p. 
 		return (random.random() < p) 
-	
+
 	def giveRandomDomainChange(self) :
 		""" Returns a random change of domain for a boundary switch"""
 		
@@ -482,22 +488,20 @@ class OuterZeppelinSynthesiser(object) :
 
 		return True	
 
-	def computeDomainAssignmentScore(self, sw=None, oldDomain=None, newDomain=None) :
+	def computeDomainAssignmentScore(self, sw=None, newDomain=None, oldDomain=None) :
 		""" Computes the score of a particular domain assignment """
 		
 		score = 1
 
-		#score += 0.1*self.domainSizeScore()
 		score += self.BGPCompabitityScore()
-		score += 2*self.numberBGPRoutersScore()
-		#score += 2*self.domainSizeDeviationScore()
+		#score += 2*self.numberBGPRoutersScore()
 
 		start_t = time.time()
 		if self.MCMCIter % 100 == 0 : 
 			confScore = self.configurationScore()
 			self.prevConfScore = confScore
 		else : 
-			confScore = self.prevConfScore + self.findConfScoreDiff(sw, oldDomain, newDomain)
+			confScore = self.prevConfScore + self.findConfScoreDiff(sw, newDomain, oldDomain)
 			self.prevConfScore = confScore
 		self.confScoreTime += time.time() - start_t
 		if confScore > self.worstConfScore : 
@@ -505,7 +509,6 @@ class OuterZeppelinSynthesiser(object) :
 		if confScore < self.bestConfScore : 
 			self.bestConfScore = confScore
 		
-		score += confScore
 
 		start_t = time.time()
 		rfScore = self.routeFilterScore()
@@ -516,7 +519,9 @@ class OuterZeppelinSynthesiser(object) :
 		if rfScore < self.bestRFScore : 
 			self.bestRFScore = rfScore
 
-		score += 0.025*rfScore
+		#print float(confScore)/float(self.confScoreUpperBound), float(rfScore)/float(self.RFScoreUpperBound), self.confScoreUpperBound
+		score += self.confScoreUpperBound * max(float(confScore)/float(self.confScoreUpperBound), float(rfScore)/float(self.RFScoreUpperBound))
+		score += self.confScoreUpperBound * 0.1 * min(float(confScore)/float(self.confScoreUpperBound), float(rfScore)/float(self.RFScoreUpperBound))
 
 		return score
 
@@ -553,6 +558,14 @@ class OuterZeppelinSynthesiser(object) :
 			score += len(self.boundarySwitches[domain])
 
 		return score
+
+	def findConfigurationScoreUpperBound(self) :
+		self.confScoreUpperBound = 0
+		for pc in self.paths.keys() :
+			path = self.paths[pc] 
+			
+			# Upper bounded by using static routes for all the paths
+			self.confScoreUpperBound += len(path)
 
 	def configurationScore(self) : 
 		""" Computes the extra lines of BGP required to enforce policy routing 
@@ -710,7 +723,7 @@ class OuterZeppelinSynthesiser(object) :
 		
 		return [score, bgpRouterCount]
 
-	def findConfScoreDiff(self, sw, oldDomain, newDomain) :
+	def findConfScoreDiff(self, sw, newDomain, oldDomain) :
 		""" Find difference in scores as sw oldDomain -> newDomain """
 		scoreDiff = 0
 
@@ -759,7 +772,7 @@ class OuterZeppelinSynthesiser(object) :
 									newlastNonLoopDownstreamPosition = j
 					i -= 1
 
-			newscore = self.findStaticConfScore(pc, path, newaspath, newaspositions, newlastNonLoopDownstreamPosition)
+			newScore = self.findStaticConfScore(pc, path, newaspath, newaspositions, newlastNonLoopDownstreamPosition)
 
 			scoreDiff = scoreDiff - oldScore + newScore
 
@@ -907,6 +920,12 @@ class OuterZeppelinSynthesiser(object) :
 										self.diamondPaths[swDiv][swConv].append(dstpath2)
 									break
 
+		self.RFScoreUpperBound = 0
+		for sw1 in range(1, self.swCount + 1) : 
+			for sw2 in range(1, self.swCount + 1) :
+				if self.diamondCount[sw1][sw2] > 0 :
+					self.RFScoreUpperBound += self.diamondCount[sw1][sw2]
+
 
 	def routeFilterScore(self) :
 		# Score based on number of OSPF filters required in each domain.
@@ -916,20 +935,9 @@ class OuterZeppelinSynthesiser(object) :
 		for domain in range(self.numDomains) :
 			for sw1 in self.domains[domain] : 
 				for sw2 in self.domains[domain] :
-					if self.diamondCount[sw1][sw2] > 0 : 
-						# There are diamonds in the domain. Check if paths stay in domain or not.
-						domainPathCount = 0
-						for path in self.diamondPaths[sw1][sw2] : 
-							inDomain = True
-							for sw in path : 
-								if self.switchDomains[sw] != domain : 
-									inDomain = False 
-									break
-							if inDomain :
-								domainPathCount += 1
-
-						# There are $n$ paths inside the domain which converge. Require atmost n*n-1*0.5 rfs
-						score += self.diamondCount[sw1][sw2] + (domainPathCount * (domainPathCount - 1) * 0.5) 
+					if self.diamondCount[sw1][sw2] > 0 :
+						# Atleast 1 filter for each diamond
+						score += self.diamondCount[sw1][sw2]
 
 		return score
 
