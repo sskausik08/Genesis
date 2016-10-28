@@ -149,15 +149,15 @@ class OuterZeppelinSynthesiser(object) :
 		print "Started MCMC walk"
 		MCMCStartTime = time.time()
 		for self.MCMCIter in range(self.MCMC_MAX_ITER):
-			print "Iter", self.MCMCIter
+			#print "Iter", self.MCMCIter
 			# Check if timed out every 10000 iteration
 			if self.MCMCIter % 10000 == 0 :
 				if time.time() - MCMCStartTime > self.MCMC_MAX_TIME : 
 					# MCMC timed out. 
 					break
 
-			if self.MCMCIter % 100 == 0 :
-				self.computeDomainAssignmentScore()
+			# if self.MCMCIter % 100 == 0 :
+			# 	self.computeDomainAssignmentScore()
 
 			if Score > worstScore : worstScore = Score
 			if Score < bestScore : 
@@ -197,7 +197,7 @@ class OuterZeppelinSynthesiser(object) :
 				if newScore > Score :
 					hillClimb += 1
 				
-				print "Score", Score, newScore, " Accept", sw, oldDomain, newDomain, worstScore, bestScore, transitionProbability, hillClimb, self.MCMCIter
+				#print "Score", Score, newScore, " Accept", sw, oldDomain, newDomain, worstScore, bestScore, transitionProbability, hillClimb, self.MCMCIter
 				# accept transition to new state
 				Score = newScore # Update the score as we accept transition				
 				
@@ -206,10 +206,11 @@ class OuterZeppelinSynthesiser(object) :
 				continue
 			else :
 				# Do not transition. Revert back change.
-				print "Score", Score, newScore, " Reject", sw, oldDomain, newDomain, worstScore, bestScore, transitionProbability
+				#print "Score", Score, newScore, " Reject", sw, oldDomain, newDomain, worstScore, bestScore, transitionProbability
 				self.switchDomains[sw] = oldDomain
 				self.recomputeBoundaries(sw, newDomain, oldDomain)
 
+		print "MCMC Interations", self.MCMCIter
 		print "Best score", bestScore, "Worst score", worstScore
 		print "Best configuration score", self.bestConfScore, "Worst configuration score", self.worstConfScore
 		print "Best RF score", self.bestRFScore, "Worst RF score", self.worstRFScore
@@ -511,9 +512,9 @@ class OuterZeppelinSynthesiser(object) :
 		#score += 2*self.numberBGPRoutersScore()
 
 		start_t = time.time()
-		print "Prev Conf Score", self.prevConfScore
+		#print "Prev Conf Score", self.prevConfScore
 
-		if absScore : 
+		if True : 
 			# Compute absolute score
 		 	confScore = self.configurationScore()
 		 	self.prevConfScore = confScore
@@ -639,7 +640,6 @@ class OuterZeppelinSynthesiser(object) :
 		for pc in self.paths.keys() :
 			score += self.findStaticConfScore(pc, self.paths[pc], self.ASPaths[pc], self.ASPositions[pc], self.lastNonLoopDownstreamPosition[pc])
 
-		s_t = time.time()
 		# Precompute Shortest AS Paths
 		for domain1 in range(self.numDomains) :
 			for domain2 in range(self.numDomains) :
@@ -650,9 +650,7 @@ class OuterZeppelinSynthesiser(object) :
 					self.shortestASPaths[domain1][domain2] = shortestASPath
 				else : 
 					self.shortestASPaths[domain1][domain2] = []
-		print "AS paths", time.time() - s_t
 
-		s_t = time.time()
 		for domain in range(self.numDomains) : 
 			for subnet in self.destinationDAGs.keys() : 
 				domainpaths = dict()
@@ -687,8 +685,7 @@ class OuterZeppelinSynthesiser(object) :
 				self.bgpRouterCounts[domain][subnet] = bgpRouterCount
 				score += localPrefScore
 			
-
-		print "local prefs", time.time() - s_t
+		#print "local prefs", time.time() - s_t
 		return score
 
 	def findStaticConfScore(self, pc, path, aspath, aspositions, lastNonLoopDownstreamPosition) :
