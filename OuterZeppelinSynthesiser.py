@@ -542,8 +542,8 @@ class OuterZeppelinSynthesiser(object) :
 			self.bestRFScore = rfScore
 
 		#print float(confScore)/float(self.confScoreUpperBound), float(rfScore)/float(self.RFScoreUpperBound), self.confScoreUpperBound
-		score += self.confScoreUpperBound * max(float(confScore)/float(self.confScoreUpperBound), float(rfScore)/float(self.RFScoreUpperBound))
-		score += self.confScoreUpperBound * 0.1 * min(float(confScore)/float(self.confScoreUpperBound), float(rfScore)/float(self.RFScoreUpperBound))
+		score += 4000 * max(float(confScore)/float(self.worstConfScore), float(rfScore)/float(self.worstRFScore))
+		score += 400 * min(float(confScore)/float(self.worstConfScore), float(rfScore)/float(self.worstRFScore))
 
 		return score
 
