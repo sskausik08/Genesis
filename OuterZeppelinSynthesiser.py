@@ -657,11 +657,9 @@ class OuterZeppelinSynthesiser(object) :
 			for subnet in self.destinationDAGs.keys() : 
 				domainpaths = dict()
 				nexthopAS = dict()
-				dstpc = -1
-				for pc in self.paths.keys() :
-					if subnet != self.pdb.getDestinationSubnet(pc) : continue
-
-					dstpc = pc
+				subnetPCs = self.pdb.getDestinationSubnetPacketClasses(subnet)
+				if len(subnetPCs) == 0 : continue
+				for pc in subnetPCs : 
 					# Find domain in path
 					index = -1
 					path = self.paths[pc]
@@ -684,10 +682,10 @@ class OuterZeppelinSynthesiser(object) :
 					domainpaths[pc] = domainpath
 					nexthopAS[pc] = aspath[index+1]
 
-					dstDomain = self.switchDomains[self.pdb.getDestinationSwitch(dstpc)]
-					[localPrefScore, bgpRouterCount] = self.findLocalPrefScore(domain, dstDomain, domainpaths, nexthopAS) 
-					self.bgpRouterCounts[domain][subnet] = bgpRouterCount
-					score += localPrefScore
+				dstDomain = self.switchDomains[self.pdb.getDestinationSwitch(subnetPCs[0])]
+				[localPrefScore, bgpRouterCount] = self.findLocalPrefScore(domain, dstDomain, domainpaths, nexthopAS) 
+				self.bgpRouterCounts[domain][subnet] = bgpRouterCount
+				score += localPrefScore
 			
 
 		print "local prefs", time.time() - s_t
@@ -829,10 +827,9 @@ class OuterZeppelinSynthesiser(object) :
 				domainpaths = dict()
 				nexthopAS = dict()
 				dstpc = -1
-				for pc in self.paths.keys() :
-					if subnet != self.pdb.getDestinationSubnet(pc) : continue
-
-					dstpc = pc
+				subnetPCs = self.pdb.getDestinationSubnetPacketClasses(subnet)
+				if len(subnetPCs) == 0 : continue
+				for pc in subnetPCs :
 					# Find domain in path
 					index = -1
 					path = self.paths[pc]
@@ -855,15 +852,12 @@ class OuterZeppelinSynthesiser(object) :
 					domainpaths[pc] = domainpath
 					nexthopAS[pc] = aspath[index+1]
 
-				dstDomain = self.switchDomains[self.pdb.getDestinationSwitch(dstpc)]
+				dstDomain = self.switchDomains[self.pdb.getDestinationSwitch(subnetPCs[0])]
 				[oldlocalPrefScore, oldbgpRouterCount] = self.findLocalPrefScore(domain, dstDomain, domainpaths, nexthopAS) 
 				
 				domainpaths.clear()
 				nexthopAS.clear()
-				for pc in self.paths.keys() :
-					if subnet != self.pdb.getDestinationSubnet(pc) : continue
-
-					dstpc = pc
+				for pc in subnetPCs :
 					# Find domain in path
 					index = -1
 					path = self.paths[pc]

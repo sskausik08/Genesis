@@ -29,9 +29,11 @@ class PolicyDatabase(object) :
 		self.sliceWaypointTable = dict()
 		self.originalPacketClasses = dict()
 
-
 		# Support for storing DAGs for control plane generation
 		self.dags = dict()
+
+		# Zeppelin Domain assignment support
+		self.subnetPacketClasses = dict()
 
 
 	def addReachabilityPolicy(self, predicate, srcSw, dstSw, W=None, len=None) :
@@ -49,6 +51,13 @@ class PolicyDatabase(object) :
 			self.pathLengthTable[self.pc] = len
 
 		self.relClasses.append([self.pc])
+		
+		if type(predicate) == int : 
+			if predicate in self.subnetPacketClasses :
+				self.subnetPacketClasses[predicate].append(self.pc)
+			else : 
+				self.subnetPacketClasses[predicate] = [self.pc]
+
 		self.pc += 1
 		return self.pc - 1
 
@@ -523,6 +532,12 @@ class PolicyDatabase(object) :
 	def getDestinationDAGs(self) : 
 		return self.dags
 
+	def getDestinationSubnetPacketClasses(self, subnet) :
+		if subnet not in self.subnetPacketClasses : 
+			return []
+		else :
+			return self.subnetPacketClasses[subnet]
+
 	def addBGPExtensions(self, bgpExtensions) :
 		self.bgpExtensions = copy.deepcopy(bgpExtensions)
 
@@ -574,9 +589,6 @@ class PolicyDatabase(object) :
 			print "Error: incorrect OSPF configuration"
 			print "Number of Violations is", violationCount
 			exit(0)
-
-	
-
 
 	def addTrafficEngineeringObjective(self, minavg=False, minmax=False) :
 		""" Add a traffic engineering objective """
