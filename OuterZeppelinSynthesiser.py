@@ -119,6 +119,7 @@ class OuterZeppelinSynthesiser(object) :
 		self.zepFile.write("RF Improvement " + str(float(bestRFCount)/float(worstRFCount)) + "\t" + str(bestRFCount) + "\t" + str(worstRFCount))
 		self.zepFile.write("\n")
 		self.zepFile.write("RF Scores " + "\t" + str(bestRFScore) + "\t" + str(worstRFScore))
+		self.zepFile.write("\n")
 
 
 	def MCMCWalk(self) :
@@ -154,6 +155,9 @@ class OuterZeppelinSynthesiser(object) :
 				if time.time() - MCMCStartTime > self.MCMC_MAX_TIME : 
 					# MCMC timed out. 
 					break
+
+			if self.MCMCIter % 100 == 0 :
+				self.computeDomainAssignmentScore()
 
 			if Score > worstScore : worstScore = Score
 			if Score < bestScore : 
@@ -205,9 +209,6 @@ class OuterZeppelinSynthesiser(object) :
 				print "Score", Score, newScore, " Reject", sw, oldDomain, newDomain, worstScore, bestScore, transitionProbability
 				self.switchDomains[sw] = oldDomain
 				self.recomputeBoundaries(sw, newDomain, oldDomain)
-
-				actConfScore = self.configurationScore()
-				print "CONF DIFF", actConfScore, self.prevConfScore
 
 		print "Best score", bestScore, "Worst score", worstScore
 		print "Best configuration score", self.bestConfScore, "Worst configuration score", self.worstConfScore
@@ -516,15 +517,15 @@ class OuterZeppelinSynthesiser(object) :
 			# Compute absolute score
 		 	confScore = self.configurationScore()
 		 	self.prevConfScore = confScore
+		 	if confScore > self.worstConfScore : 
+				self.worstConfScore = confScore
+			if confScore < self.bestConfScore : 
+				self.bestConfScore = confScore
 		else : 
 			diff = self.findConfScoreDiff(sw, newDomain, oldDomain)
 			confScore = self.prevConfScore + diff
 			self.confScoreDiff = diff
 	
-		if confScore > self.worstConfScore : 
-			self.worstConfScore = confScore
-		if confScore < self.bestConfScore : 
-			self.bestConfScore = confScore
 
 		self.scoreIter += 1
 		self.confScoreTime += time.time() - start_t
