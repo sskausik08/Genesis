@@ -896,23 +896,8 @@ class OuterZeppelinSynthesiser(object) :
 
 				[newlocalPrefScore, newbgpRouterCount] = self.findLocalPrefScore(domain, dstDomain, domainpaths, nexthopAS)
 				localPrefDiff += newlocalPrefScore - oldlocalPrefScore
-				
 
-			localPrefDiff = 0
-			# Find local pref difference
-			if len(oldaspath) == len(newaspath) :
-				# sw just moved across the domains, no change in local prefs
-				localPrefDiff += 0
-			elif len(oldaspath) == len(newaspath) + 1 :
-				# new AS path has reduced length. Decrement oldDomain's local pref entries
-				localPrefDiff -= self.bgpRouterCounts[oldDomain][self.pdb.getDestinationSubnet(pc)]
-			elif len(oldaspath) + 1 == len(newaspath) :
-				# new AS path has increased length. Increment newDomain's local pref entries
-				localPrefDiff += self.bgpRouterCounts[newDomain][self.pdb.getDestinationSubnet(pc)] + 1
-
-			scoreDiff += localPrefDiff
-
-		print "Diff", sw, oldDomain, newDomain, scoreDiff
+		scoreDiff += localPrefDiff
 		return scoreDiff
 	
 	def changeConfigurationState(self) :
