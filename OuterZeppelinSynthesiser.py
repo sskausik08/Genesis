@@ -514,24 +514,15 @@ class OuterZeppelinSynthesiser(object) :
 		start_t = time.time()
 		#print "Prev Conf Score", self.prevConfScore
 
-		if True : 
-			# Compute absolute score
-		 	confScore = self.configurationScore()
-		 	self.prevConfScore = confScore
-		 	if confScore > self.worstConfScore : 
-				self.worstConfScore = confScore
-			if confScore < self.bestConfScore : 
-				self.bestConfScore = confScore
-		else : 
-			diff = self.findConfScoreDiff(sw, newDomain, oldDomain)
-			confScore = self.prevConfScore + diff
-			self.confScoreDiff = diff
-	
+		# Compute score
+	 	confScore = self.configurationScore(sw, newDomain, oldDomain)
+	 	if confScore > self.worstConfScore : 
+			self.worstConfScore = confScore
+		if confScore < self.bestConfScore : 
+			self.bestConfScore = confScore
 
-		self.scoreIter += 1
 		self.confScoreTime += time.time() - start_t
 		
-
 		start_t = time.time()
 		rfScore = self.routeFilterScore()
 		self.rfScoreTime = time.time() - start_t
@@ -589,56 +580,21 @@ class OuterZeppelinSynthesiser(object) :
 			# Upper bounded by using static routes for all the paths
 			self.confScoreUpperBound += len(path)
 
-	def configurationScore(self) : 
+	def configurationScore(self, sw=None, newDomain=None, oldDomain=None) : 
 		""" Computes the extra lines of BGP required to enforce policy routing 
-		in the inter-domain setting """
+		in the inter-domain setting """ 
+
+		if len(self.ASPaths) == 0 :
+			score = self.findStaticConfScore()
+			self.prevStaticConfScore = score
+		else :
+			self.staticConfScoreDiff = self.findStaticConfScoreDiff(sw, newDomain, oldDomain)
+			score = self.prevStaticConfScore + self.staticConfScoreDiff
 
 		# State resets
 		for subnet in self.destinationDAGs.keys() :
 			for domain in range(self.numDomains) : 
 				self.bgpRouterCounts[domain][subnet] = 0
- 
-		for pc in self.paths.keys() :
-			path = self.paths[pc] 
-			src = path[0]
-			dst = path[len(path) - 1]
-
-			aspath = [self.switchDomains[src]]
-			aspositions = [0] # Store the positions when the AS first starts.
-			for i in range(1, len(path)) : 
-				domain = self.switchDomains[path[i]]
-				if domain != aspath[len(aspath) - 1] : 
-					# Next AS. Add to AS path
-					aspath.append(domain)
-					aspositions.append(i)
-
-			# Store computations in state
-			self.ASPaths[pc] = aspath
-			self.ASPositions[pc] = aspositions
-
-			# Find largest non-loop path
-			if len(aspath) == 1 : 
-				# The entire path is the same domain, there is no BGP configuration required for this path
-				self.lastNonLoopDownstreamPosition[pc] = -1
-			else : 
-				# Find longest path from destination which does not contain loops
-				i = len(aspath) - 1
-				lastNonLoopDownstreamPosition = -1
-				while i > 0:
-					domain = aspath[i]
-					if aspath.count(domain) > 1 : 
-						# Domain part of loop.
-						for j in range(i - 1, -1, -1) :
-							if aspath[j] == domain :
-								# First repitition from the end. 
-								if j > lastNonLoopDownstreamPosition :
-									lastNonLoopDownstreamPosition = j
-					i -= 1
-				self.lastNonLoopDownstreamPosition[pc] = lastNonLoopDownstreamPosition
-
-		score = 0
-		for pc in self.paths.keys() :
-			score += self.findStaticConfScore(pc, self.paths[pc], self.ASPaths[pc], self.ASPositions[pc], self.lastNonLoopDownstreamPosition[pc])
 
 		# Precompute Shortest AS Paths
 		for domain1 in range(self.numDomains) :
@@ -688,7 +644,54 @@ class OuterZeppelinSynthesiser(object) :
 		#print "local prefs", time.time() - s_t
 		return score
 
-	def findStaticConfScore(self, pc, path, aspath, aspositions, lastNonLoopDownstreamPosition) :
+	def findStaticConfScore(self) :
+		""" Find cost of static routes (number of static hops)"""
+		for pc in self.paths.keys() :
+			path = self.paths[pc] 
+			src = path[0]
+			dst = path[len(path) - 1]
+
+			aspath = [self.switchDomains[src]]
+			aspositions = [0] # Store the positions when the AS first starts.
+			for i in range(1, len(path)) : 
+				domain = self.switchDomains[path[i]]
+				if domain != aspath[len(aspath) - 1] : 
+					# Next AS. Add to AS path
+					aspath.append(domain)
+					aspositions.append(i)
+
+			# Store computations in state
+			self.ASPaths[pc] = aspath
+			self.ASPositions[pc] = aspositions
+
+			# Find largest non-loop path
+			if len(aspath) == 1 : 
+				# The entire path is the same domain, there is no BGP configuration required for this path
+				self.lastNonLoopDownstreamPosition[pc] = -1
+			else : 
+				# Find longest path from destination which does not contain loops
+				i = len(aspath) - 1
+				lastNonLoopDownstreamPosition = -1
+				while i > 0:
+					domain = aspath[i]
+					if aspath.count(domain) > 1 : 
+						# Domain part of loop.
+						for j in range(i - 1, -1, -1) :
+							if aspath[j] == domain :
+								# First repitition from the end. 
+								if j > lastNonLoopDownstreamPosition :
+									lastNonLoopDownstreamPosition = j
+					i -= 1
+				self.lastNonLoopDownstreamPosition[pc] = lastNonLoopDownstreamPosition
+
+		score = 0
+		for pc in self.paths.keys() :
+			score += self.findStaticConfScoreHelper(pc, self.paths[pc], self.ASPaths[pc], self.ASPositions[pc], self.lastNonLoopDownstreamPosition[pc])
+
+		return score
+	
+
+	def findStaticConfScoreHelper(self, pc, path, aspath, aspositions, lastNonLoopDownstreamPosition) :
 		""" Find conf score for a single path """
 		src = path[0]
 		dst = path[len(path) - 1]
@@ -743,7 +746,7 @@ class OuterZeppelinSynthesiser(object) :
 		
 		return [score, bgpRouterCount]
 
-	def findConfScoreDiff(self, sw, newDomain, oldDomain) :
+	def findStaticConfScoreDiff(self, sw, newDomain, oldDomain) :
 		""" Find difference in scores as sw oldDomain -> newDomain """
 		#Empty changed state
 		self.changedASPaths.clear()
@@ -768,7 +771,7 @@ class OuterZeppelinSynthesiser(object) :
 			oldlastNonLoopDownstreamPosition = self.lastNonLoopDownstreamPosition[pc]
 
 			# Compute old static score.
-			oldScore = self.findStaticConfScore(pc, path, oldaspath, oldaspositions, oldlastNonLoopDownstreamPosition)
+			oldScore = self.findStaticConfScoreHelper(pc, path, oldaspath, oldaspositions, oldlastNonLoopDownstreamPosition)
 
 			newaspath = [self.switchDomains[src]]
 			newaspositions = [0] # Store the positions when the AS first starts.
@@ -802,93 +805,93 @@ class OuterZeppelinSynthesiser(object) :
 			self.changedASPositions[pc] = newaspositions
 			self.changedlastNonLoopDownstreamPosition[pc] = newlastNonLoopDownstreamPosition
 
-			newScore = self.findStaticConfScore(pc, path, newaspath, newaspositions, newlastNonLoopDownstreamPosition)
+			newScore = self.findStaticConfScoreHelper(pc, path, newaspath, newaspositions, newlastNonLoopDownstreamPosition)
 
 			#print sw, oldDomain, newDomain, pc, path, oldaspath, newaspath, - oldScore + newScore
 			scoreDiff = scoreDiff - oldScore + newScore
+		
+		 	# Check to see if sw is not staticly routed.
+			# swIndex = path.index(sw)
+			# if swIndex < oldaspositions[oldlastNonLoopDownstreamPosition + 1] :
+			# 	# sw statically routed. No change in local pref scores
+			# 	continue
+			# else : 
+			# 	subnet = self.pdb.getDestinationSubnet(pc)
+			# 	if subnet not in changedSubnets : 
+			# 		changedSubnets.append(subnet)
 
- 			# Check to see if sw is not staticly routed.
-			swIndex = path.index(sw)
-			if swIndex < oldaspositions[oldlastNonLoopDownstreamPosition + 1] :
-				# sw statically routed. No change in local pref scores
-				continue
-			else : 
-				subnet = self.pdb.getDestinationSubnet(pc)
-				if subnet not in changedSubnets : 
-					changedSubnets.append(subnet)
-
-		localPrefDiff = 0
-		changedDomains = [oldDomain, newDomain]
-		for domain in changedDomains : 
-			for subnet in changedSubnets: 
-				domainpaths = dict()
-				nexthopAS = dict()
-				dstpc = -1
-				subnetPCs = self.pdb.getDestinationSubnetPacketClasses(subnet)
-				if len(subnetPCs) == 0 : continue
-				for pc in subnetPCs :
-					# Find domain in path
-					index = -1
-					path = self.paths[pc]
-					aspath = self.ASPaths[pc]
-					aspositions = self.ASPositions[pc]
-					for j in range(self.lastNonLoopDownstreamPosition[pc] + 1, len(aspath)) : 
-						if aspath[j] == domain : 
-							index = j
-						break
+		# localPrefDiff = 0
+		# changedDomains = [oldDomain, newDomain]
+		# for domain in changedDomains : 
+		# 	for subnet in changedSubnets: 
+		# 		domainpaths = dict()
+		# 		nexthopAS = dict()
+		# 		dstpc = -1
+		# 		subnetPCs = self.pdb.getDestinationSubnetPacketClasses(subnet)
+		# 		if len(subnetPCs) == 0 : continue
+		# 		for pc in subnetPCs :
+		# 			# Find domain in path
+		# 			index = -1
+		# 			path = self.paths[pc]
+		# 			aspath = self.ASPaths[pc]
+		# 			aspositions = self.ASPositions[pc]
+		# 			for j in range(self.lastNonLoopDownstreamPosition[pc] + 1, len(aspath)) : 
+		# 				if aspath[j] == domain : 
+		# 					index = j
+		# 				break
 					
-					if index == len(aspath) - 1 or index < 0: 
-						continue # No local preferences required
-					else :
-						domainpath = path[aspositions[index]:aspositions[index + 1]] # Extracts the path in the domain.
+		# 			if index == len(aspath) - 1 or index < 0: 
+		# 				continue # No local preferences required
+		# 			else :
+		# 				domainpath = path[aspositions[index]:aspositions[index + 1]] # Extracts the path in the domain.
 
-					if domainpath == [] : 
-						print "Something", path, index, aspath, aspositions
-						exit(0)
+		# 			if domainpath == [] : 
+		# 				print "Something", path, index, aspath, aspositions
+		# 				exit(0)
 					
-					domainpaths[pc] = domainpath
-					nexthopAS[pc] = aspath[index+1]
+		# 			domainpaths[pc] = domainpath
+		# 			nexthopAS[pc] = aspath[index+1]
 
-				dstDomain = self.switchDomains[self.pdb.getDestinationSwitch(subnetPCs[0])]
-				[oldlocalPrefScore, oldbgpRouterCount] = self.findLocalPrefScore(domain, dstDomain, domainpaths, nexthopAS) 
+		# 		dstDomain = self.switchDomains[self.pdb.getDestinationSwitch(subnetPCs[0])]
+		# 		[oldlocalPrefScore, oldbgpRouterCount] = self.findLocalPrefScore(domain, dstDomain, domainpaths, nexthopAS) 
 				
-				domainpaths.clear()
-				nexthopAS.clear()
-				for pc in subnetPCs :
-					# Find domain in path
-					index = -1
-					path = self.paths[pc]
-					if pc in self.changedASPaths : 
-						aspath = self.changedASPaths[pc]
-						aspositions = self.changedASPositions[pc]
-						lastNonLoopDownstreamPosition = self.changedlastNonLoopDownstreamPosition[pc]
-					else :
-						aspath = self.ASPaths[pc]
-						aspositions = self.ASPositions[pc]
-						lastNonLoopDownstreamPosition = self.lastNonLoopDownstreamPosition[pc]
+		# 		domainpaths.clear()
+		# 		nexthopAS.clear()
+		# 		for pc in subnetPCs :
+		# 			# Find domain in path
+		# 			index = -1
+		# 			path = self.paths[pc]
+		# 			if pc in self.changedASPaths : 
+		# 				aspath = self.changedASPaths[pc]
+		# 				aspositions = self.changedASPositions[pc]
+		# 				lastNonLoopDownstreamPosition = self.changedlastNonLoopDownstreamPosition[pc]
+		# 			else :
+		# 				aspath = self.ASPaths[pc]
+		# 				aspositions = self.ASPositions[pc]
+		# 				lastNonLoopDownstreamPosition = self.lastNonLoopDownstreamPosition[pc]
 					
 
-					for j in range(lastNonLoopDownstreamPosition + 1, len(aspath)) : 
-						if aspath[j] == domain : 
-							index = j
-						break
+		# 			for j in range(lastNonLoopDownstreamPosition + 1, len(aspath)) : 
+		# 				if aspath[j] == domain : 
+		# 					index = j
+		# 				break
 					
-					if index == len(aspath) - 1 or index < 0: 
-						continue # No local preferences required
-					else :
-						domainpath = path[aspositions[index]:aspositions[index + 1]] # Extracts the path in the domain.
+		# 			if index == len(aspath) - 1 or index < 0: 
+		# 				continue # No local preferences required
+		# 			else :
+		# 				domainpath = path[aspositions[index]:aspositions[index + 1]] # Extracts the path in the domain.
 
-					if domainpath == [] : 
-						print "Something", path, index, aspath, aspositions
-						exit(0)
+		# 			if domainpath == [] : 
+		# 				print "Something", path, index, aspath, aspositions
+		# 				exit(0)
 					
-					domainpaths[pc] = domainpath
-					nexthopAS[pc] = aspath[index+1]
+		# 			domainpaths[pc] = domainpath
+		# 			nexthopAS[pc] = aspath[index+1]
 
-				[newlocalPrefScore, newbgpRouterCount] = self.findLocalPrefScore(domain, dstDomain, domainpaths, nexthopAS)
-				localPrefDiff += newlocalPrefScore - oldlocalPrefScore
+		# 		[newlocalPrefScore, newbgpRouterCount] = self.findLocalPrefScore(domain, dstDomain, domainpaths, nexthopAS)
+		# 		localPrefDiff += newlocalPrefScore - oldlocalPrefScore
 
-		scoreDiff += localPrefDiff
+		# scoreDiff += localPrefDiff
 		return scoreDiff
 	
 	def changeConfigurationState(self) :
@@ -899,18 +902,18 @@ class OuterZeppelinSynthesiser(object) :
 			self.lastNonLoopDownstreamPosition[pc] = self.changedlastNonLoopDownstreamPosition[pc]
 
 		# Change config score
-		self.prevConfScore += self.confScoreDiff
+		self.prevStaticConfScore += self.staticConfScoreDiff
 
-		# Precompute Shortest AS Paths
-		for domain1 in range(self.numDomains) :
-			for domain2 in range(self.numDomains) :
-				if domain1 == domain2 : continue
+		# # Precompute Shortest AS Paths
+		# for domain1 in range(self.numDomains) :
+		# 	for domain2 in range(self.numDomains) :
+		# 		if domain1 == domain2 : continue
 
-				[uniqueness, shortestASPath] = self.findShortestASPath(domain1, domain2)
-				if uniqueness : 
-					self.shortestASPaths[domain1][domain2] = shortestASPath
-				else : 
-					self.shortestASPaths[domain1][domain2] = []
+		# 		[uniqueness, shortestASPath] = self.findShortestASPath(domain1, domain2)
+		# 		if uniqueness : 
+		# 			self.shortestASPaths[domain1][domain2] = shortestASPath
+		# 		else : 
+		# 			self.shortestASPaths[domain1][domain2] = []
 
 	def findShortestASPath(self, srcDomain, dstDomain) :
 		""" Find shortest path from src to dst domains. Return uniqueness of shortest path as well"""
