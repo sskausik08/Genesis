@@ -7,15 +7,23 @@ input paths $P$ under non-failure scenarios is NP-hard.
 \end{theorem}
 
 \begin{proof}
-We prove the above theorem by reducing the \emph{minimum vertex cover} problem
-to finding the smallest set of route-filters and OSPF weights 
+We show that the minimum vertex cover problem, which is NP-hard 
+reduces finding the smallest set of route-filters and OSPF weights 
 which forward traffic along the
 input paths under non-failure scenarios. 
+The latter is also in NP, so after the reduction we 
+can conclude that it is also NP-hard.
 
-Given a graph $G_{vc}=(V_{vc},E_{vc})$ and $VC$ denotes the minimum 
-vertex cover of the graph $G_{vc}$. 
-
+Let $G = (V,E)$ be an instance of the 
+minimum vertex cover problem. A set of
+vertices $VC \subseteq V$ is the vertex cover
+if $\forall (v_1, v_2) \in E. ~v_1 \in VC \vee v_2 \in VC$. 
 \begin{lemma}
-	For a 
+	Atleast 1 route-filter is required to find a valid solution to the
+	OSPF edge weights for each diamond formed by the input paths.
 \end{lemma}
+\begin{proof}
+	Proof by contradiction. We can show that any diamond inconsistency 
+	cannot be removed if no route-filters are set on the paths.
+\end{proof}
 \end{proof}

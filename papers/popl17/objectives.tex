@@ -47,11 +47,10 @@ link failure will affect fewer flows when the flows are spread evenly
 across the network.  To this end, network operators often impose
 traffic engineering objectives such as minimizing the total link
 utilization or the maximum link utilization. 
-\kausik{
 \name performs coarse-grained TE, 
 e.g., given information about diurnal traffic patterns, 
 expected load (such as background systems workloads), 
-plan how to route flows according to a global objective.}
+plan how to route flows according to a global objective.
 %% useful in balancing traffic across links,
 %% and a link failure will affect lesser number of flows when the flows
 %% are spread evenly across the network.
@@ -82,7 +81,6 @@ We then impose the following objective:
 \begin{equation}
 		\texttt{minimize}\ maxU
 \end{equation}
-\kausik{
 \paragraph{Multipath TE}
 \name can support multipath-TE: for a packet class $pc$, we can create $k$ 
 subclasses and split traffic of $pc$ among the $k$ paths adhering to 
@@ -92,5 +90,5 @@ policies to the $k$ subclasses, we can split traffic
 of $pc$ along edge-disjoint paths. Furthermore, \name can be used for other
 quantitative objectives like minimizing total latency and load balancing
 traffic across middleboxes by using an encoding similar 
-to the one presented in this section.}
+to the one presented in this section.
 

@@ -269,17 +269,18 @@ Using the $Reach$ relations, we can specify path length restrictions (Type 1)
   the constraints for reachability in $i+2$ steps. 
    \end{example}
 
-\kausik{Tactics are heuristics, but well-defined ones with formal semantics and provable soundness properties.}
+Tactics are heuristics, but well-defined ones with formal semantics and provable soundness properties.
  In practice, tactics can be used to specify restrictions which would not reduce the search space dramatically, 
 but are still useful toward speeding up the synthesis, especially in datacenter topologies which are hierarchical 
  and can be used to specify interesting tactics. One of the biggest advantages
  of tactics is that it is \emph{policy-agnostic} since it enforces conditions on the path, and
  can be used in conjunction with the different policies supported by \name (isolation, traffic engineering etc.).  
  Thus, we have provided a framework for the
- development of search strategies based on path properties, and \sout{we envision entities providing network
- management to develop a \emph{repository} of tactics for various network topologies, 
- which can be used by network operators without writing tactics of their own.}
-\kausik{operators can design tactics based on the physical topologies (datacenter topologies are hierarchical) to create a library of tactics that can be reused for workloads. While tactics sacrifice completeness, operators can discard the tactic if synthesis fails and use \name without tactics.}
+ development of search strategies based on path properties, and 
+operators can design tactics based on the physical topologies (datacenter topologies are hierarchical)
+ to create a library of tactics that can be reused for workloads.
+  While tactics sacrifice completeness, operators can discard the tactic 
+  if synthesis fails and use \name without tactics.
 %\loris{For that restricted set of regexes the algorithm is trivial you should write the first pass. 
 %See the simplified syntax.
 %I'll help you with the proof but essentially you have to show that

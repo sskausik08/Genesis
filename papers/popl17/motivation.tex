@@ -14,7 +14,7 @@
 We describe the type of policies desired in multi-tenant data centers
 that \Name supports. We use \Cref{fig:architecture} as a running
 example. In our setting, an ``operator'' manages a multi-tenant
-datacenter, \sout{which could be either a public datacenter (E.g., Azure),}
+datacenter 
 like an enterprise network or a private datacenter. 
 The operator specifies ``operator policies''
 which reflect important global objectives pertaining to how she wishes
@@ -32,14 +32,14 @@ to manage her overall infrastructure.
  whether paths can exist among its hosts, and if so, what additional
  properties the paths must satisfy for security, performance or access
  control reasons. 
- \kausik{Given the policies, the cloud operator 
+ Given the policies, the cloud operator 
  solves the VM placement problem separately. 
  The resulting tenant VM locations, along with the policies 
  to apply on paths between locations are then 
  provided as input to Genesis.  
  Tenants are \emph{unaware} of the physical topology and 
  cannot program physical switches directly, maintaining the virtual
- network abstraction.}
+ network abstraction.
  
  
  \Cref{fig:architecture} shows several tenants who
@@ -156,11 +156,8 @@ to manage her overall infrastructure.
 \item \textbf{Operator Policy: Managing Capacity Constraints}. While
   support for the above policies can be used to satisfy tenant 
   requirements, network operators often wish to
-  carefully manage constrained resources\footnote{
-  \kausik{
-  This can also be used to provide QoS guarantees to tenants like minimum
-  bandwidth guarantees.	
-  	}}. Common examples that \Name
+  carefully manage constrained resources. 
+  Common examples that \Name
   supports include enforcing strict constraints on aggregate number of
   flows traversing a switch (due to all tenants) so as to adhere to
   switch memory constraints, and ensuring that the total load on
@@ -169,7 +166,9 @@ to manage her overall infrastructure.
   uses). In our example in \Cref{fig:architecture}, A2-C2 and A4-C2
   links are of low bandwidth, and the operator wants to ensure that
   total load on these links does not exceed 100 
-  (\texttt{A2 $\rightarrow$ C2: 100, A4 $\rightarrow$ C2:100}).
+  (\texttt{A2 $\rightarrow$ C2: 100, A4 $\rightarrow$ C2:100}). These 
+  policies could also be used to provide QoS guarantees to tenants like
+  minimum bandwidth guarantees. 
 
 \item \textbf{Operator Policy: Traffic Engineering}. As an alternative to
   managing strict (link) capacity constraints, operates may also want
