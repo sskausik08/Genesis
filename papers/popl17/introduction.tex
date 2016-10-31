@@ -75,16 +75,20 @@ application requirements.
 %% of the policies, generating the data plane is an NP-complete problem
 %% and requires the design of efficient custom heuristics; combining
 %% different policies' heuristics together is non-trivial.
-Unfortunately, existing SDN programming languages (e.g.,
-Frenetic~\cite{frenetic} and Pyretic~\cite{pyretic}) present too
+Unfortunately, many existing SDN programming languages 
+~\cite{frenetic,pyretic} present too
 narrow a view: operators would ideally want to specify and realize
 policies network-wide, whereas these languages focus on
-programming {\em individual} switch behaviors.  Moreover, for many
+programming {\em individual} switch behaviors.  While the 
+NetKAT language~\cite{netkat, netkatcompiler} is more expressive and
+can be used to encode certain network-wide policies like regular paths and 
+programs on virtual topologies, we cannot express policies 
+like isolated paths or traffic engineering using NetKAT. For many
 types of policies, generating a data plane that enforces them is a
 %  an NP-complete 
 computationally hard problem, requiring the design of efficient custom
-heuristics  per policy type. Other recent works on
-network-wide policy enforcement~\cite{merlin,simple} go beyond the
+heuristics per policy type. Other recent works on
+network-wide policy enforcement~\cite{merlin,simple, fattire} go beyond the
 single-switch model, but they target specific types of policies and
 thus are difficult to extend to other commonly desired policy types
 (e.g., isolation).
