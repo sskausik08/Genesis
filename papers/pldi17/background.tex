@@ -19,8 +19,9 @@ BGP decides the best path to install in the
 forwarding table based on different metrics like local preferences,
 AS path lengths and type of routes~\cite{bgp}. BGP uses the
 rules specified in \Cref{alg:bgppathrules}\footnote{
-For ease of presentation, we specify an abridged ruleset; 
-the synthesized configurations will not use the other rules. 
+For ease of presentation, we list an abridged ruleset; 
+the synthesized configurations will only use these rules 
+for routing.  
 } 
 in decreasing order of preference to select the best path
 from the received announcements. If all paths result in a tie

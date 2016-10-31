@@ -2,8 +2,9 @@
 \begin{theorem}
 Finding the set of route-filters $R$ of smallest size such
  that there exists OSPF edge weights $W$ for topology $G=(V,E)$ 
- and the resulting configurations forward traffic along the
-input paths $P$ under non-failure scenarios is NP-hard.
+ and the resulting configurations forward traffic in the network
+ topology $T=(S,L)$ along the
+input paths $P$ under non-failure scenarios, is NP-hard.
 \end{theorem}
 
 \begin{proof}
@@ -20,14 +21,7 @@ Let $G = (V,E)$ be an instance of the
 minimum vertex cover problem. A set of
 vertices $VC \subseteq V$ is the vertex cover
 if $\forall (v_1, v_2) \in E. ~v_1 \in VC \vee v_2 \in VC$. 
-\begin{lemma}
-	Atleast 1 route-filter is required to find a valid solution to the
-	OSPF edge weights for each diamond formed by the input paths.
-\end{lemma}
-\begin{proof}
-	Proof by contradiction. We can show that any diamond inconsistency 
-	cannot be removed if no route-filters are set on the paths.
-\end{proof}
+
 We now show how to construct a topology $T=(S,L)$ 
 and a corresponding set of paths $P$ that can be 
 enforced by route-filter set $R$ such that $|R| \leq k$  
@@ -36,33 +30,99 @@ the graph $G$ and $|VC(R)| \leq k$.
 
 For every vertex $v \in V$: add two vertices $s_v^1$ 
 and $s_v^2$ to $S$ and a directed link $s_v^1 \rightarrow s_v^2$ to $L$. 
+We also assign a destination host $d_v$ for each vertex $v$. 
+
 For every edge $(u,v) \in E$: add two vertices $s_{uv}$
 and $t_{uv}$ to $S$. Add edges
 connecting $s_{uv} \rightarrow s_{u}^1$, $s_{uv} \rightarrow s_{v}^1$,
-$s_{u}^2 \rightarrow t_{uv}$ and $s_{v}^2 \rightarrow t_{uv}$. 
-\Cref{fig:rfcomplexity} illustrates this construction.
+$s_{u}^2 \rightarrow t_{uv}$ and $s_{v}^2 \rightarrow t_{uv}$. \Cref{fig:rfcomplexity} illustrates this construction.
 
 \begin{figure}[H]
 	\centering
-	\begin{tikzpicture}[shorten >=0.5pt,node distance=1.5cm,on grid,auto] 
+	\begin{tikzpicture}[shorten >=0.5pt,node distance=1.5cm,on grid,auto,
+	square/.style={regular polygon,regular polygon sides=4}] 
 	\node[state] (s)  {$s_{uv}$}; 
 	\node[state] (v1) [below right=of s] {$s_v^1$}; 
 	\node[state] (v2) [below=of v1] {$s_v^2$};
 	\node[state] (u1) [below left=of s] {$s_u^1$}; 
 	\node[state] (u2) [below=of u1] {$s_u^2$}; 
-	\node[state] (t) [below right=of u2] {$t_{uv}$}; 	
+	\node[state] (t) [below right=of u2] {$t_{uv}$};
+	\node[state] (s1) [above right=of v1] {$s_{vw}$}; 	
+	\node[state] (t1) [below right=of v2] {$t_{vw}$}; 	
 	\path[->] 
 	(s) edge  node {} (v1)
 	edge  node {} (u1)
+	edge [blue, dashed, bend right=100] node {} (t)
+	edge [red, dashed, bend left=100] node {} (t)
 	(u1) edge node {} (u2)
 	(u2) edge node {} (t)
 	(v1) edge node {} (v2)
-	(v2) edge node {} (t);
+	(v2) edge node {} (t)
+	edge node {} (t1)
+	(s1) edge node {} (v1);
+	\path[-] (s1) edge node[above] {} +(1,-1);
+	\path[-] (t1) edge node[above] {} +(1,1);
 	\end{tikzpicture}
 	\caption{Construction}
 	\label{fig:rfcomplexity}
 \end{figure}
-	
+If there was another edge $(v,w) \in E$, then
+$s_{vw}$ has an edge connecting to $s_v^1$ and
+$s_v^2$ has an edge connecting to $t_{vw}$ (shown
+in \Cref{fig:rfcomplexity}). $s_{vw}$ will also 
+have an edge to $s_w^1$ and similarily from $s_w^2$ to $t_{uw}$
+as per the construction outlined above.
 
+For each edge $(u,v) \in E$, we add two paths in $P$: 
+$s_{uv} \rightarrow s_u^1 \rightarrow s_u^2 \rightarrow t_{uv}$
+for destination host $d_v$ and 
+$~s_{uv} \rightarrow s_v^1 \rightarrow s_v^2 \rightarrow t_{uv}$ 
+for destination host $d_u$.
+(dashed paths in \Cref{fig:rfcomplexity}). 
 
+We now prove that if there exists a set of route-filters
+$R$ such that $|R| \leq k$ such that the resulting configurations
+forwards traffic along $P$, then there exists a vertex cover $VC$
+of $G$ such that $|VC| \leq k$. 
+
+For each route-filter $r \in R$, one of its endpoints 
+has to be either $s_v^1$ or $s_v^2$, corresponding
+to some vertex $v \in V$ (structure of topology $T$). 
+We construct a set $VC(R)$ by adding the vertex $v$ 
+based on the endpoints of each route-filter $r \in R$.
+To show that $VC(R)$ is a vertex cover of $G$, we first
+prove \Cref{lemma:diamond}.
+
+\begin{lemma} \label{lemma:diamond}
+	Atleast 1 route-filter is required to find a valid solution to the
+	OSPF edge weights for each diamond formed by the input paths.
+\end{lemma}
+\begin{proof}
+	Proof by contradiction. We can show that any diamond inconsistency 
+	cannot be removed if no route-filters are set on the paths.
+\end{proof}
+
+For every edge $(u,v) \in E$, the constructed paths from 
+$s_{uv}$ to $t_{uv}$ form a diamond. Thus, by lemma 1, 
+the diamond corresponding to each edge in $G$ 
+requires atleast one route-filter to eliminate
+the inconsistency caused by the diamond, thus, one 
+of vertices $\{u,v\}$ will be in $VC(R)$, and edge $(u,v)$
+is covered. Thus, if $R$ eliminates all diamond inconsistencies
+to find a solution to the OSPF weights, the corresponding set
+$VC(R)$ covers all edges in $E$. Therefore, $VC(R)$ is a vertex
+cover. 
+
+Thus, by finding a set of route-filters $R$ such that $|R| \leq k$
+such that all the diamond inconsistencies are eliminated, and there
+exists OSPF weights $W$ such that the configurations forward traffic
+along $P$, we can find a vertex cover $VC$ for graph $G$ such that
+$|VC| \leq k$. 
+
+This transformation is polynomial, the constructed 
+network topology $T$ has $2|V| + 2|E|$ nodes, 
+$|V| + 4|E|$ links and $2|E|$ paths. Therefore, OSPF
+configuration synthesis with number of route-filters $\leq k$ is
+NP-complete. Thus, OSPF synthesis with minimal number of 
+route-filters is NP-hard. 
 \end{proof}
