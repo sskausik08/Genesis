@@ -7,12 +7,14 @@ input paths $P$ under non-failure scenarios is NP-hard.
 \end{theorem}
 
 \begin{proof}
-We show that the minimum vertex cover problem, which is NP-hard 
-reduces finding the smallest set of route-filters and OSPF weights 
-which forward traffic along the
+We show that the decision version of the minimum 
+vertex cover problem, i.e., there exists a vertex cover
+of size $ \leq k$, which is NP-complete, 
+reduces to finding a set of route-filters of size $ \leq k$ \
+and OSPF weights which forward traffic along the
 input paths under non-failure scenarios. 
 The latter is also in NP, so after the reduction we 
-can conclude that it is also NP-hard.
+can conclude that it is also NP-complete.
 
 Let $G = (V,E)$ be an instance of the 
 minimum vertex cover problem. A set of
@@ -26,4 +28,41 @@ if $\forall (v_1, v_2) \in E. ~v_1 \in VC \vee v_2 \in VC$.
 	Proof by contradiction. We can show that any diamond inconsistency 
 	cannot be removed if no route-filters are set on the paths.
 \end{proof}
+We now show how to construct a topology $T=(S,L)$ 
+and a corresponding set of paths $P$ that can be 
+enforced by route-filter set $R$ such that $|R| \leq k$  
+iff the corresponding $VC(R)$ is a vertex cover of 
+the graph $G$ and $|VC(R)| \leq k$.
+
+For every vertex $v \in V$: add two vertices $s_v^1$ 
+and $s_v^2$ to $S$ and a directed link $s_v^1 \rightarrow s_v^2$ to $L$. 
+For every edge $(u,v) \in E$: add two vertices $s_{uv}$
+and $t_{uv}$ to $S$. Add edges
+connecting $s_{uv} \rightarrow s_{u}^1$, $s_{uv} \rightarrow s_{v}^1$,
+$s_{u}^2 \rightarrow t_{uv}$ and $s_{v}^2 \rightarrow t_{uv}$. 
+\Cref{fig:rfcomplexity} illustrates this construction.
+
+\begin{figure}[H]
+	\centering
+	\begin{tikzpicture}[shorten >=0.5pt,node distance=1.5cm,on grid,auto] 
+	\node[state] (s)  {$s_{uv}$}; 
+	\node[state] (v1) [below right=of s] {$s_v^1$}; 
+	\node[state] (v2) [below=of v1] {$s_v^2$};
+	\node[state] (u1) [below left=of s] {$s_u^1$}; 
+	\node[state] (u2) [below=of u1] {$s_u^2$}; 
+	\node[state] (t) [below right=of u2] {$t_{uv}$}; 	
+	\path[->] 
+	(s) edge  node {} (v1)
+	edge  node {} (u1)
+	(u1) edge node {} (u2)
+	(u2) edge node {} (t)
+	(v1) edge node {} (v2)
+	(v2) edge node {} (t);
+	\end{tikzpicture}
+	\caption{Construction}
+	\label{fig:rfcomplexity}
+\end{figure}
+	
+
+
 \end{proof}
