@@ -27,7 +27,6 @@ enterprise-scale multi-tenant data
 center settings. 
 Specifically, we ask:
 \begin{compactitemize}
-
 \item What is the performance of \Name's baseline synthesis
   algorithm for tenant policies? How does the performance vary with size of the
   network, number and the nature of policies in use? (\secref{sec:baselineeval})
@@ -41,8 +40,6 @@ Specifically, we ask:
 
 \item To what extent does the divide-and-conquer synthesis improve \Name's
   performance? When does it lead to degraded synthesis times? (\secref{sec:optimisticeval})
-
-
 
 \end{compactitemize}
 %\loris{if you say this here don't write it in the bullet points}
@@ -59,9 +56,15 @@ tenants (1-80), and (c) number of packet classes in a tenant (1-10).
 
 Our primary metric of interest is synthesis time, measured in
 seconds. In measuring this, we focus on the time the Z3 solver takes
-to solve the constraints\footnote{All experiments were conducted using a
-	32-core Intel-Xeon 2.40GHz CPU machine and
-	128GB of RAM.}. For evaluating the baseline performance, we impose a
+to solve the constraints\footnote{\kausik{We do not account for
+constraint generation time in our evaluation. While not negligible, 
+it has polynomial time complexity and thus, can scale well unlike
+constraint solving time;
+a well-engineered system can considerably reduce
+the constraint generation overheads.}}. 
+All experiments were conducted using a
+32-core Intel-Xeon 2.40GHz CPU machine and
+128GB of RAM. For evaluating the baseline performance, we impose a
 synthetic limit on the path length $\mu$ to be $10$, which is adequate 
 for a fat-tree topology with three levels. 
 
