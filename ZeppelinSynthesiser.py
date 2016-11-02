@@ -54,6 +54,7 @@ class ZeppelinSynthesiser(object) :
 
 		# Endpoint resilience
 		self.endpointResilience = defaultdict(lambda:defaultdict(lambda:None))
+		self.resilienceLoss = 0
 
 
 	def initializeSMTVariables(self) :
@@ -238,7 +239,17 @@ class ZeppelinSynthesiser(object) :
 		#self.topology.printWeights()
 		#self.printProfilingStats()
 		#self.printRouteFilterDistribution()
-		return self.routefilters
+		
+		# Translate route filters to switch names
+		self.routefilterNames = dict()
+		for subnet in self.routefilters.keys() :
+			rfs = self.routefilters[subnet]
+			rfNames = []
+			for rf in rfs : 
+				rfNames.append([self.topology.getSwName(rf[0]), self.topology.getSwName(rf[1])])
+			self.routefilterNames[subnet] = rfNames
+
+		return self.routefilterNames
 
 	"""
 	An IIS is a subset of the constraints and variable bounds of the original model. 
@@ -274,8 +285,8 @@ class ZeppelinSynthesiser(object) :
 
 			#self.plotUnsatCore()
 			# Pick filters greedily?
-			self.greedyRouteFilter()
-			#self.maximizeResilienceRouteFilter()
+			#self.greedyRouteFilter()
+			self.maximizeResilienceRouteFilter()
 			return True
 		else :
 			return False
@@ -324,43 +335,98 @@ class ZeppelinSynthesiser(object) :
 
 	def maximizeResilienceRouteFilter(self) :
 		""" Pick route filters based on maximizing filters """
-		
-
-		for constr in self.ilpSolver.getConstrs() :
-			if constr.getAttr(gb.GRB.Attr.IISConstr) > 0 :
-				name = constr.getAttr(gb.GRB.Attr.ConstrName) 
-				fields = name.split("-")
-				if fields[0] == "RF" :
-					# Route filter constraint
-					if [int(fields[1]), int(fields[4])] not in self.endpoints : 
-						# Not a source filter. Does not affect resilience. Pick this.
-						self.addRouteFilter(int(fields[1]), int(fields[2]), int(fields[4]))
-						return
-
-		# All filters are source filters. Choose source with most resilience
 		mostResilientRF = [0,0,0,100000]
 		for constr in self.ilpSolver.getConstrs() :
 			if constr.getAttr(gb.GRB.Attr.IISConstr) > 0 :
 				name = constr.getAttr(gb.GRB.Attr.ConstrName) 
 				fields = name.split("-")
 				if fields[0] == "RF" :
-					totalres = len(self.topology.getAllSwitchNeighbours(int(fields[1])))
-					res = self.endpointResilience[int(fields[1])][int(fields[4])]
-					if totalres - res < mostResilientRF[3] :
-						mostResilientRF = [int(fields[1]), int(fields[2]), int(fields[4]), totalres - res]
-		
+					# Route filter constraint
+						loss = self.findResilienceLoss([int(fields[1]), int(fields[2])], int(fields[4]))
+						if loss == 0 : 
+							# No effect on resilience. Pick this
+							self.addRouteFilter(int(fields[1]), int(fields[2]), int(fields[4]))
+							return
+						elif loss < mostResilientRF[3]: 
+							mostResilientRF = [int(fields[1]), int(fields[2]), int(fields[4]), loss]
+
+
+		# All filters are source filters. Choose filter affecting resilience the least
 		self.addRouteFilter(mostResilientRF[0], mostResilientRF[1], mostResilientRF[2])
 
-	def calculateResilienceLoss(self) :
+	def findResilienceLoss(self, rf, dst) :
+		# Check if rf on mincut to dst
+		pcs = self.pdb.getDestinationSubnetPacketClasses(dst)
+		totalEdgeDisjointPaths = 0
+
+		for pc in pcs : 
+			srcSw = self.pdb.getSourceSwitch(pc)
+			dstSw = self.pdb.getDestinationSwitch(pc)
+
+			mincut = self.findMinCut(srcSw, dstSw, self.routefilters[dst])
+			totalEdgeDisjointPaths += mincut
+
+		rfs = copy.deepcopy(self.routefilters[dst])
+		rfs.append(rf)
+
+		newtotalEdgeDisjointPaths = 0
+
+		for pc in pcs : 
+			srcSw = self.pdb.getSourceSwitch(pc)
+			dstSw = self.pdb.getDestinationSwitch(pc)
+
+			mincut = self.findMinCut(srcSw, dstSw, self.routefilters[dst])
+			newtotalEdgeDisjointPaths += mincut
+
+		return totalEdgeDisjointPaths - newtotalEdgeDisjointPaths # Loss of resilience. Positive or 0.
+
+
+	def findMinCut(self, srcSw, dstSw, routefilters) :
+		# finds the minimum cut from srcSw to dstSw with disabled filters 
+		rfs = copy.deepcopy(routefilters)
+
+		visited = dict()
+		bfstree = dict()
+		queue1 = [srcSw]
+
+		while len(queue1) != 0:
+			sw = queue1.pop(0)
+			visited[sw] = True
+			if sw == dstSw : 
+				# Found shortest path from srcSw to dstSw. Remove and check. 
+				sw1 = dstSw 
+				while sw1 != srcSw:
+					edge = [bfstree[sw1], sw1]
+					rfs.append(edge)
+					sw1 = bfstree[sw1]
+
+				return 1 + self.findMinCut(srcSw, dstSw, rfs)
+			else :
+				neighbours = self.topology.getSwitchNeighbours(sw)
+				for n in neighbours :
+					if [sw,n] in rfs : continue # Filtered. Dont explore.
+					elif n in visited : continue # Switch already visited
+					else : 
+						if n not in queue1 : 
+							queue1.append(n)
+							bfstree[n] = sw
+
+		return 0
+
+	def findTotalResilienceLoss(self) :
 		""" Calculate loss of resilience due to route filtering """
-		loss = 0
+		totalresilienceLoss = 0
 
-		for endpt in self.endpoints : 
-			totalres = len(self.topology.getAllSwitchNeighbours(endpt[0]))
-			loss += totalres - self.endpointResilience[endpt[0]][endpt[1]] 
+		for pc in range(self.pdb.getPacketClassRange()) : 
+			srcSw = self.pdb.getSourceSwitch(pc)
+			dstSw = self.pdb.getDestinationSwitch(pc)
+			subnet = self.pdb.getDestinationSubnet(pc)
 
-		#print "Loss of resilience :", loss
-		return loss
+			bestMincut = self.findMinCut(srcSw, dstSw, [])
+			mincut = self.findMinCut(srcSw, dstSw, self.routefilters[subnet])
+
+			totalresilienceLoss += bestMincut - mincut
+
 
 	def plotUnsatCore(self) :
 		graph = nx.DiGraph()
@@ -794,7 +860,6 @@ class ZeppelinSynthesiser(object) :
 		self.RFCount = setRouteFilters
 		self.f.write("Ratio of routefilters : " + str(setRouteFilters) + ":" + str(totalRouteFilters) + "\n") 
 		print "Ratio of routefilters : ", setRouteFilters, totalRouteFilters 
-		self.calculateResilienceLoss()
 
 	def printRouteFilterDistribution(self) :
 		swCount = self.topology.getSwitchCount()

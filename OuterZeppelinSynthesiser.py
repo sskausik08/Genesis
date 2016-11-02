@@ -57,9 +57,9 @@ class OuterZeppelinSynthesiser(object) :
 		self.topologyNeighbours = None
 
 		# Profiling variables
-		self.worstConfScore = 0
+		self.worstConfScore = 1
 		self.bestConfScore = 1000000000000000000
-		self.worstRFScore = 0
+		self.worstRFScore = 1
 		self.bestRFScore = 1000000000000000000
 
 		self.confScoreTime = 0
@@ -88,14 +88,17 @@ class OuterZeppelinSynthesiser(object) :
 		self.switchDomains = self.bestDomainAssignment 
 		self.computeBoundaries()
 		print self.domains
+		print "Validation", self.checkValidDomainAssignment()
 		start_t = time.time() 
-		bestRFCount = self.synthesizeOSPFConfigurations()
+		[bestRFCount, bestTRL] = self.synthesizeOSPFConfigurations()
 		bestRFScore = self.routeFilterScore()
 		self.bestConfScore = self.configurationScore()
-		ospfTime = time.time() - start_t
+		bestospfTime = time.time() - start_t
 
 		print "Worst RF Configuration"
-		worstRFCount = self.synthesizeOSPFConfigurations(self.worstDomainAssigmentRF)
+		start_t = time.time()
+		[worstRFCount, worstTRL] = self.synthesizeOSPFConfigurations(self.worstDomainAssigmentRF)
+		worstospfTime = time.time() - start_t
 		self.switchDomains = self.worstDomainAssigmentRF 
 		self.computeBoundaries()
 		worstRFScore = self.routeFilterScore()
@@ -112,14 +115,19 @@ class OuterZeppelinSynthesiser(object) :
 
 
 		self.zepFile = open("zeppelin-timing", 'a')
-		self.zepFile.write("Time taken  for MCMC is (and iterations), and OSPF time " + str(mcmcTime) + "\t" + str(self.MCMCIter) + "\t" + str(ospfTime))
+		self.zepFile.write("Time taken  for MCMC is (and iterations), and OSPF time " + str(mcmcTime) + "\t" + str(self.MCMCIter) + "\t" + str(len(dags)) + "\t" + str(len(paths)))
 		self.zepFile.write("\n")
 		self.zepFile.write("Config Improvement " + str(float(self.bestConfScore)/float(self.worstConfScore)) + "\t" + str(self.bestConfScore) + "\t" + str(self.worstConfScore))
 		self.zepFile.write("\n")
-		self.zepFile.write("RF Improvement " + str(float(bestRFCount)/float(worstRFCount)) + "\t" + str(bestRFCount) + "\t" + str(worstRFCount))
+		self.zepFile.write("RF Improvement " + str(float(bestRFCount)/float(worstRFCount)) + "\t" + str(len(paths)) + "\t" + str(bestRFCount) + "\t" + str(worstRFCount))
 		self.zepFile.write("\n")
 		self.zepFile.write("RF Scores " + "\t" + str(bestRFScore) + "\t" + str(worstRFScore))
 		self.zepFile.write("\n")
+		self.zepFile.write("TRL" + "\t" + str(len(paths)) + "\t" + str(bestTRL) + "\t" + str(worstTRL))
+		self.zepFile.write("\n")
+		self.zepFile.write("OSPF Time" + "\t" + str(len(paths)) + "\t" + str(bestospfTime) + "\t" + str(worstospfTime))
+		self.zepFile.write("\n")
+
 
 
 	def MCMCWalk(self) :
@@ -149,7 +157,6 @@ class OuterZeppelinSynthesiser(object) :
 		print "Started MCMC walk"
 		MCMCStartTime = time.time()
 		for self.MCMCIter in range(self.MCMC_MAX_ITER):
-			#print "Iter", self.MCMCIter
 			# Check if timed out every 10000 iteration
 			if self.MCMCIter % 10000 == 0 :
 				if time.time() - MCMCStartTime > self.MCMC_MAX_TIME : 
@@ -1236,7 +1243,9 @@ class OuterZeppelinSynthesiser(object) :
 
 	def synthesizeOSPFConfigurations(self, switchDomains=None) : 
 		# Found a domain assignment from MCMC. Solve the OSPF domains now.
+		self.routefilters = dict()
 		RFCount = 0
+		
 		for domain in range(self.numDomains) :
 			topo = self.getDomainTopology(domain, switchDomains)
 
@@ -1248,11 +1257,71 @@ class OuterZeppelinSynthesiser(object) :
 				pdb.addDestinationDAG(dst, dags[dst])
 
 			zepSynthesiser = ZeppelinSynthesiser(topo, pdb)
-			routeFilters = zepSynthesiser.enforceDAGs(dags, endpoints, bgpExtensions)
+			routeFilterNames = zepSynthesiser.enforceDAGs(dags, endpoints, bgpExtensions)
 
-			for dst in routeFilters : 
-				RFCount += len(routeFilters[dst])
+			for dst in routeFilterNames : 
+				RFCount += len(routeFilterNames[dst])
+				for rf in routeFilterNames[dst] :
+					if dst not in self.routefilters : 
+						self.routefilters[dst] = [[self.topology.getSwID(rf[0]), self.topology.getSwID(rf[1])]]
+					else : 
+						self.routefilters[dst].append([self.topology.getSwID(rf[0]), self.topology.getSwID(rf[1])])
+
+		# Compute Resilience Loss due to filtering
+		totalresilienceLoss = self.findTotalResilienceLoss()
 
 		print "Number of route filters are ", RFCount
-		return RFCount
+		print "Resilience Loss ", totalresilienceLoss
+		return [RFCount, totalresilienceLoss]
 
+
+	def findTotalResilienceLoss(self) :
+		""" Calculate loss of resilience due to route filtering """
+		totalresilienceLoss = 0
+
+		for pc in range(self.pdb.getPacketClassRange()) : 
+			srcSw = self.pdb.getSourceSwitch(pc)
+			dstSw = self.pdb.getDestinationSwitch(pc)
+			subnet = self.pdb.getDestinationSubnet(pc)
+
+			if subnet not in self.routefilters : 
+				continue 
+
+			bestMincut = self.findMinCut(srcSw, dstSw, [])
+			mincut = self.findMinCut(srcSw, dstSw, self.routefilters[subnet])
+
+			totalresilienceLoss += bestMincut - mincut
+
+		return totalresilienceLoss
+
+	def findMinCut(self, srcSw, dstSw, routefilters) :
+		# finds the minimum cut from srcSw to dstSw with disabled filters 
+		rfs = copy.deepcopy(routefilters)
+
+		visited = dict()
+		bfstree = dict()
+		queue1 = [srcSw]
+
+		while len(queue1) != 0:
+			sw = queue1.pop(0)
+			visited[sw] = True
+			if sw == dstSw : 
+				# Found shortest path from srcSw to dstSw. Remove and check. 
+				sw1 = dstSw 
+				while sw1 != srcSw:
+					edge = [bfstree[sw1], sw1]
+					rfs.append(edge)
+					sw1 = bfstree[sw1]
+
+				return 1 + self.findMinCut(srcSw, dstSw, rfs)
+			else :
+				neighbours = self.topology.getSwitchNeighbours(sw)
+				for n in neighbours :
+					if [sw,n] in rfs : continue # Filtered. Dont explore.
+					elif n in visited : continue # Switch already visited
+					else : 
+						if n not in queue1 : 
+							queue1.append(n)
+							bfstree[n] = sw
+
+		return 0
