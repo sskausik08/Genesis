@@ -9,7 +9,7 @@
 
 \section{Evaluation} \label{sec:evaluation}
 
-\noindent {\bf \Name Prototype:} We have implemented a full working
+\noindent {\bf Genesis Prototype:} We have implemented a full working
 prototype of \Name in Python. We have implemented an interpreter for
 the Genesis Programming Language using PLY~\cite{ply} and the synthesizer using 
 the SMT solver Z3~\cite{z3} and its $\nu Z$ extension for MaxSMT and linear
@@ -51,6 +51,11 @@ and hierarchical fat-tree network topologies which reflect a private
 datacenter. Our experiments are parameterized by: (a) total size of
 the fat-tree network (45-180 switches), (b) number of
 tenants (1-80), and (c) number of packet classes in a tenant (1-10).
+\kausik{Note that a single packet class can be used to specify policy
+	for multiple host-pairs of a tenant connected to the 
+	same edge switches, and placement of the hosts can take uniformity
+	of policy in account to reduce the explosion of packet classes with 
+	increasing hosts.}
 
 Our primary metric of interest is synthesis time, measured in
 seconds. In measuring this, we focus on the time the Z3 solver takes

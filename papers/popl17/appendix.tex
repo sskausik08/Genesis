@@ -1,10 +1,11 @@
  \appendix
  
 \section{NP-completeness Proof of Enforcing Isolation Policies} \label{sec:isolationNP}
- \begin{theorem}
- 	Enforcing reachability and isolation policies is NP-Complete.
- \end{theorem}
- We show that the graph 3-coloring problem, which is NP-complete reduces to the enforcement problem for
+\begin{theorem}
+ 	Enforcing reachability and isolation policies is NP-complete.
+\end{theorem}
+\begin{proof}
+We show that the graph 3-coloring problem, which is NP-complete reduces to the enforcement problem for
  reachability and isolation policies. The latter is also in NP, so after the reduction we 
  can conclude that it is also NP-complete.
 
@@ -50,7 +51,7 @@ We can set $f(v)$ to the color of the corresponding middle-switch being crossed.
 Since for every $(v1,v2)\in E$ the two flows for $v_1$ and $v_2$ cannot share any edge,
 they must have crossed two middle-switches with different colors and $f$ is a correct 3-coloring.
 The other direction of the proof is analogous.
-
+\end{proof} 
  
 % \subsection{Enforcement of Waypoint Policies}
 % Given a undirected graph $G={V,E}$. Let us assume there exists an polynomial-time algorithm to compute the reachability paths satisfying the policies of the following types on the graph : \\
