@@ -93,10 +93,11 @@ if there exists $Fwd, Reach$ such that $(Fwd, Reach) \models \Psi$ and $\ \Pi=\t
 In practice, we  
 model the forwarding and reachability relations using propositions and
  reduce enforcement of tenant policies like reachability, waypoints 
- and isolation to a Boolean Satisfiability Problem (SAT) problem\footnote{
- 	An earlier iteration of our model used \emph{uninterpreted functions} 
- 	and modeled reachability using recursive constraints, 
-	which was slower with a greater number of constraints.}. 
+ and isolation to a Boolean Satisfiability Problem (SAT) problem.
+% \footnote{
+% 	An earlier iteration of our model used \emph{uninterpreted functions} 
+% 	and modeled reachability using recursive constraints, 
+%	which was slower with a greater number of constraints.}. 
 Using these
 relations, operators can write custom policies in a concise and intuitive
 manner. 
@@ -112,8 +113,8 @@ that $s$ can be reached in $0$ steps.
 The following constraint states that there must be a forwarding rule from $s$ to one of
 the neighbors of $s$\footnote{
 	We unroll the existential quantifier $\exists n \in N(s)$ using disjunction of 
-	clauses $\bigvee\limits_{n \in N(s)}$ and
-	the universal quantifier $\forall n \in N(dst)$ using conjunction of clauses $\bigwedge\limits_{n \in N(dst)}$
+	clauses $\vee_{n \in N(s)}$ and
+	the universal quantifier $\forall n \in N(dst)$ using conjunction of clauses $\wedge_{n \in N(dst)}$
 	and stay in propositional logic.}.
 \begin{equation} \label{eq:src}
 	\exists n \in N(s).~Fwd(s, n, pc) \wedge Reach(n, pc, 1).

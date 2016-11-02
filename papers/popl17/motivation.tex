@@ -65,8 +65,7 @@ to manage her overall infrastructure.
 % involving the operator.
 
 
-\begin{compactitemize}
-\item \textbf{Tenant Policy: Reachability}. This enables network communication
+\minisection{Tenant Policy: Reachability}. This enables network communication
   between specific pairs of tenant's virtual instances (VMs),
   applications, or hosts.  In our example, one tenant has defined a
   reachability policy (R2) for its two VMs: \texttt{V1 >> V2}, which
@@ -79,7 +78,7 @@ to manage her overall infrastructure.
   reachability policy is implicitly blocked (i.e., all communication
   is ``default off'').
   
-\item \textbf{Tenant Policy: Middlebox Traversals}. A tenant may wish that the flow
+\minisection{Tenant Policy: Middlebox Traversals}. A tenant may wish that the flow
   between two of her end hosts, or from another tenant, must traverse
   specific middleboxes, which we also refer to as ``waypoints'' in
   this paper. Middleboxes are custom processing appliances often used
@@ -105,7 +104,7 @@ to manage her overall infrastructure.
   %% in which these middle-boxes is traversed is not relevant and the
   %% policy language should therefore support unordered waypoints.
 
-\item \textbf{Tenant Policy: Isolation}. Tenants may require various
+\minisection{Tenant Policy: Isolation}. Tenants may require various
   Quality-of-Service (QoS) or security guarantees that stipulate
   varying degrees of isolation for their traffic. In the extreme, a
   tenant could require that her flows are not affected in any manner
@@ -153,7 +152,7 @@ to manage her overall infrastructure.
 
 %\loris{is there a reason why this is not in the itemize?} 
 %\kausik{This is not a tenant policy, but an operator feature, so separate from itemize.}
-\item \textbf{Operator Policy: Managing Capacity Constraints}. While
+\minisection{Operator Policy: Managing Capacity Constraints}. While
   support for the above policies can be used to satisfy tenant 
   requirements, network operators often wish to
   carefully manage constrained resources. 
@@ -170,7 +169,7 @@ to manage her overall infrastructure.
   policies could also be used to provide QoS guarantees to tenants like
   minimum bandwidth guarantees. 
 
-\item \textbf{Operator Policy: Traffic Engineering}. As an alternative to
+\minisection{Operator Policy: Traffic Engineering}. As an alternative to
   managing strict (link) capacity constraints, operates may also want
   to balance load on their network infrastructure. This is often done
   by optimizing a network-wide objective such as total or maximum
@@ -197,7 +196,7 @@ to manage her overall infrastructure.
   %% ruletable size limits.
   
  
- \item \textbf{Operator Policy: Handling failure gracefully}. Modern
+\minisection{Operator Policy: Handling failure gracefully}. Modern
    networks experience link and switch failures frequently~\cite{datacenterfailures}.
    When a failure occurs, we must reconfigure the forwarding rules
    so that the policies are satisfied. Naively recomputing
@@ -223,10 +222,10 @@ to manage her overall infrastructure.
    %% desirable to proactively configure switches with resilient
    %% policy-compliant backup paths; however this comes at the cost
    %% of additional switch rules.
-\end{compactitemize}
+%\end{compactitemize}
 
 
-\noindent Realizing these policies  is challenging today.
+ Realizing these policies  is challenging today.
 %% legacy (non-SDN) networks
 %% requires painstaking, often manual configuration of diverse network
 %% devices. This is tedious---device configuration files can run into

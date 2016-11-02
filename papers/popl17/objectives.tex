@@ -55,7 +55,7 @@ plan how to route flows according to a global objective.
 %% and a link failure will affect lesser number of flows when the flows
 %% are spread evenly across the network.
 
-\paragraph{Min-tot TE}
+\minisection{Min-tot TE}
 To perform traffic engineering, link capacities of the network $C(sw_1, sw_2)$ and traffic 
 rates of the packet classes $\sigma(pc)$ are specified as input to \name (we assume a single
 path for a packet class). The utilization 
@@ -68,7 +68,7 @@ The following objective minimizes the total link utilization:
 \begin{equation}
 	\texttt{minimize}\ \sum_{\forall sw_1, sw_2} U(sw_1, sw_2)
 \end{equation}
-\paragraph{Min-max TE}
+\minisection{Min-max TE}
 To encode the TE objective of minimizing the maximum link utilization, we define
 a variable $maxU$ which represents the maximum
 link utilization. 
@@ -81,7 +81,7 @@ We then impose the following objective:
 \begin{equation}
 		\texttt{minimize}\ maxU
 \end{equation}
-\paragraph{Multipath TE}
+\minisection{Multipath TE}
 \name can support multipath-TE: for a packet class $pc$, we can create $k$ 
 subclasses and split traffic of $pc$ among the $k$ paths adhering to 
 the global objective. However, this 

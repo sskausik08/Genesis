@@ -9,7 +9,7 @@
 
 \section{Evaluation} \label{sec:evaluation}
 
-\noindent {\bf Genesis Prototype:} We have implemented a full working
+We implemented a full working
 prototype of \Name in Python. We have implemented an interpreter for
 the Genesis Programming Language using PLY~\cite{ply} and the synthesizer using 
 the SMT solver Z3~\cite{z3} and its $\nu Z$ extension for MaxSMT and linear
@@ -296,23 +296,21 @@ greater number of recovery attempts.
 %  \aditya{How does this compare to ground up resynthesis? Without a comparison it is not clear minimal repair is useful!}
 
 \minisection{Summary} The key points of our evaluation are:
-\begin{compactitemize}
-\item For a representative tenant-group size of 10 in a 80 switch
+1) For a representative tenant-group size of 10 in a 80 switch
   fat-tree, the baseline synthesis performance for synthesizing the
   forwarding rules for 1 to 8 tenants with complete tenant-isolation
-  is in 0.1-2000s;
-   \item Operator policies like optimization objectives for TE and  
+  is in 0.1-2000s.
+2) Operator policies like optimization objectives for TE and  
    network repair is more expensive than synthesis without
-   objectives;
-      \item Tactics provide considerable speedup over the
+   objectives.
+3) Tactics provide considerable speedup over the
         baseline synthesis.  We can
         synthesize the above workloads in 0.1-300s using the no edge
-        tactic, and under 12s using the valley-free routing tactic;
-      \item \Name can further benefit from 
+        tactic, and under 12s using the valley-free routing tactic.
+4) \Name can further benefit from 
         divide-and-conquer (DC) synthesis, which provides a 2.0$\times$ speed-up
         over non-DC synthesis in 40\% of the workloads, in
         addition to the tactic improvements.
-\end{compactitemize}
 
 
 %\begin{figure*}

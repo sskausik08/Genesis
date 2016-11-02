@@ -215,27 +215,22 @@ $1.5-400\times$ (median speedup: 1.6$\times$, average speedup:
 %% the problem of policy enforcement in networks?
 
 %We implement \Name using ... We evaluate it using .... Key highlights .... \aditya{all of these are todo}.\kausik{Do we need a para or will the next para suffice?}
-\noindent \textbf{Contributions.} \ \ \ Our contributions are the following.
+\minisection{Contributions} \ \ \ Our contributions are the following.
 \begin{compactitemize}
 \item An extensible declarative framework for describing
-  complex policies and a modular SMT-based algorithm for enforcing policies 
-  like isolation, waypoints (\secref{sec:synthesisalgo}), traffic engineering~(\secref{sec:optimization}), and 
-  failure resiliency (\secref{sec:resiliency});
-\item A modified synthesis algorithm based on tactics, which leverages datacenter network structure
+  complex policies like isolation, waypoints (\secref{sec:synthesisalgo}), traffic engineering~(\secref{sec:optimization}), and 
+  failure resiliency (\secref{sec:resiliency}) and a modular SMT-based algorithm for enforcing such policies;
+\item A tactic-based synthesis algorithm, which leverages datacenter network structure
   to blacklist undesirable path patterns (\secref{sec:tactic});
 \item A divide-and-conquer procedure for speeding up synthesis by leveraging the 
 structure of policy interactions (\secref{sec:optimistic});
-\item An implementation of \Name and an extensive evaluation on
+\item An implementation of \Name and an  evaluation on
   different policy workloads, topologies and multi-tenancy
   settings (\secref{sec:evaluation}).
 		%to quantify the performance of Genesis. 
 \end{compactitemize}
 %\aditya{todo}
 
-\iffull\else
-A long version
-of this paper containing all the proofs has been submitted as supplementary material.
-\fi
 %% : We present the design and implementation of a network management
 %% system with support for a diverse set of complex end-to-end
 %% policies like isolation, waypoints and capacity. We designed a
