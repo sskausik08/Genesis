@@ -79,19 +79,24 @@ Unfortunately, many existing SDN programming languages
 ~\cite{frenetic,pyretic} present too
 narrow a view: operators would ideally want to specify and realize
 policies network-wide, whereas these languages focus on
-programming {\em individual} switch behaviors.  While the 
-NetKAT language~\cite{netkat, netkatcompiler} is more expressive and
+programming {\em individual} switch behaviors. 
+ Other recent works on
+ network-wide policy enforcement
+ ~\cite{merlin,simple,fattire, netkat, netkatcompiler} 
+ go beyond the
+ single-switch model, but they target specific types of policies 
+ and are not easily extensible to different kinds of policies. 
+ Notably,
+NetKAT is among the most expressive and
 can be used to encode certain network-wide policies like regular paths and 
-programs on virtual topologies, we cannot express policies 
-like isolated paths or traffic engineering using NetKAT. For many
+programs on virtual topologies, however, it cannot be used to 
+express policies based on hyperproperties~\cite{hyperproperties} 
+(where one class's path is dependent on the other) like isolated paths or traffic engineering. 
+Furthermore, for many
 types of policies, generating a data plane that enforces them is a
 %  an NP-complete 
 computationally hard problem, requiring the design of efficient custom
-heuristics per policy type. Other recent works on
-network-wide policy enforcement~\cite{merlin,simple, fattire} go beyond the
-single-switch model, but they target specific types of policies and
-thus are difficult to extend to other commonly desired policy types
-(e.g., isolation).
+heuristics per policy type.
 %; combining  different policies' heuristics together is non-trivial. 
  %% \aditya{we need to be
 % careful

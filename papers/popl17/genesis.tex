@@ -112,6 +112,10 @@
 \widowpenalty = 10000
 \displaywidowpenalty = 10000
 
+\usepackage[firstpage]{draftwatermark}
+\SetWatermarkText{\hspace*{8in}\raisebox{6in}{\includegraphics[scale=0.1]{figures/aec-badge-popl}}}
+\SetWatermarkAngle{0}
+
 \begin{document}
 \toappear{}
 %\special{papersize=8.5in,11in}
@@ -133,14 +137,14 @@
 
 \title{Genesis: Synthesizing Forwarding Tables in Multi-tenant Networks}
 \authorinfo{
-  Aditya Akella
+  Kausik Subramanian
   \and
   Loris D'Antoni
   \and
-  Kausik Subramanian
+  Aditya Akella
 }
 {University of Wisconsin-Madison}
-{\{akella, loris, sskausik08\}@cs.wisc.edu}
+{\{sskausik08, loris, akella\}@cs.wisc.edu}
 \maketitle
 
 \input{abstract}
