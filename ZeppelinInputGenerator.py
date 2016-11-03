@@ -11,7 +11,7 @@ import math
 """ Generating random dags for Zeppelin """
 
 class ZeppelinInputGenerator(object) :
-	def __init__(self, topo, pdb, pcRange, subnets) :
+	def __init__(self, topo, pdb, pcRange, subnets, distance) :
 		self.topology = topo
 		self.pdb = pdb
 
@@ -27,7 +27,7 @@ class ZeppelinInputGenerator(object) :
 		while currpc < pcRange : 
 			dst = currpc % destinationSubnets
 
-			length = random.randint(3, self.topology.getMaxPathLength())
+			length = random.randint(3, distance)
 
 			if dst not in self.destinationDAGs : 
 				self.destinationDAGs[dst] = dict()

@@ -33,7 +33,6 @@ class OuterZeppelinSynthesiser(object) :
 		# BGP compatibility
 		self.nonBGPCompatibleSwitches = []
 		
-
 		# MCMC variables 
 		self.numDomains = numDomains
 		self.MCMC_MAX_ITER = 10000000	
