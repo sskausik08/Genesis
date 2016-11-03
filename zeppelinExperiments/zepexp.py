@@ -5,7 +5,7 @@ import os
 
 if __name__ == "__main__":
 	zpl_sizes = range(100, 1100, 100)
-	topofile = "./topologies/150.topo"
+	topofile = "./topologies/125.topo"
 	timeout = 600
 
 	for pcs in zpl_sizes :
