@@ -48,20 +48,21 @@ and hierarchical fat-tree network topologies which reflect a private
 datacenter. Our experiments are parameterized by: (a) total size of
 the fat-tree network (45-180 switches), (b) number of
 tenants (1-80), and (c) number of packet classes in a tenant (1-10).
-\kausik{Note that a single packet class can be used to specify policy
-	for multiple host-pairs of a tenant connected to the 
-	same edge switches, and placement of the hosts can take uniformity
-	of policy in account to reduce the explosion of packet classes with 
-	increasing hosts.}
+Note that a single packet class can be used to specify policy
+for multiple host-pairs of a tenant connected to the 
+same edge switches, and placement of the hosts can take uniformity
+of policy in account to reduce the explosion of packet classes with 
+increasing hosts.
 
 Our primary metric of interest is synthesis time, measured in
 seconds. In measuring this, we focus on the time the Z3 solver takes
-to solve the constraints\footnote{\kausik{We do not account for
+to solve the constraints\footnote{
+	We do not account for
 constraint generation time in our evaluation. While not negligible, 
 it has polynomial time complexity and thus, can scale well unlike
 constraint solving time;
 a well-engineered system can considerably reduce
-the constraint generation overheads.}}. 
+the constraint generation overheads.}. 
 All experiments were conducted using a
 32-core Intel-Xeon 2.40GHz CPU machine and
 128GB of RAM. For evaluating the baseline performance, we impose a
@@ -124,13 +125,33 @@ seconds (avg. 2 seconds per traffic class).
  %Some comment I dont understand.
 We also observe that average time per flow increases exponentially
 with larger topologies, thus synthesis times are also exponential
+\begin{wraptable}{l}{8em}
+	\begin{footnotesize}
+		\begin{center}
+			\begin{tabular}{P{3em}| P{4em}}
+				Number of Waypoints & Avg. Synthesis time per Class (s) \\
+				\hline
+				1 & 0.034\\
+				
+				2 & 0.138\\ 
+				
+				3 & 0.983\\ 
+				
+				4 & 15.41\\ 
+				
+				5 & 32.93\\
+			\end{tabular}
+		\end{center}
+		\compactcaption{Average synthesis time per class for waypoint policies with increasing number of waypoints. } \label{tab:waypointeval} 
+	\end{footnotesize}
+\end{wraptable} 
 in the number of switches.
- 
+
 \minisection{Waypoint Policies} To evaluate \Name's performance for
 ordered sets of waypoints, we fix the number of waypoints (range:1-5)
-and generate 100 waypoint policies with different sizes and permutations
-of the ordered waypoint sets for a 80 switch topology. Each
-policy has edge switches as endpoints and randomly picked core or
+ and generate 100 waypoint policies with different sizes and permutations
+ of the ordered waypoint sets for a 80 switch topology.
+ Each policy has edge switches as endpoints and randomly picked core or
 aggregate switches for waypoints. The synthetic limit $\mu$ on the
 path length is increased to 15 and no tactics are used 
 (difficult to devise a tactic for the path satisfying a waypoint policy). The
@@ -141,27 +162,6 @@ policy, owing to the complexity of the problem.  \Name can synthesize
 rules for a path with 3 total waypoints in less than a second, on
 average. 
 %\aditya{I don't follow this last sentence}
-\begin{table}
-	\begin{footnotesize}
-		\begin{center}
-			\begin{tabular}{P{10em} | P{14em}} 
-				Number of Waypoints & Avg. Synthesis time per Class (s) \\ [0.5ex] 
-				\hline
-				1 & 0.0347\\ [0.5ex] 
-				
-				2 & 0.1384\\ [0.5ex] 
-				
-				3 & 0.9834\\ [0.5ex] 
-				
-				4 & 15.41\\ [0.5ex] 
-				
-				5 & 32.93\\ [0.5ex] 
-			\end{tabular}
-		\end{center}
-		\compactcaption{Average synthesis time per class for waypoint policies with increasing number of waypoints. } \label{tab:waypointeval} 
-	\end{footnotesize}
-\end{table}
-
 
 
 \subsection{Baseline Synthesis Performance for Operator Policies} \label{sec:optimizationeval}
@@ -262,15 +262,6 @@ In \Cref{fig:tactic-topo},
  and demonstrate the viability of synthesis approach of \Name to
  real-world networks.
  
-\begin{figure}
-	\centering
-	\includegraphics[width=0.65\columnwidth]{figures/linkTopology.eps}
-	\compactcaption{Average synthesis time per packet class versus topology size for isolation workloads 
-		with the ratio of packet classes to number of edge-aggregate links 0.25 and 10 low bandwidth links in the topology 
-		have capacity policies.}
-	\label{fig:link-capacity}
-\end{figure}
-
 \subsection{Divide-and-Conquer (DC) Synthesis Performance} \label{sec:optimisticeval} 
 To evaluate the divide-and-conquer (DC) synthesis procedure, we
 perform 100 runs of DC and non-DC synthesis 
@@ -284,14 +275,8 @@ workloads, divide-and-conquer offers better or comparable
 performance to non-DC synthesis, achieving a speedup of
 2$\times$ for nearly 40\% of the workloads. For 20\% of the workloads,
 divide-and-conquer performs worse than the non-DC approach,
-especially for workloads with tenant group size 1.  This is due to
+especially for workloads with tenant group size 1 due to
 greater number of recovery attempts. 
-\begin{figure}
-	\centering
-	\includegraphics[width=0.65\columnwidth]{figures/dcSynthesis.eps}
-	\compactcaption{CDF for speedup achieved by divide-and-conquer synthesis.}
-	\label{fig:dcsyn-cdf}
-\end{figure}
 
 %  \aditya{How does this compare to ground up resynthesis? Without a comparison it is not clear minimal repair is useful!}
 
@@ -311,38 +296,4 @@ greater number of recovery attempts.
         divide-and-conquer (DC) synthesis, which provides a 2.0$\times$ speed-up
         over non-DC synthesis in 40\% of the workloads, in
         addition to the tactic improvements.
-
-
-%\begin{figure*}
-%	\includegraphics[height=7.5cm]{figures/tactic-reduction.png}
-%	\caption{Graph used to show the reduction of terms using different tactics w.r.t the total number of terms}
-%	\label{fig:tactic-reduction}
-%\end{figure*}
-%
-%\begin{figure}
-%	\includegraphics[width=\columnwidth]{figures/isolation-tactics.png}
-%	\caption{Graph used to application of tactics for a isolation workload (percentage isolation w.r.t topology 25\%) and different topology sizes. An interesting observation in the graph is that tactics need not always help in reduction of constraints (One of the tactics, not  a very natural one) leads to more time to synthesis without tactics.}
-%	\label{fig:isolation-tactics}
-%\end{figure}
-%
-%\subsection{Optimistic Synthesis}
-
-%\begin{figure}
-%	\centering
-%	\subfloat[Optimistic]{\includegraphics[width=0.5\columnwidth]{figures/opt-cdf.eps}}
-%	\subfloat[Incremental]{\includegraphics[width=0.5\columnwidth]{figures/incremental-cdf.eps}}
-%	\caption{\label{fig:cdf}
-%		Cumulative frequency distribution over 100 runs of isolation workloads for optimistic and incremental synthesis.}
-%\end{figure}
-
-%\begin{figure}
-%	\centering
-%	\includegraphics[width=0.75\columnwidth]{figures/incremental-cdf.eps}
-%	\caption{CDF for ratio of incremental synthesis time over "one-shot" total synthesis time.}
-%	\label{fig:incremental-cdf}
-%\end{figure}
-
-
-%\caption{Synthesis Time for varying number of reachability (with and without tactics) and waypoints policies for a 45 node fat-tree topology}
-
-
+ 

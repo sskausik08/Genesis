@@ -68,6 +68,7 @@ The following objective minimizes the total link utilization:
 \begin{equation}
 	\texttt{minimize}\ \sum_{\forall sw_1, sw_2} U(sw_1, sw_2)
 \end{equation}
+
 \minisection{Min-max TE}
 To encode the TE objective of minimizing the maximum link utilization, we define
 a variable $maxU$ which represents the maximum
@@ -81,6 +82,7 @@ We then impose the following objective:
 \begin{equation}
 		\texttt{minimize}\ maxU
 \end{equation}
+
 \minisection{Multipath TE}
 \name can support multipath-TE: for a packet class $pc$, we can create $k$ 
 subclasses and split traffic of $pc$ among the $k$ paths adhering to 

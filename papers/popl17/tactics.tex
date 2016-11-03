@@ -18,8 +18,9 @@ different pods is 272.  If we consider the synthesis of $n$ packet
 classes, the problem roughly translates to finding a solution in the
 space of size $(242)^n$.
 \begin{figure}
-	\includegraphics[width=\columnwidth]{figures/fattree.png}
-	\caption{Fat Tree Topology}
+	\centering
+	\includegraphics[width=0.9\columnwidth]{figures/fattree.png}
+	\compactcaption{Fat Tree Topology}
 	\label{fig:fattree}
 \end{figure}
 Operators can leverage the network structure of topologies to reduce
@@ -32,7 +33,7 @@ interconnect between aggregate and core switches.
 We introduce \emph{tactics} (the name is inspired from the usage in SMT solvers, not 
 proof assistants)
 on labels; abstractions that allow a
-network operator to impose restrictions on the paths. 
+network operator to impose restrictions on paths. 
 We use the notion of mapping the set of switches to labels to 
 have a coarse-grained way for specifying path patterns. Tactics on labels 
 help create search strategies which can be used for groups

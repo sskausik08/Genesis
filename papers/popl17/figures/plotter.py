@@ -155,7 +155,7 @@ frequency = [0.01219512195, 0.0243902439, 0.03658536585, 0.0487804878, 0.0609756
 
 plt.plot(speedup, frequency, '#377eb8')
 plt.xlabel('Non-DC / DC Synthesis Time', fontsize=20)
-plt.ylabel('Cumulative Frequency', fontsize=20)
+plt.ylabel('Cumulative \n Frequency', fontsize=20)
 
 plt.xlim(xmax=5)
 plt.grid()
