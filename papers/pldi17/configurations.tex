@@ -82,3 +82,39 @@ cost function and $\beta$ is a constant to adjust the importance of
 the optimization metrics during the randomized walk. 
 
 \subsection{Hard Constraint Cost Function}
+blah?
+
+\section{Configuration Score}
+
+\begin{algorithm}[t]
+	\floatname{algorithm}{Pseudocode}
+	\caption{MCMC}
+	\label{dcsyn}
+	\begin{algorithmic}[1]
+		\Procedure{MCMCSearch}{}
+			\State{$\Theta \leftarrow$ random domain assignment}
+			\State{$\overline{cf} = 0$ \hspace{2cm} [Worst Conf. overhead]}
+			\State{$\overline{rf} = 0$ \hspace{2cm} [Worst route-filter est.]}
+			\While{max iterations OR timeout}
+			\State{$\gamma$ = \Call{Cost}{$\Theta$}}
+			\State{$\Theta'$ = \Call{RandomChange}{$\Theta$}}
+			\State{$\gamma'$ = \Call{Cost}{$\Theta'$}}
+			\State{$Pr(\Theta \rightarrow \Theta')$ = 
+				min$(1, exp(-\beta.(\gamma' - \gamma))$}
+			\State{Set $\Theta$ = $\Theta'$ with 
+				probability $Pr(\Theta \rightarrow \Theta')$}
+			\EndWhile
+		\EndProcedure
+		
+		\Procedure{Cost}{$\Theta$} 
+		\State{$cf \leftarrow$ Configuration overhead (Static routes + \newline \hspace*{1.5cm} 
+			BGP local preference entries + iBGP filters)}
+		\If{}
+		\EndIf
+		\State{$rf \leftarrow$ Number of diamonds with  \newline 
+		\hspace*{1.3cm}  endpoints in same domain }
+		\State{$\gamma$ = max($cf,\alpha*rf$) + 0.1*min($cf,\alpha*rf$)}
+		\EndProcedure
+	\end{algorithmic}
+	
+\end{algorithm}
