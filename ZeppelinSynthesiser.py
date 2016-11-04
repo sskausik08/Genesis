@@ -98,7 +98,6 @@ class ZeppelinSynthesiser(object) :
 
 		self.routefilters[0] = [] # Default destination val = 0 (Not a s)
 
-
 	def initializeEndpointResilience(self) : 
 		# Without filters, all sources have maximum resilience = number of source neighbours.
 		for endpt in self.endpoints :
@@ -146,9 +145,9 @@ class ZeppelinSynthesiser(object) :
 		swCount = self.topology.getSwitchCount()
 		dsts = self.pdb.getDestinationSubnets()
 
-		self.f = open('timing', 'a')
-		self.f.write(str(dags))
-		self.f.write("\n\n\n")
+		# self.f = open('timing', 'a')
+		# self.f.write(str(dags))
+		# self.f.write("\n\n\n")
 
 		self.constructOverlay()	
 		#self.overlayConnectivity()	
@@ -226,13 +225,13 @@ class ZeppelinSynthesiser(object) :
 					#print "diamond loss", diamondLoss
 
 			
-		self.f.write(str(len(endpoints)) + "," + str(time.time() - start_t)+"\n")
+		# self.f.write(str(len(endpoints)) + "," + str(time.time() - start_t)+"\n")
 		# Enable Topology Edges
 		self.topology.enableAllEdges()
 		# Extract Edge weights for Gurobi		
 		self.getEdgeWeightModel(self.routeFilterMode)	
 
-		self.f.close()	
+		# self.f.close()	
 		#self.pdb.printPaths(self.topology)
 		self.pdb.validateControlPlane(self.topology, self.routefilters, self.t_res)
 
@@ -240,15 +239,27 @@ class ZeppelinSynthesiser(object) :
 		#self.printProfilingStats()
 		#self.printRouteFilterDistribution()
 		
+		rfCount = 0
 		# Translate route filters to switch names
 		self.routefilterNames = dict()
 		for subnet in self.routefilters.keys() :
 			rfs = self.routefilters[subnet]
+			rfCount += len(rfs)
 			rfNames = []
 			for rf in rfs : 
 				rfNames.append([self.topology.getSwName(rf[0]), self.topology.getSwName(rf[1])])
 			self.routefilterNames[subnet] = rfNames
 
+		
+		self.zepFile = open("ospf-timing", 'a')
+		self.zepFile.write("Topology Switches\t" +  str(swCount))
+		self.zepFile.write("\n")
+		self.zepFile.write("Time" + "\t" + str(self.pdb.getPacketClassRange()) + "\t" + str(time.time() - start_t))
+		self.zepFile.write("\n")
+		self.zepFile.write("RouteFilters" + "\t" + str(self.pdb.getPacketClassRange()) + "\t" + str(rfCount) + "\t")
+		self.zepFile.write("\n")
+		self.zepFile.write("TRL" + "\t" + str(self.pdb.getPacketClassRange()) + "\t" + str(self.findTotalResilienceLoss()) + "\t" + str(self.worstResilienceLoss))
+		self.zepFile.write("\n")
 		return self.routefilterNames
 
 	"""
@@ -375,7 +386,7 @@ class ZeppelinSynthesiser(object) :
 			srcSw = self.pdb.getSourceSwitch(pc)
 			dstSw = self.pdb.getDestinationSwitch(pc)
 
-			mincut = self.findMinCut(srcSw, dstSw, self.routefilters[dst])
+			mincut = self.findMinCut(srcSw, dstSw, rfs)
 			newtotalEdgeDisjointPaths += mincut
 
 		return totalEdgeDisjointPaths - newtotalEdgeDisjointPaths # Loss of resilience. Positive or 0.
@@ -402,7 +413,7 @@ class ZeppelinSynthesiser(object) :
 
 				return 1 + self.findMinCut(srcSw, dstSw, rfs)
 			else :
-				neighbours = self.topology.getSwitchNeighbours(sw)
+				neighbours = self.topology.getAllSwitchNeighbours(sw)
 				for n in neighbours :
 					if [sw,n] in rfs : continue # Filtered. Dont explore.
 					elif n in visited : continue # Switch already visited
@@ -416,6 +427,7 @@ class ZeppelinSynthesiser(object) :
 	def findTotalResilienceLoss(self) :
 		""" Calculate loss of resilience due to route filtering """
 		totalresilienceLoss = 0
+		self.worstResilienceLoss = 0
 
 		for pc in range(self.pdb.getPacketClassRange()) : 
 			srcSw = self.pdb.getSourceSwitch(pc)
@@ -426,7 +438,9 @@ class ZeppelinSynthesiser(object) :
 			mincut = self.findMinCut(srcSw, dstSw, self.routefilters[subnet])
 
 			totalresilienceLoss += bestMincut - mincut
+			self.worstResilienceLoss += bestMincut - 1
 
+		return totalresilienceLoss
 
 	def plotUnsatCore(self) :
 		graph = nx.DiGraph()
@@ -845,9 +859,9 @@ class ZeppelinSynthesiser(object) :
 				for n in neighbours : 
 					if n != dag[sw] : 
 						totalRouteFilters += 1
-						if self.minimalFilterSolveFlag :
-							if self.rf(sw,n,dst).x >= 0.1 : 
-								self.routefilters[dst].append([sw,n])
+						# if self.minimalFilterSolveFlag :
+						# 	if self.rf(sw,n,dst).x >= 0.1 : 
+						# 		self.routefilters[dst].append([sw,n])
 					# if [sw,dst] in self.endpoints :
 					# 	rf = self.rf(sw,n,dst).x
 					# 	if rf > 0 and n != dag[sw]:
@@ -858,7 +872,7 @@ class ZeppelinSynthesiser(object) :
 			setRouteFilters += len(self.routefilters[dst])
 
 		self.RFCount = setRouteFilters
-		self.f.write("Ratio of routefilters : " + str(setRouteFilters) + ":" + str(totalRouteFilters) + "\n") 
+		#self.f.write("Ratio of routefilters : " + str(setRouteFilters) + ":" + str(totalRouteFilters) + "\n") 
 		print "Ratio of routefilters : ", setRouteFilters, totalRouteFilters 
 
 	def printRouteFilterDistribution(self) :

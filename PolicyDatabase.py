@@ -34,6 +34,7 @@ class PolicyDatabase(object) :
 
 		# Zeppelin Domain assignment support
 		self.subnetPacketClasses = dict()
+		self.bgpExtensions = []
 
 
 	def addReachabilityPolicy(self, predicate, srcSw, dstSw, W=None, len=None) :
