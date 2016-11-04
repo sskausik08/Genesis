@@ -3,28 +3,40 @@ In this section, we describe preliminary ideas on how each phase of
 \Cref{fig:process} can be implemented.
 First, we briefly discuss how existing tools can be used to generate
 policy-compliant paths (\secref{sec:phase1}).
-Second, we show how to generate ARCs that induce
+Second, we show how to generate configurations that induce
 the set of paths synthesized in the first phase (\secref{sec:phase2}).
-Third, we show how ARCs can be modified to deal with resilience (\secref{sec:phase3}).
-We then show how to restart the process whenever one of the three phases fails (\secref{sec:restart}).
-Finally, we show how we can transform ARCs to actual device configurations (\secref{sec:configs}). 
 
-\subsection{From policies to paths} \label{sec:phase1}
+\subsection{Paths as Intermediate Representation} \label{sec:phase1}
+
+\subsection{Genesis}
 The first phase of our approach produces a set of paths adhering to
-different policies like reachability, service chaining, traffic engineering and isolation.
-Synthesizing sets of paths---i.e., data planes---that adhere to a given set of policies
-is already a hard problem, but a few practical approaches have been proposed.
-The approach that is most similar to ours is the one used in Merlin~\cite{merlin}.
-Given a set of waypoints, reachability, and bandwidth guarantee policies,
-Merlin generates a mixed integer linear programming instance. 
-A solution to this instance is a set of paths meeting the input policies.
-Our prototype implementation uses a similar idea and,
-since this part of the problem is not novel, we briefly provide the intuition behind our solution.
-Given a set of policies we generate a set of constraints over the propositional theory of rationals 
-and the solutions to these constraints are paths satisfying all the policies.
-Our rich policy language requires complex Boolean reasoning that forces us to adopt propositional theories
-in place of simple conjunctions of constraints.
-In particular, policies like isolation and waypoints require disjunctive formulas.
+different policies using Genesis~\cite{genesis}, a network management
+system which synthesizes forwarding tables enforcing the policies. 
+Some of the policies supported by Genesis are specified in 
+\Cref{tab:policysupport}. 
+
+Many of the policies supported by Genesis have high 
+theoretical complexity (e.g., isolation); Genesis 
+leverages fast off-the-shelf SMT solvers to provide
+support for policy enforcement for a diverse set of policies.
+Given a set of policies, Genesis generates a set of constraints 
+over propositional logic (SAT) and Linear rational arithmetic (LRA),
+such that the solutions to these constraints are forwarding
+tables, which can be used to extract the 
+policy-compliant paths.
+
+\subsection{Modifications}
+OpenFlow switches~\cite{openflow} support match predicates for
+forwarding rules on different packet header fields like source
+and/or destination IP address, ports etc. However, legacy protocols
+like OSPF and BGP only support destination-based forwarding. Thus,
+at any router, there exists atmost one forwarding rule for a 
+particular destination. However, since Genesis was built for
+SDN management, paths synthesized for a destination subnet may
+diverge at a switch, and thus cannot be induced by any router
+configuration. 
+
+\todo{Modifications to Genesis}
 
 %\loris{we will add more details if needed}
 

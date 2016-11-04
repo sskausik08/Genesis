@@ -69,52 +69,187 @@ configurations.
 
 \end{enumerate}
 
-\section{MCMC Cost Function}
-Let us denote a mapping $\Gamma: R \rightarrow D$ maps each 
-router $r \in R$ to a domain $d \in D$. The cost function 
-$c(\Gamma)$ is defined as follows: 
+\section{MCMC Sampling}
+\name tackle the problem of minimization of LoC/route-filters
+by stochastically searching for a domain assignment which 
+minimizes the cost of the configuration with the help of Markov
+Chain Monte Carlo (MCMC) sampling, specifically the Metropolis-Hasting
+algorithm, a common technique used in different optimization 
+problems~\cite{stoke}. 
+
+MCMC sampling is a technique for drawing elements from a
+probability density function in direct proportion to its value: re-
+gions of higher probability are sampled from more often than 
+regions of low probability.
+Applied in cost minimization problems,
+MCMC sampling acts as an intelligent hill climbing method which
+is robust for irregular cost functions and avoids convergence at 
+local minimas. To transform an arbitrary cost function $c(\Theta)$, 
+into a probability density function, we use the following 
+technique~\cite{mcmcbook}:
 \begin{equation}
-	c(\Gamma) = h(\Gamma) + \beta \times o(\Gamma)
+	p(\Theta) = \frac{1}{Z}exp(-\beta * c(\Theta))
 \end{equation}
-where $h(\Gamma)$ denotes the hard constraint cost function 
-of the current solution, and $o(\Gamma)$ denotes the optimization 
-cost function and $\beta$ is a constant to adjust the importance of
-the optimization metrics during the randomized walk. 
+$\beta$ is a positive constant and $Z$ is a partition function that
+normalizes the distribution. Computing $Z$ is in general 
+intractable, and the Metropolis-Hasting algorithm for 
+generating Markov Chains can explore the probability density
+function $p(\Theta)$ without computing the partition function. 
+The intuition is as follows: given a current domain
+assignment $\Theta$, the algorithm proposes a modified 
+domain assignment $\Theta'$ as the next step. $\Theta'$
+is accepted or rejected based on the Metropolis-Hasting
+acceptance probability: 
+\begin{equation}
+Pr(\Theta \rightarrow \Theta') = min(1, \frac{p(\Theta')*q(\Theta| \Theta')}{p(\Theta)*q(\Theta'| \Theta)})
+\end{equation}
+$q(\Theta'| \Theta)$ denotes the proposal distribution from 
+which $\Theta'$ is chosen given $\Theta$. If the proposal 
+distributions is symmetric, i.e., 
+$q(\Theta| \Theta') = q(\Theta'| \Theta)$, then the acceptance
+probability is reduced to the simpler Metropolis ratio, which
+can be computed directly from the cost function $c(\Theta)$:
+\begin{multline}
+Pr(\Theta \rightarrow \Theta') = min(1, \frac{p(\Theta')}{p(\Theta)}) \\
+= min(1, exp(-\beta.(C(\Theta') - C(\Theta)))
+\end{multline}
+As we can observe from the acceptance probability, 
+the algorithm will always accept a new proposal $\Theta'$
+if its cost is lower than $\Theta$. If $\Theta'$ has a 
+higher score than $\Theta$, the proposal will be 
+probabilistically accepted depending on 
+how far the cost of the proposals are. This ensures that 
+the algorithm does not get stuck at local minimas and 
+explore proposals with smaller differences in cost with 
+higher probability. We describe the MCMC search procedure 
+in Pseudocode~\cref{alg:mcmc}. 
 
-\subsection{Hard Constraint Cost Function}
-blah?
-
-\section{Configuration Score}
-
+\subsection{Hard Constraints}
 \begin{algorithm}[t]
 	\floatname{algorithm}{Pseudocode}
 	\caption{MCMC}
 	\label{dcsyn}
-	\begin{algorithmic}[1]
+	\begin{algorithmic}[1] \label{alg:mcmc}
 		\Procedure{MCMCSearch}{}
-			\State{$\Theta \leftarrow$ random domain assignment}
-			\State{$\overline{cf} = 0$ \hspace{2cm} [Worst Conf. overhead]}
-			\State{$\overline{rf} = 0$ \hspace{2cm} [Worst route-filter est.]}
-			\While{max iterations OR timeout}
-			\State{$\gamma$ = \Call{Cost}{$\Theta$}}
-			\State{$\Theta'$ = \Call{RandomChange}{$\Theta$}}
-			\State{$\gamma'$ = \Call{Cost}{$\Theta'$}}
-			\State{$Pr(\Theta \rightarrow \Theta')$ = 
-				min$(1, exp(-\beta.(\gamma' - \gamma))$}
-			\State{Set $\Theta$ = $\Theta'$ with 
-				probability $Pr(\Theta \rightarrow \Theta')$}
-			\EndWhile
+		\State{$\Theta \leftarrow$ random domain assignment}
+		\State{$\overline{cf} = 0$ \hspace{2cm} [Worst Conf. overhead]}
+		\State{$\overline{rf} = 0$ \hspace{2cm} [Worst route-filter est.]}
+		\While{max iterations OR timeout}
+		\State{$\gamma$ = \Call{Cost}{$\Theta$}}
+		\State{$\Theta'$ = \Call{RandomChange}{$\Theta$}}
+		\State{$\gamma'$ = \Call{Cost}{$\Theta'$}}
+		\State{$Pr(\Theta \rightarrow \Theta')$ = 
+			min$(1, exp(-\beta.(\gamma' - \gamma))$}
+		\State{Set $\Theta$ = $\Theta'$ with 
+			probability $Pr(\Theta \rightarrow \Theta')$}
+		\EndWhile
 		\EndProcedure
 		
 		\Procedure{Cost}{$\Theta$} 
 		\State{$cf \leftarrow$ Configuration overhead (Static routes + \newline \hspace*{1.5cm} 
 			BGP local preference entries + iBGP filters)}
-		\If{}
+		\If{$cf > \overline{cf}$} 
+		\State{$\overline{cf} = cf$}
 		\EndIf
 		\State{$rf \leftarrow$ Number of diamonds with  \newline 
-		\hspace*{1.3cm}  endpoints in same domain }
-		\State{$\gamma$ = max($cf,\alpha*rf$) + 0.1*min($cf,\alpha*rf$)}
+			\hspace*{1.3cm}  endpoints in same domain }
+		\If{$rf > \overline{rf}$} 
+		\State{$\overline{rf} = rf$}
+		\EndIf
+		\State{$\gamma$ = max($cf/\overline{cf},
+			\alpha.rf/\overline{rf}$)  \newline
+			\hspace*{3.5cm} + 0.1*min($cf/\overline{cf},
+			\alpha.rf/\overline{rf}$)}
+		\State{\Return $\gamma$}
+		\EndProcedure
+		
+		\Procedure{RandomChange}{$\Theta$}
+		\While{True}
+		\State{$r \leftarrow$ pick random boundary router}
+		\State{$\theta \leftarrow$ pick random neighbouring domain of $r$}
+		\If{$|\Theta(r)| - 1 \geq l_\Theta \wedge |\theta| + 1 \leq u_\Theta$}
+		\State{$\Theta' \leftarrow \Theta[r \rightarrow \theta]$} \hfill [$r$'s domain changed to $\theta$]
+		\If{domains are continous}
+		\State{\Return $\Theta'$}
+		\EndIf
+		\EndIf
+		\EndWhile
 		\EndProcedure
 	\end{algorithmic}
 	
 \end{algorithm}
+
+\subsection{Configuration Cost}
+\todo{Explain path, as\_path transformation more formally}
+\subsubsection{Static Routes} \label{sec:static}
+As shown in \Cref{} (Refer to example of 
+static routes in motivating example), we require static routes 
+to enforce AS paths with loops. Static routes have the lowest 
+administrative distance (1) by default~\cite{ad}, and will override BGP
+and OSPF routes at a router, this feature can be used to 
+exit and enter a domain multiple times. While static routes
+do not reduce the resilience of the network (all routes are still
+enabled, unlike route-filters), a network under flux will have
+unpredictable routing behaviour, unlike with only OSPF and BGP
+configured at the routers. 
+Also, static routes have to be installed per-destination, thus increasing
+the size of configurations drastically as number of policy paths increase.
+
+Given a path $p$ for subnet $\lambda$ and 
+the corresponding AS path $p_{as}
+= as_1 \rightarrow as_2 \rightarrow \ldots \rightarrow as_m$ (where
+$as_m = \Theta(\lambda)$), static
+routes are required if $p_{as}$ has a AS-loop. 
+To minimize
+the number of static routes, we find 
+the smallest $i \in [1,m]$ 
+such that $\overline{p_{as}} = as_i \rightarrow as_{i+1}
+\rightarrow \ldots \rightarrow as_m$ has no loops. 
+Therefore, $\overline{p_{as}}$ is the longest AS-loop-free
+subpath of $p_{as}$, and be can be enforced using BGP and OSPF. For the 
+network path corresponding to AS path $as_1 \rightarrow as_2 
+\rightarrow \ldots \rightarrow as_{i-1}$, we require static
+routing rules for each next-hop. The static routing score
+is the total number of static route hops required to enforce
+the input paths.
+\todo{Write about the BGP paths are extracted for the next phase}
+
+\subsubsection{BGP Local Preference Entries}
+\name uses BGP local preference to route traffic
+for a particular subnet to the next AS via a specific 
+gateway as per the input paths obtained. 
+As shown in \Cref{} (Refer
+to ex), if there are multiple exit gateways from an AS 
+for a subnet $\lambda$, we require local preference entries at the 
+gateways and iBGP filters among these gateways for $\lambda$.
+
+For a domain $d$ and subnet $\lambda$, consider the set 
+of paths to $\lambda$ exiting $d$ using BGP (and not statically
+routed as described in \Cref{sec:static}). Let $E$ denote the
+set of exit gateway routers for the paths of $\lambda$. 
+If $|E| = 1$, if gateway $g \in E$ receives a route with 
+strictly shortest AS path length (\Cref{alg:bgppathrules}) 
+which enforces the paths
+for $\lambda$, we do not need to configure local preference
+entries on any BGP router in the domain for $\lambda$. If
+the exit route chosen by the gateways for $\lambda$ does not 
+enforce the paths, \name configures a local preference entry
+for $\lambda$ at exit gateway, and thus, the exit route chosen
+by BGP enforces the input paths for $\lambda$ in the domain.
+
+If $|E| ~> 1$, multiple BGP routes must be redistributed to 
+the OSPF domain. \\
+E local prefs + E(E - 1) iBGP filters!
+
+\todo{Changes to OSPF synthesis to ensure closest gateway}
+
+\subsection{Route-Filter Cost}
+
+
+
+
+
+
+
+
+
