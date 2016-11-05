@@ -94,12 +94,13 @@ NetKAT is a domain-specific language and logic for
 specifying and verifying network packet-processing functions
 for SDN, based on Kleene algebra with tests (KAT). Semantically,
 a NetKAT predicate and policy is a function that takes a packet
-history and produces a set of packet histories, and can be used
-to express certain network-wide policies like reachability 
-and waypoints using regular expressions for describing the paths, 
-and programs on virtual topologies which are translated to local
-switch programs using BDDs and symbolic automata
-~\cite{netkatcompiler}. However, their semantics
+history and produces a set of (possibly empty) packet histories. 
+NetKAT can be used to express certain network-wide policies like 
+reachability, waypoints using regular expressions for describing the paths, 
+and programs on virtual topologies; it uses
+BDDs and symbolic automata to translate global programs to local
+switch programs~\cite{netkatcompiler}. 
+However, the NetKAT semantics
 cannot be used to express policies based on hyperproperties
 ~\cite{hyperproperties}, i.e., 
 the packet processing function requires multiple packet histories
