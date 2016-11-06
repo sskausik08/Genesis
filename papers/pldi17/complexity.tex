@@ -24,59 +24,58 @@ if $\forall (v_1, v_2) \in E. ~v_1 \in VC \vee v_2 \in VC$.
 
 We now show how to construct a topology $T=(S,L)$ 
 and a corresponding set of paths $P$ that can be 
-enforced by route-filter set $R$ such that $|R| \leq k$  
+induced by route-filter set $R$ such that $|R| \leq k$  
 iff the corresponding $VC(R)$ is a vertex cover of 
 the graph $G$ and $|VC(R)| \leq k$.
 
-For every vertex $v \in V$: add two vertices $s_v^1$ 
-and $s_v^2$ to $S$ and a directed link $s_v^1 \rightarrow s_v^2$ to $L$. 
+For every vertex $v \in V$: add two vertices $r_v^1$ 
+and $r_v^2$ to $S$ and a directed link $r_v^1 \rightarrow r_v^2$ to $L$. 
 We also assign a destination host $d_v$ for each vertex $v$. 
 
 For every edge $(u,v) \in E$: add two vertices $s_{uv}$
 and $t_{uv}$ to $S$. Add edges
 connecting $s_{uv} \rightarrow s_{u}^1$, $s_{uv} \rightarrow s_{v}^1$,
 $s_{u}^2 \rightarrow t_{uv}$ and $s_{v}^2 \rightarrow t_{uv}$. \Cref{fig:rfcomplexity} illustrates this construction.
-
 \begin{figure}[H]
 	\centering
 	\begin{tikzpicture}[shorten >=0.5pt,node distance=1.5cm,on grid,auto,
 	square/.style={regular polygon,regular polygon sides=4}] 
-	\node[state] (s)  {$s_{uv}$}; 
-	\node[state] (v1) [below right=of s] {$s_v^1$}; 
-	\node[state] (v2) [below=of v1] {$s_v^2$};
-	\node[state] (u1) [below left=of s] {$s_u^1$}; 
-	\node[state] (u2) [below=of u1] {$s_u^2$}; 
-	\node[state] (t) [below right=of u2] {$t_{uv}$};
-	\node[state] (s1) [above right=of v1] {$s_{vw}$}; 	
+	\node[state] at (0,0) (s)  {$s_{uv}$}; 
+	\node[state] at (2,-0.75) (v1)  {$r_v^1$}; 
+	\node[state] at (4,-0.75) (v2)  {$r_v^2$};
+	\node[state] at (2,0.75) (u1)  {$r_u^1$}; 
+	\node[state] at (4,0.75) (u2)  {$r_u^2$}; 
+	\node[state] at (6,0) (t) {$t_{uv}$};
+	\node[state] (s1) [below left=of v1] {$s_{vw}$}; 	
 	\node[state] (t1) [below right=of v2] {$t_{vw}$}; 	
 	\path[->] 
 	(s) edge  node {} (v1)
 	edge  node {} (u1)
-	edge [blue, dashed, bend right=100] node {} (t)
-	edge [red, dashed, bend left=100] node {} (t)
+	edge [blue, dashed, bend right=45] node {} (t)
+	edge [red, dashed, bend left=45] node {} (t)
 	(u1) edge node {} (u2)
 	(u2) edge node {} (t)
 	(v1) edge node {} (v2)
 	(v2) edge node {} (t)
 	edge node {} (t1)
 	(s1) edge node {} (v1);
-	\path[-] (s1) edge node[above] {} +(1,-1);
-	\path[-] (t1) edge node[above] {} +(1,1);
+	\path[-] (s1) edge node[above] {} +(1,-0.1);
+	\path[-] (t1) edge node[above] {} +(-1,-0.1);
 	\end{tikzpicture}
 	\caption{Construction}
 	\label{fig:rfcomplexity}
 \end{figure}
 If there was another edge $(v,w) \in E$, then
-$s_{vw}$ has an edge connecting to $s_v^1$ and
-$s_v^2$ has an edge connecting to $t_{vw}$ (shown
+$s_{vw}$ has an edge connecting to $r_v^1$ and
+$r_v^2$ has an edge connecting to $t_{vw}$ (shown
 in \Cref{fig:rfcomplexity}). $s_{vw}$ will also 
 have an edge to $s_w^1$ and similarily from $s_w^2$ to $t_{uw}$
 as per the construction outlined above.
 
 For each edge $(u,v) \in E$, we add two paths in $P$: 
-$s_{uv} \rightarrow s_u^1 \rightarrow s_u^2 \rightarrow t_{uv}$
+$s_{uv} \rightarrow r_u^1 \rightarrow r_u^2 \rightarrow t_{uv}$
 for destination host $d_v$ and 
-$~s_{uv} \rightarrow s_v^1 \rightarrow s_v^2 \rightarrow t_{uv}$ 
+$~s_{uv} \rightarrow r_v^1 \rightarrow r_v^2 \rightarrow t_{uv}$ 
 for destination host $d_u$.
 (dashed paths in \Cref{fig:rfcomplexity}). 
 
@@ -86,7 +85,7 @@ forwards traffic along $P$, then there exists a vertex cover $VC$
 of $G$ such that $|VC| \leq k$. 
 
 For each route-filter $r \in R$, one of its endpoints 
-has to be either $s_v^1$ or $s_v^2$, corresponding
+has to be either $r_v^1$ or $r_v^2$, corresponding
 to some vertex $v \in V$ (structure of topology $T$). 
 We construct a set $VC(R)$ by adding the vertex $v$ 
 based on the endpoints of each route-filter $r \in R$.
@@ -94,12 +93,63 @@ To show that $VC(R)$ is a vertex cover of $G$, we first
 prove \Cref{lemma:diamond}.
 
 \begin{lemma} \label{lemma:diamond}
-	Atleast 1 route-filter is required to find a valid solution to the
-	OSPF edge weights for each diamond formed by the input paths.
+	 For each diamond formed by the input paths, atleast 1 
+	 route-filter on one of the edges of the paths of the diamond 
+	 is required to find a valid solution to the
+	 OSPF edge weights.  
 \end{lemma}
+\begin{figure}
+	\centering
+	\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
+	square/.style={regular polygon,regular polygon sides=4}] 
+	\node[state] at (0,0) (s)  {$s$}; 
+	\node[state] at (2,0.5) (v1)  {$r_1$}; 
+	\node[state] at (2,-0.5) (u1) {$r_2$}; 
+	\node[state] at (4, 0)(t) {$t$};
+	\path[->] 
+	(s) edge  node {} (v1)
+	edge  node {} (u1)
+	edge [blue, dashed, bend right=45] node {} (t)
+	edge [red, dashed, bend left=45] node {} (t)
+	(u1) edge node {} (t)
+	(v1) edge node {} (t);
+	\end{tikzpicture}
+	\caption{Diamond}
+	\label{fig:rfdiamond}
+\end{figure}
+
 \begin{proof}
-	Proof by contradiction. We can show that any diamond inconsistency 
-	cannot be removed if no route-filters are set on the paths.
+Consider the following diamond in \Cref{fig:rfdiamond}
+constructed by paths $p_1$: $s \rightarrow r_1 \rightarrow t$ 
+for destination $d_1$ and $p_2$:$s \rightarrow r_2 \rightarrow t$ 
+for destination $d_2$. Let us assume there exists a solution 
+for the OSPF edge weights without any route-filters. 
+
+As described in \Cref{sec:ospfsynthesis}, 
+to ensure $p_1$ is the shortest path from $s$ to $t$, the following
+linear inequality is added to ensure $p_1$ is shorter than the
+path from $s$ to $t$ via $r_2$: 
+\begin{equation} \label{eq:diamond1}
+	e(s,r_1) + e(r_1, t) < e(s, r_2) + e(r_2,t)
+\end{equation}
+$e(s,r_1)$ denotes the weight of edge $s \rightarrow r_1$.
+Since $p_2$ is also the shortest path from $s$ 
+to $t$, the linear inequality added is:
+\begin{equation}  \label{eq:diamond2}
+e(s,r_2) + e(r_2, t) < e(s, r_1) + e(r_1,t)
+\end{equation}
+Since there are no route-filters on the edges
+of $p_1$ and $p_2$, none of the above equations are 
+eliminated (\Cref{sec:routefilter}). 
+Adding equations \ref{eq:diamond1} and  \ref{eq:diamond2} 
+yields the inequality $0 < 0$, which is inconsistent 
+and therefore, no solution to 
+the edge weights exists for this system of equations, 
+which contradicts our assumption. Therefore,
+for each diamond formed by the input paths, atleast 1 
+route-filter on one of the edges of the paths of the diamond 
+is required to find a valid solution to the
+OSPF edge weights.  
 \end{proof}
 
 For every edge $(u,v) \in E$, the constructed paths from 
