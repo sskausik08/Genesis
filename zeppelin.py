@@ -27,6 +27,8 @@ class Zeppelin(object):
 		self.timeout = 300
 		self.distance = 10
 		self.numDomains = 5
+		self.configOpt = False
+		self.rfOpt = False
 		for arg in sys.argv : 
 			if arg == "-topo" :
 				self.topofile = sys.argv[no + 1]
@@ -43,7 +45,12 @@ class Zeppelin(object):
 				self.distance = int(sys.argv[no + 1])
 			if arg == "-domains" : 
 				self.numDomains = int(sys.argv[no + 1])
-
+			if arg == "-configOpt" : 
+				self.configOpt = True
+				self.rfOpt = False
+			if arg == "-rfOpt" :
+				self.rfOpt = True
+				self.configOpt = False
 			no += 1
 
 		if not self.topoargFlag : 
@@ -64,7 +71,7 @@ class Zeppelin(object):
 			self.zepSynthesiser.enforceDAGs(self.zepInput.getDestinationDAGs(), self.zepInput.getEndpoints())
 
 		else : 
-			self.outerZepSynthesizer = OuterZeppelinSynthesiser(topology=self.topology, pdb=self.policyDatabase, timeout=self.timeout, numDomains=self.numDomains)
+			self.outerZepSynthesizer = OuterZeppelinSynthesiser(topology=self.topology, pdb=self.policyDatabase, timeout=self.timeout, numDomains=self.numDomains, configOpt=self.configOpt, rfOpt=self.rfOpt)
 			self.outerZepSynthesizer.enforceDAGs(self.zepInput.getDestinationDAGs(), self.zepInput.getPaths(), self.zepInput.getEndpoints())
 	
 

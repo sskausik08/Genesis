@@ -12,10 +12,9 @@ from collections import defaultdict
 from ZeppelinSynthesiser import ZeppelinSynthesiser
 
 class OuterZeppelinSynthesiser(object) :
-	def __init__(self, topology, pdb, numDomains=5, timeout=300) :
+	def __init__(self, topology, pdb, numDomains=5, timeout=300, configOpt=False, rfOpt=False) :
 		self.topology = topology
 		self.pdb = pdb
-	
 
 		# Store switch domains for each switch
 		self.switchDomains = dict()
@@ -38,6 +37,8 @@ class OuterZeppelinSynthesiser(object) :
 		self.MCMC_MAX_ITER = 10000000	
 		self.MCMC_MAX_TIME = timeout # in seconds
 		self.beta = 0.03 # Constant
+		self.configOpt = configOpt
+		self.rfOpt = rfOpt
 
 		# Scoring State variables 
 		self.scoreIter = 0
@@ -126,7 +127,6 @@ class OuterZeppelinSynthesiser(object) :
 		self.zepFile.write("\n")
 		self.zepFile.write("OSPF Time" + "\t" + str(len(paths)) + "\t" + str(bestospfTime) + "\t" + str(worstospfTime))
 		self.zepFile.write("\n")
-
 
 
 	def MCMCWalk(self) :
@@ -528,6 +528,9 @@ class OuterZeppelinSynthesiser(object) :
 			self.bestConfScore = confScore
 
 		self.confScoreTime += time.time() - start_t
+
+		if self.configOpt : 
+			return 4000 * float(confScore)/float(self.worstConfScore)
 		
 		start_t = time.time()
 		rfScore = self.routeFilterScore()
@@ -537,6 +540,9 @@ class OuterZeppelinSynthesiser(object) :
 			self.worstDomainAssigmentRF = copy.deepcopy(self.switchDomains) # Copy the worst RF domain assignment.
 		if rfScore < self.bestRFScore : 
 			self.bestRFScore = rfScore
+
+		if self.rfOpt : 
+			return 4000 * float(rfScore)/float(self.worstRFScore)
 
 		#print float(confScore)/float(self.confScoreUpperBound), float(rfScore)/float(self.RFScoreUpperBound), self.confScoreUpperBound
 		score += 4000 * max(float(confScore)/float(self.worstConfScore), float(rfScore)/float(self.worstRFScore))
