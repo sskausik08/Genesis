@@ -174,6 +174,31 @@ plt.grid()
 plt.savefig('ratioMCMC.eps', format='eps', dpi=1000, bbox_inches='tight')
 
 
+ospfTimeFig = plt.figure(5)
+x = range(25, 225, 25)
+
+ionTime = [0.01749955864,0.07191940294,0.1476163773,0.2930797994,0.4789884697,0.6663588462,0.9209012076,1.15511427]
+ionTimeDev = [0.009488063792,0.02699395579,0.06919721199,0.08314940039,0.1465465516,0.2193709322,0.241433187,0.2587683784]
+
+fatTime =  [0.04263912741,0.3389375772,2.070554649,4.668311028,7.679610742,10.82252409,12.59832289,20]
+fatTimeDev = [0.02472738843,0.1789896801,1.013203957,0.9042154791,1.170098253,0.9448482264,1.129939945,2]
+
+plt.xlim(xmin=15, xmax=210)
+
+plt.plot(x, ionTime, '#4daf4a',marker="D", label="Time Ratio (Ion)")
+plt.errorbar(x, ionTime, yerr=ionTimeDev, linestyle="None")
+
+plt.plot(x, fatTime, '#ff7f00', marker="o", label="Time Ratio  (Fat-8)")
+plt.errorbar(x, fatTime, yerr=fatTimeDev, linestyle="None")
+
+plt.legend(loc='upper left', frameon=False, fontsize=18)
+
+plt.xlabel('Number of Paths', fontsize=20)
+plt.ylabel('Average time per path', fontsize=20)
+
+plt.grid()
+plt.savefig('ospfTime.eps', format='eps', dpi=1000, bbox_inches='tight')
+
 # mcmc = plt.figure(2)
 # f = open("zep-mcmc.csv")
 # x = []
