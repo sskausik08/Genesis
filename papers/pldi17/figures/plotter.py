@@ -186,10 +186,10 @@ fatTimeDev = [0.02472738843,0.1789896801,1.013203957,0.9042154791,1.170098253,0.
 
 plt.xlim(xmin=15, xmax=210)
 
-plt.plot(x, ionTime, '#4daf4a',marker="D", label="Time Ratio (Ion)")
+plt.plot(x, ionTime, '#4daf4a',marker="D", label="Time Ratio (Colt)")
 plt.errorbar(x, ionTime, yerr=ionTimeDev, linestyle="None")
 
-plt.plot(x, fatTime, '#ff7f00', marker="o", label="Time Ratio  (Fat-8)")
+plt.plot(x, fatTime, '#ff7f00', marker="o", label="Time Ratio  (Fat-6)")
 plt.errorbar(x, fatTime, yerr=fatTimeDev, linestyle="None")
 
 plt.legend(loc='upper left', frameon=False, fontsize=18)
