@@ -95,38 +95,34 @@ class OuterZeppelinSynthesiser(object) :
 		self.bestConfScore = self.configurationScore()
 		bestospfTime = time.time() - start_t
 
-		print "Worst RF Configuration"
-		start_t = time.time()
-		[worstRFCount, worstTRL] = self.synthesizeOSPFConfigurations(self.worstDomainAssigmentRF)
-		worstospfTime = time.time() - start_t
-		self.switchDomains = self.worstDomainAssigmentRF 
-		self.computeBoundaries()
-		worstRFScore = self.routeFilterScore()
+		if not self.configOpt : 
+			print "Worst RF Configuration"
+			start_t = time.time()
+			[worstRFCount, worstTRL] = self.synthesizeOSPFConfigurations(self.worstDomainAssigmentRF)
+			worstospfTime = time.time() - start_t
+			self.switchDomains = self.worstDomainAssigmentRF 
+			self.computeBoundaries()
+			worstRFScore = self.routeFilterScore()
 
-		print "Config Improvement", float(self.bestConfScore)/float(self.worstConfScore), self.bestConfScore, self.worstConfScore
-		print "RF Improvement", float(bestRFCount)/float(worstRFCount), bestRFCount, worstRFCount
-		print "RF scores", self.worstRFScore, self.bestRFScore
-		end_t = time.time()
-		print "Time taken  for MCMC is (and iterations), and OSPF time", end_t - start_t, self.MCMCIter
-		print "Conf Score Time", self.confScoreTime
-		print "RF Score Time", self.rfScoreTime
-		print "Continuity Time", self.continuityTime
-		print "Domain Change Time", self.domainChangeTime
+			self.zepFile = open("zeppelin-timing", 'a')
+			self.zepFile.write("Time taken  for MCMC is (and iterations), and OSPF time " + str(mcmcTime) + "\t" + str(self.MCMCIter) + "\t" + str(len(dags)) + "\t" + str(len(paths)))
+			self.zepFile.write("\n")
+			self.zepFile.write("Config Improvement " + str(float(self.bestConfScore)/float(self.worstConfScore)) + "\t" + str(self.bestConfScore) + "\t" + str(self.worstConfScore))
+			self.zepFile.write("\n")
+			self.zepFile.write("RF Improvement " + str(float(bestRFCount)/float(worstRFCount)) + "\t" + str(len(paths)) + "\t" + str(bestRFCount) + "\t" + str(worstRFCount))
+			self.zepFile.write("\n")
+			self.zepFile.write("RF Scores " + "\t" + str(bestRFScore) + "\t" + str(worstRFScore))
+			self.zepFile.write("\n")
+			self.zepFile.write("TRL" + "\t" + str(len(paths)) + "\t" + str(bestTRL) + "\t" + str(worstTRL))
+			self.zepFile.write("\n")
+			self.zepFile.write("OSPF Time" + "\t" + str(len(paths)) + "\t" + str(bestospfTime) + "\t" + str(worstospfTime))
+			self.zepFile.write("\n")
 
-
-		self.zepFile = open("zeppelin-timing", 'a')
-		self.zepFile.write("Time taken  for MCMC is (and iterations), and OSPF time " + str(mcmcTime) + "\t" + str(self.MCMCIter) + "\t" + str(len(dags)) + "\t" + str(len(paths)))
-		self.zepFile.write("\n")
-		self.zepFile.write("Config Improvement " + str(float(self.bestConfScore)/float(self.worstConfScore)) + "\t" + str(self.bestConfScore) + "\t" + str(self.worstConfScore))
-		self.zepFile.write("\n")
-		self.zepFile.write("RF Improvement " + str(float(bestRFCount)/float(worstRFCount)) + "\t" + str(len(paths)) + "\t" + str(bestRFCount) + "\t" + str(worstRFCount))
-		self.zepFile.write("\n")
-		self.zepFile.write("RF Scores " + "\t" + str(bestRFScore) + "\t" + str(worstRFScore))
-		self.zepFile.write("\n")
-		self.zepFile.write("TRL" + "\t" + str(len(paths)) + "\t" + str(bestTRL) + "\t" + str(worstTRL))
-		self.zepFile.write("\n")
-		self.zepFile.write("OSPF Time" + "\t" + str(len(paths)) + "\t" + str(bestospfTime) + "\t" + str(worstospfTime))
-		self.zepFile.write("\n")
+		else : 
+			self.zepFile.write("Time taken  for MCMC is (and iterations), and OSPF time " + str(mcmcTime) + "\t" + str(self.MCMCIter) + "\t" + str(len(dags)) + "\t" + str(len(paths)))
+			self.zepFile.write("\n")
+			self.zepFile.write("Config Improvement " + str(float(self.bestConfScore)/float(self.worstConfScore)) + "\t" + str(self.bestConfScore) + "\t" + str(self.worstConfScore))
+			self.zepFile.write("\n")
 
 
 	def MCMCWalk(self) :
