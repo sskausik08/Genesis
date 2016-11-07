@@ -139,6 +139,40 @@ plt.ylabel('Total Loss of Resilience', fontsize=20)
 plt.grid()
 plt.savefig('TRLMCMC.eps', format='eps', dpi=1000, bbox_inches='tight')
 
+mcmcRatioFig = plt.figure(4)
+
+ionTRL = [0.5211072418,0.591550364,0.5630383916,0.5534444341,0.5584180279]
+ionTRLDev = [0.2497695343,0.1444746083,0.1113659797,0.1181381913,0.09257034323]
+
+fatTRL =  [0.4924297224,0.5583962327,0.6494166133,0.6098824146,0.6173405641]
+fatTRLDev = [0.2861649555,0.1756585491,0.2639303385,0.1786446427,0.1289398753]
+
+ionConf = [0.6451663308,0.6950191705,0.6793915277,0.731510484,0.7212847146]
+ionConfDev = [0.07000478351,0.03891852816,0.05775659742,0.06522387861,0.05078881237]
+
+fatConf = [0.7087146829,0.721486085,0.7444977524,0.7492399511,0.7559644731]
+fatConfDev = [0.05087937556,0.04968711413,0.06099461023,0.04877063637,0.04660650303]
+
+plt.xlim(xmin=190, xmax=1010)
+
+plt.plot(x, ionTRL, '#4daf4a',marker="D", label="TRL Ratio (Ion)")
+plt.errorbar(x, ionTRL, yerr=ionTRLDev, linestyle="None")
+plt.plot(x, ionConf, '#377eb8',marker="^", label="Conf Ratio (Ion)")
+plt.errorbar(x, ionConf, yerr=ionConfDev, linestyle="None")
+
+plt.plot(x, fatTRL, '#ff7f00', marker="o", label="TRL Ratio  (Fat-8)")
+plt.errorbar(x, fatTRL, yerr=fatTRLDev, linestyle="None")
+plt.plot(x, fatConf, '#984ea3', marker="s", label="Conf Ratio (Fat-8)")
+plt.errorbar(x, fatConf, yerr=fatConfDev, linestyle="None")
+
+plt.legend(loc='upper left', frameon=False, fontsize=18)
+
+plt.xlabel('Number of Paths', fontsize=20)
+plt.ylabel('Ratio', fontsize=20)
+
+plt.grid()
+plt.savefig('ratioMCMC.eps', format='eps', dpi=1000, bbox_inches='tight')
+
 
 # mcmc = plt.figure(2)
 # f = open("zep-mcmc.csv")
