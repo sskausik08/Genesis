@@ -58,8 +58,8 @@ Our primary metric of interest is synthesis time, measured in
 seconds. In measuring this, we focus on the time the Z3 solver takes
 to solve the constraints\footnote{
 	We do not account for
-constraint generation time in our evaluation. While not negligible, 
-it has polynomial time complexity and thus, can scale well unlike
+constraint generation time in our evaluation, as it 
+has polynomial time complexity and thus, can scale well unlike
 constraint solving time;
 a well-engineered system can considerably reduce
 the constraint generation overheads.}. 
