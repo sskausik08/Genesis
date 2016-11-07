@@ -8,8 +8,11 @@
 #f781bf
 
 import numpy as np
+import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
+
+matplotlib.rcParams['text.usetex'] = True
 
 def adjustFigAspect(fig,aspect=1):
     '''
@@ -118,8 +121,8 @@ noValley = [0.004666666667,0.03766666667,0.2056666667,0.7277]
 
 plt.plot(x, noTactic, '#ff7f00', marker="o", markersize=markersize, label="Baseline")
 plt.plot(x, noEdge, '#e41a1c', marker="^", markersize=markersize, label="No Edge")
-plt.plot(x, len7, '#4daf4a', marker="h", markersize=markersize, label="Len <= 7")
-plt.plot(x, len7noEdge, '#984ea3', marker="s", markersize=markersize, label="No Edge and Len <= 7")
+plt.plot(x, len7, '#4daf4a', marker="h", markersize=markersize, label="Len $\leq$ 7")
+plt.plot(x, len7noEdge, '#984ea3', marker="s", markersize=markersize, label="No Edge and Len $\leq$ 7")
 plt.plot(x, noValley, '#377eb8', marker="D", markersize=markersize, label="Valley-Free")
 
 plt.legend(loc='upper left', frameon=False, fontsize=16)
