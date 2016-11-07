@@ -78,8 +78,8 @@ algorithm, a common technique used in different optimization
 problems~\cite{stoke}. 
 
 MCMC sampling is a technique for drawing elements from a
-probability density function in direct proportion to its value: re-
-gions of higher probability are sampled from more often than 
+probability density function in direct proportion to its value: 
+regions of higher probability are sampled from more often than 
 regions of low probability.
 Applied in cost minimization problems,
 MCMC sampling acts as an intelligent hill climbing method which
@@ -244,7 +244,27 @@ E local prefs + E(E - 1) iBGP filters!
 \todo{Changes to OSPF synthesis to ensure closest gateway}
 
 \subsection{Route-Filter Cost}
-
+\begin{figure}
+	\centering
+	\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
+	square/.style={regular polygon,regular polygon sides=4}] 
+	\node[state] at (0,0) [fill=yellow] (s)  {$s$}; 
+	\node[state] at (2,0.5) (v1)  {$r_1~~~~$}; 
+	\node[state] at (2,-0.5) (u1) {$r_2~~~~$}; 
+	\node[state, fill=black!30!green] at (4, 0)(t) {$t$};
+	\path[->] 
+	(s) edge  node {} (v1)
+	edge  node {} (u1)
+	edge [blue, dashed, bend right=45] node {} (t)
+	edge [red, dashed, bend left=45] node {} (t)
+	(u1) edge node {} (t)
+	(v1) edge node {} (t);
+	\path[-] (u1) edge [dashed] node[above] {} +(0,2);
+	\path[-] (v1) edge [dashed] node[above] {} +(0,-2);
+	\end{tikzpicture}
+	\caption{Diamond}
+	\label{fig:rfdiamond}
+\end{figure}
 
 
 
