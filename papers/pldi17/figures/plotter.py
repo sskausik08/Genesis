@@ -51,14 +51,14 @@ markersize = 11
 plt.xlim(xmin=190, xmax=1010)
 
 plt.plot(x, ionOspfTime, '#ff7f00', marker="o", label="Best (Ion)")
-plt.errorbar(x, ionOspfTime, yerr=ionOspfTimeDev, linestyle="None")
+plt.errorbar(x, ionOspfTime, color='#ff7f00', yerr=ionOspfTimeDev, linestyle="None")
 plt.plot(x, ionOspfTimeWorst, '#377eb8',marker="^", label="Worst (Ion)")
-plt.errorbar(x, ionOspfTimeWorst, yerr=ionOspfTimeWorstDev, linestyle="None")
+plt.errorbar(x, ionOspfTimeWorst, color='#377eb8', yerr=ionOspfTimeWorstDev, linestyle="None")
 
 plt.plot(x, fatOspfTime, '#4daf4a',marker="D", label="Best (Fat-8)")
-plt.errorbar(x, fatOspfTime, yerr=fatOspfTimeDev, linestyle="None")
+plt.errorbar(x, fatOspfTime, color='#4daf4a', yerr=fatOspfTimeDev, linestyle="None")
 plt.plot(x, fatOspfTimeWorst, '#984ea3', marker="s", label="Worst (Fat-8)")
-plt.errorbar(x, fatOspfTimeWorst, yerr=fatOspfTimeWorstDev, linestyle="None")
+plt.errorbar(x, fatOspfTimeWorst, color='#984ea3', yerr=fatOspfTimeWorstDev, linestyle="None")
 
 plt.legend(loc='upper left', frameon=False, fontsize=18)
 
@@ -87,14 +87,14 @@ markersize = 11
 plt.xlim(xmin=190, xmax=1010)
 
 plt.plot(x, ionConf, '#ff7f00', marker="o", label="Best (Ion)")
-plt.errorbar(x, ionConf, yerr=ionConfDev, linestyle="None")
+plt.errorbar(x, ionConf, color='#ff7f00', yerr=ionConfDev, linestyle="None")
 plt.plot(x, ionConfWorst, '#377eb8',marker="^", label="Worst (Ion)")
-plt.errorbar(x, ionConfWorst, yerr=ionConfWorstDev, linestyle="None")
+plt.errorbar(x, ionConfWorst, color='#377eb8', yerr=ionConfWorstDev, linestyle="None")
 
 plt.plot(x, fatConf, '#4daf4a',marker="D", label="Best (Fat-8)")
-plt.errorbar(x, fatConf, yerr=fatConfDev, linestyle="None")
+plt.errorbar(x, fatConf, color='#4daf4a', yerr=fatConfDev, linestyle="None")
 plt.plot(x, fatConfWorst, '#984ea3', marker="s", label="Worst (Fat-8)")
-plt.errorbar(x, fatConfWorst, yerr=fatConfWorstDev, linestyle="None")
+plt.errorbar(x, fatConfWorst, color='#984ea3', yerr=fatConfWorstDev, linestyle="None")
 
 plt.legend(loc='upper left', frameon=False, fontsize=18)
 
@@ -122,14 +122,14 @@ markersize = 11
 plt.xlim(xmin=190, xmax=1010)
 
 plt.plot(x, ionTRL, '#4daf4a',marker="D", label="Best (Ion)")
-plt.errorbar(x, ionTRL, yerr=ionTRLDev, linestyle="None")
+plt.errorbar(x, ionTRL, color='#4daf4a', yerr=ionTRLDev, linestyle="None")
 plt.plot(x, ionTRLWorst, '#377eb8',marker="^", label="Worst (Ion)")
-plt.errorbar(x, ionTRLWorst, yerr=ionTRLWorstDev, linestyle="None")
+plt.errorbar(x, ionTRLWorst, color='#377eb8', yerr=ionTRLWorstDev, linestyle="None")
 
 plt.plot(x, fatTRL, '#ff7f00', marker="o", label="Best (Fat-8)")
-plt.errorbar(x, fatTRL, yerr=fatTRLDev, linestyle="None")
+plt.errorbar(x, fatTRL, color='#ff7f00', yerr=fatTRLDev, linestyle="None")
 plt.plot(x, fatTRLWorst, '#984ea3', marker="s", label="Worst (Fat-8)")
-plt.errorbar(x, fatTRLWorst, yerr=fatTRLWorstDev, linestyle="None")
+plt.errorbar(x, fatTRLWorst, color='#984ea3', yerr=fatTRLWorstDev, linestyle="None")
 
 plt.legend(loc='upper left', frameon=False, fontsize=18)
 
@@ -154,18 +154,19 @@ fatConf = [0.7087146829,0.721486085,0.7444977524,0.7492399511,0.7559644731]
 fatConfDev = [0.05087937556,0.04968711413,0.06099461023,0.04877063637,0.04660650303]
 
 plt.xlim(xmin=190, xmax=1010)
+plt.ylim(ymin=0, ymax=1.2)
 
 plt.plot(x, ionTRL, '#4daf4a',marker="D", label="TRL Ratio (Ion)")
-plt.errorbar(x, ionTRL, yerr=ionTRLDev, linestyle="None")
+plt.errorbar(x, ionTRL, color='#4daf4a', yerr=ionTRLDev, linestyle="None")
 plt.plot(x, ionConf, '#377eb8',marker="^", label="Conf Ratio (Ion)")
-plt.errorbar(x, ionConf, yerr=ionConfDev, linestyle="None")
+plt.errorbar(x, ionConf, color='#377eb8', yerr=ionConfDev, linestyle="None")
 
 plt.plot(x, fatTRL, '#ff7f00', marker="o", label="TRL Ratio  (Fat-8)")
-plt.errorbar(x, fatTRL, yerr=fatTRLDev, linestyle="None")
+plt.errorbar(x, fatTRL, color='#ff7f00', yerr=fatTRLDev, linestyle="None")
 plt.plot(x, fatConf, '#984ea3', marker="s", label="Conf Ratio (Fat-8)")
-plt.errorbar(x, fatConf, yerr=fatConfDev, linestyle="None")
+plt.errorbar(x, fatConf, color='#984ea3', yerr=fatConfDev, linestyle="None")
 
-plt.legend(loc='upper left', frameon=False, fontsize=18)
+plt.legend(loc='upper left', mode="expand", ncol=2, frameon=False, fontsize=18)
 
 plt.xlabel('Number of Paths', fontsize=20)
 plt.ylabel('Ratio', fontsize=20)
