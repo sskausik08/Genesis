@@ -8,8 +8,11 @@
 #f781bf
 
 import numpy as np
+import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
+
+matplotlib.rcParams['text.usetex'] = True
 
 def adjustFigAspect(fig,aspect=1):
     '''
@@ -50,14 +53,14 @@ markersize = 11
 
 plt.xlim(xmin=190, xmax=1010)
 
-plt.plot(x, ionOspfTime, '#ff7f00', marker="o", label="Best (Ion)")
+plt.plot(x, ionOspfTime, '#ff7f00', marker="o", markersize=markersize, label="Best (Ion)")
 plt.errorbar(x, ionOspfTime, color='#ff7f00', yerr=ionOspfTimeDev, linestyle="None")
-plt.plot(x, ionOspfTimeWorst, '#377eb8',marker="^", label="Worst (Ion)")
+plt.plot(x, ionOspfTimeWorst, '#377eb8',marker="^", markersize=markersize, label="Worst (Ion)")
 plt.errorbar(x, ionOspfTimeWorst, color='#377eb8', yerr=ionOspfTimeWorstDev, linestyle="None")
 
-plt.plot(x, fatOspfTime, '#4daf4a',marker="D", label="Best (Fat-8)")
+plt.plot(x, fatOspfTime, '#4daf4a',marker="D", markersize=markersize, label="Best (Fat-8)")
 plt.errorbar(x, fatOspfTime, color='#4daf4a', yerr=fatOspfTimeDev, linestyle="None")
-plt.plot(x, fatOspfTimeWorst, '#984ea3', marker="s", label="Worst (Fat-8)")
+plt.plot(x, fatOspfTimeWorst, '#984ea3', marker="s", markersize=markersize, label="Worst (Fat-8)")
 plt.errorbar(x, fatOspfTimeWorst, color='#984ea3', yerr=fatOspfTimeWorstDev, linestyle="None")
 
 plt.legend(loc='upper left', frameon=False, fontsize=18)
@@ -82,18 +85,18 @@ fatConfDev = [57.86281417,101.4627682,165.4074634,183.419357,230.2873434]
 fatConfWorst = [788.15,1638.72,2486.8,3337,4124.5]
 fatConfWorstDev = [49.32947768,64.56683875,90.26662261,80.51413737,146.7394755]
 
-markersize = 11
+markersize=11
 
 plt.xlim(xmin=190, xmax=1010)
 
-plt.plot(x, ionConf, '#ff7f00', marker="o", label="Best (Ion)")
+plt.plot(x, ionConf, '#ff7f00', marker="o", markersize=markersize, label="Best (Ion)")
 plt.errorbar(x, ionConf, color='#ff7f00', yerr=ionConfDev, linestyle="None")
-plt.plot(x, ionConfWorst, '#377eb8',marker="^", label="Worst (Ion)")
+plt.plot(x, ionConfWorst, '#377eb8',marker="^", markersize=markersize, label="Worst (Ion)")
 plt.errorbar(x, ionConfWorst, color='#377eb8', yerr=ionConfWorstDev, linestyle="None")
 
-plt.plot(x, fatConf, '#4daf4a',marker="D", label="Best (Fat-8)")
+plt.plot(x, fatConf, '#4daf4a',marker="D", markersize=markersize, label="Best (Fat-8)")
 plt.errorbar(x, fatConf, color='#4daf4a', yerr=fatConfDev, linestyle="None")
-plt.plot(x, fatConfWorst, '#984ea3', marker="s", label="Worst (Fat-8)")
+plt.plot(x, fatConfWorst, '#984ea3', marker="s", markersize=markersize, label="Worst (Fat-8)")
 plt.errorbar(x, fatConfWorst, color='#984ea3', yerr=fatConfWorstDev, linestyle="None")
 
 plt.legend(loc='upper left', frameon=False, fontsize=18)
@@ -117,18 +120,17 @@ fatTRLDev = [7.749363302,20.91666003,39.38858371,56.34293492,56.00601471]
 
 fatTRLWorst = [32.55,120.56,219.6,321.2,447.95]
 fatTRLWorstDev = [11.76737238,26.88723365,46.04162876,49.8160828,91.88750273]
-markersize = 11
 
 plt.xlim(xmin=190, xmax=1010)
 
-plt.plot(x, ionTRL, '#4daf4a',marker="D", label="Best (Ion)")
+plt.plot(x, ionTRL, '#4daf4a',marker="D", markersize=markersize, label="Best (Ion)")
 plt.errorbar(x, ionTRL, color='#4daf4a', yerr=ionTRLDev, linestyle="None")
-plt.plot(x, ionTRLWorst, '#377eb8',marker="^", label="Worst (Ion)")
+plt.plot(x, ionTRLWorst, '#377eb8',marker="^", markersize=markersize, label="Worst (Ion)")
 plt.errorbar(x, ionTRLWorst, color='#377eb8', yerr=ionTRLWorstDev, linestyle="None")
 
-plt.plot(x, fatTRL, '#ff7f00', marker="o", label="Best (Fat-8)")
+plt.plot(x, fatTRL, '#ff7f00', marker="o", markersize=markersize, label="Best (Fat-8)")
 plt.errorbar(x, fatTRL, color='#ff7f00', yerr=fatTRLDev, linestyle="None")
-plt.plot(x, fatTRLWorst, '#984ea3', marker="s", label="Worst (Fat-8)")
+plt.plot(x, fatTRLWorst, '#984ea3', marker="s", markersize=markersize, label="Worst (Fat-8)")
 plt.errorbar(x, fatTRLWorst, color='#984ea3', yerr=fatTRLWorstDev, linestyle="None")
 
 plt.legend(loc='upper left', frameon=False, fontsize=18)
@@ -156,14 +158,14 @@ fatConfDev = [0.05087937556,0.04968711413,0.06099461023,0.04877063637,0.04660650
 plt.xlim(xmin=190, xmax=1010)
 plt.ylim(ymin=0, ymax=1.2)
 
-plt.plot(x, ionTRL, '#4daf4a',marker="D", label="TRL Ratio (Ion)")
+plt.plot(x, ionTRL, '#4daf4a',marker="D", markersize=markersize, label="TRL Ratio (Ion)")
 plt.errorbar(x, ionTRL, color='#4daf4a', yerr=ionTRLDev, linestyle="None")
-plt.plot(x, ionConf, '#377eb8',marker="^", label="Conf Ratio (Ion)")
+plt.plot(x, ionConf, '#377eb8',marker="^", markersize=markersize, label="Conf Ratio (Ion)")
 plt.errorbar(x, ionConf, color='#377eb8', yerr=ionConfDev, linestyle="None")
 
-plt.plot(x, fatTRL, '#ff7f00', marker="o", label="TRL Ratio  (Fat-8)")
+plt.plot(x, fatTRL, '#ff7f00', marker="o", markersize=markersize, label="TRL Ratio  (Fat-8)")
 plt.errorbar(x, fatTRL, color='#ff7f00', yerr=fatTRLDev, linestyle="None")
-plt.plot(x, fatConf, '#984ea3', marker="s", label="Conf Ratio (Fat-8)")
+plt.plot(x, fatConf, '#984ea3', marker="s", markersize=markersize, label="Conf Ratio (Fat-8)")
 plt.errorbar(x, fatConf, color='#984ea3', yerr=fatConfDev, linestyle="None")
 
 plt.legend(loc='upper left', mode="expand", ncol=2, frameon=False, fontsize=18)
@@ -181,15 +183,15 @@ x = range(25, 225, 25)
 ionTime = [0.01749955864,0.07191940294,0.1476163773,0.2930797994,0.4789884697,0.6663588462,0.9209012076,1.15511427]
 ionTimeDev = [0.009488063792,0.02699395579,0.06919721199,0.08314940039,0.1465465516,0.2193709322,0.241433187,0.2587683784]
 
-fatTime =  [0.04263912741,0.3389375772,2.070554649,4.668311028,7.679610742,10.82252409,12.59832289,20]
-fatTimeDev = [0.02472738843,0.1789896801,1.013203957,0.9042154791,1.170098253,0.9448482264,1.129939945,2]
+fatTime =  [0.04263912741,0.3389375772,2.070554649,4.668311028,7.679610742,10.82252409,12.59832289,15.0580]
+fatTimeDev = [0.02472738843,0.1789896801,1.013203957,0.9042154791,1.170098253,0.9448482264,1.129939945,2.22063]
 
 plt.xlim(xmin=15, xmax=210)
 
-plt.plot(x, ionTime, '#4daf4a',marker="D", label="Time Ratio (Colt)")
+plt.plot(x, ionTime, '#4daf4a',marker="D", markersize=markersize, label="Geant (40)")
 plt.errorbar(x, ionTime, yerr=ionTimeDev, linestyle="None")
 
-plt.plot(x, fatTime, '#ff7f00', marker="o", label="Time Ratio  (Fat-6)")
+plt.plot(x, fatTime, '#ff7f00', marker="o", markersize=markersize, label="Fat-6 (45)")
 plt.errorbar(x, fatTime, yerr=fatTimeDev, linestyle="None")
 
 plt.legend(loc='upper left', frameon=False, fontsize=18)
@@ -200,6 +202,31 @@ plt.ylabel('Average time per path', fontsize=20)
 plt.grid()
 plt.savefig('ospfTime.eps', format='eps', dpi=1000, bbox_inches='tight')
 
+
+ospfTRLFig = plt.figure(6)
+x = range(25, 225, 25)
+
+ionTRL = [0.0176,0.062,0.07706666667,0.1091549296,0.13232,0.1640952381,0.1919163763,0.2178]
+ionTRLDev = [0.03040945073,0.04865137739,0.04052176706,0.06355529603,0.05495728954,0.06983110849,0.05786649815,0.05979693528]
+
+fatTRL =  [0.06,0.1486666667,0.2622222222,0.5684210526,0.8386666667,1.197530864,1.352040816,1.575]
+fatTRLDev = [0.08187458871,0.09287490041,0.1431911439,0.1562854638,0.1853692184,0.1683722793,0.1681473585,0.2016184515]
+
+plt.xlim(xmin=15, xmax=210)
+
+plt.plot(x, ionTRL, '#4daf4a',marker="D", markersize=markersize, label="Geant (40)")
+plt.errorbar(x, ionTRL, yerr=ionTRLDev, linestyle="None")
+
+plt.plot(x, fatTRL, '#ff7f00', marker="o", markersize=markersize, label="Fat-6 (45)")
+plt.errorbar(x, fatTRL, yerr=fatTRLDev, linestyle="None")
+
+plt.legend(loc='upper left', frameon=False, fontsize=18)
+
+plt.xlabel('Number of Paths', fontsize=20)
+plt.ylabel('Average resilience loss per path', fontsize=20)
+
+plt.grid()
+plt.savefig('ospfTRL.eps', format='eps', dpi=1000, bbox_inches='tight')
 # mcmc = plt.figure(2)
 # f = open("zep-mcmc.csv")
 # x = []
@@ -209,7 +236,7 @@ plt.savefig('ospfTime.eps', format='eps', dpi=1000, bbox_inches='tight')
 #     x.append(int(fields[0]))
 #     y.append(float(fields[1]))
 
-# plt.plot(x, y, '#ff7f00', marker="o")
+# plt.plot(x, y, '#ff7f00', marker="o") markersize=markersize,
 
 # plt.xlabel('Iteration')
 # plt.ylabel('MCMC Score')

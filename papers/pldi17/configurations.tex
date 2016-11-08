@@ -243,7 +243,6 @@ E local prefs + E(E - 1) iBGP filters!
 
 \todo{Changes to OSPF synthesis to ensure closest gateway}
 
-\subsection{Route-Filter Cost}
 \begin{figure}
 	\centering
 	\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
@@ -263,9 +262,18 @@ E local prefs + E(E - 1) iBGP filters!
 	\path[-] (v1) edge [dashed] node[above] {} +(0,-2);
 	\end{tikzpicture}
 	\caption{Diamond}
-	\label{fig:rfdiamond}
+	\label{fig:diamonddomain}
 \end{figure}
 
+\subsection{Route-Filter Cost}
+If a diamond created by the input paths (\Cref{fig:diamonddomain}),
+\name requires a route-filter to find a solution to OSPF
+edge weights. However, if $s$ and $t$ of the diamond lie in
+different domains, the equations for paths in the diamond
+would be no longer be inconsistent, thus reducing a route-filter.
+
+
+\todo{Specify weird Route filter case without diamonds?}
 
 
 
