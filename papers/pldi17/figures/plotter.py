@@ -213,6 +213,7 @@ fatTRL =  [0.06,0.1486666667,0.2622222222,0.5684210526,0.8386666667,1.197530864,
 fatTRLDev = [0.08187458871,0.09287490041,0.1431911439,0.1562854638,0.1853692184,0.1683722793,0.1681473585,0.2016184515]
 
 plt.xlim(xmin=15, xmax=210)
+plt.ylim(ymin=0, ymax=2)
 
 plt.plot(x, ionTRL, '#4daf4a',marker="D", markersize=markersize, label="Geant (40)")
 plt.errorbar(x, ionTRL, yerr=ionTRLDev, linestyle="None")

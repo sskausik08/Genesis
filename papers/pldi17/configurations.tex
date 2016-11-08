@@ -269,10 +269,52 @@ E local prefs + E(E - 1) iBGP filters!
 If a diamond created by the input paths (\Cref{fig:diamonddomain}),
 \name requires a route-filter to find a solution to OSPF
 edge weights. However, if $s$ and $t$ of the diamond lie in
-different domains, the equations for paths in the diamond
-would be no longer be inconsistent, thus reducing a route-filter.
+different domains, the inconsistent paths would be split 
+across domains, and \name can find OSPF weights for
+both the domains without route-filters (in the case if this
+diamond was the only source of inconsistency). In the limiting
+case where each router is a separate domain~\cite{bgpdatacenter}, 
+we do not require any OSPF route-filters, and the entire 
+network can be configured using BGP. Thus, a clever domain
+assignment can also be reduce the number of route-filters, and
+increase the resilience of paths. 
 
 
+The process of finding the exact static and BGP configurations
+required to induce the input paths has polynomial time complexity,
+and thus can be found efficiently in every iteration of the MCMC
+sampling. To minimize the number of route-filters, we can consider 
+the number of route-filters for a given domain assignment $\Theta$ 
+as one component of the cost function, and thus MCMC will try
+to minimize the cost function, and consequently, the number of
+filters. However, finding the optimal number of route-filters for a given domain assignment is NP-hard (\secref{sec:rfcomplexity}), thus, \name
+cannot find the exact number of filters for each iteration to use for
+the cost function. 
+
+Instead, \name estimates the number of route-filters required for a 
+particular domain assignment $\Theta$ for the cost function. Before 
+we start the MCMC search, we undergo a preprocessing phase 
+where for every pair of input paths, we identify the
+number of diamonds created by the path (\todo{define diamond 
+	formally somewhere}) and store the start and end router of 
+each diamond. In a MCMC iteration based on the domain
+assignment $\Theta$, for every diamond, we check if the
+start and end router are part of the same domain. If yes, 
+we assume we require atleast one filter for this particular
+diamond and increment the route-filter cost by 1. The 
+route-filter cost is not increment if the start and end 
+router of the diamond belong in different domains in $\Theta$.
+
+The cost computed by the above procedure overestimates the
+number of route-filters required to eliminate the diamonds.  
+Two different diamonds sharing an edge could be both 
+eliminated by a single filter, whereas our route-filter cost 
+would be 2. However, there are path fragments which 
+lead to inconsistencies, but are not diamonds, and thus
+are not included in the route-filter cost. However, the 
+cost can be computed efficiently every iteration, and 
+our experiments show reductions in route-filter cost 
+lead to reductions in number of filters(~\Cref{some experiment}). 
 \todo{Specify weird Route filter case without diamonds?}
 
 
