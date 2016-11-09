@@ -1,9 +1,30 @@
 \subsubsection{Synthesis of ARC with route-filters} \label{sec:routefilter}
-\begin{figure}[!t] 
+\begin{figure}
 	\centering
-	\includegraphics[width=0.7\columnwidth]{figures/diamond.eps}
-	\caption{Example of paths that requires route-filtering} \label{fig:diamond}
+	\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
+	square/.style={regular polygon,regular polygon sides=4}] 
+	\node[state] at (0,0) (s)  {$s$}; 
+	\node[state] at (2,0.5) (v1)  {$r_1$}; 
+	\node[state] at (2,-0.5) (u1) {$r_2$}; 
+	\node[state] at (4, 0)(t) {$t$};
+	\node[state, rectangle] at (6, -0.75) (d2) {$\lambda_2$};
+	\node[state, rectangle] at (6, 0.75) (d1) {$\lambda_1$};
+	\path[->] 
+	(s) edge  node {} (v1)
+	edge  node {} (u1)
+	edge [blue, dashed, bend right=45] node {} (t)
+	edge [red, dashed, bend left=45] node {} (t)
+	(u1) edge node {} (t)
+	(v1) edge node {} (t)
+	(t) edge [red, dashed] node {} (d1) 
+	edge [blue, dashed] node {} (d2);
+	\end{tikzpicture}
+	\caption{Example of paths which require route-filtering. This is a
+		diamond starting at $s$ and ending at $t$. The diamond can be
+		eliminated by filters $((s,r_1),\lambda_2)$ or $((s,r_2),\lambda_1)$.}
+	\label{fig:diamond}
 \end{figure}
+
 The sARC synthesis problem does not always admit a solution.
 For example, consider the set of paths illustrated in \Cref{fig:diamond}. 
 In this example, both the blue and green paths are required to be the unique shortest paths
@@ -28,7 +49,7 @@ Formally, a route-filter is a pair $(l,d)\in L\times S$
 disabling a link $l$ for destination $d$
 and path to a destination $d$ is \emph{unfiltered} 
 if it does not contain edges that are filtered for destination $d$.
-%Therefore, if a route-filter is added on switch $s3$, 
+%Therefore, if a route-filter is added on ritch $s3$, 
 %$s3$ 
 %will not advertise a route for $d1$ to $s1$, so 
 %$s1$ will forward to $s2$ and not to $s3$
@@ -54,7 +75,7 @@ route-filter $(l,d)$ for every link $l$ not in $\xi_d$.
 However, this solution may overly restrict the structure of the network.
 In particular, if two nodes were connected by a single path,
 a link failure would immediately result in the network becoming disconnected!
-Moreover, installing so many route-filters might be costly as not all switches might
+Moreover, installing so many route-filters might be costly as not all ritches might
 support this mechanism.
 
 Ideally, we would like to impose further restrictions to the ARC
@@ -97,7 +118,7 @@ problem can be modified to handle filtered and unfiltered paths.
 We assume we are given a set of route-filters $F$ and 
 use $s\rightarrow_d^* t$ to denote that $s$ can reach $t$
 in $T$ without using any edge $l$, such that $(l,d)\in F$.
-We use $D_d(sw_1, sw_2)$ to denote the shortest distance from $sw_1$ to $sw_2$
+We use $D_d(r_1, r_2)$ to denote the shortest distance from $r_1$ to $r_2$
 using only edges that are not filtered for destination $d$.
 We can revise the equation in \eqref{eq:dist} to correctly restrict the values of $D_d$
 by simply ignoring all the filtered edges. 
@@ -139,6 +160,7 @@ cannot be handled without route-filters.
 % inconsistencies based on these properties 
 % can be used to minimize the number of route-filters enabled.  
 
+\todo{Not good, improve} \\
 \minisection{Adding filters using unsatisfiable cores}
 Modern LP-solvers have efficient procedures to return an
 unsatisfiable core, also called IIS (Irreducible Inconsistent Subsystem)
@@ -167,6 +189,13 @@ and the combination of the other constraints appearing in the other unsat-core i
 The complete set of equations may still be inconsistent as other unsat-cores might exist. 
 The procedure can be repeated until the resulting set of constraints becomes satisfiable
 and we have therefore reached a solution to the ARC synthesis problem.
+
+Finding the optimal number of route-filters is NP-hard, and it
+is very difficult to incorporate optimality in our iterative learning
+technique for finding the set of filters. This is because we do not 
+have the set of all unsatisfiable cores (the solver returns one at 
+a time) to find an optimal set of filters. Instead of considering the 
+number of filters, we consider the metric: loss of resilience.
 %\loris{not sure the next paragraph is needed}
 %For a given unsat-core, there may be multiple ways to place a route
 %filter to eliminate one constraint and we have not investigated
@@ -180,28 +209,26 @@ and we have therefore reached a solution to the ARC synthesis problem.
 %a route-filter from an unsat-core satisfying certain
 %objectives. 
 
-
-\minisection{Diamond elimination}
 Finding an IIS is an NP-hard problem~\cite{iiscomplexity}
 and can result in slow synthesis times.
-We identify a topological property of the set of input paths that 
-is guaranteed to require route-filters and use it to produce an initial set of necessary route-filters.
-This technique allows us to reduce the number of times we are required to compute  unsat-cores.
-
-We define the structure shown in \Cref{fig:diamond}
-as a \emph{diamond}. 
-Formally, a problem instance contains a diamond iff there exists two different destinations $d$ and $d'$
-such that, in their corresponding DAGs $\xi_d$ and $\xi_{d'}$,
-there exists two nodes $s$ and $t$, such that $s\rightarrow_{\xi_d} t$,
-$s\rightarrow_{\xi_{d'}} t$, and
-there exists a path $l_0\cdots l_n$ from $s$ to $t$ in $\xi_d$ that is not a path from
-$s$ to $t$ in $\xi_{d'}$.
-As we mentioned at the beginning, synthesizing an ARC for  diamond structures requires
-the addition of a route-filter.
-In fact, each such a diamond can be ``removed'' by introducing a route-filter $(l_0, d')$ that hides
-the path $l_0\cdots l_n$ for the destination $d'$ (see \Cref{fig:diamond}).
-Diamonds can detected and removed in polynomial time.
-%Consider
+%We identify a topological property of the set of input paths that 
+%is guaranteed to require route-filters and use it to produce an initial set of necessary route-filters.
+%This technique allows us to reduce the number of times we are required to compute  unsat-cores.
+%
+%We define the structure shown in \Cref{fig:diamond}
+%as a \emph{diamond}. 
+%Formally, a problem instance contains a diamond iff there exists two different destinations $d$ and $d'$
+%such that, in their corresponding DAGs $\xi_d$ and $\xi_{d'}$,
+%there exists two nodes $s$ and $t$, such that $s\rightarrow_{\xi_d} t$,
+%$s\rightarrow_{\xi_{d'}} t$, and
+%there exists a path $l_0\cdots l_n$ from $s$ to $t$ in $\xi_d$ that is not a path from
+%$s$ to $t$ in $\xi_{d'}$.
+%As we mentioned at the beginning, synthesizing an ARC for  diamond structures requires
+%the addition of a route-filter.
+%In fact, each such a diamond can be ``removed'' by introducing a route-filter $(l_0, d')$ that hides
+%the path $l_0\cdots l_n$ for the destination $d'$ (see \Cref{fig:diamond}).
+%Diamonds can detected and removed in polynomial time.
+%%Consider
 %the diamond in \Cref{fig:diamond}. There are two choices
 %of route-filters: the $s1-s3$ edge for destination $d1$ 
 %and the $s1-s2$ edge for destination $d2$, out of which,

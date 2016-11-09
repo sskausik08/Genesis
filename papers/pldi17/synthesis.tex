@@ -17,7 +17,7 @@ Then, we consider more complex forms of ARCs in which
  additional mechanisms like route-filtering are allowed. 
  
 \subsubsection{From paths to simplified ARCs} \label{sec:sarc}
-The \emph{Simplified Abstract Representation of the Control Plane} (sARC) is a directed graph comprising switches as 
+The \emph{Simplified Abstract Representation of the Control Plane} (sARC) is a directed graph comprising ritches as 
 vertices and weighted edges corresponding to all links in the
 topology. 
 This is an ideal control plane supporting classic shortest path routing in which no links can be disabled. 
@@ -50,26 +50,26 @@ We use $\Omega=\{d\mid (\_,d)\in\Gamma\}$ to denote the
 set of all destinations and $\Delta=\{\xi_d\mid d\in \Omega\}$ to denote  
 the set of all destination DAGs. 
 
-We use  $sw_1\rightarrow sw_2$ to denote $(sw_1,sw_2)\in L$ and
-$sw_1\rightarrow^* sw_2$ (resp. $sw_1\rightarrow^+ sw_2$) to denote 
-that $sw_2$ is reachable from $sw_1$ by crossing zero (resp. one) or more links in $T$.
+We use  $r_1\rightarrow r_2$ to denote $(r_1,r_2)\in L$ and
+$r_1\rightarrow^* r_2$ (resp. $r_1\rightarrow^+ r_2$) to denote 
+that $r_2$ is reachable from $r_1$ by crossing zero (resp. one) or more links in $T$.
 Similarly, we use $\rightarrow_{\xi_d}$ to denote the same relations in the destination DAGs.
 
 
 \minisection{Distance equations}
 To solve the sARC synthesis problem, we generate a set of linear equations
 to find the required edge weights. 
-We use $E(sw_1, sw_2)$ to denote the weight of the edge $(sw_1,sw_2)\in L$
+We use $E(r_1, r_2)$ to denote the weight of the edge $(r_1,r_2)\in L$
 and 
-$D(sw_1, sw_2)$ to denote the shortest distance from $sw_1$ to $sw_2$.
+$D(r_1, r_2)$ to denote the shortest distance from $r_1$ to $r_2$.
 We add the equation $D(s,s) = 0$ for every $s\in S$ to denote that the distance
 from a node to itself is $0$.
 The
 following equation guarantees that $D(s,t)$ is not greater than 
 the actual shortest distance from $s$ to $t$.
 \begin{multline} \label{eq:dist}
-\forall s, t, sw. (s \rightarrow sw \rightarrow^* t).\\
-D(s, t) \leq E(s, sw) + D(sw, t)
+\forall s, t, r. (s \rightarrow r \rightarrow^* t).\\
+D(s, t) \leq E(s, r) + D(r, t)
 \end{multline}
 
 For each destination DAG $\xi_d\in\Delta$, we add equations to ensure 
@@ -88,9 +88,9 @@ as well (otherwise the complete path would not be the shortest).
 % 	} \label{fig:disteq}
 % \end{figure}
 Consider a DAG $\xi_d$ for destination $d$. We define two neighbour
-functions: $N_T(s)$ denotes the set of neighbours of switch $s$ 
+functions: $N_T(s)$ denotes the set of neighbours of ritch $s$ 
 in the input graph $T$, and $N_{\xi_d}(s)$ denote the set of
-neighbours of switch $s$ in the destination DAG $\xi_d$. 
+neighbours of ritch $s$ in the destination DAG $\xi_d$. 
 Given a destination $d\in \Omega$,
 we use the following equations to ensure that, given two nodes $s$ and $t$ in
 $\xi_d$, 
@@ -124,4 +124,4 @@ Equation~\ref{eq:uniq2} guarantees that
 the sum of the weights belonging to a path from $s$ to $t$ in $\xi_d$ is smaller than 
 any path that goes to $t$ via a node $n'$ that is a neighbour of $s$ in $\xi_d$ but such that
 $t$ is not reachable from $n'$ in $\xi_d$.
-Finally, Equation~\ref{eq:uniq2} guarantees that all the paths from $s$ to $t$ in $\xi_d$ have the same weight.
+Finally, Equation~\ref{eq:uniq3} guarantees that all the paths from $s$ to $t$ in $\xi_d$ have the same weight.

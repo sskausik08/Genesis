@@ -98,28 +98,9 @@ prove \Cref{lemma:diamond}.
 	 is required to find a valid solution to the
 	 OSPF edge weights.  
 \end{lemma}
-\begin{figure}
-	\centering
-	\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
-	square/.style={regular polygon,regular polygon sides=4}] 
-	\node[state] at (0,0) (s)  {$s$}; 
-	\node[state] at (2,0.5) (v1)  {$r_1$}; 
-	\node[state] at (2,-0.5) (u1) {$r_2$}; 
-	\node[state] at (4, 0)(t) {$t$};
-	\path[->] 
-	(s) edge  node {} (v1)
-	edge  node {} (u1)
-	edge [blue, dashed, bend right=45] node {} (t)
-	edge [red, dashed, bend left=45] node {} (t)
-	(u1) edge node {} (t)
-	(v1) edge node {} (t);
-	\end{tikzpicture}
-	\caption{Diamond}
-	\label{fig:rfdiamond}
-\end{figure}
 
 \begin{proof}
-Consider the following diamond in \Cref{fig:rfdiamond}
+Consider the following diamond in \Cref{fig:diamond}
 constructed by paths $p_1$: $s \rightarrow r_1 \rightarrow t$ 
 for destination $d_1$ and $p_2$:$s \rightarrow r_2 \rightarrow t$ 
 for destination $d_2$. Let us assume there exists a solution 

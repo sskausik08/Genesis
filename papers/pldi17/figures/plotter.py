@@ -183,16 +183,23 @@ x = range(25, 225, 25)
 ionTime = [0.01749955864,0.07191940294,0.1476163773,0.2930797994,0.4789884697,0.6663588462,0.9209012076,1.15511427]
 ionTimeDev = [0.009488063792,0.02699395579,0.06919721199,0.08314940039,0.1465465516,0.2193709322,0.241433187,0.2587683784]
 
-fatTime =  [0.04263912741,0.3389375772,2.070554649,4.668311028,7.679610742,10.82252409,12.59832289,15.0580]
-fatTimeDev = [0.02472738843,0.1789896801,1.013203957,0.9042154791,1.170098253,0.9448482264,1.129939945,2.22063]
+fat6Time =  [0.04263912741,0.3389375772,2.070554649,4.668311028,7.679610742,10.82252409,12.59832289,15.4758605]
+fat6TimeDev = [0.02472738843,0.1789896801,1.013203957,0.9042154791,1.170098253,0.9448482264,1.129939945,1.686918172]
+
+
+fat4Time =  [0.02526011467,0.1084675329,0.2238150358,0.3463366435,0.4060181068,0.4730815102,0.5297162876,0.598101095]
+fat4TimeDev = [0.01213860087,0.0303217649,0.03861147015,0.0453386104,0.05625595682,0.04384863373,0.05146077266,0.07802651106]
 
 plt.xlim(xmin=15, xmax=210)
 
 plt.plot(x, ionTime, '#4daf4a',marker="D", markersize=markersize, label="Geant (40)")
-plt.errorbar(x, ionTime, yerr=ionTimeDev, linestyle="None")
+plt.errorbar(x, ionTime, color='#4daf4a', yerr=ionTimeDev, linestyle="None")
 
-plt.plot(x, fatTime, '#ff7f00', marker="o", markersize=markersize, label="Fat-6 (45)")
-plt.errorbar(x, fatTime, yerr=fatTimeDev, linestyle="None")
+plt.plot(x, fat6Time, '#ff7f00', marker="o", markersize=markersize, label="Fat-6 (45)")
+plt.errorbar(x, fat6Time, color='#ff7f00', yerr=fat6TimeDev, linestyle="None")
+
+plt.plot(x, fat4Time, '#377eb8', marker="o", markersize=markersize, label="Fat-4 (20)")
+plt.errorbar(x, fat4Time, color='#377eb8', yerr=fat4TimeDev, linestyle="None")
 
 plt.legend(loc='upper left', frameon=False, fontsize=18)
 
@@ -209,17 +216,23 @@ x = range(25, 225, 25)
 ionTRL = [0.0176,0.062,0.07706666667,0.1091549296,0.13232,0.1640952381,0.1919163763,0.2178]
 ionTRLDev = [0.03040945073,0.04865137739,0.04052176706,0.06355529603,0.05495728954,0.06983110849,0.05786649815,0.05979693528]
 
-fatTRL =  [0.06,0.1486666667,0.2622222222,0.5684210526,0.8386666667,1.197530864,1.352040816,1.575]
-fatTRLDev = [0.08187458871,0.09287490041,0.1431911439,0.1562854638,0.1853692184,0.1683722793,0.1681473585,0.2016184515]
+fat6TRL =  [0.06,0.1486666667,0.2622222222,0.5684210526,0.8386666667,1.197530864,1.352040816,1.611]
+fat6TRLDev = [0.08187458871,0.09287490041,0.1431911439,0.1562854638,0.1853692184,0.1683722793,0.1681473585,0.1539617177]
+
+fat4TRL =  [0.16,0.311,0.5293333333,0.695,0.7516,0.8403333333,0.8585714286,0.9165]
+fat4TRLDev = [0.131709409,0.1161623184,0.08771031533,0.1559520844,0.1284852644,0.09732023464,0.07427125365,0.1090400699]
 
 plt.xlim(xmin=15, xmax=210)
 plt.ylim(ymin=0, ymax=2)
 
 plt.plot(x, ionTRL, '#4daf4a',marker="D", markersize=markersize, label="Geant (40)")
-plt.errorbar(x, ionTRL, yerr=ionTRLDev, linestyle="None")
+plt.errorbar(x, ionTRL, color='#4daf4a', yerr=ionTRLDev, linestyle="None")
 
-plt.plot(x, fatTRL, '#ff7f00', marker="o", markersize=markersize, label="Fat-6 (45)")
-plt.errorbar(x, fatTRL, yerr=fatTRLDev, linestyle="None")
+plt.plot(x, fat6TRL, '#ff7f00', marker="o", markersize=markersize, label="Fat-6 (45)")
+plt.errorbar(x, fat6TRL, color='#ff7f00', yerr=fat6TRLDev, linestyle="None")
+
+plt.plot(x, fat4TRL, '#377eb8', marker="o", markersize=markersize, label="Fat-4 (20)")
+plt.errorbar(x, fat4TRL, color='#377eb8', yerr=fat4TRLDev, linestyle="None")
 
 plt.legend(loc='upper left', frameon=False, fontsize=18)
 

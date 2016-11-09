@@ -1,6 +1,15 @@
-\section{Configuration Requirements}
-We consider synthesis of inter-domain 
-(for lack of a better word) routing 
+\section{Motivation}
+As networks increase in size, the OSPF protocol 
+does not scale well as it uses reliable
+flooding of link state packets, and can
+overwhelm the network when links fail. 
+Ideally, operators would want to specify
+a upper limit on the size of the domain. Thus,
+a network could be solit into multiple domains,
+and can use an inter-domain protocol like
+BGP to exchange routes. 
+
+We consider synthesis of inter-domain routing 
 configurations where each domain uses a 
 IGP for intra-domain routing (like 
 OSPF) and domains communicate among 
@@ -242,6 +251,53 @@ the OSPF domain. \\
 E local prefs + E(E - 1) iBGP filters!
 
 \todo{Changes to OSPF synthesis to ensure closest gateway}
+\subsection{Multiple Gateways}
+When BGP routes to a destination $\lambda$ 
+from multiple gateways are redistributed in
+the OSPF domain, \name uses a modified OSPF synthesis
+algorithm from \secref{sec:ospfsynthesis}. This is 
+required because an OSPF router will choose
+the closest BGP gateway in terms of OSPF distance 
+for $\lambda$. For instance, a router $r$ will choose
+from gateways $g_1$ and $g_2$ according to the $r-g_1$
+and $r-g_2$ distance. Therefore, given the input path in
+the domain $p=r \rightarrow^+ g1$, \name adds additional
+constraints ensuring the distance to $g_2$ from routers
+on the path is strictly
+greater than the distance to $g_1$ 
+on top of the constraints ensuring
+$p$ is the shortest path from $r$ to $g_1$. 
+Let us define $G_\lambda$ to be the set of gateways
+for destination $\lambda$ in the domain. For 
+a router $r$, $g \in G_\lambda$ is the gateway if
+$r \rightarrow^+_{\xi_{\lambda}} g$ holds, i.e., $g$ 
+is reachable from $r$ in the DAG $\xi_{\lambda}$.  
+\name adds the following constraints to the 
+OSPF synthesis phase to ensure a router
+chooses the correct gateway to ensure the input 
+paths are induced: 
+\begin{multline} \label{eq:gateway}
+\forall g \in G_{\lambda}.~\forall r \in \xi_\lambda 
+\wedge r \rightarrow^+_{\xi_{\lambda}} g. \\
+~\forall g' \in G_{\lambda} \wedge g' \not= g. 
+~\forall n' \in N(r) \setminus N_{\xi_\lambda}(r). \\
+E(r, n') + D(n', g') > \sum_{\mathclap{\substack{(r_i,r_j) \in r \rightarrow^+_{\xi_{\lambda}} g }}} 
+E(r_i, r_j) 
+\end{multline}
+Like unmodified OSPF synthesis, the system of
+constraints generated could be inconsistent and require
+route-filters to eliminate constraints. In this scenario,
+OSPF needs to filter shorter routes to gateways, and
+thus the synthesized configuration would forward traffic to
+the gateway specified by the input. We use the same 
+approach of picking route-filters from the unsatisfiable core
+(\secref{sec:routefilter}), route-filter $((r, n'), \lambda)$
+maps to following constraint in the IIS for some $g,g'$: 
+\begin{equation}
+E(r, n') + D(n', g') > \sum_{\mathclap{\substack{(r_i,r_j) \in r \rightarrow^+_{\xi_{\lambda}} g }}} 
+E(r_i, r_j) 
+\end{equation}
+\todo{abrupt}
 
 \begin{figure}
 	\centering
