@@ -273,19 +273,28 @@ class GenesisSynthesiser(object) :
 		# Control plane synthesis: outside scope of POPL17 Genesis paper.
 		if self.controlPlaneMode : 
 			from OuterZeppelinSynthesiser import OuterZeppelinSynthesiser
-			self.outerZepSynthesizer = OuterZeppelinSynthesiser(topology=self.topology, pdb=self.policyDatabase, timeout=600, numDomains=5)
-			dsts = self.pdb.getDestinations()
-			for dst in dsts : 
-				self.pdb.addDestinationDAG(dst, self.destinationDAGs[dst])
-
-			# Find endpoints for all flows:
-			self.endpoints = []
-			for pc in range(self.pdb.getPacketClassRange()) : 
+				
+			paths = dict()
+			policyDatabase = PolicyDatabase()
+			for pc in self.pdb.getPacketClassRange() : 
 				endpt = [self.pdb.getSourceSwitch(pc), self.pdb.getDestinationSwitch(pc)]
 				if endpt not in self.endpoints : 
 					self.endpoints.append(endpt)
+				
+				pc1 = policyDatabase.addReachabilityPolicy(self.pdb.getDestinationSwitch(pc), self.pdb.getSourceSwitch(pc), self.pdb.getDestinationSwitch(pc))
+				policyDatabase.addPath(pc1, self.pdb.getPath(pc))
+				paths[pc1] = path
 
-			self.zeppelinSynthesiser.enforceDAGs(self.pdb.getDestinationDAGs(), self.pdb.getPaths(), self.endpoints)
+
+			dsts = self.pdb.getDestinations()
+			for dst in dsts : 
+				policyDatabase.addDestinationDAG(dst, self.destinationDAGs[dst])
+
+			
+			self.outerZepSynthesizer = OuterZeppelinSynthesiser(topology=self.topology, pdb=policyDatabase, timeout=600, numDomains=5)
+				
+
+			self.outerZepSynthesizer.enforceDAGs(policyDatabase.getDestinationDAGs(), paths, self.endpoints)
 	
 		self.pdb.writeForwardingRulesToFile(self.topology)
 		self.printProfilingStats()
