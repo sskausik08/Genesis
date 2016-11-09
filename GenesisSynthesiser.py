@@ -272,8 +272,8 @@ class GenesisSynthesiser(object) :
 		self.pdb.validatePolicies(self.topology)
 		# Control plane synthesis: outside scope of POPL17 Genesis paper.
 		if self.controlPlaneMode : 
-			from ZeppelinSynthesiser import ZeppelinSynthesiser
-			self.zeppelinSynthesiser = ZeppelinSynthesiser(self.topology, self.pdb)
+			from OuterZeppelinSynthesiser import OuterZeppelinSynthesiser
+			self.outerZepSynthesizer = OuterZeppelinSynthesiser(topology=self.topology, pdb=self.policyDatabase, timeout=600, numDomains=5)
 			dsts = self.pdb.getDestinations()
 			for dst in dsts : 
 				self.pdb.addDestinationDAG(dst, self.destinationDAGs[dst])
@@ -285,7 +285,7 @@ class GenesisSynthesiser(object) :
 				if endpt not in self.endpoints : 
 					self.endpoints.append(endpt)
 
-			self.zeppelinSynthesiser.enforceDAGs(self.pdb.getDestinationDAGs(), self.endpoints)
+			self.zeppelinSynthesiser.enforceDAGs(self.pdb.getDestinationDAGs(), self.pdb.getPaths(), self.endpoints)
 	
 		self.pdb.writeForwardingRulesToFile(self.topology)
 		self.printProfilingStats()

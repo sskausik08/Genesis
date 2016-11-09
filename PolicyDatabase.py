@@ -97,6 +97,9 @@ class PolicyDatabase(object) :
 	def getPath(self, pc) :
 		return self.paths[pc]
 
+	def getPaths(self) :
+		return self.paths
+
 	def printPaths(self, topology) :
 		output = open("genesis-paths.txt", 'w')
 		for pc in range(self.getPacketClassRange()) :
