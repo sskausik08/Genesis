@@ -258,7 +258,10 @@ class GenesisSynthesiser(object) :
 			self.synthesisSuccessFlag = self.enforceUnicastPolicies()	
 
 		end_t = time.time()
-		print "Total Time taken (generation and solving of constraints) for " + str(self.pdb.getPacketClassRange()) + " packet classes is " + str(end_t - start_t)
+		self.zepFile = open("zeppelin-timing", 'a')
+		self.zepFile.write("Genesis Time\t" + str(self.pdb.getPacketClassRange()) + "\t" + str(end_t - start_t))
+		self.zepFile.write("\n")
+		self.zepFile.close()
 
 		if self.synthesisSuccessFlag and self.DCSynthesisFlag: 
 			for pc in self.DCPaths : 
@@ -273,17 +276,18 @@ class GenesisSynthesiser(object) :
 		# Control plane synthesis: outside scope of POPL17 Genesis paper.
 		if self.controlPlaneMode : 
 			from OuterZeppelinSynthesiser import OuterZeppelinSynthesiser
-				
+			
+			self.endpoints = []
 			paths = dict()
 			policyDatabase = PolicyDatabase()
-			for pc in self.pdb.getPacketClassRange() : 
+			for pc in range(self.pdb.getPacketClassRange()) : 
 				endpt = [self.pdb.getSourceSwitch(pc), self.pdb.getDestinationSwitch(pc)]
 				if endpt not in self.endpoints : 
 					self.endpoints.append(endpt)
 				
 				pc1 = policyDatabase.addReachabilityPolicy(self.pdb.getDestinationSwitch(pc), self.pdb.getSourceSwitch(pc), self.pdb.getDestinationSwitch(pc))
 				policyDatabase.addPath(pc1, self.pdb.getPath(pc))
-				paths[pc1] = path
+				paths[pc1] = self.pdb.getPath(pc)
 
 
 			dsts = self.pdb.getDestinations()

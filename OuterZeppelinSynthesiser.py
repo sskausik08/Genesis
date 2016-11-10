@@ -107,9 +107,9 @@ class OuterZeppelinSynthesiser(object) :
 
 			self.zepFile.write("Time taken  for MCMC is (and iterations), and OSPF time " + str(mcmcTime) + "\t" + str(self.MCMCIter) + "\t" + str(len(dags)) + "\t" + str(len(paths)))
 			self.zepFile.write("\n")
-			self.zepFile.write("Config Improvement " + str(float(self.bestConfScore)/float(self.worstConfScore)) + "\t" + str(self.bestConfScore) + "\t" + str(self.worstConfScore))
+			self.zepFile.write("Config Improvement " + "\t" + str(self.bestConfScore) + "\t" + str(self.worstConfScore))
 			self.zepFile.write("\n")
-			self.zepFile.write("RF Improvement " + str(float(bestRFCount)/float(worstRFCount)) + "\t" + str(len(paths)) + "\t" + str(bestRFCount) + "\t" + str(worstRFCount))
+			self.zepFile.write("RF Improvement " + "\t" + str(len(paths)) + "\t" + str(bestRFCount) + "\t" + str(worstRFCount))
 			self.zepFile.write("\n")
 			self.zepFile.write("RF Scores " + "\t" + str(bestRFScore) + "\t" + str(worstRFScore))
 			self.zepFile.write("\n")
@@ -122,6 +122,8 @@ class OuterZeppelinSynthesiser(object) :
 			self.zepFile.write("\n")
 			self.zepFile.write("Config Improvement " + str(float(self.bestConfScore)/float(self.worstConfScore)) + "\t" + str(self.bestConfScore) + "\t" + str(self.worstConfScore))
 			self.zepFile.write("\n")
+
+		self.zepFile.close()
 
 
 	def MCMCWalk(self) :
