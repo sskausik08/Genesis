@@ -163,7 +163,7 @@ Our proposed approach is to tackle these problems
 in separate phases
 (\figref{fig:architecture}).
 First we synthesize a data plane that 
-meets the input policies(\secref{sec:genesis}).
+meets the input policies (\secref{sec:genesis}).
 Using the data plane as input 
 to the second phase, we 
 express the problem of 
@@ -175,8 +175,99 @@ is \name, a framework for synthesizing
 router configurations from the data
 plane (paths) as input. 
 
-\minisection{OSPF}
-\todo{Motivate about OSPF synthesis} \\
+\minisection{OSPF Synthesis}
+For the OSPF protocol, configurations assign
+weights to links between routers (directed edges
+in the network topology). When the network has
+to forward a packet from $s$ to $t$, the
+OSPF routers uses 
+Djikstra's algorithm to chose the
+shortest weighted path from $s$ to $t$. Thus,
+given input paths, \name finds edge weights 
+(which are global for all paths) such that 
+the shortest path through the network
+for these endpoints exactly match the input paths. 
+For example in \Cref{fig:ospfexample}(a), if the input
+path is $s\rightarrow r_1 \rightarrow t$ for
+destination IP $\lambda$, \name assigns
+edge weights such that the input path has a strictly
+smaller weight ($w=1+2$) than the other path $s \rightarrow t$ 
+($w=5$). Thus, the OSPF routers will forward traffic for
+$\lambda$ from $s$ to $t$ through $r_1$. \name 
+efficiently computes weights by generating constraints
+in the theory of Linear rational arithmetic (LRA) and
+uses fast off-the-shelf LP Solvers 
+(\secref{sec:ospfsynthesis}). 
+
+However, given a set of paths as input, there may
+not exist a solution to the edge weights. Consider the 
+input paths as shown in \Cref{fig:ospfexample}(b). 
+Both the red and blue paths are required 
+to be the unique shortest path between $s$ to $t$
+and, clearly, this is cannot be enforced for any 
+choice of the edge weights (as weights correspond 
+to all destinations). 
+One way to synthesize configurations in this scenario 
+is to ``disable'' the edge
+$(s, t)$ for destination $\lambda_1$.
+Using this technique, 
+there is only one possible path from $s$ to $t$
+for destination $\lambda_1$ ($s\rightarrow r_1 \rightarrow t$),
+therefore is chosen as the shortest path. For 
+destination $\lambda_2$, the $s\rightarrow t$ path
+has a smaller weight ($w=1$) than the
+$s\rightarrow r_1 \rightarrow t$ path ($w=1+2$), therefore,
+both traffic is forwarded through the input paths for
+both the destinations. 
+This blocking mechanism is called a route-filter, and
+we modify \name's OSPF synthesis algorithm to support
+route-filtering (\secref{sec:filtering}).
+ 
+
+\begin{figure}
+	\centering
+	\subfloat[Edge Weights]{
+		\raisebox{0.5cm}{\resizebox {0.5\columnwidth} {!} {
+	\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
+	square/.style={regular polygon,regular polygon sides=4}] 
+	\node[state] at (0,0) (s)  {$s$}; 
+	\node[state] at (1.8,1) (v1)  {$r_1$}; 
+	\node[state] at (3.6, 0)(t) {$t$};
+	\node[state, rectangle] at (5, 0) (d1) {$\lambda$};
+	\path[->] 
+	(s) edge node {1} (v1)
+	edge  node {5} (t)
+	edge [red, dashed, bend left=90] node {} (t)
+	(v1) edge node {2} (t)
+	(t) edge [red, dashed] node {} (d1);
+	\end{tikzpicture}
+	}}}
+	\subfloat[Route-Filters]{
+			\resizebox {0.5\columnwidth} {!} {
+		\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
+		square/.style={regular polygon,regular polygon sides=4}] 
+		\node[state] at (0,0) (s)  {$s$}; 
+		\node[state] at (2, 1) (v1)  {$r_1$}; 
+		\node[state] at (4, 0)(t) {$t$};
+		\node[state, rectangle] at (5.5, 0.75) (d1) {$\lambda_1$};
+		\node[state, rectangle] at (5.5, -0.75) (d2) {$\lambda_2$};
+		\path[->] 
+		(s) edge node {1} (v1)
+		edge  node [above] {1} node [below] {$rf((s,t),\lambda_1)$} (t)
+		edge [red, dashed, bend left=90] node {} (t)
+		edge [blue, dashed, bend right=45] node {} (t)
+		(v1) edge node {2} (t)
+		(t) edge [red, dashed] node {} (d1)
+		(t) edge [blue, dashed] node {} (d2);
+		\end{tikzpicture}
+	}}
+	\compactcaption{Example of paths which require route-filtering. This is a
+		diamond starting at $s$ and ending at $t$. The diamond can be
+		eliminated by filters $((s,r_1),\lambda_2)$ or $((s,r_2),\lambda_1)$.}
+	\label{fig:ospfexample}
+\end{figure}
+
+
 
 \minisection{Dynamic Domain assignment}
 The OSPF routing protocol does not scale 

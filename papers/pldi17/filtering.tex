@@ -26,20 +26,6 @@
 \end{figure}
 
 The sARC synthesis problem does not always admit a solution.
-For example, consider the set of paths illustrated in \Cref{fig:diamond}. 
-In this example, both the blue and green paths are required to be the unique shortest paths
-and, clearly, this is cannot be enforced for any choice of the edge weights.
-
-In this section, we consider ARCs that use more refined mechanisms to
-cope with this problem.
-One way to synthesize an ARC in the scenario 
-given in \Cref{fig:diamond}
-is to ``disable'' the edge
-$(s1, s3)$ for destination $d1$.
-Using this technique, there is only one possible path from $src$ to $d1$ and the
-edge weights become irrelevant for destination $d1$.
-
-
 This blocking mechanism supported by (non-simplified)
 ARC is called a route-filter. 
 A route-filter  can selectively disable an

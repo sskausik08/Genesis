@@ -54,6 +54,9 @@ and iBGP (after applying the configured route filters).
 			\State{$r_{best} = r \in R_{as}$}	
 			\EndIf
 			\EndIf
+			\If{$r_{best}.type = eBGP$}
+			\State{Redistribute $r_{best}$ to OSPF domain}
+			\EndIf
 %				\State{ . }
 %				\State{Prefer the path with the lowest \emph{multi-exit discriminator} (MED).}
 %				\State{Prefer eBGP over iBGP paths.}
