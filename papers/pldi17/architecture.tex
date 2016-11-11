@@ -3,7 +3,11 @@ Mitigating complexity of Policies to configurations
 by going through policies to paths (\genesis) and
 paths to configurations (\name)
 
-\subsection{\genesis: From Policies to Paths}
+The drawback of this approach is that one might need to consider multiple possible
+data planes before finding one that can successfully complete all the phases of the
+synthesis algorithm
+
+\subsection{\genesis: From Policies to Paths} \label{sec:genesis}
 The first phase of our approach produces a set of paths adhering to
 different policies using \genesis~\cite{genesis}, a network management
 system which synthesizes forwarding tables enforcing the policies. 
