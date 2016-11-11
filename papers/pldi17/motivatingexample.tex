@@ -1,3 +1,38 @@
+\subsection{\name: From Paths to Configurations}
+\todo{Motivate about OSPF synthesis} \\
+
+
+In \Cref{fig:bgpeg}, we show how \name configures BGP in domain AS0 
+to ensure that traffic from $src$ to $dst$ is routed across domains 
+such that it follows the path $p$ provided as input. Suppose path (1) is
+provided as input. G3 receives a route for $dst$ with AS path length 1
+(AS2), while G1 and G2 will receive a route for $dst$ with 
+AS path length 2 (AS1, AS2). Since, we need to send traffic along
+G3, we do not need to configure any additional BGP variable for $dst$;
+\Cref{alg:bgppathrules} will choose the best route for $dst$ 
+via G3 (which is the gateway of the input path) as all routes have
+the same local preference (0) and AS path length is used to  and $R1$ will
+send the packet to $dst$ to G3 along the shortest path (which 
+follows the subpath of $p$ from $R1$ to $G3$ by OSPF synthesis). 
+
+Consider the example of input path (2) for $src$ to $dst$ 
+in \Cref{fig:bgpeg}. Since, $G1$'s route has a longer AS 
+path length greater than $G3$'s route and equal to $G2$'s route,
+we need to set the local preference of route received by $G1$ 
+(from $G4$) to 100 (any positive value). Thus, \Cref{alg:bgppathrules} 
+will select $G1$ as the exit gateway for $dst$. The subpath
+$R1$ to $G1$ will be given appropriate weights by the OSPF
+synthesis phase so that the synthesizing configurations 
+forward traffic along the input path. 
+
+Case 3: Multiple gateways, done using iBGP filters. 
+\begin{figure}[!t] 
+	\centering
+	\includegraphics[width=\columnwidth]{figures/bgp-example.pdf}
+	\caption{Example} \label{fig:bgpeg}
+\end{figure}
+
+
 \section{Background}
 \subsection{OSPF}
 
@@ -61,38 +96,4 @@ and iBGP (after applying the configured route filters).
 		\end{algorithmic}
 	\end{footnotesize}
 \end{algorithm}
-
-\section{Motivating Example}
-\todo{Motivate about OSPF synthesis} \\
-
-
-In \Cref{fig:bgpeg}, we show how \name configures BGP in domain AS0 
-to ensure that traffic from $src$ to $dst$ is routed across domains 
-such that it follows the path $p$ provided as input. Suppose path (1) is
-provided as input. G3 receives a route for $dst$ with AS path length 1
-(AS2), while G1 and G2 will receive a route for $dst$ with 
-AS path length 2 (AS1, AS2). Since, we need to send traffic along
-G3, we do not need to configure any additional BGP variable for $dst$;
-\Cref{alg:bgppathrules} will choose the best route for $dst$ 
-via G3 (which is the gateway of the input path) as all routes have
-the same local preference (0) and AS path length is used to  and $R1$ will
-send the packet to $dst$ to G3 along the shortest path (which 
-follows the subpath of $p$ from $R1$ to $G3$ by OSPF synthesis). 
-
-Consider the example of input path (2) for $src$ to $dst$ 
-in \Cref{fig:bgpeg}. Since, $G1$'s route has a longer AS 
-path length greater than $G3$'s route and equal to $G2$'s route,
-we need to set the local preference of route received by $G1$ 
-(from $G4$) to 100 (any positive value). Thus, \Cref{alg:bgppathrules} 
-will select $G1$ as the exit gateway for $dst$. The subpath
-$R1$ to $G1$ will be given appropriate weights by the OSPF
-synthesis phase so that the synthesizing configurations 
-forward traffic along the input path. 
-
-Case 3: Multiple gateways, done using iBGP filters. 
-\begin{figure}[!t] 
-	\centering
-	\includegraphics[width=\columnwidth]{figures/bgp-example.pdf}
-	\caption{Example} \label{fig:bgpeg}
-\end{figure}
 

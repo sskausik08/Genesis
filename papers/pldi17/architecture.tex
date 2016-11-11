@@ -1,23 +1,26 @@
-\section{Paths as Intermediate Representation} \label{sec:phase1}
+\section{Architecture} \label{sec:architecture}
+Mitigating complexity of Policies to configurations
+by going through policies to paths (\genesis) and
+paths to configurations (\name)
 
-\subsection{Genesis}
+\subsection{\genesis: From Policies to Paths}
 The first phase of our approach produces a set of paths adhering to
-different policies using Genesis~\cite{genesis}, a network management
+different policies using \genesis~\cite{genesis}, a network management
 system which synthesizes forwarding tables enforcing the policies. 
-Some of the policies supported by Genesis are specified in 
+Some of the policies supported by \genesis are specified in 
 \Cref{tab:policysupport}. 
 
-Many of the policies supported by Genesis have high 
-theoretical complexity (e.g., isolation); Genesis 
+Many of the policies supported by \genesis have high 
+theoretical complexity (e.g., isolation); \genesis 
 leverages fast off-the-shelf SMT solvers to provide
 support for policy enforcement for a diverse set of policies.
-Given a set of policies, Genesis generates a set of constraints 
+Given a set of policies, \genesis generates a set of constraints 
 over propositional logic (SAT) and Linear rational arithmetic (LRA),
 such that the solutions to these constraints are forwarding
 tables, which can be used to extract the 
 policy-compliant paths.
 
-\subsection{Modifications}
+\subsubsection{Modifications}
 OpenFlow switches~\cite{openflow} support match predicates for
 forwarding rules on different packet header fields like source
 and/or destination IP address, ports etc. However, legacy protocols
@@ -26,19 +29,19 @@ forcing the paths to a destination subnet to
 form a directed tree rooted at the destination. 
 Thus,
 at any router, there exists atmost one forwarding rule for a 
-particular destination. However, since Genesis was built for
+particular destination. However, since \genesis was built for
 SDN management, paths synthesized for a destination subnet may
 diverge at a switch, and thus cannot be induced by any router
 configuration. 
 
-Thus, we modify Genesis to add constraints to ensure that
+Thus, we modify \genesis to add constraints to ensure that
 if any two paths to a destination subnet intersect at a router,
 the subsequent downstream paths to the destination from the
 router do not \emph{diverge} at a router.  
 We define the relation $Reach^*(sw,pc)$ to model reachability 
 of $sw$ in the path of $pc$, i.e., it can be reached in zero or more
 steps from the source. We can be expressed $Reach^*(sw,pc)$ 
-in the network forwarding model of Genesis as:
+in the network forwarding model of \genesis as:
 \begin{equation}
 	Reach^*(sw,pc) = \bigvee_{k \in [0, \mu]} Reach(sw, pc, k)
 \end{equation}
@@ -56,7 +59,7 @@ constraints for every pair ($pc_1$,$pc_2$) having the same
  if a switch is reachable for both packet classes, 
  then the next switch must be the same for both classes
  (paths will not diverge), and thus, the paths obtained
- from Genesis for a destination subnet will form a 
+ from \genesis for a destination subnet will form a 
  directed destination tree. 
 
 %\loris{we will add more details if needed}
