@@ -68,7 +68,7 @@ significantly enhances programmability of the network to
 satisfy the diverse policy requirements in multi-tenant
 clouds and enterprise networks, it suffers from two 
 major challenges: 
-\emph{scalability} and \emph{fault tolerance}. 
+\emph{scalability} and \emph{failure-tolerance}. 
 
 The centralized controller is responsible for installing 
 forwarding rules to all switches, and thus, as network sizes
@@ -78,7 +78,7 @@ the controller has to detect and respond to the failure, and
 even establishing connectivity between endpoints could be delayed.
 Also, the controller is a central point of failure and controller
 failure can lead to network disruptions. 
-The principles of scalability and fault tolerance 
+The principles of scalability and failure-tolerance 
 were instrumental to the design
 of 'traditional' networks (e.g., the Internet) using distributed
 routing protocols like OSPF and BGP to manage forwarding in the 
@@ -118,9 +118,9 @@ protocol interactions.
 global---i.e., they concern end-to-end paths, not individual devices and
 links---making it difficult to map policies to
 individual router configurations. 
-\item Since fault tolerance is handled in a distributed 
+\item Since failure-tolerance is handled in a distributed 
 fashion with no involvement of a central control entity,  
-fault tolerance properties like resilience under bounded
+failure-tolerance properties like resilience under bounded
 number of network failures must be taken into account in
 the generation of router configurations. 
 
@@ -133,11 +133,11 @@ the generation of router configurations.
 \centering
 \includegraphics[width=\columnwidth]{figures/architecture.pdf}
 \compactcaption{Two-phase process for generating a control plane
-       with fault-tolerance properties}
+       with failure-tolerance properties}
 \label{fig:architecture}
 \end{figure}
 
-\subsection{Configuration Synthesis}
+\minisection{Configuration Synthesis}
 To address the following challenges, we propose
 \emph{automatic synthesis} of configurations, such that 
 the network forwarding behaviour of the distributed
@@ -170,7 +170,71 @@ express the problem of
 finding router configurations which 
 induce the data plane provided by the
 first phase using distributed routing
-protocols (OSPF, BGP).
+protocols (OSPF, BGP). Our contribution 
+is \name, a framework for synthesizing
+router configurations from the data
+plane (paths) as input. 
+
+\minisection{OSPF}
+\todo{Motivate about OSPF synthesis} \\
+
+\minisection{Dynamic Domain assignment}
+The OSPF routing protocol does not scale 
+with increasing network sizes
+as it uses reliable
+flooding of link-state packets. Flooding 
+of updates can  
+overwhelm the network when links fail. 
+Ideally, operators would want to specify
+limits on the size of an OSPF routing domain. 
+Thus, a network could be 
+split into multiple continuous OSPF domains,
+which exchange routes across domains using
+a inter-domain protocol like BGP.
+
+We augment \name to synthesize 
+inter-domain routing configurations 
+such that each router is assigned to
+a particular domain. 
+Each domain is continous (all routers
+are reachable to one another) and 
+uses OSPF for intra-domain routing.
+Domains exchange routes among  
+themselves using BGP, a path-vector 
+protocol which primarily selects routes by 
+the number of domains in the route. 
+However, \name can 
+use BGP's powerful path selection metrics 
+like local preferences such that  
+paths with greater path lengths are selected.
+OSPF has better convergence times than BGP,
+thus, it is advantageous to use OSPF for 
+routing in small domains and using BGP for
+inter-domain routing. 
+
+We consider the network to be managed by a 
+single entity, therefore, the network can 
+be split into domains\footnote{
+The Internet is split into domains depending 
+on ownership.} in numerous ways. Depending
+on the network and input data plane, a certain
+domain assignment of routers 
+can optimize different metrics, like the
+inter-domain configuration overhead (like BGP local
+preferences and static routes) and OSPF route-filters
+in the different domains. Thus, instead of operators
+specifying a static domain assignment, \name stochastically
+searches for the best domain assignment from the space of 
+allowed assignments (for e.g., adhering to domain size limits)
+to optimize different metrics. \name uses 
+\emph{Markov chain Monte Carlo} sampling (MCMC) to perform
+this stochastic search, and operators can specify parameters
+to tune the cost function used in the search to assign priorities
+to different metrics. 
+
+\todo{Write about paper outline}
+
+
 
 
 

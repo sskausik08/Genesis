@@ -1,42 +1,5 @@
-\section{Motivation}
-As networks increase in size, the OSPF protocol 
-does not scale well as it uses reliable
-flooding of link state packets, and can
-overwhelm the network when links fail. 
-Ideally, operators would want to specify
-a upper limit on the size of the domain. Thus,
-a network could be solit into multiple domains,
-and can use an inter-domain protocol like
-BGP to exchange routes. 
-
-We consider synthesis of inter-domain routing 
-configurations where each domain uses a 
-IGP for intra-domain routing (like 
-OSPF) and domains communicate among 
-themselves using BGP. 
-Routing inside a domain is controlled 
-by synthesizing OSPF edge weights and 
-route-filters. BGP is a path-vector
-protocol and primarily selects routes by 
-AS-PATH length. However, we can 
-use BGP's powerful path selection metrics 
-like local preferences to select 
-paths with greater path lengths (local
-preference value is considered first in 
-path selection with multiple routes). 
-OSPF has better convergence times than BGP,
-thus, it is advantageous to use OSPF for 
-routing in small domains and using BGP for
-inter-domain routing. 
-
-We introduce a framework of synthesizing
-inter-domain configurations under certain
-constraints. For example, due to scalability
-concerns, OSPF domains must be smaller than 
-a certain threshold for effective operations.
-Similarily, the number of local preferences 
-stored on a router is limited due to 
-resource constraints. Thus, the routing 
+\section{Dynamic Domain Assignment}
+Thus, the routing 
 configurations generated must adhere to 
 these constraints. We describe the constraints
 supported by the framework, points 1-4 are 
@@ -187,6 +150,41 @@ in Pseudocode~\cref{alg:mcmc}.
 	\end{algorithmic}
 	
 \end{algorithm}
+
+\begin{figure*}
+	\centering
+	\subfloat[Ex1]{\includegraphics[width=0.66\columnwidth]{figures/bgp-example.pdf}}
+	\subfloat[Ex2]{\includegraphics[width=0.6\columnwidth]{figures/bgp-example2.pdf}}
+	\subfloat[Ex3]{\includegraphics[width=0.66\columnwidth]{figures/bgp-example.pdf}}
+	\compactcaption{\label{fig:bgpexample}
+	How to configure inter-domain routing}
+\end{figure*}
+
+\subsection{BGP configuration}
+In \Cref{fig:bgpeg}, we show how \name configures BGP in domain AS0 
+to ensure that traffic from $src$ to $dst$ is routed across domains 
+such that it follows the path $p$ provided as input. Suppose path (1) is
+provided as input. G3 receives a route for $dst$ with AS path length 1
+(AS2), while G1 and G2 will receive a route for $dst$ with 
+AS path length 2 (AS1, AS2). Since, we need to send traffic along
+G3, we do not need to configure any additional BGP variable for $dst$;
+\Cref{alg:bgppathrules} will choose the best route for $dst$ 
+via G3 (which is the gateway of the input path) as all routes have
+the same local preference (0) and AS path length is used to  and $R1$ will
+send the packet to $dst$ to G3 along the shortest path (which 
+follows the subpath of $p$ from $R1$ to $G3$ by OSPF synthesis). 
+
+Consider the example of input path (2) for $src$ to $dst$ 
+in \Cref{fig:bgpeg}. Since, $G1$'s route has a longer AS 
+path length greater than $G3$'s route and equal to $G2$'s route,
+we need to set the local preference of route received by $G1$ 
+(from $G4$) to 100 (any positive value). Thus, \Cref{alg:bgppathrules} 
+will select $G1$ as the exit gateway for $dst$. The subpath
+$R1$ to $G1$ will be given appropriate weights by the OSPF
+synthesis phase so that the synthesizing configurations 
+forward traffic along the input path. 
+
+Case 3: Multiple gateways, done using iBGP filters. 
 
 \subsection{Configuration Cost}
 \todo{Explain path, as\_path transformation more formally}
