@@ -1,0 +1,23 @@
+\section{Problem Statement}
+We define the physical switch topology as an directed graph $T=(S, L)$,
+where $S$ is the set of switches and $L$ is the set of links. 
+We use the neighbour function $N(s) = \{s'\ | \ (s,s') \in L \}$ to denote 
+the set of neighbour switches of $s$. 
+We use $\Lambda$ to denote the set of destination IP subnets.
+
+\minisection{OSPF}
+Open Shortest Path First (OSPF) is a routing protocol used inside a
+domain. Each router receives link state information from other routers
+and uses this to create a map of the network. This link state
+information consists of link weights, and each router
+forwards to the destination along the weighted shortest path 
+to the router the destination IP is connected to. Let us
+define the OSPF weight function $W: L \rightarrow \rat$ which 
+maps edges of the topology to positive rational weights. 
+
+As shown in \Cref{fig:ospfexample}(b), 
+we require route-filters
+to selectively disable an
+edge for a given destination by  blocking advertisements to a
+particular destination along a link. 
+% todo: When to talk about converting LRA to LIA.
