@@ -35,7 +35,7 @@ Formally, a route-filter is a pair $(l,d)\in L\times S$
 disabling a link $l$ for destination $d$
 and path to a destination $d$ is \emph{unfiltered} 
 if it does not contain edges that are filtered for destination $d$.
-%Therefore, if a route-filter is added on ritch $s3$, 
+%Therefore, if a route-filter is added on switch $s3$, 
 %$s3$ 
 %will not advertise a route for $d1$ to $s1$, so 
 %$s1$ will forward to $s2$ and not to $s3$
@@ -61,7 +61,7 @@ route-filter $(l,d)$ for every link $l$ not in $\xi_d$.
 However, this solution may overly restrict the structure of the network.
 In particular, if two nodes were connected by a single path,
 a link failure would immediately result in the network becoming disconnected!
-Moreover, installing so many route-filters might be costly as not all ritches might
+Moreover, installing so many route-filters might be costly as not all switches might
 support this mechanism.
 
 Ideally, we would like to impose further restrictions to the ARC
