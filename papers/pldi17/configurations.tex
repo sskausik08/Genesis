@@ -5,8 +5,9 @@ In this section, we describe how \name searches the space of possible
 domain assignments $\Theta$.
 The goal of this search is to find a domain assignment for which
 the techniques presented in Section~\ref{} can find weights, route filters,
-BGP preferences, and static routes that satisfy all the given \loris{control-plane?} policies---e.g.,
-resiliency, domain sizes, and number of LoC and route-filters.
+BGP preferences, and static routes that satisfy all the given \loris{control-plane?} policies..
+In particular, we will focus our discussion on maximizing resiliency while minimizing
+configuration overhead---e.g.,  number of LoC and route-filters.
 
 We first show that even the simplest variant of \loris{what problem} is NP-complete.
 \begin{theorem}
@@ -141,10 +142,13 @@ how far we are from meeting all the given control-plane policies.
 For example, if we are trying to obtain good resiliency,
 domain assignments with better resiliency should have lower costs.
 The techniques presented in Section~\ref{sec:synth-multi} provide a way to 
-compute very precise costs for a given domain assignment, but they are very expensive ones.
-In fact, Theorem~\ref{} shows that, even for a single domain, computing accurate costs---e.g., number or
+synthesize a configuration for each domain assignment and therefore compute
+very precise costs for each domain assignment. However, 
+we want MCMC to explore as many assignments as possible
+running these techniques for
+each domain assignment is infeasible (Theorem~\ref{} shows that, even for a single domain, computing accurate costs---e.g., number or
 required route filters---is an NP-complete
-problem.
+problem).
 
 \loris{unclear what the cost will be, is this only about resiliency?}
 
@@ -180,6 +184,10 @@ and then \loris{TODO}.
 
 
 \paragraph{Approximating number of route filters}
+We present a technique for \loris{over-approximating?} the number of route 
+filters required by a particular domain assignment.
+\loris{2 lines of intuition, need to finish previous section first to have notation}
+
 If a diamond created by the input paths (\Cref{fig:diamonddomain}),
 \name requires a route-filter to find a solution to OSPF
 edge weights. However, if $s$ and $t$ of the diamond lie in
@@ -232,4 +240,4 @@ lead to reductions in number of filters(~\Cref{some experiment}).
 \todo{Specify weird Route filter case without diamonds?}
 
 \paragraph{Approximating number of static routes}
-\loris{TODO}
+\loris{TODO, need notation from previous section}
