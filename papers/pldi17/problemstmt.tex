@@ -1,15 +1,20 @@
-\section{Problem Statement}
-We define the physical router topology as an directed graph $T=(S, L)$,
-where $S$ is the set of routers and $L$ is the set of links. 
-We use the neighbour function $N(s) = \{s'\ | \ (s,s') \in L \}$ to denote 
-the set of neighbour routers of $s$. 
-We use $\Lambda$ to denote the set of destination IP subnets.
+\section{Problem Definition}
+In this section, we formally define the problem addressed by this paper.
 
-A path $\pi \in L^*$ is a loop-free valid path if for 
-$\pi = (u_1,v_1) (u_2, v_2) \ldots (u_n, v_n)$, a 
-vertex is not visited more than once ($\forall i.j \leq n. 
+We represent the physical router topology as a directed graph $T=(S, L)$,
+where $S$ is the set of routers and $L\subseteq S\times S$ is the set of links. 
+We use the neighbour function $N(s) = \{s'\ | \ (s,s') \in L \}$ to denote 
+the set of neighbour routers of $s$ and
+$\Lambda$ \loris{is $\Lambda$ a subset of $S$?} to denote the set of destination IP subnets.
+
+A path $\pi = (u_1,v_1) (u_2, v_2) \ldots (u_n, v_n) \in L^*$ is a loop-free valid path if
+a  vertex is not visited more than once ($\forall i.j \leq n. 
 ~i \not= j \wedge u_i \not= u_j$) and adjacent links in the
 path share a router ($\forall i < n. ~v_i = u_{i+1}$).
+If the path $\pi$ has source $s$ ($u_1=s$) and target $t$ ($v_n=t$),
+we say that $\pi$ is a path from $s$ to $t$.
+Given two nodes $s$ and $t$, we use $\Pi_s^t$ to denote the set of all paths
+$\pi$ with source $s$ ($u_1=s$) and target $t$ ($v_n=t$).
 
 \subsection{Distributed Routing Model}
 \minisection{OSPF}
@@ -18,13 +23,19 @@ domain. Each router receives link state information from other routers
 and uses this to create a map of the network. This link state
 information consists of link weights, and each router
 forwards to the destination along the weighted shortest path 
-to the router the destination IP is connected to. Let us
+to the router the destination IP is connected to. 
+\loris{this last sentence is a bit disconnected from how you explain OSPF}
+Let us
 define the OSPF weight function $W: L \rightarrow \rat$ which 
 maps edges of the topology to positive rational weights. 
 % todo: When to talk about converting LRA to LIA.
+For a given
+path $\pi=l_1\ldots l_n$, we indicate the sum of weights of the
+links in the path by $w(\pi)=\sum l_i$. \loris{I would use capital W for paths as well as links}
+
 
 As shown in \Cref{fig:ospfexample}(b), 
-we require route-filters
+we require \loris{allow?} route-filters
 to selectively disable an
 edge for a given destination by  
 blocking advertisements to a
@@ -34,39 +45,34 @@ which disables the link $l$ for destination $\lambda$.
 We define the route-filter function 
 $RF: \Lambda \rightarrow 2^L$ which maps each destination IP
 to a set of filtered links in the topology. 
+Given an IP destination $\lambda\in \Lambda$, 
+a legal path with respect to $RF$ and $\lambda$
+is a valid path $\pi=l_1\cdots l_k$ such that for every $i$,
+$l_i\not\in RF(\lambda)$.
+We use $\Pi_\lambda$ to denote the set of all such paths.
 
-We now define the routing function 
-$\route_{ospf}: W \times RF \times V \times V \times \Lambda \rightarrow L^*$ 
-for a OSPF network with edge weights $W$ and route-filters
-$R$ which maps a source and target router
-for destination IP to a path in the network. For a 
-OSPF network without route-filters, the path chosen is
-be the shortest path in the network. 
-For a given
-path $\pi$, we indicate the sum of weights of the
-links in the path by $w(\pi)$. Therefore, for a
-source router $s$, target router $t$, destination IP 
-$\lambda$, the routing function is as follows:
+
+We define the routing function 
+$\route_{ospf}$ 
+that given a 
+a weight function $W$,
+a route-filter function $RF$,
+a source node $s$,
+a target node $t$,
+and destination IP 
+$\lambda$,
+returns the OSPF-induced paths from $s$ to $t$ for destination IP $\lambda$.
+The paths between two nodes are
+the shortest paths in the network
+that do not cross any link that belongs to $RF(\lambda)$. 
+\loris{might not be unique!}
+ Therefore,
+ \loris{didn't define .*, you can just use $\pi'$,  also do we only allow paths with at least 2 links?}
 \begin{multline}
-	\route_{ospf}(W,s,t,\lambda) = \pi \implies \exists u,v. \pi=(s,u).^*(v,t) ~\wedge\\ 
-	(\forall \pi' \exists u',v'. ~\pi'=(s,u').^*(v',t) \wedge w(\pi') \geq w(\pi))
+\route_{ospf}(W,RF,s,t,\lambda) = \{\pi \mid  \pi\in \Pi_s^t\cap \Pi_\lambda\\
+\hspace{2cm} \wedge \neg\exists \pi'\in\Pi_s^t\cap \Pi_\lambda . w(\pi')< w(\pi)\}
 \end{multline}
 
-\noindent 
-For a OSPF network with route-filters set, the
-path chosen in the network will be the shortest path
-excluding disabled links for the destination IP. The routing
-function $\route_{ospf}(W,RF,s,t,\lambda)$ for a
-source router $s$, target router $t$, destination IP 
-$\lambda$: 
-\begin{multline}
-\route_{ospf}(W,RF,s,t,\lambda) = \pi \implies 
-\\ \exists u,v. \pi=(s,u).^*(v,t) ~\wedge 
-\forall l \in \pi.~l \not\in RF(\lambda) ~\wedge  \\
-(\forall \pi' \exists u',v'. ~\pi'=(s,u').^*(v',t) \wedge \\
-\forall l' \in \pi'.~l' \not\in RF(\lambda) ~\wedge
-w(\pi') \geq w(\pi))
-\end{multline}
 
 
 \minisection{BGP}
@@ -83,15 +89,19 @@ for the destination comprises of a domain path
  path (in terms of domain count) to forward
  the packet for a destination. 
  
+ \loris{you inconsistently use V and S for switches}
 To support policy routing, BGP routers can be 
 configured with a \emph{local preference} variable
 to assign higher priorities to routes for particular
 destinations. We define the local preference function 
-$LP: V \times L \times \Lambda \rightarrow \nat$, where
-$LP(r, (r,n), \lambda)$ 
+$LP: V \times L \times \Lambda \mapsto \nat$ as follows.
+Given a node $r$, a link $l$ such that $l=(n,r)$ for some $n$,
+and and IP destination $\lambda$,
+  $LP(r, l, \lambda)$ 
 specifies the local preference for a route received 
 for destination $\lambda$ at BGP router $r$ 
-from next-hop BGP router $n$, where $(r,n) \in L$.
+from next-hop BGP router $n$. \loris{don't understand this last def}
+On all other links the function is undefined.
 
 Let us define the BGP routing function 
 $\route_{bgp}: LP \times V \times \Lambda \rightarrow V$.
@@ -104,6 +114,7 @@ AS path length~\cite{bgp}. While, the actual implementation
 of BGP uses several other criteria,
 \name uses these rules to synthesize BGP configurations with 
 ordering maintained with respect to actual BGP implementations.
+\loris{does it return a single one?}
 
 
 \begin{algorithm}
@@ -142,11 +153,12 @@ rather than information from dynamic protocols like
 OSPF or BGP. Static routes have the highest
 preference over other routes for the same destination
 at a router. We define the static route
-function $SR: V \times \Lambda \rightarrow V$ such
-that for a router $r$ and destination $\lambda$, the
-traffic is forwarded to $SR(r,\lambda)$.
+partial function $SR: V \times \Lambda \mapsto V$ such
+that, for a router $r$ and destination $\lambda$, if $SR(r,\lambda)=r'\in V$, 
+then traffic for destination $\lambda$ reaching node $r$ is always
+forwarded to node $r'$.
 
-\minisection{OSPF+BGP}
+\minisection{OSPF+BGP \loris{what about static routes?}}
 We define the router domain assignment function
 $\Theta: S \rightarrow \nat$ which maps each router to a domain 
 (denoted by a natural number). Each domain uses OSPF as the 
