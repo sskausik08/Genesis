@@ -263,3 +263,47 @@ the set of policy-compliant paths.
 	induced paths $\paths(\Theta, LP$, $W, RF, PC) = \Pi$.
 \end{definition}
 
+
+\loris{following sec must be integrated in problem def}
+\section{Dynamic Domain Assignment}
+Thus, the routing 
+configurations generated must adhere to 
+these constraints. We describe the constraints
+supported by the framework, points 1-4 are 
+hard constraints we would ensure, while 5-8
+are optimizations to synthesize better inter-domain
+configurations. 
+
+\begin{enumerate}
+	\item \textbf{Number of domains ($N(D)$)}: 
+	Can be used for administrative constraints 
+	(each domain can be managed by different
+	entities). 
+	\begin{equation}
+	N_l \leq N(D) \leq N_u
+	\end{equation}
+
+	\item \textbf{Size of domain ($|D|$)}: OSPF
+	performs poorly as size of the domain increases
+	(due to flooding of link-state updates). Thus,
+	operators can specify bounds on the size of each
+	domain.
+	\begin{equation}
+	S_l \leq |D| \leq S_u
+	\end{equation}
+
+%	\item \textbf{BGP-Compatibility}: Certain 
+%	routers may not be suited to run BGP due to resource
+%	constraints. Thus, the operator can specify if a 
+%	router is non-BGP compatible. 
+
+	\item \textbf{Optimization: Lines of configuration} 
+	To enable path-based inter-domain routing, \name needs
+	to set up static routes along the path, or configure BGP 
+	variables like local preferences to 
+	to ensure the routing emulates the input paths under no 
+	failures. This would increase the size of the configurations,
+	thus increasing the complexity of verifying correctness either 
+	manually or using verification tools~\cite{batfish}. 
+
+\end{enumerate}
