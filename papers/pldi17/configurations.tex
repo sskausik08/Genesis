@@ -41,40 +41,60 @@ configurations.
 
 \end{enumerate}
 
-\section{MCMC Sampling}
-\name tackle the problem of minimization of LoC/route-filters
-by stochastically searching for a domain assignment which 
-minimizes the cost of the configuration with the help of Markov
-Chain Monte Carlo (MCMC) sampling, specifically the Metropolis-Hasting
+\section{Synthesising Domain Assignments}
+In this section, we describe how \name searches the space of possible
+domain assignments $\Theta$.
+The goal of this search is to find a domain assignment for which
+the techniques presented in Section~\ref{} can find weights, route filters,
+BGP preferences, and static routes that satisfy all the given \loris{control-plane?} policies---e.g.,
+resiliency, domain sizes, and number of LoC and route-filters.
+
+We first show that even the simplest variant of \loris{what problem} is NP-complete.
+\begin{theorem}
+\loris{what is the problem that is NP-complete}
+\end{theorem}
+Given the complexity of this problem, \name  searches the space of domain
+assignments Markov
+Chain Monte Carlo (MCMC) sampling methods, specifically the Metropolis-Hasting
 algorithm, a common technique used in different optimization 
 problems~\cite{stoke}. 
 
-MCMC sampling is a technique for drawing elements from a
-probability density function in direct proportion to its value: 
-regions of higher probability are sampled from more often than 
-regions of low probability.
-Applied in cost minimization problems,
-MCMC sampling acts as an intelligent hill climbing method which
-is robust for irregular cost functions and avoids convergence at 
-local minimas. To transform an arbitrary cost function $c(\Theta)$, 
-into a probability density function, we use the following 
-technique~\cite{mcmcbook}:
+\subsection{Searching Assignments with MCMC}
+MCMC sampling is a technique for 
+drawing elements from a
+probability density function in direct proportion to its value.
+%Intuitively, the search samples regions of higher probability more often than 
+%regions of low probability. 
+Intuitively, the probability distribution can be viewed as a (potentially infinite) 
+connected undirected graph
+where nodes are elements of the probability distributions
+and edges denotes possible next steps in the search---i.e.,
+which nodes we can visit next.
+Each node is associated with a cost so that nodes with higher costs have lower
+probabilities associated with them.
+
+In our case, each node is a domain assignment $\Theta$
+with some cost $c(\Theta)$. 
+We will discuss how our cost function is implemented in the next sections.
+The cost function $c$ can be transformed 
+into a probability density function in the following way~\cite{mcmcbook}:
 \begin{equation}
 	p(\Theta) = \frac{1}{Z}exp(-\beta * c(\Theta))
 \end{equation}
-$\beta$ is a positive constant and $Z$ is a partition function that
+where $\beta$ is a positive constant and $Z$ is a partition function \loris{over what?} that
 normalizes the distribution. Computing $Z$ is in general 
-intractable, and the Metropolis-Hasting algorithm for 
-generating Markov Chains can explore the probability density
-function $p(\Theta)$ without computing the partition function. 
-The intuition is as follows: given a current domain
+intractable, and the Metropolis-Hasting algorithm 
+explores the search graph representing $p$ without computing the partition function. 
+Intuitively, given a current domain
 assignment $\Theta$, the algorithm proposes a modified 
-domain assignment $\Theta'$ as the next step. $\Theta'$
-is accepted or rejected based on the Metropolis-Hasting
-acceptance probability: 
+domain assignment as the next step  by picking a neighbour
+$\Theta'$ of $\Theta$ in the graph. A coin is then toss with
+probability 
 \begin{equation}
 Pr(\Theta \rightarrow \Theta') = min(1, \frac{p(\Theta')*q(\Theta| \Theta')}{p(\Theta)*q(\Theta'| \Theta)})
 \end{equation}
+If the result is head, $\Theta'$
+becomes the current node, otherwise $\Theta$ remains the current node.
 $q(\Theta'| \Theta)$ denotes the proposal distribution from 
 which $\Theta'$ is chosen given $\Theta$. If the proposal 
 distributions is symmetric, i.e., 
@@ -85,14 +105,13 @@ can be computed directly from the cost function $c(\Theta)$:
 Pr(\Theta \rightarrow \Theta') = min(1, \frac{p(\Theta')}{p(\Theta)}) \\
 = min(1, exp(-\beta.(C(\Theta') - C(\Theta)))
 \end{multline}
-As we can observe from the acceptance probability, 
-the algorithm will always accept a new proposal $\Theta'$
-if its cost is lower than $\Theta$. If $\Theta'$ has a 
-higher score than $\Theta$, the proposal will be 
-probabilistically accepted depending on 
-how far the cost of the proposals are. This ensures that 
-the algorithm does not get stuck at local minimas and 
-explore proposals with smaller differences in cost with 
+The algorithm will always accept a new proposal $\Theta'$
+that has cost lower than $\Theta$. If $\Theta'$ has a 
+higher cost than $\Theta$, the proposal will be 
+accepted with probability depending on 
+how far the costs of $\Theta$ and $\Theta'$ are. This ensures that 
+the algorithm does not get stuck at local minimas, but 
+explores proposals with smaller differences in cost with 
 higher probability. We describe the MCMC search procedure 
 in Pseudocode~\cref{alg:mcmc}. 
 
