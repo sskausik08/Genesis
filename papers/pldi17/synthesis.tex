@@ -1,7 +1,30 @@
-\section{Synthesising Intra-domain Configurations} \label{sec:synthesis}
+\section{Synthesising OSPF Configurations} \label{sec:synthesis}
 In this section, we present an algorithm for 
 solving the path-compliance problem for networks
 with a single domain---i.e., $|\{\Theta(n) \mid n\in V\}|=1$.
+
+%\subsection{Complexity} \label{sec:rfcomplexity}
+
+Before we present our technique and its intricacies,
+we justify the complexity of our approach by showing that
+the problem of synthesizing an OSPF configuration
+that contains an optimal number of rout filters is NP-complete.
+
+\begin{theorem}
+Given a set of paths $\Pi$,
+a topology $G=(V,E)$,
+a domain-assignment function $\Theta$, such that $|\{\Theta(n) \mid n\in V\}|=1$,
+a number $n\geq 0$,
+the problem of finding 
+an $LP$, $W$, and $RF$,  such that
+\loris{PC shouldn't appear here, make consistent.}
+$\paths(\Theta, LP, W, RF, PC) = \Pi$,
+and 
+$\sum_{\lambda\in\Lambda} |\{RF(\lambda)\}|=n$, is NP-complete.
+\end{theorem}
+\iffull
+\input{route-filters-nphard}
+\fi
 
 
 \subsection{From paths to ARCs} \label{sec:phase2}
