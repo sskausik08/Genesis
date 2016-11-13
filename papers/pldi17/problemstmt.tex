@@ -1,11 +1,13 @@
 \subsection{Problem Definition}
 In this section, we formally define the problem addressed by this paper.
 
-We represent the physical router topology as a directed graph $T=(S, L)$,
-where $S$ is the set of routers and $L\subseteq S\times S$ is the set of links. 
+We represent the physical router topology as a directed graph $T=(V, L)$,
+where $V$ is the set of routers and $L\subseteq V\times V$ is the set of links. 
 We use the neighbour function $N(s) = \{s'\ | \ (s,s') \in L \}$ to denote 
-the set of neighbour routers of $s$ and
-$\Lambda$ \loris{is $\Lambda$ a subset of $S$?} to denote the set of destination IP subnets.
+the set of neighbour routers of $s$. 
+We define $\Lambda$ to denote the set of destination IP subnets, 
+distributed protocols make forwarding decisions based on the 
+destination IP address/subnet.
 
 A path $\pi = (u_1,v_1) (u_2, v_2) \ldots (u_n, v_n) \in L^*$ is a loop-free valid path if
 a  vertex is not visited more than once ($\forall i.j \leq n. 
@@ -17,30 +19,48 @@ Given two nodes $s$ and $t$, we use $\Pi_s^t$ to denote the set of all paths
 $\pi$ with source $s$ ($u_1=s$) and target $t$ ($v_n=t$).
 
 \subsubsection{Distributed Routing Model}
+\minisection{Static Routes}
+Static routing occurs when a router uses a 
+manually-configured routing entry, 
+rather than information from dynamic protocols like
+OSPF or BGP.  
+For a destination $\lambda$, a static route configured
+at router $r$ ensures the traffic to forward to a 
+neighbouring router $r_1, r_1 \in N(r)$. 
+Static routes have the highest
+preference over other routes for the same destination
+at a router. We define the static route
+partial function $SR: V \times \Lambda \mapsto V$ such
+that, for a router $r$ and destination $\lambda$, if $SR(r,\lambda)=r'\in V$, 
+then traffic for destination $\lambda$ reaching node $r$ is always
+forwarded to node $r'$. Using $SR$, we construct the complete
+static paths between routers in the network $\Pi_{SR}$. These 
+paths would have a highest preference. 
+
 \minisection{OSPF}
 Open Shortest Path First (OSPF) is a routing protocol used inside a
 domain. Each router receives link state information from other routers
-and uses this to create a map of the network. This link state
-information consists of link weights, and each router
-forwards to the destination along the weighted shortest path 
+and uses this to create a map of the network. Positive weights
+are defined for each link in the network, and 
+each router used Djikstra's algorithm to
+forward to the destination along the weighted shortest path 
 to the router the destination IP is connected to. 
-\loris{this last sentence is a bit disconnected from how you explain OSPF}
+
 Let us
 define the OSPF weight function $W: L \rightarrow \rat$ which 
 maps edges of the topology to positive rational weights. 
 % todo: When to talk about converting LRA to LIA.
 For a given
 path $\pi=l_1\ldots l_n$, we indicate the sum of weights of the
-links in the path by $w(\pi)=\sum l_i$. \loris{I would use capital W for paths as well as links}
+links in the path by $w(\pi)=\sum l_i$. 
 
 
-As shown in \Cref{fig:ospfexample}(b), 
-we require \loris{allow?} route-filters
+We allow route-filters
 to selectively disable an
 edge for a given destination by  
 blocking advertisements to a
 particular destination along a link. 
-Formally, a route-filter is a pair $(l,\lambda)\in L\times S$
+Formally, a route-filter is a pair $(l,\lambda)\in L\times V$
 which disables the link $l$ for destination $\lambda$. 
 We define the route-filter function 
 $RF: \Lambda \rightarrow 2^L$ which maps each destination IP
@@ -50,7 +70,6 @@ a legal path with respect to $RF$ and $\lambda$
 is a valid path $\pi=l_1\cdots l_k$ such that for every $i$,
 $l_i\not\in RF(\lambda)$.
 We use $\Pi_\lambda$ to denote the set of all such paths.
-
 
 We define the routing function 
 $\route_{ospf}$ 
@@ -64,16 +83,17 @@ $\lambda$,
 returns the OSPF-induced paths from $s$ to $t$ for destination IP $\lambda$.
 The paths between two nodes are
 the shortest paths in the network
-that do not cross any link that belongs to $RF(\lambda)$. 
-\loris{might not be unique!}
- Therefore,
- \loris{didn't define .*, you can just use $\pi'$,  also do we only allow paths with at least 2 links?}
+that do not cross any link that belongs to $RF(\lambda)$. We also
+account the higher priority of static routes 
+in the network in the routing function.
 \begin{multline}
-\route_{ospf}(W,RF,s,t,\lambda) = \{\pi \mid  \pi\in \Pi_s^t\cap \Pi_\lambda\\
-\hspace{2cm} \wedge \neg\exists \pi'\in\Pi_s^t\cap \Pi_\lambda . w(\pi')< w(\pi)\}
+\route_{ospf}(W,RF,s,t,\lambda) = \\
+\begin{cases}
+\text{$\Pi_s^t \cap \Pi_{SR}$}  & \text{if $\Pi_s^t \cap \Pi_{SR} \not=\emptyset$} \\
+\text{$\{\pi \mid  \pi\in \Pi_s^t\cap \Pi_\lambda ~\wedge $} & \\
+\text{$\neg\exists \pi'\in\Pi_s^t\cap \Pi_\lambda . w(\pi')< w(\pi)\}$} & \text{otherwise}
+\end{cases}
 \end{multline}
-
-
 
 \minisection{BGP}
 BGP is a path-vector inter-domain 
@@ -89,24 +109,25 @@ for the destination comprises of a domain path
  path (in terms of domain count) to forward
  the packet for a destination. 
  
- \loris{you inconsistently use V and S for switches}
 To support policy routing, BGP routers can be 
 configured with a \emph{local preference} variable
 to assign higher priorities to routes for particular
 destinations. We define the local preference function 
-$LP: V \times L \times \Lambda \mapsto \nat$ as follows.
-Given a node $r$, a link $l$ such that $l=(n,r)$ for some $n$,
-and and IP destination $\lambda$,
-  $LP(r, l, \lambda)$ 
+$LP: V \times V \times \Lambda \mapsto \nat$ as follows.
+Given a BGP router $r$, neighbouring router $n$,
+and IP destination $\lambda$,
+  $LP(r, n, \lambda)$ 
 specifies the local preference for a route received 
 for destination $\lambda$ at BGP router $r$ 
-from next-hop BGP router $n$. \loris{don't understand this last def}
-On all other links the function is undefined.
+from next-hop BGP router $n$. 
+On all other links the function is undefined. From 
+the routes received at $r$, the router
+picks the route with greatest local preference. 
 
 Let us define the BGP routing function 
 $\route_{bgp}: LP \times V \times \Lambda \rightarrow V$.
 For traffic at the BGP router $r$ to
-destination IP $\lambda$, $R_{bgp}(LP,r,\lambda)$ 
+destination IP $\lambda$, $\route_{bgp}(LP,r,\lambda)$ 
 is the next-hop BGP router in the path. BGP 
 chooses a route with highest local preference, and
 if there is a tie, it then chooses the route with smallest
@@ -114,11 +135,11 @@ AS path length~\cite{bgp}. While, the actual implementation
 of BGP uses several other criteria,
 \name uses these rules to synthesize BGP configurations with 
 ordering maintained with respect to actual BGP implementations.
-\loris{does it return a single one?}
+We ensure all ties are broken, and $\route_{bgp}(LP,r,\lambda)$
+returns a single router. 
 
-
-\begin{algorithm}
-	\begin{footnotesize}
+\begin{algorithm} [t]
+	\begin{footnotesize} 
 		\caption{BGP Best Path Algorithm}
 		\label{alg:bgppathrules}
 		\begin{algorithmic}[1]
@@ -146,21 +167,10 @@ ordering maintained with respect to actual BGP implementations.
 	\end{footnotesize}
 \end{algorithm}
 
-\minisection{Static Routes}
-Static routing occurs when a router uses a 
-manually-configured routing entry, 
-rather than information from dynamic protocols like
-OSPF or BGP. Static routes have the highest
-preference over other routes for the same destination
-at a router. We define the static route
-partial function $SR: V \times \Lambda \mapsto V$ such
-that, for a router $r$ and destination $\lambda$, if $SR(r,\lambda)=r'\in V$, 
-then traffic for destination $\lambda$ reaching node $r$ is always
-forwarded to node $r'$.
 
-\minisection{OSPF+BGP \loris{what about static routes?}}
+\minisection{OSPF+BGP+Static Routes}
 We define the router domain assignment function
-$\Theta: S \rightarrow \nat$ which maps each router to a domain 
+$\Theta: V \rightarrow \nat$ which maps each router to a domain 
 (denoted by a natural number). Each domain uses OSPF as the 
 intra-domain routing protocol, and BGP for the inter-domain routing
 protocol. 
