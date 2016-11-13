@@ -1,8 +1,8 @@
 \section{Problem Statement}
-We define the physical switch topology as an directed graph $T=(S, L)$,
-where $S$ is the set of switches and $L$ is the set of links. 
+We define the physical router topology as an directed graph $T=(S, L)$,
+where $S$ is the set of routers and $L$ is the set of links. 
 We use the neighbour function $N(s) = \{s'\ | \ (s,s') \in L \}$ to denote 
-the set of neighbour switches of $s$. 
+the set of neighbour routers of $s$. 
 We use $\Lambda$ to denote the set of destination IP subnets.
 
 A path $\pi \in L^*$ is a loop-free valid path if for 
@@ -11,6 +11,7 @@ vertex is not visited more than once ($\forall i.j \leq n.
 ~i \not= j \wedge u_i \not= u_j$) and adjacent links in the
 path share a router ($\forall i < n. ~v_i = u_{i+1}$).
 
+\subsection{Distributed Routing Model}
 \minisection{OSPF}
 Open Shortest Path First (OSPF) is a routing protocol used inside a
 domain. Each router receives link state information from other routers
@@ -68,3 +69,125 @@ w(\pi') \geq w(\pi))
 \end{multline}
 
 
+\minisection{BGP}
+BGP is a path-vector inter-domain 
+routing protocol that connects 
+different autonomous systems (ASes), where each AS
+comprises of one or more routers (typically managed
+by a single entity). A BGP router receives routes 
+from BGP peers (internal peers send iBGP routes, 
+external peers send eBGP routes). Each route 
+for the destination comprises of a domain path
+ to the destination domain, and in the default
+ scenario, a BGP router will pick the shortest
+ path (in terms of domain count) to forward
+ the packet for a destination. 
+ 
+To support policy routing, BGP routers can be 
+configured with a \emph{local preference} variable
+to assign higher priorities to routes for particular
+destinations. We define the local preference function 
+$LP: V \times L \times \Lambda \rightarrow \nat$, where
+$LP(r, (r,n), \lambda)$ 
+specifies the local preference for a route received 
+for destination $\lambda$ at BGP router $r$ 
+from next-hop BGP router $n$, where $(r,n) \in L$.
+
+Let us define the BGP routing function 
+$\route_{bgp}: LP \times V \times \Lambda \rightarrow V$.
+For traffic at the BGP router $r$ to
+destination IP $\lambda$, $R_{bgp}(LP,r,\lambda)$ 
+is the next-hop BGP router in the path. BGP 
+chooses a route with highest local preference, and
+if there is a tie, it then chooses the route with smallest
+AS path length~\cite{bgp}. While, the actual implementation
+of BGP uses several other criteria,
+\name uses these rules to synthesize BGP configurations with 
+ordering maintained with respect to actual BGP implementations.
+
+
+\begin{algorithm}
+	\begin{footnotesize}
+		\caption{BGP Best Path Algorithm}
+		\label{alg:bgppathrules}
+		\begin{algorithmic}[1]
+			\State{[Input] $R \leftarrow$ eBGP and iBGP routes for $\lambda$ at BGP router $g$} 
+			\State{[Output] $r_{best}$ : Best BGP route} \newline \newline
+			/* Find routes with highest \emph{local preference} */
+			\State{$R_{lp} = \{r \in R ~| ~\forall r_1 \in R. ~r.local\_pref \geq r1.local\_pref\}$}
+			\If{$|R_{lp}| = 1$}
+			\State{$r_{best} = r \in R_{lp}$}
+			\Else \newline
+			\indent /* Prefer the path with the smallest \emph{AS Path length} */
+			\State{$R_{as} = \{r \in R_{lp}  ~|~ \forall r_1 \in R_{lp}. ~r.path\_len \geq r_1.path\_len\} $}
+			\If{$|R_{as}| = 1$}
+			\State{$r_{best} = r \in R_{as}$}	
+			\EndIf
+			\EndIf
+			\If{$r_{best}.type = eBGP$}
+			\State{Redistribute $r_{best}$ to OSPF domain}
+			\EndIf
+			%				\State{ . }
+			%				\State{Prefer the path with the lowest \emph{multi-exit discriminator} (MED).}
+			%				\State{Prefer eBGP over iBGP paths.}
+			%				\State{Prefer the route that comes from the BGP router with the lowest \emph{router ID}.}
+		\end{algorithmic}
+	\end{footnotesize}
+\end{algorithm}
+
+\minisection{Static Routes}
+Static routing occurs when a router uses a 
+manually-configured routing entry, 
+rather than information from dynamic protocols like
+OSPF or BGP. Static routes have the highest
+preference over other routes for the same destination
+at a router. We define the static route
+function $SR: V \times \Lambda \rightarrow V$ such
+that for a router $r$ and destination $\lambda$, the
+traffic is forwarded to $SR(r,\lambda)$.
+
+\minisection{OSPF+BGP}
+We define the router domain assignment function
+$\Theta: S \rightarrow \nat$ which maps each router to a domain 
+(denoted by a natural number). Each domain uses OSPF as the 
+intra-domain routing protocol, and BGP for the inter-domain routing
+protocol. 
+
+In domain $d$, let us consider a source router $s$ ($\Theta(s) = d$) for 
+sending traffic for destination $\lambda$. Note that, the traffic
+could originate from other domains, then $s$ indicates the first
+router in the domain. If the target router $t$ 
+connected to the destination belongs to domain $d$, then there exists
+a OSPF route for $\lambda$ at $s$, and the path taken would be 
+$R_{ospf}(W_d, RF_d, s,t,\lambda)$.
+
+Consider the case of destination $\lambda$ being connected 
+to an external domain, thus, traffic for destination $\lambda$
+will be sent to a BGP gateway router of domain $d$ which 
+will forward it to its neighbouring domains till
+it reaches the internal domain of $\lambda$. A BGP gateway
+router is a router $g$ such that $\exists g' \in N(g). 
+~\Theta(g') \not= \Theta(g)$. 
+
+However, not all BGP routes for $\lambda$
+are distributed 
+into OSPF (to prevent explosion of forwarding tables). Instead,
+BGP gateways in a domain exchange routes using iBGP to choose
+the best gateway, which then redistributes the external
+(eBGP route) into OSPF (\Cref{alg:bgppathrules}). If multiple
+gateways advertise the destination $\lambda$ into the OSPF 
+domain, then the closest gateway (in terms of OSPF distance)
+is chosen. We define a gateway function $G: \nat \times LP \times
+W \times RF \times V \times \Lambda \rightarrow V$ which specifies
+the gateway chosen for a destination based on both BGP and OSPF
+configurations. Therefore, the routing function 
+$\route:\Theta \times LP \times W \times RF \times V \times V \times \Lambda \rightarrow L^*$ models routing in the inter-domain network. 
+For a destination $\lambda$ connected to target router $t$, the 
+path from source router $s$ is described as follows:
+\begin{multline}
+	\route(\Theta, LP, W, RF, s, t, \lambda) = \\
+	\route_{ospf}(W,RF,s,g_1=G(\Theta(s),LP,W,RF,s,\lambda), \lambda) + \\
+	 (g_1, s_2=\route_{bgp}(LP, g_1, \lambda))+ \\
+	\route_{ospf}(W,RF,s_2,g_2=G(\Theta(s_2),LP,W,RF,s_2,\lambda), \lambda) + \\
+	\ldots \route_{ospf}(W,RF,s_n,t,\lambda)
+\end{multline}
