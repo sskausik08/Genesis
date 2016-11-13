@@ -146,6 +146,8 @@ In fact, Theorem~\ref{} shows that, even for a single domain, computing accurate
 required route filters---is an NP-complete
 problem.
 
+\loris{unclear what the cost will be, is this only about resiliency?}
+
 In this section, we propose techniques for approximating the cost of a domain assignment 
 by exploiting topological properties of the network and the domains.
 We first \loris{TODO}
@@ -176,8 +178,6 @@ and then \loris{TODO}.
 	\label{fig:diamonddomain}
 \end{figure}
 
-\paragraph{Approximating number of static routes}
-\loris{TODO}
 
 \paragraph{Approximating number of route filters}
 If a diamond created by the input paths (\Cref{fig:diamonddomain}),
@@ -231,9 +231,5 @@ our experiments show reductions in route-filter cost
 lead to reductions in number of filters(~\Cref{some experiment}). 
 \todo{Specify weird Route filter case without diamonds?}
 
-
-
-
-
-
-
+\paragraph{Approximating number of static routes}
+\loris{TODO}
