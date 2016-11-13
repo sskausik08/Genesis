@@ -86,7 +86,7 @@ the shortest paths in the network
 that do not cross any link that belongs to $RF(\lambda)$. We also
 account the higher priority of static routes 
 in the network in the routing function.
-\begin{multline}
+\begin{multline} \label{eq:ospfmodel}
 \route_{ospf}(W,RF,s,t,\lambda) = \\
 \begin{cases}
 \text{$\Pi_s^t \cap \Pi_{SR}$}  & \text{if $\Pi_s^t \cap \Pi_{SR} \not=\emptyset$} \\
@@ -136,7 +136,11 @@ of BGP uses several other criteria,
 \name uses these rules to synthesize BGP configurations with 
 ordering maintained with respect to actual BGP implementations.
 We ensure all ties are broken, and $\route_{bgp}(LP,r,\lambda)$
-returns a single router. 
+returns a single router. Also, static routes 
+have a higher preference than BGP, therefore a static route
+$SR(r, \lambda)$ will be preferred over the BGP route. We
+would account for static routes for $\route_{bgp}(LP,r,\lambda)$
+similarily as we defined in \Cref{eq:ospfmodel}.
 
 \begin{algorithm} [t]
 	\begin{footnotesize} 
