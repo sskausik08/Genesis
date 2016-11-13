@@ -157,7 +157,7 @@ in Pseudocode~\cref{alg:mcmc}.
 	\subfloat[Ex2]{\includegraphics[width=0.6\columnwidth]{figures/bgp-example2.pdf}}
 	\subfloat[Ex3]{\includegraphics[width=0.66\columnwidth]{figures/bgp-example.pdf}}
 	\compactcaption{\label{fig:bgpexample}
-	How to configure inter-domain routing}
+	How to configure inter-domain routing, CHANGE dst to lambda}
 \end{figure*}
 
 \subsection{BGP configuration}
@@ -184,7 +184,25 @@ $R1$ to $G1$ will be given appropriate weights by the OSPF
 synthesis phase so that the synthesizing configurations 
 forward traffic along the input path. 
 
-Case 3: Multiple gateways, done using iBGP filters. 
+Suppose, traffic for $dst$ exited through two different
+gateways in a domain for different paths (\Cref{fig:bgpexample}(b)).
+$src1$'s traffic to $dst$ exits domain 0 through 
+gateway router $G1$, while $src2$'s traffic exits 
+through $G2$. Therefore, both these routes need to be 
+redistributed to the OSPF domain. Therefore, we assign
+$LP(G1,G2,dst) = 100$ and $LP(G2,G4,dst) = 200$. For 
+router $G2$ and destination $dst$, 
+no other route has a local preference value $>200$, thus 
+the route along the path is chosen. However, the iBGP route
+sent by $G2$ with local preference 200 will be preferred over
+the $G1\rightarrow G3$ route which has local preference 100.
+Thus, we add a iBGP filter for connection $G2 \rightarrow G1$ for
+destination IP $dst$ ($G1$ and $G2$ need not be connected by a 
+link directly; iBGP establishes a connection among the 
+BGP routers in a domain). Thus, $G1$ will not receive the
+$G2 \rightarrow G4$ route from $G2$, and the route $G1 \rightarrow
+G3$ route would be chosen as it has the highest local preference
+of all routes received by $G1$. 
 
 \subsection{Configuration Cost}
 \todo{Explain path, as\_path transformation more formally}
@@ -234,7 +252,7 @@ For a domain $d$ and subnet $\lambda$, consider the set
 of paths to $\lambda$ exiting $d$ using BGP (and not statically
 routed as described in \Cref{sec:static}). Let $E$ denote the
 set of exit gateway routers for the paths of $\lambda$. 
-If $|E| = 1$, if gateway $g \in E$ receives a route with 
+If $|E| = 1$, if gateway $g$ receives a route with 
 strictly shortest AS path length (\Cref{alg:bgppathrules}) 
 which enforces the paths
 for $\lambda$, we do not need to configure local preference
@@ -245,7 +263,7 @@ for $\lambda$ at exit gateway, and thus, the exit route chosen
 by BGP enforces the input paths for $\lambda$ in the domain.
 
 If $|E| ~> 1$, multiple BGP routes must be redistributed to 
-the OSPF domain. \\
+the OSPF domain.
 E local prefs + E(E - 1) iBGP filters!
 
 \todo{Changes to OSPF synthesis to ensure closest gateway}
