@@ -1,10 +1,7 @@
-\section{OSPF Synthesis} \label{sec:synthesis}
-In this section, we describe preliminary ideas on how each phase of 
-\Cref{fig:process} can be implemented.
-First, we briefly discuss how existing tools can be used to generate
-policy-compliant paths (\secref{sec:phase1}).
-Second, we show how to generate configurations that induce
-the set of paths synthesized in the first phase (\secref{sec:phase2}).
+\section{Synthesising Intra-domain Configurations} \label{sec:synthesis}
+In this section, we present an algorithm for 
+solving the path-compliance problem for networks
+with a single domain---i.e., $|\{\Theata(n) \mid n\in V\}|=1$.
 
 
 \subsection{From paths to ARCs} \label{sec:phase2}

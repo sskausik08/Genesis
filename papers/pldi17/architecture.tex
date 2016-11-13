@@ -1,4 +1,5 @@
 \section{Architecture} \label{sec:architecture}
+\loris{In this section, we ...}
 Mitigating complexity of Policies to configurations
 by going through policies to paths (\genesis) and
 paths to configurations (\name)
@@ -24,7 +25,7 @@ such that the solutions to these constraints are forwarding
 tables, which can be used to extract the 
 policy-compliant paths.
 
-\subsubsection{Modifications}
+\paragraph{Modifications from~\cite{genesis}}
 OpenFlow switches~\cite{openflow} support match predicates for
 forwarding rules on different packet header fields like source
 and/or destination IP address, ports etc. However, legacy protocols
@@ -66,4 +67,5 @@ constraints for every pair ($pc_1$,$pc_2$) having the same
  from \genesis for a destination subnet will form a 
  directed destination tree. 
 
-%\loris{we will add more details if needed}
+\subsection{\name: From Paths to Router Configurations} 
+\loris{you also need to talk about the second part of the architecture briefly.}
