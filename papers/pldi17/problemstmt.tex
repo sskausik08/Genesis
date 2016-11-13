@@ -1,4 +1,4 @@
-\section{Problem Definition}
+\subsection{Problem Definition}
 In this section, we formally define the problem addressed by this paper.
 
 We represent the physical router topology as a directed graph $T=(S, L)$,
@@ -16,7 +16,7 @@ we say that $\pi$ is a path from $s$ to $t$.
 Given two nodes $s$ and $t$, we use $\Pi_s^t$ to denote the set of all paths
 $\pi$ with source $s$ ($u_1=s$) and target $t$ ($v_n=t$).
 
-\subsection{Distributed Routing Model}
+\subsubsection{Distributed Routing Model}
 \minisection{OSPF}
 Open Shortest Path First (OSPF) is a routing protocol used inside a
 domain. Each router receives link state information from other routers
@@ -203,3 +203,49 @@ path from source router $s$ is described as follows:
 	\route_{ospf}(W,RF,s_2,g_2=G(\Theta(s_2),LP,W,RF,s_2,\lambda), \lambda) + \\
 	\ldots \route_{ospf}(W,RF,s_n,t,\lambda)
 \end{multline}
+
+\subsubsection{Policy Compliance}
+Since, most distributed routing protocols only support
+destination forwarding, the predicate for a reachability
+policy is of the form \texttt{dst.IP} = $\lambda$. To 
+model policies for different source IP subnets, we can create
+multiple reachability policies with different source routers
+\texttt{dst.IP} = $\lambda$ : \texttt{s >> t} (where $s$ is
+the router connected to the source IP subnet, $t$ is the router
+which $\lambda$ is connected to).
+We assume a set of packet classes $PC : [0,C_{pc}]$ 
+and map each reachability policy to a unique integer in $PC$.
+For a packet class $pc$, $src_{pc}$ denotes the source router,
+$dst_{pc}$ denotes the destination router, and $\lambda_{pc}$
+denotes the destination IP address. 
+
+\begin{definition}[Induced Paths]
+For a set of packet classes $PC$, the set of induced
+paths by the network configurations $\Pi_{ind} = \paths(\Theta, LP$, 
+$W, RF, PC)$ is defined as follows: \\
+$\forall pc \in PC.$
+$~\route(\Theta, LP, W, RF,$ $src_{pc}, dst_{pc}, \lambda_{pc}) \in \Pi_{ind} $
+\end{definition}
+
+\noindent We address the notion of policy-compliance. Let 
+$\Psi$ denote the set of constraints corresponding to the 
+path-based input policies (\Cref{tab:policysupport}). 
+\begin{definition}[Policy-Compliance]
+	The configurations $(\Theta,$ $LP, W, RF)$ is policy-compliant,
+	$(\Theta, LP, W, RF) \models \Psi$, if the set of
+	induced paths $\paths(\Theta, LP$, $W, RF, PC) \models \Psi$.
+\end{definition}
+
+However, this approach is intractable for real-world scenarios,
+because simply computing static routes for the set of constraints 
+$\Psi$ is computationally hard. Instead, we use a two-phased approach
+to tackle the problem: we first synthesize a set of policy-compliant
+paths $\Pi$, and then synthesize the configurations which induces
+the set of policy-compliant paths. 
+\begin{definition}[Path-Compliance]
+	The configurations $(\Theta,$ $LP, W, RF)$ is policy-compliant,
+	$(\Theta, LP, W, RF) \models \Psi$, if there exists a set of
+	policy compliant paths $\Pi \models Psi$ and the set of
+	induced paths $\paths(\Theta, LP$, $W, RF, PC) = \Pi$.
+\end{definition}
+
