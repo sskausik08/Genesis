@@ -42,5 +42,42 @@
 
 
 \section{Evaluation}
+ \label{sec:evaluation}
+ 
+ We implemented a full working
+ prototype of \name in Python, which works as a standalone
+ system or can be integrated with \genesis. For a given
+ workload, \name outputs abstract configurations, which
+ specifies the assignment of domains to different routers,
+ the static routes, BGP configuration variables (local 
+ preferences and iBGP filters), and the OSPF link weights
+ and route-filters for each domain, which can be 
+ translated to actual device configurations using templates~\cite{template}.
+ \name uses the Gurobi LP solver~\cite{gurobi} for synthesis of 
+ OSPF weights and filters. 
+ 
+In this section, we evaluate \Name using
+%\loris{really don't like the word realistic}
+enterprise-scale multi-tenant data
+center settings. 
+Specifically, we ask:
+\begin{compactitemize}
+	\item What is the performance of \Name's baseline synthesis
+	algorithm for tenant policies? How does the performance vary with size of the
+	network, number and the nature of policies in use? (\secref{sec:baselineeval})
+	
+	\item What is the performance of \name for operator policies
+	like capacity bounds, traffic engineering, and network repair
+	which use SMT with linear optimization objectives and MaxSMT? (\secref{sec:optimizationeval})
+	
+	\item How much do tactics help improve \Name's 
+	performance? Which tactics offer the best improvement? (\secref{sec:tacticeval})
+	
+	\item To what extent does the divide-and-conquer synthesis improve \Name's
+	performance? When does it lead to degraded synthesis times? (\secref{sec:optimisticeval})
+	
+\end{compactitemize}
+
+
 Ion (125 nodes) and Geant(40)
 
