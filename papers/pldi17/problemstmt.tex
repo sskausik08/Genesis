@@ -52,7 +52,7 @@ maps edges of the topology to positive rational weights.
 % todo: When to talk about converting LRA to LIA.
 For a given
 path $\pi=l_1\ldots l_n$, we indicate the sum of weights of the
-links in the path by $w(\pi)=\sum l_i$. 
+links in the path by $W(\pi)=\sum l_i$. 
 
 
 We allow route-filters
@@ -91,7 +91,7 @@ in the network in the routing function.
 \begin{cases}
 \text{$\Pi_s^t \cap \Pi_{SR}$}  & \text{if $\Pi_s^t \cap \Pi_{SR} \not=\emptyset$} \\
 \text{$\{\pi \mid  \pi\in \Pi_s^t\cap \Pi_\lambda ~\wedge $} & \\
-\text{$\neg\exists \pi'\in\Pi_s^t\cap \Pi_\lambda . w(\pi')< w(\pi)\}$} & \text{otherwise}
+\text{$\neg\exists \pi'\in\Pi_s^t\cap \Pi_\lambda . W(\pi')< W(\pi)\}$} & \text{otherwise}
 \end{cases}
 \end{multline}
 
@@ -264,45 +264,62 @@ the set of policy-compliant paths.
 \end{definition}
 
 \input{policy}
-\section{Dynamic Domain Assignment}
-Thus, the routing 
-configurations generated must adhere to 
-these constraints. We describe the constraints
-supported by the framework, points 1-4 are 
-hard constraints we would ensure, while 5-8
-are optimizations to synthesize better inter-domain
-configurations. 
 
-\begin{enumerate}
-	\item \textbf{Number of domains ($N(D)$)}: 
-	Can be used for administrative constraints 
-	(each domain can be managed by different
-	entities). 
-	\begin{equation}
-	N_l \leq N(D) \leq N_u
-	\end{equation}
+\subsubsection{Configuration Compliance}
+We defined policy-compliance in terms of the 
+paths of the packet classes satisfying path-based 
+policies like isolation or traffic engineering. However,
+depending on the assignment of routers to different domains,
+the configurations generated may not be efficient
+in deployment. therefore, we extend the notion of 
+policy-compliance to define policies on configurations 
+(\Cref{tab:configpolicysupport}).
 
-	\item \textbf{Size of domain ($|D|$)}: OSPF
-	performs poorly as size of the domain increases
-	(due to flooding of link-state updates). Thus,
-	operators can specify bounds on the size of each
-	domain.
-	\begin{equation}
-	S_l \leq |D| \leq S_u
-	\end{equation}
+\paragraph{Number and size of OSPF domains.} 
+The OSPF routing protocol does not scale 
+with increasing network sizes
+as it uses
+flooding of link-state packets. Flooding 
+of updates can  
+overwhelm the network when links fail. 
+Ideally, operators would want to specify
+limits on the size of an OSPF routing domain. 
+Operators can also specify the number of OSPF domains
+for administrative reasons (each domain can be
+managed by a separate entity). For the  
+set of domains $D = \{\Theta(r) \mid r \in V\}$:
+\begin{equation}
+	|D| \leq N_{D} ~\wedge \forall d \in D. ~l \leq |\{r \mid \Theta(r) = d\}| \leq u
+\end{equation}
 
-%	\item \textbf{BGP-Compatibility}: Certain 
-%	routers may not be suited to run BGP due to resource
-%	constraints. Thus, the operator can specify if a 
-%	router is non-BGP compatible. 
+\paragraph{BGP-Compatibility} Certain 
+	routers may not be suited to run BGP due to resource
+	constraints. Thus, the operator can specify if a 
+	router is BGP compatible or not.  
+	For the set of routers $\bar{B}$ which cannot run BGP, the
+	domain assignment $\Theta$ must ensure the router
+	does not lie on the boundary of a domain (and therefore,
+	run BGP):
+\begin{equation}
+	\forall r \in \bar{B}. ~\not\exists r_1 \in N(r).~\Theta(r) \not= \Theta(r_1) 
+\end{equation} 
 
-	\item \textbf{Optimization: Lines of configuration} 
-	To enable path-based inter-domain routing, \name needs
-	to set up static routes along the path, or configure BGP 
-	variables like local preferences to 
-	to ensure the routing emulates the input paths under no 
-	failures. This would increase the size of the configurations,
-	thus increasing the complexity of verifying correctness either 
-	manually or using verification tools~\cite{batfish}. 
+\paragraph{Optimizations}  
+Ideally, \name should provide mechanisms to optimize
+different configuration metrics. For example,
+we allow route-filters in OSPF synthesis 
+(\secref{sec:ospfsynthesis}), which may yield undesirable
+endpoint resilience, thereby, synthesizing configurations
+which provide a specified metric of resilience or maximize
+the metric. Similarily, to enable path-based inter-domain routing, 
+\name needs	to set up static routes along the path, or configure BGP 
+variables like local preferences to ensure the configurations 
+induce the input paths.
+These increase the size of the configurations,
+thus increasing the complexity of verifying correctness either 
+manually or using verification tools~\cite{batfish, arc, era}. 
+Therefore,
+another objective \name considers is the configuration overhead
+to ensure path-compliance.
 
-\end{enumerate}
+\kausik{Sec 3.2 seems kind of small, comments about that?}
