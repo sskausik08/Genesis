@@ -1,20 +1,43 @@
 \section{Synthesising Domain Assignments}
 \label{sec:synth-dom-ass}
 
-In this section, we describe how \name searches the space of possible
-domain assignments $\Theta$.
-The goal of this search is to find a domain assignment for which
-the techniques presented in Section~\ref{} can find weights, route filters,
-BGP preferences, and static routes that satisfy all the given \loris{control-plane?} policies..
+In this section, we present an algorithm for 
+solving the path-compliance when a domain assignment is not given to us.
+The algorithm searches the space of possible domain assignment $\Theta$ to find
+one that meets all \loris{control-plane?} policies and has good quantitative properties.
 In particular, we will focus our discussion on maximizing resiliency while minimizing
 configuration overhead---e.g.,  number of LoC and route-filters.
 
-We first show that even the simplest variant of \loris{what problem} is NP-complete.
+Formally, we are given a set of paths $\Pi$,
+a topology $T=(V,E)$,
+a domain-assignment function $\Theta$ such that $|\{\Theta(r) \mid r\in V\}|>1$, 
+and we want to find functions
+$LP$, $W$, $RF$,  and $\Theta$ such that
+$C=(T,W,RF,LP,\Theta)$ and
+$\paths^C(PC) = \Pi$.
+We call this problem the \emph{domain placement problem}.
+
+\loris{all definitions are missing static routes, please fix}
+We first show that even the simplest variant of the domain assignment problem,
+in which route filters are disallowed, is NP-complete.
 \begin{theorem}
-\loris{what is the problem that is NP-complete}
+Given a set of paths $\Pi$,
+a topology $T=(V,E)$, 
+a route-filter function $RF$ such that $\sum_{r\in V} |RF(r)|=0$,
+the problem of finding 
+a domain assignment $\Theta$, 
+a local preference function $LP$,
+and edge weights $W$
+ such that
+$C=(T,W,RF,LP,\Theta)$ and
+$\paths^C(PC) = \Pi$  is NP-complete.
+\loris{messy}
 \end{theorem}
-Given the complexity of this problem, \name  searches the space of domain
-assignments Markov
+
+Given the complexity of this problem, we opt for a greedy approach
+to  search the space of domain
+assignments. 
+\name uses Markov
 Chain Monte Carlo (MCMC) sampling methods, specifically the Metropolis-Hasting
 algorithm, a common technique used in different optimization 
 problems~\cite{stoke}. 
