@@ -138,192 +138,61 @@ the generation of router configurations.
 \end{figure}
 
 \minisection{Configuration Synthesis}
-To address the following challenges, we propose
-\emph{automatic synthesis} of configurations, such that 
-the network forwarding behaviour of the distributed
-control plane meets policy specifications. 
-Unfortunately, this task is inherently challenging 
-as it requires solving in one shot multiple
-computationally hard problems.
-For example, even when considering 
-static routing and no failures, 
-synthesizing configurations 
-that satisfy policies 
-such as isolation and waypoints
-is an NP-hard problem~\cite{genesis}.
-Although the progress in SMT solving 
-has made many NP-hard problems more practical, 
-attempts of incorporating concepts such 
-as shortest path algorithms 
-into these solvers have resulted 
-into huge performance losses~\cite{monosat}, 
-not suited for real-world networks.
+To address the aforementioned challenges, we propose
+to 
+\emph{automatically synthesise} policy-compliant configurations.
+Given a set of policies describing path requirements
+and control-plane requirements, our goal is to synthesize
+control plane configurations that comply with the control-plane
+requirements and generate paths that comply with the path requirements.
+\loris{maybe a couple of sentences on what policies}
+Concretely, we investigate three increasingly hard problems:
+1) synthesizing configurations for \emph{intra-domain} routing where all routers
+use shortest-path based routing (OSPF) (Section~\ref{sec:synthesis});
+2) synthesizing configurations for \emph{intra-domain} routing where the network is 
+divided into domains, each domain uses shortest-path routing, and routing across domain
+is based on local-preferences (BGP) (Section~\ref{sec:synth-multi});
+3) synthesizing configurations as well as domain assignments for \emph{intra-domain} routing where 
+we as part of the problem we have to decide how routers are grouped into different domains (Section~\ref{sec:synth-dom-ass}).
+Since we support complex policies---e.g.,  traffic isolation and 
+waypoints---as well as
+complex routing techniques---e.g., OSPF and BGP---the configuration
+synthesis problems are all computationally hard.
+We present solutions to these three synthesis problems in the following sections.
+\loris{do we want to anticipate the techniques?}
 
-Our proposed approach is to tackle these problems 
-in separate phases
-(\figref{fig:architecture}).
-First we synthesize a data plane that 
-meets the input policies (\secref{sec:genesis}).
-Using the data plane as input 
-to the second phase, we 
-express the problem of 
-finding router configurations which 
-induce the data plane provided by the
-first phase using distributed routing
-protocols (OSPF, BGP). Our contribution 
-is \name, a framework for synthesizing
-router configurations from the data
-plane (paths) as input. 
+%Unfortunately, this task is inherently challenging 
+%as it requires solving in one shot multiple
+%computationally hard problems.
+%For example, even when considering 
+%static routing and no failures, 
+%synthesizing configurations 
+%that satisfy policies 
+%such as isolation and waypoints
+%is an NP-hard problem~\cite{genesis}.
+%Although the progress in SMT solving 
+%has made many NP-hard problems more practical, 
+%attempts of incorporating concepts such 
+%as shortest path algorithms 
+%into these solvers have resulted 
+%into huge performance losses~\cite{monosat}, 
+%not suited for real-world networks.
 
-\minisection{OSPF Synthesis}
-For the OSPF protocol, configurations assign
-weights to links between routers (directed edges
-in the network topology). When the network has
-to forward a packet from $s$ to $t$, the
-OSPF routers uses 
-Djikstra's algorithm to chose the
-shortest weighted path from $s$ to $t$. Thus,
-given input paths, \name finds edge weights 
-(which are global for all paths) such that 
-the shortest path through the network
-for these endpoints exactly match the input paths. 
-For example in \Cref{fig:ospfexample}(a), if the input
-path is $s\rightarrow r_1 \rightarrow t$ for
-destination IP $\lambda$, \name assigns
-edge weights such that the input path has a strictly
-smaller weight ($w=1+2$) than the other path $s \rightarrow t$ 
-($w=5$). Thus, the OSPF routers will forward traffic for
-$\lambda$ from $s$ to $t$ through $r_1$. \name 
-efficiently computes weights by generating constraints
-in the theory of Linear rational arithmetic (LRA) and
-uses fast off-the-shelf LP Solvers 
-(\secref{sec:ospfsynthesis}). 
-
-However, given a set of paths as input, there may
-not exist a solution to the edge weights. Consider the 
-input paths as shown in \Cref{fig:ospfexample}(b). 
-Both the red and blue paths are required 
-to be the unique shortest path between $s$ to $t$
-and, clearly, this is cannot be enforced for any 
-choice of the edge weights (as weights correspond 
-to all destinations). 
-One way to synthesize configurations in this scenario 
-is to ``disable'' the edge
-$(s, t)$ for destination $\lambda_1$.
-Using this technique, 
-there is only one possible path from $s$ to $t$
-for destination $\lambda_1$ ($s\rightarrow r_1 \rightarrow t$),
-therefore is chosen as the shortest path. For 
-destination $\lambda_2$, the $s\rightarrow t$ path
-has a smaller weight ($w=1$) than the
-$s\rightarrow r_1 \rightarrow t$ path ($w=1+2$), therefore,
-both traffic is forwarded through the input paths for
-both the destinations. 
-This blocking mechanism is called a route-filter, and
-we modify \name's OSPF synthesis algorithm to support
-route-filtering (\secref{sec:filtering}).
- 
-
-\begin{figure}
-	\centering
-	\subfloat[Edge Weights]{
-		\raisebox{0.5cm}{\resizebox {0.5\columnwidth} {!} {
-	\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
-	square/.style={regular polygon,regular polygon sides=4}] 
-	\node[state] at (0,0) (s)  {$s$}; 
-	\node[state] at (1.8,1) (v1)  {$r_1$}; 
-	\node[state] at (3.6, 0)(t) {$t$};
-	\node[state, rectangle] at (5, 0) (d1) {$\lambda$};
-	\path[->] 
-	(s) edge node {1} (v1)
-	edge  node {5} (t)
-	edge [red, dashed, bend left=90] node {} (t)
-	(v1) edge node {2} (t)
-	(t) edge [red, dashed] node {} (d1);
-	\end{tikzpicture}
-	}}}
-	\subfloat[Route-Filters]{
-			\resizebox {0.5\columnwidth} {!} {
-		\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
-		square/.style={regular polygon,regular polygon sides=4}] 
-		\node[state] at (0,0) (s)  {$s$}; 
-		\node[state] at (2, 1) (v1)  {$r_1$}; 
-		\node[state] at (4, 0)(t) {$t$};
-		\node[state, rectangle] at (5.5, 0.75) (d1) {$\lambda_1$};
-		\node[state, rectangle] at (5.5, -0.75) (d2) {$\lambda_2$};
-		\path[->] 
-		(s) edge node {1} (v1)
-		edge  node [above] {1} node [below] {$rf((s,t),\lambda_1)$} (t)
-		edge [red, dashed, bend left=90] node {} (t)
-		edge [blue, dashed, bend right=45] node {} (t)
-		(v1) edge node {2} (t)
-		(t) edge [red, dashed] node {} (d1)
-		(t) edge [blue, dashed] node {} (d2);
-		\end{tikzpicture}
-	}}
-	\compactcaption{OSPF edge weights and filters such that the
-		the routers forward traffic for destination along
-		the input paths (dashed arcs).}
-	\label{fig:ospfexample}
-\end{figure}
-
-
-
-\minisection{Dynamic Domain assignment}
-The OSPF routing protocol does not scale 
-with increasing network sizes
-as it uses reliable
-flooding of link-state packets. Flooding 
-of updates can  
-overwhelm the network when links fail. 
-Ideally, operators would want to specify
-limits on the size of an OSPF routing domain. 
-Thus, a network could be 
-split into multiple continuous OSPF domains,
-which exchange routes across domains using
-a inter-domain protocol like BGP.
-
-We augment \name to synthesize 
-inter-domain routing configurations 
-such that each router is assigned to
-a particular domain. 
-Each domain is continous (all routers
-are reachable to one another) and 
-uses OSPF for intra-domain routing.
-Domains exchange routes among  
-themselves using BGP, a path-vector 
-protocol which primarily selects routes by 
-the number of domains in the route. 
-However, \name can 
-use BGP's powerful path selection metrics 
-like local preferences such that  
-paths with greater path lengths are selected.
-OSPF has better convergence times than BGP,
-thus, it is advantageous to use OSPF for 
-routing in small domains and using BGP for
-inter-domain routing. 
-
-We consider the network to be managed by a 
-single entity, therefore, the network can 
-be split into domains\footnote{
-The Internet is split into domains depending 
-on ownership.} in numerous ways. Depending
-on the network and input data plane, a certain
-domain assignment of routers 
-can optimize different metrics, like the
-inter-domain configuration overhead (like BGP local
-preferences and static routes) and OSPF route-filters
-in the different domains. Thus, instead of operators
-specifying a static domain assignment, \name stochastically
-searches for the best domain assignment from the space of 
-allowed assignments (for e.g., adhering to domain size limits)
-to optimize different metrics. \name uses 
-\emph{Markov chain Monte Carlo} sampling (MCMC) to perform
-this stochastic search, and operators can specify parameters
-to tune the cost function used in the search to assign priorities
-to different metrics. 
-
-\todo{Write about paper outline}
+%Our proposed approach is to tackle these problems 
+%in separate phases
+%(\figref{fig:architecture}).
+%First we synthesize a data plane that 
+%meets the input policies (\secref{sec:genesis}).
+%Using the data plane as input 
+%to the second phase, we 
+%express the problem of 
+%finding router configurations which 
+%induce the data plane provided by the
+%first phase using distributed routing
+%protocols (OSPF, BGP). Our contribution 
+%is \name, a framework for synthesizing
+%router configurations from the data
+%plane (paths) as input. 
 
 
 

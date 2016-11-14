@@ -96,14 +96,16 @@ class OuterZeppelinSynthesiser(object) :
 		bestospfTime = time.time() - start_t
 
 		self.zepFile = open("zeppelin-timing", 'a')
-		if not self.configOpt : 
+		if not self.configOpt: 
 			print "Worst RF Configuration"
 			start_t = time.time()
 			[worstRFCount, worstTRL] = self.synthesizeOSPFConfigurations(self.worstDomainAssigmentRF)
 			worstospfTime = time.time() - start_t
-			self.switchDomains = self.worstDomainAssigmentRF 
-			self.computeBoundaries()
-			worstRFScore = self.routeFilterScore()
+			worstRFScore = 0
+                        if self.worstDomainAssigmentRF != None : 
+                                self.switchDomains = self.worstDomainAssigmentRF 
+                                self.computeBoundaries()
+                                worstRFScore = self.routeFilterScore()
 
 			self.zepFile.write("Time taken  for MCMC is (and iterations), and OSPF time " + str(mcmcTime) + "\t" + str(self.MCMCIter) + "\t" + str(len(dags)) + "\t" + str(len(paths)))
 			self.zepFile.write("\n")

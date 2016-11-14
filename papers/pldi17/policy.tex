@@ -4,14 +4,14 @@
 		\begin{tabular}{m{6em} | m{14em} | m{32em} } 
 			Policy &  GPL Syntax & Description \\ 
 			\hline
-			Reachability & 	\texttt{predicate : src >> dst} & Forwarding Rules for path from switch $src$ to switch $dst$ for packets matching $predicate$ \\ \hline
-			 Reachability with Ordered Waypoints & \texttt{predicate :\newline src >> W$_1$; $\ldots$;W$_n$ >> dst} & Forwarding Rules for path from switch $src$ to switch $dst$ for packets matching $predicate$ such that the path traverses $w \in W_1$ in any order, then $w \in W_2$ in any order after all waypoints in $W_1$ are traversed and so on.\\ \hline
+			Reachability & 	\texttt{predicate : src >> dst} & Path from router $src$ to router $dst$ for packets matching $predicate$ \\ \hline
+			Reachability with Ordered Waypoints & \texttt{predicate :\newline src >> W$_1$; $\ldots$;W$_n$ >> dst} & Path from router $src$ to router $dst$ for packets matching $predicate$ such that the path traverses $w \in W_1$ in any order, then $w \in W_2$ in any order after all waypoints in $W_1$ are traversed and so on.\\ \hline
 			Traffic \newline Isolation & \texttt{R1 || R2} & Paths of two reachability policies $R1$ and $R2$ do not share a link in the same direction \\ \hline
-			Link \newline Capacity & \texttt{sw$_1$ $\rightarrow$ sw$_2$ : capacity}  & The weights of flows traversing the link $sw_1 \rightarrow sw_2$ do not exceed $capacity$ \\ \hline
+			Link \newline Capacity & \texttt{r$_1$ $\rightarrow$ r$_2$ : capacity}  & The weights of flows traversing the link $r_1 \rightarrow r_2$ do not exceed $capacity$ \\ \hline
 			Traffic \newline Engineering & \texttt{minimize-tot-te},\newline \texttt{minimize-max-te} & TE objectives: minimize total/max link utilization \\
 		\end{tabular}
 	\end{center}
-	\compactcaption{Genesis Policy Support with Genesis Policy Language (GPL) syntax} \label{tab:policysupport} 
+	\compactcaption{\genesis path-based policy support.} \label{tab:policysupport} 
 \end{small}
 \end{table*}
 
@@ -21,9 +21,9 @@
 %% Figure of GPL's syntax
 %\begin{enumerate} 
 %	\item \textbf{Reachability}: $predicate : src >> dst$ \\
-%	This policy specifies the packets satisying $predicate$ have ingress switch $src$ and egress switch $dst$, and requires rules forwarding packets satisfying $predicate$ from $src$ to $dst$. There must be no forwarding loops in the network. 
+%	This policy specifies the packets satisying $predicate$ have ingress router $src$ and egress router $dst$, and requires rules forwarding packets satisfying $predicate$ from $src$ to $dst$. There must be no forwarding loops in the network. 
 %	\item \textbf{Waypoint}: $predicate : src >> W >> dst$ \\
-%	The waypoint policy is a stronger reachability policy, and specifies that packet satisfying $predicate$ with ingress switch $src$ and egress switch $dst$ must pass through the set of waypoints $W$ in no particular order. The waypoint policy helps operators and tenants to specify the middleboxes the packets must traverse through without worrying about order, or having to use header tags to enforce a particular order \cite{flowtags}. 
+%	The waypoint policy is a stronger reachability policy, and specifies that packet satisfying $predicate$ with ingress router $src$ and egress router $dst$ must pass through the set of waypoints $W$ in no particular order. The waypoint policy helps operators and tenants to specify the middleboxes the packets must traverse through without worrying about order, or having to use header tags to enforce a particular order \cite{flowtags}. 
 %	\item \textbf{Traffic Isolation}:  $R1 \ || \ R2$ \\
 %	The traffic isolation policy ensures that the . This policy can be used to provide fairness guarantees, since the paths of $R1$ and $R2$ don't share a link, the bandwidth used by $R1$ will not affect the bandwidth used by $R2$ and vice-versa. The condition of sharing a link in the same direction is due to the fact that links are full-duplex so, traffic flowing in one direction is not affected by the traffic flowing in the other direction.
 %	\item \textbf{Security Isolation}: $R1 <> R2$ \\
@@ -31,5 +31,5 @@
 %	\item \textbf{}: $sw_1 \rightarrow sw_2 : capacity$ \\
 %	The link capacity policy specifies that the capacity for link $sw_1 \rightarrow sw_2$ is $capacity$, and the weights of flows traversing the link in the direction of $sw_2$ do not exceed the capacity of the link.  
 %	\item \textbf{Switch Table Size}: $sw : size$ \\
-%	The switch table size policy is used to specify the size of the forwarding table of the switch $sw$ and ensures that the number of flows traversing through $sw$ does not exceed $size$ as each flow would require a forwarding rule at the switch.
+%	The router table size policy is used to specify the size of the forwarding table of the router $sw$ and ensures that the number of flows traversing through $sw$ does not exceed $size$ as each flow would require a forwarding rule at the switch.
 %\end{enumerate}

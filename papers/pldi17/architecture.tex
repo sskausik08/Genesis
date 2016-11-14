@@ -1,11 +1,14 @@
 \section{Architecture} \label{sec:architecture}
-Mitigating complexity of Policies to configurations
-by going through policies to paths (\genesis) and
-paths to configurations (\name)
-
-The drawback of this approach is that one might need to consider multiple possible
-data planes before finding one that can successfully complete all the phases of the
-synthesis algorithm
+In this section, we describe the architecture of our system.
+Since directly generating policy-compliant configurations
+is a challenging problem, we use a two-phase approach in which
+we first synthesize policy-compliant \emph{paths}
+using the tool \genesis~\cite{genesis} and then present
+a new tool, \name, that synthesises configuration that produce the
+paths we synthesized in the first phase. 
+Since the first phase may produce \emph{bad} paths for which the
+configuration synthesis is complicated or not possible,
+we then propose ways to restart the algorithm by computing new paths.
 
 \subsection{\genesis: From Policies to Paths} \label{sec:genesis}
 The first phase of our approach produces a set of paths adhering to
@@ -13,10 +16,8 @@ different policies using \genesis~\cite{genesis}, a network management
 system which synthesizes forwarding tables enforcing the policies. 
 Some of the policies supported by \genesis are specified in 
 \Cref{tab:policysupport}. 
-
-Many of the policies supported by \genesis have high 
-theoretical complexity (e.g., isolation); \genesis 
-leverages fast off-the-shelf SMT solvers to provide
+Due to the rich policy language, generating policy-compliant paths is an NP-complete problem;
+\genesis leverages fast off-the-shelf SMT solvers to provide
 support for policy enforcement for a diverse set of policies.
 Given a set of policies, \genesis generates a set of constraints 
 over propositional logic (SAT) and Linear rational arithmetic (LRA),
@@ -24,7 +25,28 @@ such that the solutions to these constraints are forwarding
 tables, which can be used to extract the 
 policy-compliant paths.
 
-\subsubsection{Modifications}
+\genesis uses the relation $Fwd \subseteq V \times V \times PC $  
+to capture 
+the network forwarding behavior,---i.e. 
+$(r_1, r_2$, $pc)\in$ $Fwd$ if 
+$r_1$ forwards packets of class $pc$ to router $r_2$---
+and 
+the relation $Reach \subseteq V \times PC \times \nat$ 
+to captures
+the path reachability---i.e. $(r, pc, k)\in Reach$ if 
+the router $r$ is reachable in the path from the source
+router of packet class $pc$ in exactly $k$ steps. Based on
+the input policies, \genesis generates constraints over the $Fwd$
+and $Reach$ relations and finds a solution to the relations. 
+\genesis then extracts the concrete paths from the solution to the $Fwd$ and $Reach$
+relations.
+
+\paragraph{Modifications to \genesis}
+We  discuss how the
+constraints of \genesis~\cite{genesis}
+need to be modified to avoid generating paths that 
+cannot be enforced by any routing configuration.
+
 OpenFlow switches~\cite{openflow} support match predicates for
 forwarding rules on different packet header fields like source
 and/or destination IP address, ports etc. However, legacy protocols
@@ -32,13 +54,16 @@ like OSPF and BGP only support destination-based forwarding,
 forcing the paths to a destination subnet to 
 form a directed tree rooted at the destination. 
 Thus,
-at any router, there exists atmost one forwarding rule for a 
-particular destination. However, since \genesis was built for
-SDN management, paths synthesized for a destination subnet may
-diverge at a switch, and thus cannot be induced by any router
+at any router, there exists at most one forwarding rule per destination. 
+Since \genesis was built for
+SDN management,  a switch may forward to different switches
+packets that are directed to the same destination,
+and thus cannot be induced by any router
 configuration. 
 
-Thus, we modify \genesis to add constraints to ensure that
+\loris{yet another name for switches $sw$, before
+it was $r$ etc.}
+We add constraints to \genesis to ensure that
 if any two paths to a destination subnet intersect at a router,
 the subsequent downstream paths to the destination from the
 router do not \emph{diverge} at a router.  
@@ -46,6 +71,7 @@ We define the relation $Reach^*(sw,pc)$ to model reachability
 of $sw$ in the path of $pc$, i.e., it can be reached in zero or more
 steps from the source. We can be expressed $Reach^*(sw,pc)$ 
 in the network forwarding model of \genesis as:
+\loris{$\mu$ not defined}
 \begin{equation}
 	Reach^*(sw,pc) = \bigvee_{k \in [0, \mu]} Reach(sw, pc, k)
 \end{equation}
@@ -58,6 +84,10 @@ constraints for every pair ($pc_1$,$pc_2$) having the same
  \begin{multline}
  \forall sw. Reach^*(sw, pc_1) \wedge Reach^*(sw, pc_2) \implies \\ \bigvee_{n \in N(sw)} Fwd(sw, n, pc_1) \wedge Fwd(sw, n, pc_2)
  \end{multline}
+ \loris{
+ I think the constraint should be
+ $\bigwedge_{n \in N(sw)} Fwd(sw, n, pc_1) \Leftrightarrow Fwd(sw, n, pc_2)$.
+ }
  $Fwd(sw_1, sw_2,pc)$ is valid if $sw_1$ forwards $pc$ to next-hop $sw_2$ and
  $N(sw)$ denotes the neighbours of $sw$. Basically, 
  if a switch is reachable for both packet classes, 
@@ -66,4 +96,169 @@ constraints for every pair ($pc_1$,$pc_2$) having the same
  from \genesis for a destination subnet will form a 
  directed destination tree. 
 
-%\loris{we will add more details if needed}
+\subsection{\name: From Paths to Router Configurations} 
+\loris{consider adding more text to this sec}
+After we have computed a set of policy-compliant paths,
+we need to solve the path-compliance problem using such paths.
+To solve this problem, we propose the tool \name, which
+combines techniques in constraint solving and randomized search
+to efficiently generate router configurations for the paths obtained from \genesis.
+For a given domain division of the network,
+\name uses linear constraints to generate OSPF weights and BGP preferences.
+If the constraints fail, \name uses the unsatisfiable cores to
+identify where to place route-filters.
+To decide how to split the network into domains,
+\name uses Markov Chain Monte Carlo (MCMC) search to find
+domain assignments that satisfy the configuration policies and have good resilience.
+When the MCMC search does not progress and cannot find good solutions,
+we restart the search by asking \genesis to generate a new set of paths.
+These techniques are described in detail in the next two sections.
+
+%\subsection{Challenges}
+%\minisection{OSPF Synthesis}
+%For the OSPF protocol, configurations assign
+%weights to links between routers (directed edges
+%in the network topology). When the network has
+%to forward a packet from $s$ to $t$, the
+%OSPF routers uses 
+%Djikstra's algorithm to chose the
+%shortest weighted path from $s$ to $t$. Thus,
+%given input paths, \name finds edge weights 
+%(which are global for all paths) such that 
+%the shortest path through the network
+%for these endpoints exactly match the input paths. 
+%For example in \Cref{fig:ospfexample}(a), if the input
+%path is $s\rightarrow r_1 \rightarrow t$ for
+%destination IP $\lambda$, \name assigns
+%edge weights such that the input path has a strictly
+%smaller weight ($w=1+2$) than the other path $s \rightarrow t$ 
+%($w=5$). Thus, the OSPF routers will forward traffic for
+%$\lambda$ from $s$ to $t$ through $r_1$. \name 
+%efficiently computes weights by generating constraints
+%in the theory of Linear rational arithmetic (LRA) and
+%uses fast off-the-shelf LP Solvers 
+%(\secref{sec:ospfsynthesis}). 
+%
+%However, given a set of paths as input, there may
+%not exist a solution to the edge weights. Consider the 
+%input paths as shown in \Cref{fig:ospfexample}(b). 
+%Both the red and blue paths are required 
+%to be the unique shortest path between $s$ to $t$
+%and, clearly, this is cannot be enforced for any 
+%choice of the edge weights (as weights correspond 
+%to all destinations). 
+%One way to synthesize configurations in this scenario 
+%is to ``disable'' the edge
+%$(s, t)$ for destination $\lambda_1$.
+%Using this technique, 
+%there is only one possible path from $s$ to $t$
+%for destination $\lambda_1$ ($s\rightarrow r_1 \rightarrow t$),
+%therefore is chosen as the shortest path. For 
+%destination $\lambda_2$, the $s\rightarrow t$ path
+%has a smaller weight ($w=1$) than the
+%$s\rightarrow r_1 \rightarrow t$ path ($w=1+2$), therefore,
+%both traffic is forwarded through the input paths for
+%both the destinations. 
+%This blocking mechanism is called a route-filter, and
+%we modify \name's OSPF synthesis algorithm to support
+%route-filtering (\secref{sec:filtering}).
+%
+%
+%\begin{figure}
+%	\centering
+%	\subfloat[Edge Weights]{
+%		\raisebox{0.5cm}{\resizebox {0.5\columnwidth} {!} {
+%				\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
+%				square/.style={regular polygon,regular polygon sides=4}] 
+%				\node[state] at (0,0) (s)  {$s$}; 
+%				\node[state] at (1.8,1) (v1)  {$r_1$}; 
+%				\node[state] at (3.6, 0)(t) {$t$};
+%				\node[state, rectangle] at (5, 0) (d1) {$\lambda$};
+%				\path[->] 
+%				(s) edge node {1} (v1)
+%				edge  node {5} (t)
+%				edge [red, dashed, bend left=90] node {} (t)
+%				(v1) edge node {2} (t)
+%				(t) edge [red, dashed] node {} (d1);
+%				\end{tikzpicture}
+%			}}}
+%			\subfloat[Route-Filters]{
+%				\resizebox {0.5\columnwidth} {!} {
+%					\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
+%					square/.style={regular polygon,regular polygon sides=4}] 
+%					\node[state] at (0,0) (s)  {$s$}; 
+%					\node[state] at (2, 1) (v1)  {$r_1$}; 
+%					\node[state] at (4, 0)(t) {$t$};
+%					\node[state, rectangle] at (5.5, 0.75) (d1) {$\lambda_1$};
+%					\node[state, rectangle] at (5.5, -0.75) (d2) {$\lambda_2$};
+%					\path[->] 
+%					(s) edge node {1} (v1)
+%					edge  node [above] {1} node [below] {$rf((s,t),\lambda_1)$} (t)
+%					edge [red, dashed, bend left=90] node {} (t)
+%					edge [blue, dashed, bend right=45] node {} (t)
+%					(v1) edge node {2} (t)
+%					(t) edge [red, dashed] node {} (d1)
+%					(t) edge [blue, dashed] node {} (d2);
+%					\end{tikzpicture}
+%				}}
+%				\compactcaption{OSPF edge weights and filters such that the
+%					the routers forward traffic for destination along
+%					the input paths (dashed arcs).}
+%				\label{fig:ospfexample}
+%			\end{figure}
+%			
+%			
+%			
+%\minisection{Dynamic Domain assignment}
+%The OSPF routing protocol does not scale 
+%with increasing network sizes
+%as it uses reliable
+%flooding of link-state packets. Flooding 
+%of updates can  
+%overwhelm the network when links fail. 
+%Ideally, operators would want to specify
+%limits on the size of an OSPF routing domain. 
+%Thus, a network could be 
+%split into multiple continuous OSPF domains,
+%which exchange routes across domains using
+%a inter-domain protocol like BGP.
+%
+%We augment \name to synthesize 
+%inter-domain routing configurations 
+%such that each router is assigned to
+%a particular domain. 
+%Each domain is continous (all routers
+%are reachable to one another) and 
+%uses OSPF for intra-domain routing.
+%Domains exchange routes among  
+%themselves using BGP, a path-vector 
+%protocol which primarily selects routes by 
+%the number of domains in the route. 
+%However, \name can 
+%use BGP's powerful path selection metrics 
+%like local preferences such that  
+%paths with greater path lengths are selected.
+%OSPF has better convergence times than BGP,
+%thus, it is advantageous to use OSPF for 
+%routing in small domains and using BGP for
+%inter-domain routing. 
+%
+%We consider the network to be managed by a 
+%single entity, therefore, the network can 
+%be split into domains\footnote{
+%	The Internet is split into domains depending 
+%	on ownership.} in numerous ways. Depending
+%on the network and input data plane, a certain
+%domain assignment of routers 
+%can optimize different metrics, like the
+%inter-domain configuration overhead (like BGP local
+%preferences and static routes) and OSPF route-filters
+%in the different domains. Thus, instead of operators
+%specifying a static domain assignment, \name stochastically
+%searches for the best domain assignment from the space of 
+%allowed assignments (for e.g., adhering to domain size limits)
+%to optimize different metrics. \name uses 
+%\emph{Markov chain Monte Carlo} sampling (MCMC) to perform
+%this stochastic search, and operators can specify parameters
+%to tune the cost function used in the search to assign priorities
+%to different metrics. 

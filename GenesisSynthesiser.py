@@ -295,8 +295,7 @@ class GenesisSynthesiser(object) :
 				policyDatabase.addDestinationDAG(dst, self.destinationDAGs[dst])
 
 			
-			self.outerZepSynthesizer = OuterZeppelinSynthesiser(topology=self.topology, pdb=policyDatabase, timeout=600, numDomains=5)
-				
+			self.outerZepSynthesizer = OuterZeppelinSynthesiser(topology=self.topology, pdb=policyDatabase, timeout=600, numDomains=4, rfOpt=False, configOpt=False)
 
 			self.outerZepSynthesizer.enforceDAGs(policyDatabase.getDestinationDAGs(), paths, self.endpoints)
 	

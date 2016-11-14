@@ -11,9 +11,9 @@ if __name__ == "__main__":
 	tactic = "noEdgeLen7" # Tactics: noEdge, valleyFree, len7, noEdgeLen7
 	useDCSynthesis = False
 
-	for i in range(20) : 
-		for pcs in gpl_sizes : 
-			for group in group_sizes :
+	for pcs in gpl_sizes : 
+		for group in group_sizes :
+				for i in range(10) : 
 				zepFile = open("zeppelin-timing", 'a')
 				zepFile.write("Benchmark\t" + str(pcs) + "\t" + str(group) + "\n")
 				zepFile.close()
