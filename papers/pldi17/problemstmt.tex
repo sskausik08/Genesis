@@ -1,6 +1,15 @@
-\subsection{Problem Definition}
+\section{Routing Model and Problem Definition}
 In this section, we formally define the problem addressed by this paper.
+We first define common notions used throughout the paper and 
+then show how different routing protocols are represented in the paper.
+In particular, we model static routes, OSPF shortest-path routing, and BGP preference-based
+routing.
+Finally, we formally define when a certain configuration meets a given set of policies
+and the configuration synthesis problems tackled in this paper.
 
+\subsection{Routing Model}
+
+\minisection{Preliminaries}
 We represent the physical router topology as a directed graph $T=(V, L)$,
 where $V$ is the set of routers and $L\subseteq V\times V$ is the set of links. 
 We use the neighbour function $N(s) = \{s'\ | \ (s,s') \in L \}$ to denote 
@@ -20,7 +29,6 @@ Given two nodes $s$ and $t$, we use $\Pi_s^t$ to denote the set of all paths
 $\pi$ with source $s$ (i.e., $u_1=s$) and target $t$ (i.e., $v_n=t$).
 
 
-\subsubsection{Distributed Routing Model}
 \minisection{Static Routes}
 Static routing occurs when a router uses a 
 manually-configured routing entry, 
@@ -255,7 +263,7 @@ $\Pi_1+\Pi_2=\{\pi_1\pi_2\mid \pi_i\in\Pi_i\}$.
 
 \input{policy}
 
-\subsubsection{Policy Compliance}
+\minisection{Induced paths}
 Since, most distributed routing protocols only support
 destination forwarding, our language supports reachability predicates 
 of the form \texttt{dst.IP} = $\lambda$. To 
@@ -270,11 +278,17 @@ For a packet class $pc$, $src_{pc}$ denotes the source router,
 $dst_{pc}$ denotes the destination router, and $\lambda_{pc}$
 denotes the destination IP address. 
 
+
 \begin{definition}[Induced Paths]
 Given a configuration $C$ and a set of packet classes $PC$, the set of paths
 $\paths^C(PC)$ induced by $C$ is defined as follows: 
 $\forall pc \in PC. \route^C(src_{pc}, dst_{pc}, \lambda_{pc}) \in \paths^C(PC)$.
 \end{definition}
+
+\subsection{Synthesis of Policy-compliant Configurations}
+
+
+
 
 \noindent We can now define what it means for a configuration $C$ to be policy-compliant. Let 
 $\Psi$ denote the set of constraints corresponding to the 
@@ -293,7 +307,6 @@ We will later look for configurations that induce a specific set of paths $\Pi$.
 	if $\paths^C(PC)=\Pi$.
 \end{definition}
 
-\subsubsection{Configuration Compliance}
 We defined policy-compliance in terms of the 
 paths of the packet classes satisfying path-based 
 policies like isolation or traffic engineering. However,

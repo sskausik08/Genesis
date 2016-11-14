@@ -138,42 +138,61 @@ the generation of router configurations.
 \end{figure}
 
 \minisection{Configuration Synthesis}
-To address the following challenges, we propose
-\emph{automatic synthesis} of configurations, such that 
-the network forwarding behaviour of the distributed
-control plane meets policy specifications. 
-Unfortunately, this task is inherently challenging 
-as it requires solving in one shot multiple
-computationally hard problems.
-For example, even when considering 
-static routing and no failures, 
-synthesizing configurations 
-that satisfy policies 
-such as isolation and waypoints
-is an NP-hard problem~\cite{genesis}.
-Although the progress in SMT solving 
-has made many NP-hard problems more practical, 
-attempts of incorporating concepts such 
-as shortest path algorithms 
-into these solvers have resulted 
-into huge performance losses~\cite{monosat}, 
-not suited for real-world networks.
+To address the aforementioned challenges, we propose
+to 
+\emph{automatically synthesise} policy-compliant configurations.
+Given a set of policies describing path requirements
+and control-plane requirements, our goal is to synthesize
+control plane configurations that comply with the control-plane
+requirements and generate paths that comply with the path requirements.
+\loris{maybe a couple of sentences on what policies}
+Concretely, we investigate three increasingly hard problems:
+1) synthesizing configurations for \emph{intra-domain} routing where all routers
+use shortest-path based routing (OSPF) (Section~\ref{sec:synthesis});
+2) synthesizing configurations for \emph{intra-domain} routing where the network is 
+divided into domains, each domain uses shortest-path routing, and routing across domain
+is based on local-preferences (BGP) (Section~\ref{sec:synth-multi});
+3) synthesizing configurations as well as domain assignments for \emph{intra-domain} routing where 
+we as part of the problem we have to decide how routers are grouped into different domains (Section~\ref{sec:synth-dom-ass}).
+Since we support complex policies---e.g.,  traffic isolation and 
+waypoints---as well as
+complex routing techniques---e.g., OSPF and BGP---the configuration
+synthesis problems are all computationally hard.
+We present solutions to these three synthesis problems in the following sections.
+\loris{do we want to anticipate the techniques?}
 
-Our proposed approach is to tackle these problems 
-in separate phases
-(\figref{fig:architecture}).
-First we synthesize a data plane that 
-meets the input policies (\secref{sec:genesis}).
-Using the data plane as input 
-to the second phase, we 
-express the problem of 
-finding router configurations which 
-induce the data plane provided by the
-first phase using distributed routing
-protocols (OSPF, BGP). Our contribution 
-is \name, a framework for synthesizing
-router configurations from the data
-plane (paths) as input. 
+%Unfortunately, this task is inherently challenging 
+%as it requires solving in one shot multiple
+%computationally hard problems.
+%For example, even when considering 
+%static routing and no failures, 
+%synthesizing configurations 
+%that satisfy policies 
+%such as isolation and waypoints
+%is an NP-hard problem~\cite{genesis}.
+%Although the progress in SMT solving 
+%has made many NP-hard problems more practical, 
+%attempts of incorporating concepts such 
+%as shortest path algorithms 
+%into these solvers have resulted 
+%into huge performance losses~\cite{monosat}, 
+%not suited for real-world networks.
+
+%Our proposed approach is to tackle these problems 
+%in separate phases
+%(\figref{fig:architecture}).
+%First we synthesize a data plane that 
+%meets the input policies (\secref{sec:genesis}).
+%Using the data plane as input 
+%to the second phase, we 
+%express the problem of 
+%finding router configurations which 
+%induce the data plane provided by the
+%first phase using distributed routing
+%protocols (OSPF, BGP). Our contribution 
+%is \name, a framework for synthesizing
+%router configurations from the data
+%plane (paths) as input. 
 
 
 
