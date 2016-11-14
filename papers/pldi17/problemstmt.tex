@@ -5,18 +5,20 @@ We represent the physical router topology as a directed graph $T=(V, L)$,
 where $V$ is the set of routers and $L\subseteq V\times V$ is the set of links. 
 We use the neighbour function $N(s) = \{s'\ | \ (s,s') \in L \}$ to denote 
 the set of neighbour routers of $s$. 
-We define $\Lambda$ to denote the set of destination IP subnets, 
+We define $\Lambda$ to denote the set of destination IP subnets;
 distributed protocols make forwarding decisions based on the 
 destination IP address/subnet.
+Besides the topology, our configuration also contains other global parameters and functions, such as edge
+weights and routing preferences. 
+We use $C$ to denote the tuple containing $T$ as well as these elements, which we introduce in the following sections.
 
 A path $\pi = (u_1,v_1) (u_2, v_2) \ldots (u_n, v_n) \in L^*$ is a loop-free valid path if
 a  vertex is not visited more than once ($\forall i.j \leq n. 
 ~i \not= j \wedge u_i \not= u_j$) and adjacent links in the
 path share a router ($\forall i < n. ~v_i = u_{i+1}$).
-If the path $\pi$ has source $s$ ($u_1=s$) and target $t$ ($v_n=t$),
-we say that $\pi$ is a path from $s$ to $t$.
 Given two nodes $s$ and $t$, we use $\Pi_s^t$ to denote the set of all paths
-$\pi$ with source $s$ ($u_1=s$) and target $t$ ($v_n=t$).
+$\pi$ with source $s$ (i.e., $u_1=s$) and target $t$ (i.e., $v_n=t$).
+
 
 \subsubsection{Distributed Routing Model}
 \minisection{Static Routes}
@@ -26,14 +28,17 @@ rather than information from dynamic protocols like
 OSPF or BGP.  
 For a destination $\lambda$, a static route configured
 at router $r$ ensures the traffic to forward to a 
-neighbouring router $r_1, r_1 \in N(r)$. 
+neighbouring router $r_1 \in N(r)$. 
 Static routes have the highest
 preference over other routes for the same destination
 at a router. We define the static route
-partial function $SR: V \times \Lambda \mapsto V$ such
-that, for a router $r$ and destination $\lambda$, if $SR(r,\lambda)=r'\in V$, 
+partial function $SR: V \times \Lambda \mapsto V$  such
+that, for a router $r$ and destination $\lambda$, if $SR(r,\lambda)=r'$, 
 then traffic for destination $\lambda$ reaching node $r$ is always
-forwarded to node $r'$. Using $SR$, we construct the complete
+forwarded to node $r'$. 
+\loris{might want to say how you construct it
+and that we assume SR is well formed, i.e., things form paths.}
+Using $SR$, we construct the complete
 static paths between routers in the network $\Pi_{SR}$. These 
 paths would have a highest preference. 
 
@@ -52,7 +57,7 @@ maps edges of the topology to positive rational weights.
 % todo: When to talk about converting LRA to LIA.
 For a given
 path $\pi=l_1\ldots l_n$, we indicate the sum of weights of the
-links in the path by $W(\pi)=\sum l_i$. 
+links in the path by $w(\pi)=\sum l_i$. 
 
 
 We allow route-filters
@@ -60,7 +65,7 @@ to selectively disable an
 edge for a given destination by  
 blocking advertisements to a
 particular destination along a link. 
-Formally, a route-filter is a pair $(l,\lambda)\in L\times V$
+Formally, a route-filter is a pair $(l,\lambda)\in L\times \Lambda$
 which disables the link $l$ for destination $\lambda$. 
 We define the route-filter function 
 $RF: \Lambda \rightarrow 2^L$ which maps each destination IP
@@ -72,10 +77,10 @@ $l_i\not\in RF(\lambda)$.
 We use $\Pi_\lambda$ to denote the set of all such paths.
 
 We define the routing function 
-$\route_{ospf}$ 
-that given a 
-a weight function $W$,
-a route-filter function $RF$,
+$\route_{ospf}^G$ 
+that given 
+%a weight function $W$,
+%a route-filter function $RF$,
 a source node $s$,
 a target node $t$,
 and destination IP 
@@ -87,11 +92,11 @@ that do not cross any link that belongs to $RF(\lambda)$. We also
 account the higher priority of static routes 
 in the network in the routing function.
 \begin{multline} \label{eq:ospfmodel}
-\route_{ospf}(W,RF,s,t,\lambda) = \\
+\route_{ospf}^C(s,t,\lambda) = \\
 \begin{cases}
 \text{$\Pi_s^t \cap \Pi_{SR}$}  & \text{if $\Pi_s^t \cap \Pi_{SR} \not=\emptyset$} \\
 \text{$\{\pi \mid  \pi\in \Pi_s^t\cap \Pi_\lambda ~\wedge $} & \\
-\text{$\neg\exists \pi'\in\Pi_s^t\cap \Pi_\lambda . W(\pi')< W(\pi)\}$} & \text{otherwise}
+\text{~~~~$\neg\exists \pi'\in\Pi_s^t\cap \Pi_\lambda . w(\pi')< w(\pi)\}$} & \text{otherwise}
 \end{cases}
 \end{multline}
 
@@ -123,25 +128,33 @@ from next-hop BGP router $n$.
 On all other links the function is undefined. From 
 the routes received at $r$, the router
 picks the route with greatest local preference. 
+\loris{inconsistent use of router names, $r$ vs $n$ vs $v$ vs $g$}
 
-Let us define the BGP routing function 
-$\route_{bgp}: LP \times V \times \Lambda \rightarrow V$.
-For traffic at the BGP router $r$ to
-destination IP $\lambda$, $\route_{bgp}(LP,r,\lambda)$ 
-is the next-hop BGP router in the path. BGP 
+\loris{is this algo 1?} Algorithm~\ref{alg:bgppathrules} defines the routing function 
+$\route_{bgp}^C$ 
+that given 
+%a local preference function $LP$,
+a source node $s$,
+a target node $t$,
+and destination IP 
+$\lambda$,
+returns 
+the next-hop BGP router in the path. BGP 
 chooses a route with highest local preference, and
 if there is a tie, it then chooses the route with smallest
 AS path length~\cite{bgp}. While, the actual implementation
 of BGP uses several other criteria,
 \name uses these rules to synthesize BGP configurations with 
 ordering maintained with respect to actual BGP implementations.
-We ensure all ties are broken, and $\route_{bgp}(LP,r,\lambda)$
+We ensure all ties are broken, and $\route_{bgp}^C(r,\lambda)$
 returns a single router. Also, static routes 
 have a higher preference than BGP, therefore a static route
 $SR(r, \lambda)$ will be preferred over the BGP route. We
-would account for static routes for $\route_{bgp}(LP,r,\lambda)$
+would account for static routes for $\route_{bgp}^C(r,\lambda)$
 similarily as we defined in \Cref{eq:ospfmodel}.
-
+\loris{you actually have to show how or write something in algo}
+\loris{change algo one to have correct name $\route_{bgp}^C(r,\lambda)$. Also, the
+figure has to use the same notation LP etc...}
 \begin{algorithm} [t]
 	\begin{footnotesize} 
 		\caption{BGP Best Path Algorithm}
@@ -173,19 +186,29 @@ similarily as we defined in \Cref{eq:ospfmodel}.
 
 
 \minisection{OSPF+BGP+Static Routes}
-We define the router domain assignment function
+\loris{kind of weird that we didn't divide routers into BGP and non-BGP early on}
+\loris{I removed W, RF, LP from all definitions of $\route_{ospf}^C$ and
+$\route_{bgp}^C$, since they are global parameters.
+I think this very first paragraph should come before the other two
+and then you have only the second part that puts things together.
+And in previous two sections you should explain that you do intra and inter domain.
+}
+To account for networks divided into domains and using different protocols,
+we define a router domain assignment function
 $\Theta: V \rightarrow \nat$ which maps each router to a domain 
 (denoted by a natural number). Each domain uses OSPF as the 
 intra-domain routing protocol, and BGP for the inter-domain routing
 protocol. 
 
-In domain $d$, let us consider a source router $s$ ($\Theta(s) = d$) for 
+We can finally summarize all the components of the configuration graph $C$
+as a tuple $(T, W,RF,LP,\Theta)$ and describe how routing happens across domains.
+In domain $d$, let us consider a source router $s$ (i.e., $\Theta(s) = d$) for 
 sending traffic for destination $\lambda$. Note that, the traffic
 could originate from other domains, then $s$ indicates the first
-router in the domain. If the target router $t$ 
+router in the domain.\loris{don't understand prev sentence}  If the target router $t$ 
 connected to the destination belongs to domain $d$, then there exists
 a OSPF route for $\lambda$ at $s$, and the path taken would be 
-$R_{ospf}(W_d, RF_d, s,t,\lambda)$.
+$\route_{ospf}^C(s,t,\lambda)$.
 
 Consider the case of destination $\lambda$ being connected 
 to an external domain, thus, traffic for destination $\lambda$
@@ -203,27 +226,39 @@ the best gateway, which then redistributes the external
 (eBGP route) into OSPF (\Cref{alg:bgppathrules}). If multiple
 gateways advertise the destination $\lambda$ into the OSPF 
 domain, then the closest gateway (in terms of OSPF distance)
-is chosen. We define a gateway function $G: \nat \times LP \times
-W \times RF \times V \times \Lambda \rightarrow V$ which specifies
-the gateway chosen for a destination based on both BGP and OSPF
-configurations. Therefore, the routing function 
-$\route:\Theta \times LP \times W \times RF \times V \times V \times \Lambda \rightarrow L^*$ models routing in the inter-domain network. 
-For a destination $\lambda$ connected to target router $t$, the 
-path from source router $s$ is described as follows:
+is chosen. We define a gateway function $G^C$,
+that given a domain number $n\in \nat$
+%a local preference $LP$,
+%a weight function $W$,
+%route filters $RF$,
+a router $r$ such that $\Theta(r)=n$,
+and destination IP $\lambda$ outside of domain $n$, specifies the
+gateway chosen for a destination based on both BGP and OSPF
+configurations.\loris{how is prev func defined?} 
+Finally, the routing function 
+$\route^C$
+%:\Theta \times LP \times W \times RF \times V \times V \times \Lambda \rightarrow L^* 
+returns paths from source to destination in a inter-domain network. 
+Given a source $s_1$, a destination $\lambda$ connected to target router $t$, 
 \begin{multline}
-	\route(\Theta, LP, W, RF, s, t, \lambda) = \\
-	\route_{ospf}(W,RF,s,g_1=G(\Theta(s),LP,W,RF,s,\lambda), \lambda) + \\
-	 (g_1, s_2=\route_{bgp}(LP, g_1, \lambda))+ \\
-	\route_{ospf}(W,RF,s_2,g_2=G(\Theta(s_2),LP,W,RF,s_2,\lambda), \lambda) + \\
-	\ldots \route_{ospf}(W,RF,s_n,t,\lambda)
+	\route^C(s_1, t, \lambda) = 
+	\route_{ospf}^C(s_1,g_1, \lambda) + 
+	 (g_1, s_2 )+ \\
+	~~~~~~~~~~~~~~~~~~~~~~~~~\route_{ospf}^C(s_2,g_2, \lambda) + (g_2, s_3) + \\
+	\ldots  +\route_{ospf}^C(s_n,t,\lambda)
 \end{multline}
+where for each $i>1$, $g_i=G^C(\Theta(s_i),s_i,\lambda)$, 
+$s_i=\route_{bgp}^C(g_{i-1}, \lambda)$,
+and  $+$ is the concatenation operator for paths---i.e.,
+$\Pi_1+\Pi_2=\{\pi_1\pi_2\mid \pi_i\in\Pi_i\}$.
+\loris{we should have OSPF return single paths so we don't have this multiple paths problem}
 
 \subsubsection{Policy Compliance}
 Since, most distributed routing protocols only support
-destination forwarding, the predicate for a reachability
-policy is of the form \texttt{dst.IP} = $\lambda$. To 
+destination forwarding, our language supports reachability predicates 
+of the form \texttt{dst.IP} = $\lambda$. To 
 model policies for different source IP subnets, we can create
-multiple reachability policies with different source routers
+multiple reachability policies with different source routers---i.e.,
 \texttt{dst.IP} = $\lambda$ : \texttt{s >> t} (where $s$ is
 the router connected to the source IP subnet, $t$ is the router
 which $\lambda$ is connected to).
@@ -234,33 +269,27 @@ $dst_{pc}$ denotes the destination router, and $\lambda_{pc}$
 denotes the destination IP address. 
 
 \begin{definition}[Induced Paths]
-For a set of packet classes $PC$, the set of induced
-paths by the network configurations $\Pi_{ind} = \paths(\Theta, LP$, 
-$W, RF, PC)$ is defined as follows: \\
-$\forall pc \in PC.$
-$~\route(\Theta, LP, W, RF,$ $src_{pc}, dst_{pc}, \lambda_{pc}) \in \Pi_{ind} $
+Given a graph $G$ and a set of packet classes $PC$, the set of paths
+$\paths^C(PC)$ induced by $G$ is defined as follows: 
+$\forall pc \in PC. \route^C(src_{pc}, dst_{pc}, \lambda_{pc}) \in \paths^C(PC)$.
 \end{definition}
 
-\noindent We address the notion of policy-compliance. Let 
+\noindent We can now define what it means for a graph $G$ to be policy-compliant. Let 
 $\Psi$ denote the set of constraints corresponding to the 
 path-based input policies (\Cref{tab:policysupport}). 
+\loris{quickly summarize what it means for paths to satisfy $\Psi$.}
 \begin{definition}[Policy-Compliance]
-	The configurations $(\Theta,$ $LP, W, RF)$ is policy-compliant,
-	$(\Theta, LP, W, RF) \models \Psi$, if the set of
-	induced paths $\paths(\Theta, LP$, $W, RF, PC) \models \Psi$.
+	The configuration $C$ is policy-compliant,
+	$C \models \Psi$, if the set of
+	induced paths $\paths^C(PC) \models \Psi$.
 \end{definition}
 
-However, this approach is intractable for real-world scenarios,
-because simply computing static routes for the set of constraints 
-$\Psi$ is computationally hard. Instead, we use a two-phased approach
-to tackle the problem: we first synthesize a set of policy-compliant
-paths $\Pi$, and then synthesize the configurations which induces
-the set of policy-compliant paths. 
+We will later look for configurations that induce a specific set of paths $\Pi$.  
 \begin{definition}[Path-Compliance]
-	The configurations $(\Theta,$ $LP, W, RF)$ is policy-compliant,
-	$(\Theta, LP, W, RF) \models \Psi$, if there exists a set of
-	policy compliant paths $\Pi \models \Psi$ and the set of
-	induced paths $\paths(\Theta, LP$, $W, RF, PC) = \Pi$.
+	The configurations $C$ is path-compliant with respect to 
+	a set of paths $\Pi$,
+	$C \models \Pi$, if $\Pi\subseteq\paths^C(PC)$.
+	\loris{this should be $\subseteq$ right?}
 \end{definition}
 
 \input{policy}
@@ -271,8 +300,8 @@ paths of the packet classes satisfying path-based
 policies like isolation or traffic engineering. However,
 depending on the assignment of routers to different domains,
 the configurations generated may not be efficient
-in deployment. therefore, we extend the notion of 
-policy-compliance to define policies on configurations 
+in deployment. Therefore, we extend the notion of 
+compliance to policies on configurations 
 (\Cref{tab:configpolicysupport}).
 
 \paragraph{Number and size of OSPF domains.} 
@@ -291,6 +320,7 @@ set of domains $D = \{\Theta(r) \mid r \in V\}$:
 \begin{equation}
 	|D| \leq N_{D} ~\wedge \forall d \in D. ~l \leq |\{r \mid \Theta(r) = d\}| \leq u
 \end{equation}
+\loris{you didn't define most quantities $N_D$ etc..}
 
 \paragraph{BGP-Compatibility} Certain 
 	routers may not be suited to run BGP due to resource
@@ -305,6 +335,7 @@ set of domains $D = \{\Theta(r) \mid r \in V\}$:
 \end{equation} 
 
 \paragraph{Optimizations}  
+\loris{this sec is too informal}
 Ideally, \name should provide mechanisms to optimize
 different configuration metrics. For example,
 we allow route-filters in OSPF synthesis 
@@ -321,5 +352,3 @@ manually or using verification tools~\cite{batfish, arc, era}.
 Therefore,
 another objective \name considers is the configuration overhead
 to ensure path-compliance.
-
-\kausik{Sec 3.2 seems kind of small, comments about that?}
