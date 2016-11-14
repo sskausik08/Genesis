@@ -287,9 +287,8 @@ path-based input policies (\Cref{tab:policysupport}).
 We will later look for configurations that induce a specific set of paths $\Pi$.  
 \begin{definition}[Path-Compliance]
 	The configurations $C$ is path-compliant with respect to 
-	a set of paths $\Pi$,
-	$C \models \Pi$, if $\Pi\subseteq\paths^C(PC)$.
-	\loris{this should be $\subseteq$ right?}
+	a set of paths $\Pi$ over packet classes $PC$,
+	if $\paths^C(PC)=\Pi$.
 \end{definition}
 
 \input{policy}
