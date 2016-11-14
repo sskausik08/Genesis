@@ -22,7 +22,7 @@ $C=(T,W,RF,LP,\Theta)$,
 $\paths^C(PC) = \Pi$,
 and 
 $\sum_{\lambda\in\Lambda} |RF(\lambda)|=n$ is NP-complete.
-We call this problem the \emph{OSPF synthesis problem}.
+We call this problem the \emph{intra-domain synthesis problem}.
 \end{theorem}
 \iffull
 \input{route-filters-nphard}
@@ -30,7 +30,7 @@ We call this problem the \emph{OSPF synthesis problem}.
 The reduction is from \loris{what problem?}.
 \fi
 
-We first show how to solve the OSPF synthesis problem when $n=0$---i.e., we are not allowed to use route filters---and
+We first show how to solve the intra-domain synthesis problem when $n=0$---i.e., we are not allowed to use route filters---and
 then extend our technique to handle route filters.
 
 \begin{figure}
@@ -78,7 +78,7 @@ then extend our technique to handle route filters.
 			
 			
 			\loris{route-filters vs route filters}
-\subsection{OSPF Synthesis Without Route-filters} \label{sec:sarc}
+\subsection{Intra-domain Synthesis Without Route-filters} \label{sec:sarc}
  
 If $n=0$ and no route-filters are allowed,
 upon assigning 
@@ -188,18 +188,18 @@ $t$ is not reachable from $n'$ in $\xi_d$.
 Finally, Equation~\ref{eq:uniq3} guarantees that all the paths from $s$ to $t$ in $\xi_d$ have the same weight.
 
 
-\subsection{OSPF Synthesis with Route-filters} \label{sec:routefilter}
+\subsection{Intra-domain Synthesis with Route-filters} \label{sec:routefilter}
 
 If the system of equations presented Section~\ref{sec:sarc} admits a solution, 
 the values of the $W$ variables are the weights we are trying to synthesize,
-otherwise the OSPF synthesis problem cannot be solved without using route-filters.
+otherwise the intra-domain synthesis problem cannot be solved without using route-filters.
 In this section, we showed how the proposed technique can be modified
 to support route-filters---i.e., when $n>0$.
 
 A route-filter  can selectively disable an
 edge for a given destination by  blocking advertisements to a
 particular destination along a link.
-We start by observing that the OSPF synthesis problem with route-filters
+We start by observing that the intra-domain synthesis problem with route-filters
 admits a trivial solution in which 
 route-filters are used to enforce the exact set of input paths by blocking all other possible paths.
 \loris{double-check this notation}
@@ -284,7 +284,7 @@ By adding the route-filter $((s,n'),d)$ to $F$, this inequality is removed from 
 and the combination of the other constraints appearing in the other unsat-core is now satisfiable.
 The new set of equations may still be unsatisfiable and other unsat-cores might exist. 
 The procedure is repeated until the resulting set of constraints becomes satisfiable
-and we have reached a solution to the OSPF synthesis problem.
+and we have reached a solution to the intra-domain synthesis problem.
 
 %Finding the optimal number of route-filters is NP-hard, and it
 %is very difficult to incorporate optimality in our iterative learning

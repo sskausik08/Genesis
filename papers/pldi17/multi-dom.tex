@@ -1,6 +1,19 @@
 \section{Synthesising Configurations across Multiple Domains}
 \label{sec:synth-multi}
 
+In this section, we present an algorithm for 
+solving the path-compliance problem in the presence
+of multiple domains---i.e., $|\{\Theta(r) \mid r\in V\}|>1$.
+However, we assume that the domain splitting $\Theta$ is given to us.
+Formally, we are given a set of paths $\Pi$,
+a topology $T=(V,E)$,
+a domain-assignment function $\Theta$, 
+and we want to find functions
+$LP$, $W$, and $RF$,  such that
+$C=(T,W,RF,LP,\Theta)$ and
+$\paths^C(PC) = \Pi$..
+We call this problem the \emph{inter-domain synthesis problem}.
+
 \subsection{Hard Constraints}
 \begin{figure*}
 	\centering
