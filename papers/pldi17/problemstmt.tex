@@ -271,12 +271,12 @@ $dst_{pc}$ denotes the destination router, and $\lambda_{pc}$
 denotes the destination IP address. 
 
 \begin{definition}[Induced Paths]
-Given a graph $G$ and a set of packet classes $PC$, the set of paths
-$\paths^C(PC)$ induced by $G$ is defined as follows: 
+Given a configuration $C$ and a set of packet classes $PC$, the set of paths
+$\paths^C(PC)$ induced by $C$ is defined as follows: 
 $\forall pc \in PC. \route^C(src_{pc}, dst_{pc}, \lambda_{pc}) \in \paths^C(PC)$.
 \end{definition}
 
-\noindent We can now define what it means for a graph $G$ to be policy-compliant. Let 
+\noindent We can now define what it means for a configuration $C$ to be policy-compliant. Let 
 $\Psi$ denote the set of constraints corresponding to the 
 path-based input policies (\Cref{tab:policysupport}). 
 \loris{quickly summarize what it means for paths to satisfy $\Psi$.}

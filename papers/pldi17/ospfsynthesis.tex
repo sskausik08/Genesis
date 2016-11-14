@@ -2,7 +2,7 @@
 In this section, we present an algorithm for 
 solving the path-compliance problem for 
 single-domain OSPF networks
----i.e., $|\{\Theta(n) \mid n\in V\}|=1$.
+---i.e., $|\{\Theta(r) \mid r\in V\}|=1$.
 
 %\subsection{Complexity} \label{sec:rfcomplexity}
 
@@ -11,46 +11,27 @@ we justify the complexity of our approach by showing that
 the problem of synthesizing an OSPF configuration
 that contains an optimal number of route-filters is NP-complete.
 
-\begin{theorem}
+\begin{theorem}[OSPF synthesis]
 Given a set of paths $\Pi$,
-a topology $G=(V,E)$,
-a domain-assignment function $\Theta$, such that $|\{\Theta(n) \mid n\in V\}|=1$,
+a topology $T=(V,E)$,
+a domain-assignment function $\Theta$, such that $|\{\Theta(r) \mid r\in V\}|=1$,
 a number $n\geq 0$,
 the problem of finding 
 an $LP$, $W$, and $RF$,  such that
-\loris{PC shouldn't appear here, make consistent.}
-$\paths(\Theta, LP, W, RF, PC) = \Pi$,
+$C=(T,W,RF,LP,\Theta)$,
+$\paths^C(PC) = \Pi$,
 and 
-$\sum_{\lambda\in\Lambda} |RF(\lambda)|=n$, is NP-complete.
+$\sum_{\lambda\in\Lambda} |RF(\lambda)|=n$ is NP-complete.
+We call this problem the \emph{OSPF synthesis problem}.
 \end{theorem}
 \iffull
 \input{route-filters-nphard}
+\else
+The reduction is from \loris{what problem?}.
 \fi
 
-%However, given a set of paths as input, there may
-%not exist a solution to the edge weights. Consider the 
-%input paths as shown in \Cref{fig:ospfexample}(b). 
-%Both the red and blue paths are required 
-%to be the unique shortest path between $s$ to $t$
-%and, clearly, this is cannot be enforced for any 
-%choice of the edge weights (as weights correspond 
-%to all destinations). 
-%One way to synthesize configurations in this scenario 
-%is to ``disable'' the edge
-%$(s, t)$ for destination $\lambda_1$.
-%Using this technique, 
-%there is only one possible path from $s$ to $t$
-%for destination $\lambda_1$ ($s\rightarrow r_1 \rightarrow t$),
-%therefore is chosen as the shortest path. For 
-%destination $\lambda_2$, the $s\rightarrow t$ path
-%has a smaller weight ($w=1$) than the
-%$s\rightarrow r_1 \rightarrow t$ path ($w=1+2$), therefore,
-%both traffic is forwarded through the input paths for
-%both the destinations. 
-%This blocking mechanism is called a route-filter, and
-%we modify \name's OSPF synthesis algorithm to support
-%route-filtering (\secref{sec:filtering}).
-%
+We first show how to solve the OSPF synthesis problem when $n=0$---i.e., we are not allowed to use route filters---and
+then extend our technique to handle route filters.
 
 \begin{figure}
 	\centering
@@ -95,48 +76,42 @@ $\sum_{\lambda\in\Lambda} |RF(\lambda)|=n$, is NP-complete.
 				\label{fig:ospfexample}
 \end{figure}
 			
-\subsection{Simple OSPF Configurations} \label{sec:sarc}
+			
+			\loris{route-filters vs route filters}
+\subsection{OSPF Synthesis Without Route-filters} \label{sec:sarc}
  
-For the OSPF protocol, configurations assign
+If $n=0$ and no route-filters are allowed,
+upon assigning 
  weights $W$ to links between routers (directed edges
- in the network topology);
- OSPF routers uses 
+ in the network topology),
+ OSPF routers use
  Djikstra's algorithm to choose the
  shortest weighted path for a pair of endpoints. 
- Thus,
- given input paths, \name finds edge weights 
- (which are global for all paths) such that 
+We show how,
+ given a set of input paths $Pi$, \name 
+generates a set of linear constraints to 
+find weights for the edges in $L$
+such that 
  the shortest path through the network
- for these endpoints exactly match the input paths. 
+ for these endpoints exactly match the input paths $\Pi$. 
+ \loris{figure is weird, make the link themselves red as well? or double the links}
  For example in \Cref{fig:ospfexample}(a), if the input
  path is $s\rightarrow r_1 \rightarrow t$ for
  destination IP $\lambda$, \name assigns
  edge weights such that the input path has a strictly
  smaller weight ($W=1+2$) than the other path $s \rightarrow t$ 
- ($W=5$). Thus, the OSPF routers will forward traffic for
- $\lambda$ from $s$ to $t$ through $r_1$. We first
- consider the scenario of simple OSPF configurations (sOC)
- with no route-filters enabled.
+ ($W=5$). 
+ 
+% Thus, the OSPF routers will forward traffic for
+% $\lambda$ from $s$ to $t$ through $r_1$. We first
+% consider the scenario of simple OSPF configurations (sOC)
+% with no route-filters enabled.
 
-The problem of synthesizing the
-sOC that realizes an input set of paths reduces to a
+The problem of synthesizing the weight function $W$ that
+that realizes an input set of paths $\Pi$ is
+a
 variation of the so-called {\em inverse shortest path} 
 problem~\cite{isp}. 
-%Assume we are given the following inputs: (1) a directed graph $T = (S, L)$ (the network topology), 
-%(2) a set of endpoints $\Gamma \subseteq S\times S$
-%describing the sources and destinations of the input paths, and 
-%(3) a function $P: \Gamma \rightarrow 2^{L^*}$
-%that assigns to each pair of endpoints $(s,t) \in \Gamma$ 
-%a set of \emph{acyclic} paths, such that for every path $l_0\cdots l_n\in P(s,t)$,
-%$l_0=(s,s')$, for some $s'\in S$, and $l_n=(s'',t)$, for some $s''\in S$.\footnote{
-%We use $L^*$ the denote the set of all finite sequences over $L$.}
-%The 
-%\emph{sARC synthesis}
-%problem is to find rational weights for the edges in $L$ such that 
-%for each pair of endpoints $(s,t) \in \Gamma$, 
-%the paths in $P(s,t)$ are \emph{the} shortest paths from $s$ to $t$ 
-%in the graph. Notice, that there can be multiple shortest
-%paths of equal cost for multi-path support (e.g., for traffic engineering).
 For a destination IP $\lambda$, we call $\xi_\lambda$ 
 the directed tree of $T$ 
 obtained by only keeping the nodes and edges 
@@ -145,6 +120,7 @@ destination IP $\lambda$.
 Since paths are acyclic, $\xi_d$ is a directed acyclic graph.
 $\Delta=\{\xi_\lambda\mid \lambda \in \Lambda\}$ is   
 the set of all destination trees. 
+\loris{need to say what a destination tree is and tie to previous discussion of genesis modification}
 
 We use  $r_1\rightarrow r_2$ to denote $(r_1,r_2)\in L$ and
 $r_1\rightarrow^* r_2$ (resp. $r_1\rightarrow^+ r_2$) to denote 
@@ -155,15 +131,14 @@ to denote the same relations in the destination trees.
 
 
 \minisection{Distance equations}
-To solve the sOC synthesis problem, 
-we generate a set of linear equations
+We generate a set of linear equations
 to find the edge weight $W(r_1, r_2)$ 
 for all $(r_1, r_2) \in L$.
 We use 
 $D(r_1, r_2)$ to denote the 
-shortest distance from $r_1$ to $r_2$.
-We add the equation $D(s,s) = 0$ 
-for every $s\in S$ to denote that the distance
+shortest distance from $r_1$ to $r_2$ and
+add the equation $D(s,s) = 0$, 
+for every $s\in S$, to denote that the distance
 from a node to itself is $0$.
 The
 following equation guarantees that $D(s,t)$ is not greater than 
@@ -179,11 +154,9 @@ that the input paths with destination $d$ are indeed the shortest ones.
 is the shortest path between its endpoints, then every 
 subpath of the path has to be the shortest between its endpoints
 as well (otherwise the complete path would not be the shortest).
-
-Consider a tree $\xi_d$ for destination $d$. We define two neighbour
-functions: $N_T(s)$ denotes the set of neighbours of ritch $s$ 
-in the input graph $T$, and $N_{\xi_d}(s)$ denote the set of
-neighbours of ritch $s$ in the destination tree $\xi_d$. 
+Consider a tree $\xi_d$ for destination $d$. 
+The function $N_{\xi_d}(s)$ denotes the set of
+neighbours of switch $s$ in the destination tree $\xi_d$. 
 Given a destination $d\in \Omega$,
 we use the following equations to ensure that, given two nodes $s$ and $t$ in
 $\xi_d$, 
@@ -218,3 +191,196 @@ the sum of the weights belonging to a path from $s$ to $t$ in $\xi_d$ is smaller
 any path that goes to $t$ via a node $n'$ that is a neighbour of $s$ in $\xi_d$ but such that
 $t$ is not reachable from $n'$ in $\xi_d$.
 Finally, Equation~\ref{eq:uniq3} guarantees that all the paths from $s$ to $t$ in $\xi_d$ have the same weight.
+
+
+\subsection{OSPF Synthesis with Route-filters} \label{sec:routefilter}
+
+If the system of equations presented Section~\ref{sec:sarc} admits a solution, 
+the values of the $W$ variables are the weights we are trying to synthesize,
+otherwise the OSPF synthesis problem cannot be solved without using route-filters.
+In this section, we showed how the proposed technique can be modified
+to support route-filters---i.e., when $n>0$.
+
+A route-filter  can selectively disable an
+edge for a given destination by  blocking advertisements to a
+particular destination along a link.
+We start by observing that the OSPF synthesis problem with route-filters
+admits a trivial solution in which 
+route-filters are used to enforce the exact set of input paths by blocking all other possible paths.
+\loris{double-check this notation}
+This can be done by creating a 
+route-filter $(l,d)$ for every link $l$ not in $\xi_d$. 
+However, this solution will place many more filters than necessary.
+Since the problem of optimally placing route-filters is NP-complete, 
+we propose a greedy strategy that does not guarantee to place a minimal number of filters, but works well in practice.
+
+%Ideally, we would like to impose further restrictions to the ARC
+%synthesis problem to make sure that the obtained solution
+%satisfies desirable connectivity or resilience properties.
+%In the following we informally use the word objective 
+%to identify a property we desire for the synthesized ARC.
+%Examples of objectives are minimizing the number of route-filters
+%or maximizing the number of edge-disjoint paths in the ARC
+%for each endpoint. 
+%Given an objective $O$, the \emph{augmented ARC synthesis} problem
+%is to find rational weights for the edges in $L$
+%and a set of route-filters $F\subseteq L\times S$
+% such that 
+%1) for each pair of endpoints $(s,t) \in \Gamma$, 
+%the paths in $P(s,t)$ are the shortest \emph{unfiltered} paths from $s$ to $t$ 
+%in the graph,
+%2) the resulting ARC satisfies the objective $O$. 
+%In the following we only allow route-filters for a destination $d$ to be applied to edges of $T$ that are directly connected to 
+%nodes in $\xi_d$. 
+
+Our algorithm starts by trying to synthesize a solution
+that does not use route-filters using the equations proposed in \secref{sec:sarc}. 
+In the case of a failure, the algorithm uses the ``proof of unsatisfiability''---i.e., the unsatisfiable core---generated by 
+the constraint solver 
+to greedily add a small set of route-filters. 
+New modified equations are then generated to model the added route-filters and the approach is repeated until a solution is found.
+We first describe the 
+modified linear equations generated when a set of
+route-filters are enabled, and then describe two
+techniques used to choose route-filters. 
+%\begin{figure}
+%	\centering
+%	\includegraphics[width=\columnwidth]{figures/arcSynthesis.eps}
+%	\caption{Synthesis of ARC with route-filters.} \label{fig:arcSynthesis}
+%\end{figure}
+
+\minisection{Equations with route-filters}
+%We show how the technique used to solve the simplified synthesis
+%problem can be modified to handle filtered and unfiltered paths.
+We assume we are given a set of route-filters $RF$ and 
+use $s\rightarrow_d^* t$ to denote that $s$ can reach $t$
+\loris{again double check notation}
+in $T$ without using any edge $l$, such that $(l,d)\in RF$.
+We use $D_d(r_1, r_2)$ to denote the shortest distance from $r_1$ to $r_2$
+using only edges that are not filtered for destination $d$.
+We can revise the equation in \eqref{eq:dist} to correctly restrict the values of $D_d$
+by simply ignoring all the filtered edges. 
+In the same way, we can modify equations  \eqref{eq:uniq1} and \eqref{eq:uniq2}, while
+equation \eqref{eq:uniq3} remains unchanged.
+
+Unfortunately, if the encoding without route-filters produces $n$ equations, this encoding produces $|\Omega|n$ due
+to the multiple different distances $D_d$.
+Notice that, the shortest distance $D_d(s,t)$ between two nodes $s$ and $t$ without using edges filtered for $d$ cannot be
+smaller than the shortest distance $D(s,t)$ obtained without considering route-filters.
+We use this property to simplify the encoding by only computing $D(s,t)$ and by replacing each instance of $D_d(s,t)$
+with $D(s,t)$ in
+equations \eqref{eq:uniq1} and \eqref{eq:uniq2}. 
+It is easy to see that every solution of this simplified set of constraints
+is also a solution to the original solution (because $D(s,t)\leq D_d(s,t)$).
+However, the reverse is not true and the set of simplified equations can be unsatisfiable
+in cases in which the original set is satisfiable.
+We use the simplified
+set of equations in our preliminary implementation and show how it yields encouraging results in practice.
+
+If the set of linear equations does not admit a solution, we 
+can add new route-filters so that the equations resulting from the added
+route-filters admit a solution.
+We discuss two schemes used to add route-filters:
+the first scheme uses unsatisfiable cores generated
+by the solver and the second scheme 
+finds geometrical structures called diamonds that 
+cannot be handled without route-filters.
+
+
+% While detecting diamonds is efficient, the
+% presence of diamonds is a not 
+% necessary condition for route-filtering.
+% Characterising the properties of data planes for which there is
+% a pure ARC solution (i.e., no route-filters
+% required) is a open algorithmic
+% problem. An 
+% efficient algorithm to find the structures causing 
+% inconsistencies based on these properties 
+% can be used to minimize the number of route-filters enabled.  
+
+\todo{Not good, improve} \\
+\minisection{Adding filters using unsatisfiable cores}
+Modern LP-solvers have efficient procedures to return an
+unsatisfiable core, also called IIS (Irreducible Inconsistent Subsystem)
+~\cite{chinneck2007feasibility}. Formally, an IIS is a subset of constraints such that,
+if all constraints except those in the IIS are removed, the resulting set of
+linear equations is still inconsistent (unsatisfiable). Moreover, the set is irreducible---i.e., removing 
+any one constraint of the IIS produces a consistent set of constraints. 
+
+Suppose that, upon producing our set of linear equations, the solver returns unsatisfiable and produces
+a concrete unsatisfiable core. 
+Some of the linear inequalities from 
+Equations \eqref{eq:uniq1} and  \eqref{eq:uniq2}
+will appear in the unsat-core 
+(an unsat-core cannot consist of only 
+constraints from \Cref{eq:dist} and \eqref{eq:uniq3}, as all distances and edges set to zero
+would trivially be consistent with these constraints). 
+In particular, the unsat-core contains some constraint
+\begin{eqnarray}
+E(s, n') + D(n', t) > \sum_{\mathclap{\substack{l_i=(s_i,t_i)}}} 
+		E(s_i, t_i) 
+\end{eqnarray}
+that was added to reason about some DAG $\xi_d$.
+
+By adding the route-filter $((s,n'),d)$ to $F$, this inequality is removed from the set of constraints
+and the combination of the other constraints appearing in the other unsat-core is now satisfiable.
+The complete set of equations may still be inconsistent as other unsat-cores might exist. 
+The procedure can be repeated until the resulting set of constraints becomes satisfiable
+and we have therefore reached a solution to the ARC synthesis problem.
+
+Finding the optimal number of route-filters is NP-hard, and it
+is very difficult to incorporate optimality in our iterative learning
+technique for finding the set of filters. This is because we do not 
+have the set of all unsatisfiable cores (the solver returns one at 
+a time) to find an optimal set of filters. Instead of considering the 
+number of filters, we consider the metric: loss of resilience.
+%\loris{not sure the next paragraph is needed}
+%For a given unsat-core, there may be multiple ways to place a route
+%filter to eliminate one constraint and we have not investigated
+%We can 
+%adopt a greedy approach (based on set cover \cite{setcover}) 
+%of picking a route-filter which 
+%eliminates the maximum number of unsat-cores. However, 
+%finding the number of unsat-cores a route-filter eliminates
+%is an open problem and instrumental in minimizing the number 
+%of route-filters. Other schemes can be used to choose 
+%a route-filter from an unsat-core satisfying certain
+%objectives. 
+
+Finding an IIS is an NP-hard problem~\cite{iiscomplexity}
+and can result in slow synthesis times.
+%We identify a topological property of the set of input paths that 
+%is guaranteed to require route-filters and use it to produce an initial set of necessary route-filters.
+%This technique allows us to reduce the number of times we are required to compute  unsat-cores.
+%
+%We define the structure shown in \Cref{fig:diamond}
+%as a \emph{diamond}. 
+%Formally, a problem instance contains a diamond iff there exists two different destinations $d$ and $d'$
+%such that, in their corresponding DAGs $\xi_d$ and $\xi_{d'}$,
+%there exists two nodes $s$ and $t$, such that $s\rightarrow_{\xi_d} t$,
+%$s\rightarrow_{\xi_{d'}} t$, and
+%there exists a path $l_0\cdots l_n$ from $s$ to $t$ in $\xi_d$ that is not a path from
+%$s$ to $t$ in $\xi_{d'}$.
+%As we mentioned at the beginning, synthesizing an ARC for  diamond structures requires
+%the addition of a route-filter.
+%In fact, each such a diamond can be ``removed'' by introducing a route-filter $(l_0, d')$ that hides
+%the path $l_0\cdots l_n$ for the destination $d'$ (see \Cref{fig:diamond}).
+%Diamonds can detected and removed in polynomial time.
+%%Consider
+%the diamond in \Cref{fig:diamond}. There are two choices
+%of route-filters: the $s1-s3$ edge for destination $d1$ 
+%and the $s1-s2$ edge for destination $d2$, out of which,
+%at least one filter is required to eliminate the 
+%inconsistency in the linear equations caused due to the diamond.
+%Thus, we find all diamonds for all pairs of destination
+%DAGs (this is done in polynomial time) and assign a filter
+%to one of the two edges at the source of each diamond. 
+%Thus, by removing the diamonds, we can reduce the 
+%number of iterations
+%of the unsat-core learning approach, which would have 
+%provided diamonds as an unsat-core if 
+%diamonds were not eliminated.
+
+
+
+

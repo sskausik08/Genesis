@@ -29,19 +29,22 @@ policy-compliant paths.
 to capture 
 the network forwarding behavior,---i.e. 
 $(r_1, r_2$, $pc)\in$ $Fwd$ if 
-$r_1$ forwards packets of class $pc$ to router $r_2$. 
-The relation $Reach \subseteq V \times PC \times \nat$ captures
-the path reachability,---i.e. $(r, pc, k)\in Reach$ if 
+$r_1$ forwards packets of class $pc$ to router $r_2$---
+and 
+the relation $Reach \subseteq V \times PC \times \nat$ 
+to captures
+the path reachability---i.e. $(r, pc, k)\in Reach$ if 
 the router $r$ is reachable in the path from the source
 router of packet class $pc$ in exactly $k$ steps. Based on
-the input policies, \genesis generates constraints on $Fwd$
+the input policies, \genesis generates constraints over the $Fwd$
 and $Reach$ relations and finds a solution to the relations. 
-\genesis then extracts the paths from the $Fwd$ and $Reach$
+\genesis then extracts the concrete paths from the solution to the $Fwd$ and $Reach$
 relations.
 
-\paragraph{Modifications from~\cite{genesis}}
-We now discuss how \genesis
-constraints need to be modified to avoid generating paths that 
+\paragraph{Modifications to \genesis}
+We  discuss how the
+constraints of \genesis~\cite{genesis}
+need to be modified to avoid generating paths that 
 cannot be enforced by any routing configuration.
 
 OpenFlow switches~\cite{openflow} support match predicates for
@@ -58,6 +61,8 @@ packets that are directed to the same destination,
 and thus cannot be induced by any router
 configuration. 
 
+\loris{yet another name for switches $sw$, before
+it was $r$ etc.}
 We add constraints to \genesis to ensure that
 if any two paths to a destination subnet intersect at a router,
 the subsequent downstream paths to the destination from the
@@ -66,6 +71,7 @@ We define the relation $Reach^*(sw,pc)$ to model reachability
 of $sw$ in the path of $pc$, i.e., it can be reached in zero or more
 steps from the source. We can be expressed $Reach^*(sw,pc)$ 
 in the network forwarding model of \genesis as:
+\loris{$\mu$ not defined}
 \begin{equation}
 	Reach^*(sw,pc) = \bigvee_{k \in [0, \mu]} Reach(sw, pc, k)
 \end{equation}
@@ -78,6 +84,10 @@ constraints for every pair ($pc_1$,$pc_2$) having the same
  \begin{multline}
  \forall sw. Reach^*(sw, pc_1) \wedge Reach^*(sw, pc_2) \implies \\ \bigvee_{n \in N(sw)} Fwd(sw, n, pc_1) \wedge Fwd(sw, n, pc_2)
  \end{multline}
+ \loris{
+ I think the constraint should be
+ $\bigwedge_{n \in N(sw)} Fwd(sw, n, pc_1) \Leftrightarrow Fwd(sw, n, pc_2)$.
+ }
  $Fwd(sw_1, sw_2,pc)$ is valid if $sw_1$ forwards $pc$ to next-hop $sw_2$ and
  $N(sw)$ denotes the neighbours of $sw$. Basically, 
  if a switch is reachable for both packet classes, 
