@@ -1,0 +1,27 @@
+\begin{abstract}
+Operators of modern networks
+require support for diverse and complex end-to-end policies, such
+as, middlebox traversals, isolation, and traffic engineering. While 
+Software-defined Networking (SDN) provides centralized 
+custom routing functionality
+in networks to realize these policies, many networks deploy "traditional"
+control planes running distributed routing protocols like OSPF and BGP
+because they are scalable and robust to failures. However, realization of 
+policies by distributed control plane configurations is manual and error-prone,
+and as failure handling is distributed, ensuring policy-compliance under failures 
+can be challenging. 
+We show that synthesizing policy-compliant control planes is a
+challenging problem and  propose a two-phase 
+architecture to automatically realize 
+fault-tolerant control planes from policy specifications. 
+The first phase
+uses prior work to synthesize paths that satisfy the policies pertaining to the data-plane and 
+the second phase synthesizes
+a control plane satisfies the policies pertaining to the control plane and produces the paths synthesized in the first phase. 
+This last phase combines constraint solving, for determining 
+the edge weights to be used for OSPF and BGP routing
+and 
+Markov Chain Monte Carlo (MCMC) sampling to identify a good way to partition the graph into
+multiple routing domains.
+We evaluate our techniques on real topologies and \loris{todo}
+\end{abstract}

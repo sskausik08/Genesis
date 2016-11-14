@@ -1,117 +1,62 @@
-\section{Motivation}
-As networks increase in size, the OSPF protocol 
-does not scale well as it uses reliable
-flooding of link state packets, and can
-overwhelm the network when links fail. 
-Ideally, operators would want to specify
-a upper limit on the size of the domain. Thus,
-a network could be solit into multiple domains,
-and can use an inter-domain protocol like
-BGP to exchange routes. 
+\section{Synthesising Domain Assignments}
+\label{sec:synth-dom-ass}
 
-We consider synthesis of inter-domain routing 
-configurations where each domain uses a 
-IGP for intra-domain routing (like 
-OSPF) and domains communicate among 
-themselves using BGP. 
-Routing inside a domain is controlled 
-by synthesizing OSPF edge weights and 
-route-filters. BGP is a path-vector
-protocol and primarily selects routes by 
-AS-PATH length. However, we can 
-use BGP's powerful path selection metrics 
-like local preferences to select 
-paths with greater path lengths (local
-preference value is considered first in 
-path selection with multiple routes). 
-OSPF has better convergence times than BGP,
-thus, it is advantageous to use OSPF for 
-routing in small domains and using BGP for
-inter-domain routing. 
+In this section, we describe how \name searches the space of possible
+domain assignments $\Theta$.
+The goal of this search is to find a domain assignment for which
+the techniques presented in Section~\ref{} can find weights, route filters,
+BGP preferences, and static routes that satisfy all the given \loris{control-plane?} policies..
+In particular, we will focus our discussion on maximizing resiliency while minimizing
+configuration overhead---e.g.,  number of LoC and route-filters.
 
-We introduce a framework of synthesizing
-inter-domain configurations under certain
-constraints. For example, due to scalability
-concerns, OSPF domains must be smaller than 
-a certain threshold for effective operations.
-Similarily, the number of local preferences 
-stored on a router is limited due to 
-resource constraints. Thus, the routing 
-configurations generated must adhere to 
-these constraints. We describe the constraints
-supported by the framework, points 1-4 are 
-hard constraints we would ensure, while 5-8
-are optimizations to synthesize better inter-domain
-configurations. 
-
-\begin{enumerate}
-	\item \textbf{Number of domains ($N(D)$)}: 
-	Can be used for administrative constraints 
-	(each domain can be managed by different
-	entities). 
-	\begin{equation}
-	N_l \leq N(D) \leq N_u
-	\end{equation}
-
-	\item \textbf{Size of domain ($|D|$)}: OSPF
-	performs poorly as size of the domain increases
-	(due to flooding of link-state updates). Thus,
-	operators can specify bounds on the size of each
-	domain.
-	\begin{equation}
-	S_l \leq |D| \leq S_u
-	\end{equation}
-
-%	\item \textbf{BGP-Compatibility}: Certain 
-%	routers may not be suited to run BGP due to resource
-%	constraints. Thus, the operator can specify if a 
-%	router is non-BGP compatible. 
-
-	\item \textbf{Optimization: Lines of configuration} 
-	To enable path-based inter-domain routing, \name needs
-	to set up static routes along the path, or configure BGP 
-	variables like local preferences to 
-	to ensure the routing emulates the input paths under no 
-	failures. This would increase the size of the configurations,
-	thus increasing the complexity of verifying correctness either 
-	manually or using verification tools~\cite{batfish}. 
-
-\end{enumerate}
-
-\section{MCMC Sampling}
-\name tackle the problem of minimization of LoC/route-filters
-by stochastically searching for a domain assignment which 
-minimizes the cost of the configuration with the help of Markov
-Chain Monte Carlo (MCMC) sampling, specifically the Metropolis-Hasting
+We first show that even the simplest variant of \loris{what problem} is NP-complete.
+\begin{theorem}
+\loris{what is the problem that is NP-complete}
+\end{theorem}
+Given the complexity of this problem, \name  searches the space of domain
+assignments Markov
+Chain Monte Carlo (MCMC) sampling methods, specifically the Metropolis-Hasting
 algorithm, a common technique used in different optimization 
 problems~\cite{stoke}. 
+We first present the general structure of our searching algorithm and 
+then describe the cost function we use to guide the search.
 
-MCMC sampling is a technique for drawing elements from a
-probability density function in direct proportion to its value: 
-regions of higher probability are sampled from more often than 
-regions of low probability.
-Applied in cost minimization problems,
-MCMC sampling acts as an intelligent hill climbing method which
-is robust for irregular cost functions and avoids convergence at 
-local minimas. To transform an arbitrary cost function $c(\Theta)$, 
-into a probability density function, we use the following 
-technique~\cite{mcmcbook}:
+\subsection{Searching Assignments with MCMC}
+MCMC sampling is a technique for 
+drawing elements from a
+probability density function in direct proportion to its value.
+%Intuitively, the search samples regions of higher probability more often than 
+%regions of low probability. 
+Intuitively, the probability distribution can be viewed as a (potentially infinite) 
+connected undirected graph
+where nodes are elements of the probability distributions
+and edges denotes possible next steps in the search---i.e.,
+which nodes we can visit next.
+Each node is associated with a cost so that nodes with higher costs have lower
+probabilities associated with them.
+
+In our case, each node is a domain assignment $\Theta$
+with some cost $c(\Theta)$. 
+We will discuss how our cost function is implemented in the next sections.
+The cost function $c$ can be transformed 
+into a probability density function in the following way~\cite{mcmcbook}:
 \begin{equation}
 	p(\Theta) = \frac{1}{Z}exp(-\beta * c(\Theta))
 \end{equation}
-$\beta$ is a positive constant and $Z$ is a partition function that
+where $\beta$ is a positive constant and $Z$ is a partition function \loris{over what?} that
 normalizes the distribution. Computing $Z$ is in general 
-intractable, and the Metropolis-Hasting algorithm for 
-generating Markov Chains can explore the probability density
-function $p(\Theta)$ without computing the partition function. 
-The intuition is as follows: given a current domain
+intractable, and the Metropolis-Hasting algorithm 
+explores the search graph representing $p$ without computing the partition function. 
+Intuitively, given a current domain
 assignment $\Theta$, the algorithm proposes a modified 
-domain assignment $\Theta'$ as the next step. $\Theta'$
-is accepted or rejected based on the Metropolis-Hasting
-acceptance probability: 
+domain assignment as the next step  by picking a neighbour
+$\Theta'$ of $\Theta$ in the graph. A coin is then toss with
+probability 
 \begin{equation}
 Pr(\Theta \rightarrow \Theta') = min(1, \frac{p(\Theta')*q(\Theta| \Theta')}{p(\Theta)*q(\Theta'| \Theta)})
 \end{equation}
+If the result is head, $\Theta'$
+becomes the current node, otherwise $\Theta$ remains the current node.
 $q(\Theta'| \Theta)$ denotes the proposal distribution from 
 which $\Theta'$ is chosen given $\Theta$. If the proposal 
 distributions is symmetric, i.e., 
@@ -122,18 +67,17 @@ can be computed directly from the cost function $c(\Theta)$:
 Pr(\Theta \rightarrow \Theta') = min(1, \frac{p(\Theta')}{p(\Theta)}) \\
 = min(1, exp(-\beta.(C(\Theta') - C(\Theta)))
 \end{multline}
-As we can observe from the acceptance probability, 
-the algorithm will always accept a new proposal $\Theta'$
-if its cost is lower than $\Theta$. If $\Theta'$ has a 
-higher score than $\Theta$, the proposal will be 
-probabilistically accepted depending on 
-how far the cost of the proposals are. This ensures that 
-the algorithm does not get stuck at local minimas and 
-explore proposals with smaller differences in cost with 
+The algorithm will always accept a new proposal $\Theta'$
+that has cost lower than $\Theta$. If $\Theta'$ has a 
+higher cost than $\Theta$, the proposal will be 
+accepted with probability depending on 
+how far the costs of $\Theta$ and $\Theta'$ are. This ensures that 
+the algorithm does not get stuck at local minimas, but 
+explores proposals with smaller differences in cost with 
 higher probability. We describe the MCMC search procedure 
 in Pseudocode~\cref{alg:mcmc}. 
 
-\subsection{Hard Constraints}
+
 \begin{algorithm}[t]
 	\floatname{algorithm}{Pseudocode}
 	\caption{MCMC}
@@ -188,116 +132,33 @@ in Pseudocode~\cref{alg:mcmc}.
 	
 \end{algorithm}
 
-\subsection{Configuration Cost}
+
+
+\subsection{Domain Assignment Cost}
+In the previous section, we presented the general structure of our search algorithm,
+but we did not specify how the cost function $c(\Theta)$
+is computed. Intuitively, the cost function should capture
+how far we are from meeting all the given control-plane policies.
+For example, if we are trying to obtain good resiliency,
+domain assignments with better resiliency should have lower costs.
+The techniques presented in Section~\ref{sec:synth-multi} provide a way to 
+synthesize a configuration for each domain assignment and therefore compute
+very precise costs for each domain assignment. However, 
+we want MCMC to explore as many assignments as possible
+running these techniques for
+each domain assignment is infeasible (Theorem~\ref{} shows that, even for a single domain, computing accurate costs---e.g., number or
+required route filters---is an NP-complete
+problem).
+
+\loris{unclear what the cost will be, is this only about resiliency?}
+
+In this section, we propose techniques for approximating the cost of a domain assignment 
+by exploiting topological properties of the network and the domains.
+We first \loris{TODO}
+and then \loris{TODO}.
+
 \todo{Explain path, as\_path transformation more formally}
-\subsubsection{Static Routes} \label{sec:static}
-As shown in \Cref{} (Refer to example of 
-static routes in motivating example), we require static routes 
-to enforce AS paths with loops. Static routes have the lowest 
-administrative distance (1) by default~\cite{ad}, and will override BGP
-and OSPF routes at a router, this feature can be used to 
-exit and enter a domain multiple times. While static routes
-do not reduce the resilience of the network (all routes are still
-enabled, unlike route-filters), a network under flux will have
-unpredictable routing behaviour, unlike with only OSPF and BGP
-configured at the routers. 
-Also, static routes have to be installed per-destination, thus increasing
-the size of configurations drastically as number of policy paths increase.
 
-Given a path $p$ for subnet $\lambda$ and 
-the corresponding AS path $p_{as}
-= as_1 \rightarrow as_2 \rightarrow \ldots \rightarrow as_m$ (where
-$as_m = \Theta(\lambda)$), static
-routes are required if $p_{as}$ has a AS-loop. 
-To minimize
-the number of static routes, we find 
-the smallest $i \in [1,m]$ 
-such that $\overline{p_{as}} = as_i \rightarrow as_{i+1}
-\rightarrow \ldots \rightarrow as_m$ has no loops. 
-Therefore, $\overline{p_{as}}$ is the longest AS-loop-free
-subpath of $p_{as}$, and be can be enforced using BGP and OSPF. For the 
-network path corresponding to AS path $as_1 \rightarrow as_2 
-\rightarrow \ldots \rightarrow as_{i-1}$, we require static
-routing rules for each next-hop. The static routing score
-is the total number of static route hops required to enforce
-the input paths.
-\todo{Write about the BGP paths are extracted for the next phase}
-
-\subsubsection{BGP Local Preference Entries}
-\name uses BGP local preference to route traffic
-for a particular subnet to the next AS via a specific 
-gateway as per the input paths obtained. 
-As shown in \Cref{} (Refer
-to ex), if there are multiple exit gateways from an AS 
-for a subnet $\lambda$, we require local preference entries at the 
-gateways and iBGP filters among these gateways for $\lambda$.
-
-For a domain $d$ and subnet $\lambda$, consider the set 
-of paths to $\lambda$ exiting $d$ using BGP (and not statically
-routed as described in \Cref{sec:static}). Let $E$ denote the
-set of exit gateway routers for the paths of $\lambda$. 
-If $|E| = 1$, if gateway $g \in E$ receives a route with 
-strictly shortest AS path length (\Cref{alg:bgppathrules}) 
-which enforces the paths
-for $\lambda$, we do not need to configure local preference
-entries on any BGP router in the domain for $\lambda$. If
-the exit route chosen by the gateways for $\lambda$ does not 
-enforce the paths, \name configures a local preference entry
-for $\lambda$ at exit gateway, and thus, the exit route chosen
-by BGP enforces the input paths for $\lambda$ in the domain.
-
-If $|E| ~> 1$, multiple BGP routes must be redistributed to 
-the OSPF domain. \\
-E local prefs + E(E - 1) iBGP filters!
-
-\todo{Changes to OSPF synthesis to ensure closest gateway}
-\subsection{Multiple Gateways}
-When BGP routes to a destination $\lambda$ 
-from multiple gateways are redistributed in
-the OSPF domain, \name uses a modified OSPF synthesis
-algorithm from \secref{sec:ospfsynthesis}. This is 
-required because an OSPF router will choose
-the closest BGP gateway in terms of OSPF distance 
-for $\lambda$. For instance, a router $r$ will choose
-from gateways $g_1$ and $g_2$ according to the $r-g_1$
-and $r-g_2$ distance. Therefore, given the input path in
-the domain $p=r \rightarrow^+ g1$, \name adds additional
-constraints ensuring the distance to $g_2$ from routers
-on the path is strictly
-greater than the distance to $g_1$ 
-on top of the constraints ensuring
-$p$ is the shortest path from $r$ to $g_1$. 
-Let us define $G_\lambda$ to be the set of gateways
-for destination $\lambda$ in the domain. For 
-a router $r$, $g \in G_\lambda$ is the gateway if
-$r \rightarrow^+_{\xi_{\lambda}} g$ holds, i.e., $g$ 
-is reachable from $r$ in the DAG $\xi_{\lambda}$.  
-\name adds the following constraints to the 
-OSPF synthesis phase to ensure a router
-chooses the correct gateway to ensure the input 
-paths are induced: 
-\begin{multline} \label{eq:gateway}
-\forall g \in G_{\lambda}.~\forall r \in \xi_\lambda 
-\wedge r \rightarrow^+_{\xi_{\lambda}} g. \\
-~\forall g' \in G_{\lambda} \wedge g' \not= g. 
-~\forall n' \in N(r) \setminus N_{\xi_\lambda}(r). \\
-E(r, n') + D(n', g') > \sum_{\mathclap{\substack{(r_i,r_j) \in r \rightarrow^+_{\xi_{\lambda}} g }}} 
-E(r_i, r_j) 
-\end{multline}
-Like unmodified OSPF synthesis, the system of
-constraints generated could be inconsistent and require
-route-filters to eliminate constraints. In this scenario,
-OSPF needs to filter shorter routes to gateways, and
-thus the synthesized configuration would forward traffic to
-the gateway specified by the input. We use the same 
-approach of picking route-filters from the unsatisfiable core
-(\secref{sec:routefilter}), route-filter $((r, n'), \lambda)$
-maps to following constraint in the IIS for some $g,g'$: 
-\begin{equation}
-E(r, n') + D(n', g') > \sum_{\mathclap{\substack{(r_i,r_j) \in r \rightarrow^+_{\xi_{\lambda}} g }}} 
-E(r_i, r_j) 
-\end{equation}
-\todo{abrupt}
 
 \begin{figure}
 	\centering
@@ -321,7 +182,12 @@ E(r_i, r_j)
 	\label{fig:diamonddomain}
 \end{figure}
 
-\subsection{Route-Filter Cost}
+
+\paragraph{Approximating number of route filters}
+We present a technique for \loris{over-approximating?} the number of route 
+filters required by a particular domain assignment.
+\loris{2 lines of intuition, need to finish previous section first to have notation}
+
 If a diamond created by the input paths (\Cref{fig:diamonddomain}),
 \name requires a route-filter to find a solution to OSPF
 edge weights. However, if $s$ and $t$ of the diamond lie in
@@ -373,9 +239,5 @@ our experiments show reductions in route-filter cost
 lead to reductions in number of filters(~\Cref{some experiment}). 
 \todo{Specify weird Route filter case without diamonds?}
 
-
-
-
-
-
-
+\paragraph{Approximating number of static routes}
+\loris{TODO, need notation from previous section}

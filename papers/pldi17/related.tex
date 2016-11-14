@@ -1,0 +1,36 @@
+\section{Related Work}
+\label{sec:related}
+
+\loris{copied from hotnets}
+\minisection{Centralized control}
+Programming routers for centralized control has been an
+active area of research in recent times. RCP~\cite{rcp} uses
+BGP as an substitute to OpenFlow to install rules at the 
+switches, but must respond to failures and update the 
+rules at switches. Fibbing~\cite{fibbing} provides 
+centralized control over distributed routing by creating 
+fake nodes and fake links to steer the traffic in the 
+network through paths that are not the shortest. However, 
+these fake advertisements can create forwarding loops in the
+network during failures, and the centralized controller 
+has to respond to failures (response to failures can precomputed),
+thus making the controller a central point of failure. In contrast,
+our approach to distributed control plane synthesis can provide
+the same expressive power as Fibbing but also
+avoids any centralized component by engineering 
+the control plane parameters to match the input specifications. 
+
+\minisection{Configuration synthesis} Propane~\cite{propane} 
+tackles synthesis of BGP configurations to satisfy network-wide
+objectives, however they tackle a narrower space of BGP policies
+using algorithms over automata and graphs. ConfigAssure
+~\cite{configassure} uses a combination of 
+logic programming and SAT solving to synthesize network
+configurations. Fortz et. al~\cite{ospf-te} tackle the 
+problem of optimizing OSPF weights for performing traffic
+engineering, however their work is tailor-made to the 
+specific problem of TE and is inextensible to apply 
+to custom forwarding behaviors for other kinds of policies.
+
+\loris{add martin vechev stuff and say we do also domain assignment,
+resiliency, isolation, and bigger topologies}

@@ -49,6 +49,7 @@
 \usetikzlibrary{automata,positioning,shapes.geometric}
 \newcommand{\name}{Zeppelin\xspace}
 \newcommand{\Name}{\name}
+\newcommand{\genesis}{Genesis\xspace}
 \newcommand{\pushcode}[1][1]{\hskip\dimexpr#1\algorithmicindent\relax}
 \newcolumntype{P}[1]{>{\centering\arraybackslash}p{#1}}
 
@@ -68,6 +69,7 @@
 \usepackage[export]{adjustbox}
 \usepackage{subfig}
 \usepackage{mathtools}
+\usepackage{amssymb}
 \usepackage{amsthm}
 \usepackage{multirow}% http://ctan.org/pkg/multirow
 \usepackage{hhline}
@@ -122,23 +124,26 @@
 %\titlebanner{}        % These are ignored unless
 %\preprintfooter{}   % 'preprint' option specified.
 
-\title{Policy Enforcement in Legacy Networks by Router Configuration Synthesis}
+\title{Router Configuration Synthesis from Intents\vspace{-.7in}}
 
-\authorinfo{Omitted for double blind}
-{...}
-{...}
+\authorinfo{~}
+{~}
+{~}
 
 \maketitle
 
+\input{abstract}
 \input{introduction}
-\input{background}
-\input{policy}
-\input{genesis}
-\input{synthesis}
+\input{motivation}
+\input{problemstmt}
+\input{architecture}
+\input{configpolicy}
+\input{ospfsynthesis}
 \input{filtering}
-\input{complexity}
+\input{multi-dom}
 \input{configurations}
 \input{evaluation}
+\input{related}
 %\category{CR-number}{subcategory}{third-level}
 %
 %% general terms are not compulsory anymore,
