@@ -13,7 +13,7 @@ that contains an optimal number of route-filters is NP-complete.
 
 \begin{theorem}[OSPF synthesis]
 Given a set of paths $\Pi$,
-a topology $T=(V,E)$,
+a topology $T=(V,L)$,
 a domain-assignment function $\Theta$, such that $|\{\Theta(r) \mid r\in V\}|=1$,
 a number $n\geq 0$,
 the problem of finding 
@@ -27,7 +27,7 @@ We call this problem the \emph{intra-domain synthesis problem}.
 \iffull
 \input{route-filters-nphard}
 \else
-The reduction is from \loris{what problem?}.
+The reduction is from minimum vertex cover problem.
 \fi
 
 We first show how to solve the intra-domain synthesis problem when $n=0$---i.e., we are not allowed to use route filters---and
@@ -44,10 +44,9 @@ then extend our technique to handle route filters.
 				\node[state] at (3.6, 0)(t) {$t$};
 				\node[state, rectangle] at (5, 0) (d1) {$\lambda$};
 				\path[->] 
-				(s) edge node {1} (v1)
+				(s) edge [red] node [black] {1} (v1)
 				edge  node {5} (t)
-				edge [red, dashed, bend left=90] node {} (t)
-				(v1) edge node {2} (t)
+				(v1) edge [red] node [black] {2} (t)
 				(t) edge [red, dashed] node {} (d1);
 				\end{tikzpicture}
 			}}}
@@ -61,18 +60,16 @@ then extend our technique to handle route filters.
 					\node[state, rectangle] at (5.5, 0.75) (d1) {$\lambda_1$};
 					\node[state, rectangle] at (5.5, -0.75) (d2) {$\lambda_2$};
 					\path[->] 
-					(s) edge node {1} (v1)
-					edge  node [above] {1} node [below] {$rf((s,t),\lambda_1)$} (t)
-					edge [red, dashed, bend left=90] node {} (t)
-					edge [blue, dashed, bend right=45] node {} (t)
-					(v1) edge node {2} (t)
+					(s) edge [red] node [black] {1} (v1)
+					edge [blue] node [above, black] {1} node [below, black] {$rf((s,t),\lambda_1)$} (t)
+					(v1) edge [red] node [black] {2} (t)
 					(t) edge [red, dashed] node {} (d1)
 					(t) edge [blue, dashed] node {} (d2);
 					\end{tikzpicture}
 				}}
 				\compactcaption{OSPF edge weights and filters such that the
 					the routers forward traffic for destination along
-					the input paths (dashed arcs).}
+					the colored paths.}
 				\label{fig:ospfexample}
 \end{figure}
 			
@@ -88,13 +85,12 @@ upon assigning
  Djikstra's algorithm to choose the
  shortest weighted path for a pair of endpoints. 
 We show how,
- given a set of input paths $Pi$, \name 
+ given a set of input paths $\Pi$, \name 
 generates a set of linear constraints to 
 find weights for the edges in $L$
 such that 
  the shortest path through the network
  for these endpoints exactly match the input paths $\Pi$. 
- \loris{figure is weird, make the link themselves red as well? or double the links}
  For example in \Cref{fig:ospfexample}(a), if the input
  path is $s\rightarrow r_1 \rightarrow t$ for
  destination IP $\lambda$, \name assigns
@@ -111,29 +107,23 @@ For a destination IP $\lambda$, we call $\xi_\lambda$
 the directed tree of $T$ 
 obtained by only keeping the nodes and edges 
 that are traversed by paths in $\Pi$ for 
-destination IP $\lambda$.
-Since paths are acyclic, $\xi_d$ is a directed acyclic graph.
-$\Delta=\{\xi_\lambda\mid \lambda \in \Lambda\}$ is   
+destination IP $\lambda$, the root of the tree
+is the destination router connected to $\lambda$. 
+ This destination tree
+ property is due to the modifications in \genesis
+ to support OSPF's destination-based forwarding. We
+ define $\Delta=\{\xi_\lambda\mid \lambda \in \Lambda\}$ is   
 the set of all destination trees. 
-\loris{need to say what a destination tree is and tie to previous discussion of genesis modification}
-
-We use  $r_1\rightarrow r_2$ to denote $(r_1,r_2)\in L$ and
-$r_1\rightarrow^* r_2$ (resp. $r_1\rightarrow^+ r_2$) to denote 
-that $r_2$ is reachable from $r_1$ by crossing zero 
-(resp. one) or more links in $T$.
-Similarly, we use $\rightarrow_{\xi_\lambda}$ 
-to denote the same relations in the destination trees.
 
 
-\minisection{Distance equations}
-We generate a set of linear equations
+we generate a set of linear equations
 to find the edge weight $W(r_1, r_2)$ 
 for all $(r_1, r_2) \in L$.
 We use 
 $D(r_1, r_2)$ to denote the 
-shortest distance from $r_1$ to $r_2$ and
-add the equation $D(s,s) = 0$, 
-for every $s\in S$, to denote that the distance
+shortest distance from $r_1$ to $r_2$.
+We add the equation $D(s,s) = 0$ 
+for every $s\in S$ to denote that the distance
 from a node to itself is $0$.
 The
 following equation guarantees that $D(s,t)$ is not greater than 
@@ -143,50 +133,40 @@ the actual shortest distance from $s$ to $t$.
 D(s, t) \leq W(s, r) + D(r, t)
 \end{equation}
 
-For each destination tree $\xi_d\in\Delta$, we add equations to ensure 
+For each destination tree $\xi_\lambda\in\Delta$, we add equations to ensure 
 that the input paths with destination $d$ are indeed the shortest ones.
- If a path
+If a path
 is the shortest path between its endpoints, then every 
 subpath of the path has to be the shortest between its endpoints
 as well (otherwise the complete path would not be the shortest).
-Consider a tree $\xi_d$ for destination $d$. 
-The function $N_{\xi_d}(s)$ denotes the set of
-neighbours of switch $s$ in the destination tree $\xi_d$. 
-Given a destination $d\in \Omega$,
-we use the following equations to ensure that, given two nodes $s$ and $t$ in
-$\xi_d$, 
-the set of paths from $s$ to $t$ in $\xi_d$ are
-exactly
-\emph{the} shortest paths from $s$ to $t$ in $T$.
-Let $s$ and $t$ be two nodes in $\xi_d$ and let  $Paths_{\xi_d}(s,t)$ be the set of paths from $s$ to $t$ in $\xi_d$.
+
+Consider a tree $\xi_\lambda$ for destination $\lambda in \Lambda$. We define two neighbour
+functions: $N_T(s)$ denotes the set of neighbours of router $s$ 
+in the topology $T$, and $N_{\xi_\lambda}(s)$ denote the set of
+next-hop neighbours of router $s$ in the destination tree $\xi_\lambda$.
+Since $\xi_\lambda$ is a directed tree, every router $r \in \xi_\lambda$
+has one next-hop router, therefore $N_{\xi_\lambda}(s)$ is a singleton
+set (the root of the tree (router connected to $\lambda$) has no next-hop
+routers).
+
+We use the following equations to ensure that, for any 
+given two nodes $s$ and $t$ in
+$\xi_\lambda$, $t$ is reachable from $s$, 
+the path from $s$ to $t$ in $\xi_\lambda$ is the 
+\emph{unique shortest path} from $s$ to $t$ in $T$.
+Let $Path_{\xi_\lambda}(s,t)$ be path from $s$ to $t$ in $\xi_\lambda$.
 \begin{multline} \label{eq:uniq1}
-		\forall l_0\cdots l_n\in Paths_{\xi_d}(s,t).
-		\forall n' \in N(s) \setminus N_{\xi_d}(s). \\
-		W(s, n') + D(n', t) > \sum_{\mathclap{\substack{l_i=(s_i,t_i)}}} 
-		W(s_i, t_i) 
-\end{multline}
-\begin{multline} \label{eq:uniq2}
-		\forall l_0\cdots l_n\in Paths_{\xi_d}(s,t).
-		\forall n' \in N_{\xi_d}(s). n' \not\rightarrow^+_{\xi_d} t.  \\
-		W(s, n') + D(n', t) > \sum_{\mathclap{\substack{l_i=(s_i,t_i)}}} 
-		W(s_i, t_i) 
-\end{multline}
-\vspace{-2mm}
-\begin{multline} \label{eq:uniq3}
-		\forall l_0\cdots l_n, l_0'\cdots l_n'\in Paths_{\xi_d}(s,t).\\
-		\sum_{\mathclap{\substack{l_i=(s_i,t_i)}}} 
-		W(s_i, t_i)  =\sum_{\mathclap{\substack{l_i'=(s_i',t_i')}}} 
-		W(s_i', t_i') 
+\forall l_0\cdots l_n\in Path_{\xi_\lambda}(s,t).
+~\forall n' \in N(s) \setminus N_{\xi_\lambda}(s). \\
+W(s, n') + D(n', t) > \sum_{\mathclap{\substack{l_i=(r_i,r_j)}}} 
+W(r_i, r_j) 
 \end{multline}
 Equation~\ref{eq:uniq1} guarantees that 
-the sum of the weights belonging to a path from $s$ to $t$ in $\xi_d$ is smaller than 
-any path that goes to $t$ via a node $n'$ that is a neighbour of $s$ in $T$ but not in $\xi_d$.
-Equation~\ref{eq:uniq2} guarantees that
-the sum of the weights belonging to a path from $s$ to $t$ in $\xi_d$ is smaller than 
-any path that goes to $t$ via a node $n'$ that is a neighbour of $s$ in $\xi_d$ but such that
-$t$ is not reachable from $n'$ in $\xi_d$.
-Finally, Equation~\ref{eq:uniq3} guarantees that all the paths from $s$ to $t$ in $\xi_d$ have the same weight.
-
+the sum of the weights belonging to a path from $s$ to $t$ in $\xi_\lambda$ 
+is strictly smaller than 
+any path that goes to $t$ via 
+a node $n'$ that is a neighbour of $s$ in $T$ but not 
+the next-hop in $\xi_\lambda$.
 
 \subsection{Intra-domain Synthesis with Route-filters} \label{sec:routefilter}
 
