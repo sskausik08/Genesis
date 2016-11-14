@@ -253,6 +253,8 @@ and  $+$ is the concatenation operator for paths---i.e.,
 $\Pi_1+\Pi_2=\{\pi_1\pi_2\mid \pi_i\in\Pi_i\}$.
 \loris{we should have OSPF return single paths so we don't have this multiple paths problem}
 
+\input{policy}
+
 \subsubsection{Policy Compliance}
 Since, most distributed routing protocols only support
 destination forwarding, our language supports reachability predicates 
@@ -291,8 +293,6 @@ We will later look for configurations that induce a specific set of paths $\Pi$.
 	$C \models \Pi$, if $\Pi\subseteq\paths^C(PC)$.
 	\loris{this should be $\subseteq$ right?}
 \end{definition}
-
-\input{policy}
 
 \subsubsection{Configuration Compliance}
 We defined policy-compliance in terms of the 
