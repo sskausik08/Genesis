@@ -4,7 +4,7 @@ solving the path-compliance problem for
 single-domain OSPF networks
 ---i.e., $|\{\Theta(r) \mid r\in V\}|=1$.
 
-%\subsection{Complexity} \label{sec:rfcomplexity}
+\loris{some text about fewer RF= higher resiliency}
 
 Before we present our technique and its intricacies,
 we justify the complexity of our approach by showing that
@@ -102,11 +102,6 @@ such that
  smaller weight ($W=1+2$) than the other path $s \rightarrow t$ 
  ($W=5$). 
  
-% Thus, the OSPF routers will forward traffic for
-% $\lambda$ from $s$ to $t$ through $r_1$. We first
-% consider the scenario of simple OSPF configurations (sOC)
-% with no route-filters enabled.
-
 The problem of synthesizing the weight function $W$ that
 that realizes an input set of paths $\Pi$ is
 a
@@ -214,24 +209,6 @@ However, this solution will place many more filters than necessary.
 Since the problem of optimally placing route-filters is NP-complete, 
 we propose a greedy strategy that does not guarantee to place a minimal number of filters, but works well in practice.
 
-%Ideally, we would like to impose further restrictions to the ARC
-%synthesis problem to make sure that the obtained solution
-%satisfies desirable connectivity or resilience properties.
-%In the following we informally use the word objective 
-%to identify a property we desire for the synthesized ARC.
-%Examples of objectives are minimizing the number of route-filters
-%or maximizing the number of edge-disjoint paths in the ARC
-%for each endpoint. 
-%Given an objective $O$, the \emph{augmented ARC synthesis} problem
-%is to find rational weights for the edges in $L$
-%and a set of route-filters $F\subseteq L\times S$
-% such that 
-%1) for each pair of endpoints $(s,t) \in \Gamma$, 
-%the paths in $P(s,t)$ are the shortest \emph{unfiltered} paths from $s$ to $t$ 
-%in the graph,
-%2) the resulting ARC satisfies the objective $O$. 
-%In the following we only allow route-filters for a destination $d$ to be applied to edges of $T$ that are directly connected to 
-%nodes in $\xi_d$. 
 
 Our algorithm starts by trying to synthesize a solution
 that does not use route-filters using the equations proposed in \secref{sec:sarc}. 
@@ -243,11 +220,6 @@ We first describe the
 modified linear equations generated when a set of
 route-filters are enabled, and then describe two
 techniques used to choose route-filters. 
-%\begin{figure}
-%	\centering
-%	\includegraphics[width=\columnwidth]{figures/arcSynthesis.eps}
-%	\caption{Synthesis of ARC with route-filters.} \label{fig:arcSynthesis}
-%\end{figure}
 
 \minisection{Equations with route-filters}
 %We show how the technique used to solve the simplified synthesis
@@ -263,7 +235,7 @@ by simply ignoring all the filtered edges.
 In the same way, we can modify equations  \eqref{eq:uniq1} and \eqref{eq:uniq2}, while
 equation \eqref{eq:uniq3} remains unchanged.
 
-Unfortunately, if the encoding without route-filters produces $n$ equations, this encoding produces $|\Omega|n$ due
+While the encoding without route-filters produces $n$ equations, this encoding produces $|\Omega|n$ due
 to the multiple different distances $D_d$.
 Notice that, the shortest distance $D_d(s,t)$ between two nodes $s$ and $t$ without using edges filtered for $d$ cannot be
 smaller than the shortest distance $D(s,t)$ obtained without considering route-filters.
@@ -273,43 +245,29 @@ equations \eqref{eq:uniq1} and \eqref{eq:uniq2}.
 It is easy to see that every solution of this simplified set of constraints
 is also a solution to the original solution (because $D(s,t)\leq D_d(s,t)$).
 However, the reverse is not true and the set of simplified equations can be unsatisfiable
-in cases in which the original set is satisfiable.
-We use the simplified
-set of equations in our preliminary implementation and show how it yields encouraging results in practice.
+in cases in which the original set is satisfiable, causing addition of unnecessary filters.
+Our implementation uses this simplified set of equations, but we will show that this
+does not effect our ability to find good solutions in the evaluation section.
 
-If the set of linear equations does not admit a solution, we 
-can add new route-filters so that the equations resulting from the added
-route-filters admit a solution.
+
+\minisection{Adding filters using unsatisfiable cores}
+When the set of linear equations does not admit a solution, we 
+add router-filters until, eventually, a solution is found.
 We discuss two schemes used to add route-filters:
 the first scheme uses unsatisfiable cores generated
 by the solver and the second scheme 
-finds geometrical structures called diamonds that 
-cannot be handled without route-filters.
+finds topological structures called diamonds that 
+can never be handled without route-filters.\loris{do we leave this?}
 
-
-% While detecting diamonds is efficient, the
-% presence of diamonds is a not 
-% necessary condition for route-filtering.
-% Characterising the properties of data planes for which there is
-% a pure ARC solution (i.e., no route-filters
-% required) is a open algorithmic
-% problem. An 
-% efficient algorithm to find the structures causing 
-% inconsistencies based on these properties 
-% can be used to minimize the number of route-filters enabled.  
-
-\todo{Not good, improve} \\
-\minisection{Adding filters using unsatisfiable cores}
-Modern LP-solvers have efficient procedures to return an
-unsatisfiable core, also called IIS (Irreducible Inconsistent Subsystem)
-~\cite{chinneck2007feasibility}. Formally, an IIS is a subset of constraints such that,
+LP-solvers have efficient procedures to return an
+unsatisfiable core, also called IIS (Irreducible Inconsistent Subsystem)~\cite{chinneck2007feasibility}. 
+Formally, an IIS is a subset of constraints such that,
 if all constraints except those in the IIS are removed, the resulting set of
 linear equations is still inconsistent (unsatisfiable). Moreover, the set is irreducible---i.e., removing 
 any one constraint of the IIS produces a consistent set of constraints. 
-
-Suppose that, upon producing our set of linear equations, the solver returns unsatisfiable and produces
-a concrete unsatisfiable core. 
-Some of the linear inequalities from 
+When the solver returns unsatisfiable and produces
+an unsatisfiable core,
+some of the linear inequalities from 
 Equations \eqref{eq:uniq1} and  \eqref{eq:uniq2}
 will appear in the unsat-core 
 (an unsat-core cannot consist of only 
@@ -320,20 +278,20 @@ In particular, the unsat-core contains some constraint
 E(s, n') + D(n', t) > \sum_{\mathclap{\substack{l_i=(s_i,t_i)}}} 
 		E(s_i, t_i) 
 \end{eqnarray}
-that was added to reason about some DAG $\xi_d$.
+that was added to reason about some DAG\loris{DAG or tree. bit confused.} $\xi_d$.
 
 By adding the route-filter $((s,n'),d)$ to $F$, this inequality is removed from the set of constraints
 and the combination of the other constraints appearing in the other unsat-core is now satisfiable.
-The complete set of equations may still be inconsistent as other unsat-cores might exist. 
-The procedure can be repeated until the resulting set of constraints becomes satisfiable
-and we have therefore reached a solution to the ARC synthesis problem.
+The new set of equations may still be unsatisfiable and other unsat-cores might exist. 
+The procedure is repeated until the resulting set of constraints becomes satisfiable
+and we have reached a solution to the OSPF synthesis problem.
 
-Finding the optimal number of route-filters is NP-hard, and it
-is very difficult to incorporate optimality in our iterative learning
-technique for finding the set of filters. This is because we do not 
-have the set of all unsatisfiable cores (the solver returns one at 
-a time) to find an optimal set of filters. Instead of considering the 
-number of filters, we consider the metric: loss of resilience.
+%Finding the optimal number of route-filters is NP-hard, and it
+%is very difficult to incorporate optimality in our iterative learning
+%technique for finding the set of filters. This is because we do not 
+%have the set of all unsatisfiable cores (the solver returns one at 
+%a time) to find an optimal set of filters. Instead of considering the 
+%number of filters, we consider the metric: loss of resilience.
 %\loris{not sure the next paragraph is needed}
 %For a given unsat-core, there may be multiple ways to place a route
 %filter to eliminate one constraint and we have not investigated
@@ -349,6 +307,7 @@ number of filters, we consider the metric: loss of resilience.
 
 Finding an IIS is an NP-hard problem~\cite{iiscomplexity}
 and can result in slow synthesis times.
+\loris{should we say, before starting we remove all diamonds?}
 %We identify a topological property of the set of input paths that 
 %is guaranteed to require route-filters and use it to produce an initial set of necessary route-filters.
 %This technique allows us to reduce the number of times we are required to compute  unsat-cores.
