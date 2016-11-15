@@ -27,21 +27,35 @@ a  vertex is not visited more than once ($\forall i.j \leq n.
 path share a router ($\forall i < n. ~v_i = u_{i+1}$).
 Given two nodes $s$ and $t$, we use $\Pi_s^t$ to denote the set of all paths
 $\pi$ with source $s$ (i.e., $u_1=s$) and target $t$ (i.e., $v_n=t$). 
-We also define \emph{in} operator for paths i.e., a link $l \in
+We also define $\in$ operator for paths i.e., a link $l \in
 \pi$ if $l$ is in the path. 
 
-Besides the topology, our configuration also contains other global parameters and functions, such as edge
-weights and routing preferences. 
-We use $C$ to denote the tuple containing $T$ as well as these elements, which we introduce in the following sections.
-
-
-
-To account for networks divided into domains and using different protocols,
-we define a router domain assignment function
+\name tackles the synthesis of a hierarchical control plane, 
+where the network is divided into continuous domains. 
+Each domain uses OSPF as the intra-domain routing protocol, 
+and BGP for the inter-domain routing protocol. 
+We define a router domain assignment function
 $\Theta: V \rightarrow \nat$ which maps each router to a domain 
-(denoted by a natural number). Each domain uses OSPF as the 
-intra-domain routing protocol, and BGP for the inter-domain routing
-protocol. 
+(denoted by a natural number).
+
+The OSPF configurations are expressed 
+using two functions: edge weights $W$ and
+route-filters $RF$. For BGP configurations: 
+we have the local preference function $LP$ 
+and the iBGP filter function $IBF$. Static 
+routes are expressed using the $SR$ function.
+We express the complete network configuration $C$
+as a tuple $(T,\Theta,W,RF,LP,IBF,SR)$.  In the 
+rest of the section, we describe each component 
+of the configuration $C$ and the routing function 
+$\route^C$ for the network given $C$. We ensure one  
+simplifying property for $C$: for two 
+routers $r_1$ and $r_2$ in the network,
+traffic will be forwarded from $r_1$ to $r_2$ 
+along a single path. 
+Thus, when synthesizing $C$, we ensure the components
+of $C$ satisfy this property.
+
 
 \minisection{Static Routes}
 Static routing occurs when a router uses a 
@@ -123,7 +137,6 @@ in the network in the routing function.
 \end{multline}
 
 \minisection{BGP}
-\loris{need to add ibgp filtering also to configuration C}
 BGP is a path-vector inter-domain 
 routing protocol that connects 
 different autonomous systems (ASes), where each AS
@@ -142,16 +155,16 @@ configured with a \emph{local preference} variable
 to assign higher priorities to routes for particular
 destinations. We define the local preference function 
 $LP: V \times V \times \Lambda \mapsto \nat$ as follows.
-Given a BGP router $r$, neighbouring router $n$,
+Given a BGP router $r$, neighbouring router $r_1$,
 and IP destination $\lambda$,
-  $LP(r, n, \lambda)$ 
+  $LP(r, r_1, \lambda)$ 
 specifies the local preference for a route received 
 for destination $\lambda$ at BGP router $r$ 
-from next-hop BGP router $n$. 
-On all other links the function is undefined. From 
-the routes received at $r$, the router
+from next-hop BGP router $r_1$. 
+This function is defined on inter-domain links. 
+From the routes received at $r$, the router
 picks the route with greatest local preference. 
-\loris{inconsistent use of router names, $r$ vs $n$ vs $v$ vs $g$}
+
 
 \loris{is this algo 1?} Algorithm~\ref{alg:bgppathrules} defines the routing function 
 $\route_{bgp}^C$ 
@@ -218,8 +231,7 @@ And in previous two sections you should explain that you do intra and inter doma
 }
 
 
-We can finally summarize all the components of the configuration graph $C$
-as a tuple $(T, W,RF,LP,\Theta)$ and describe how routing happens across domains.
+describe how routing happens across domains.
 In domain $d$, let us consider a source router $s$ (i.e., $\Theta(s) = d$) for 
 sending traffic for destination $\lambda$. Note that, the traffic
 could originate from other domains, then $s$ indicates the first
