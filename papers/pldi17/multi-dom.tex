@@ -27,9 +27,9 @@ the correct gateway routers.
 	\centering
 	\subfloat[Ex1]{\includegraphics[width=0.66\columnwidth]{figures/bgp-example.pdf}}
 	\hfill
-	\subfloat[Ex2]{\includegraphics[width=0.6\columnwidth]{figures/bgp-example2.pdf}}
+	\subfloat[Ex2]{\includegraphics[width=0.66\columnwidth]{figures/bgp-example2.pdf}}
 	\hfill
-	\subfloat[Ex3]{\includegraphics[width=0.5\columnwidth]{figures/static-route.pdf}}
+	\subfloat[Ex3]{\includegraphics[width=0.53\columnwidth]{figures/static-route.pdf}}
 	\compactcaption{\label{fig:bgpexample}
 	How to configure inter-domain routing, CHANGE dst to lambda}
 \end{figure*}
@@ -253,14 +253,13 @@ For each subpath $r \rightarrow^+_{\xi_{\lambda}} g$ to destination $\lambda$,
 to ensure a router
 chooses the correct gateway so that input 
 paths are induced: 
-\loris{should all E be W?}
 \begin{multline} \label{eq:gateway}
 \forall g' \in \Gamma_{\lambda}.~\forall r \in \xi_\lambda.~
 g' \not= g
 \rightarrow
 ~\forall n' \in N(r) \setminus N_{\xi_\lambda}(r). \\
-E(r, n') + D(n', g') > \sum_{\mathclap{\substack{(r_i,r_j) \in r \rightarrow^+_{\xi_{\lambda}} g }}} 
-E(r_i, r_j) 
+W(r, n') + D(n', g') > \sum_{\mathclap{\substack{(r_i,r_j) \in r \rightarrow^+_{\xi_{\lambda}} g }}} 
+W(r_i, r_j) 
 \end{multline}
 Like for unmodified OSPF synthesis, the system of
 constraints generated can be inconsistent and require
