@@ -11,32 +11,44 @@
 	\subfloat[Number of Route Filters]
 	{\includegraphics[width=0.66\columnwidth]{figures/ospfRF.eps}}
 	\subfloat[Endpoint Resilience]
-	{\includegraphics[width=0.66\columnwidth]{figures/ospfAvgRes.eps}}
+	{\includegraphics[width=0.65\columnwidth]{figures/ospfAvgRes.eps}}
 	\compactcaption{\label{fig:ospfeval}
 		OSPF Synthesis evaluation}
 \end{figure*}
 
 
-\begin{figure}
+\begin{figure*}
 	\centering
-	\includegraphics[width=0.7\columnwidth]{figures/confMCMC.eps}
-	\compactcaption{MCMC Lines of Conf}
-	\label{fig:confmcmc}
-\end{figure}
+	\subfloat[Configuration Overhead]
+	{\includegraphics[width=0.66\columnwidth]{figures/confMCMC.eps}}
+	\subfloat[Total Loss of Resilience]
+	{\includegraphics[width=0.66\columnwidth]{figures/TRLMCMC.eps}}
+	\subfloat[MCMC Optimizations]
+	{\includegraphics[width=0.66\columnwidth]{figures/ratioMCMC.eps}}
+	\compactcaption{\label{fig:mcmceval}
+	MCMC Evaluation }
+\end{figure*}
 
-\begin{figure}
-	\centering
-	\includegraphics[width=0.7\columnwidth]{figures/TRLMCMC.eps}
-	\compactcaption{MCMC TRL}
-	\label{fig:trlmcmc}
-\end{figure}
-
-\begin{figure}
-	\centering
-	\includegraphics[width=0.7\columnwidth]{figures/ratioMCMC.eps}
-	\compactcaption{MCMC Ratios}
-	\label{fig:ratiomcmc}
-\end{figure}
+%\begin{figure}
+%	\centering
+%	\includegraphics[width=0.7\columnwidth]{figures/confMCMC.eps}
+%	\compactcaption{MCMC Lines of Conf}
+%	\label{fig:confmcmc}
+%\end{figure}
+%
+%\begin{figure}
+%	\centering
+%	\includegraphics[width=0.7\columnwidth]{figures/TRLMCMC.eps}
+%	\compactcaption{MCMC TRL}
+%	\label{fig:trlmcmc}
+%\end{figure}
+%
+%\begin{figure}
+%	\centering
+%	\includegraphics[width=0.7\columnwidth]{figures/ratioMCMC.eps}
+%	\compactcaption{MCMC Ratios}
+%	\label{fig:ratiomcmc}
+%\end{figure}
 
 
 
@@ -118,6 +130,59 @@ compared to the best endpoint resilience (achieved
 if there were no filters). For Geant, the endpoint 
 resilience obtained by \name trails the best by a small margin,
 even though 2 route-filters were required for each path. For
-Fat-4 and Fat-6, there is a significant difference between \name's 
-and the best resilience, however, we are able to achieve greater than
+Fat-4 and Fat-6, there is a significant difference between resilience
+of the endpoints in \name and the best resilience, 
+however, we are able to achieve greater than
 50 percent of the resilience offered by the topology. 
+
+\subsection{Dynamic Domain Assignment Performance} \label{sec:mcmceval}
+In this section, we demonstrate the advantages of using MCMC sampling
+to find a domain assignment which can provide higher endpoint resilience
+with lower configuration overhead. For these experiments, we consider 
+two topologies: the Ion ISP topology (125 routers), and a 80 router 
+fat-tree topology (Fat-8). We run the MCMC sampling for 600s (iterations
+$>$ 100000), and the tunable parameter $\alpha$ assigning priority for 
+optimizing configuration overhead or route-filters is set to 1. For 
+the input, we generate random $n$ paths for $n/4$ destination IPs, with
+path length chosen at random from $[3,10]$. We split the network
+in 5 OSPF domains each with size $\in [10,40]$. We conduct these
+experiments for 20 readings, and report average and deviation of the metrics. 
+
+\noindent\textbf{Configuration Overhead.}~~~
+\Cref{fig:mcmceval}(a) shows the configuration overhead incurred by
+\name for synthesizing inter-domain configurations. The configuration
+is the sum of static route rules, BGP local preferences and iBGP filters. 
+For the Fat-8 topology which has greater path diversity, we incur more 
+overhead to ensure path-compliance than the Ion topology. 
+The Best traces indicate the best domain assignment found by MCMC, while 
+Worst traces indicates the domain assignment with greatest 
+configuration cost. 
+This illustrates
+the effectiveness of MCMC sampling in finding configurations with lower overhead on average.
+
+\noindent\textbf{Endpoint Resilience.}~~~
+\Cref{fig:mcmceval}(b) shows the loss in total endpoint resilience
+with varying number of paths (the count 
+of backup paths for endpoints filtered by the configurations). For the
+Worst traces, we store the worst domain assignment in terms of route-filter
+cost and synthesize the OSPF configurations for each domain and calculate
+the total resilience loss. We observe that 
+the MCMC sampling can find domain 
+assignments with lower resilience loss than the worst case. This 
+also illustrates the effectiveness of the route-filter estimate we use
+for the cost function, a reduction in cost results in greater resilience. 
+
+\noindent\textbf{Joint Optimization.}~~~
+We plot the average Conf Ratio 
+(Best configuration overhead/Worst configuration overhead) and TRL
+Ratio (Best total loss of resilience/Worst total loss of resilience)
+for varying number of paths in \Cref{fig:mcmceval}(c). The MCMC
+sampling is able to find a domain assignment
+with 1.6$\times$ higher total endpoint resilience for both types
+of topologies. At the same time, it is also able to reduce configuration
+overhead by a factor of $0.3\times$. The tunable parameter $\alpha$ 
+can be used to assign different priorities to these objectives to get
+different trends. 
+
+\noindent\textbf{Summary}.
+\kausik{Discuss Genesis Experiment}
