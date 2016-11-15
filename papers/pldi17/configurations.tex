@@ -148,6 +148,7 @@ higher probability.
 	\end{algorithmic}
 \end{algorithm}
 
+\loris{in preliminaries early on define that we use $l\in\pi$ to say path $\pi$ contains a link $l$.}
 \subsection{The Cost of a Domain Assignment}
 In the previous section, we presented the general structure of our search algorithm,
 but we did not specify how the cost function $c(\Theta,e)$
@@ -159,19 +160,16 @@ the number of static routes $sc$,
 and the number of BGP configurations entries $bc$.
 Computing the cost $c(\Theta,e)$ amounts to substituting in $e$ the values of \loris{??},
 $sc$, and $bc$ for the configuration $\Theta$.
-The techniques presented in Section~\ref{sec:synth-multi} provide a way to 
+The techniques presented in Section~\ref{sec:inter-synthesis} provide a way to 
 synthesize BGP configurations and static routes for a given domain assignment
 and can be used to 
 efficiently compute the quantities $sc$ and $bc$.
 However, we showed that, given a domain assignment, computing the  minimal required number of route-filters \loris{??}
 is a challenging problem (Theorem~\ref{thm:ospfsynth}).
-
-\loris{in preliminaries early on define that we use $l\in\pi$ to say path $\pi$ contains a link $l$.}
-
 Since we want MCMC to explore as many assignments as possible
 computing 
-we present a heuristic technique for estimating the number of route 
-filters required by a particular domain assignment. 
+we present a heuristic technique for estimating the number of route-filters required by a 
+ domain assignment. 
 
 We say that two paths $\pi=(r_1,r_2)\cdots (r_{n-1},r_n), \pi'=(r_1',r_2')\cdots (r_{n-1}',r_n')$ with destinations $\lambda$ and $\lambda'$
 form an $(r_i, r_j, \lambda, \lambda')$\emph{-diamond} if and only if
@@ -189,38 +187,37 @@ implies that OSPF needs to compute two different shortest paths between $r_i$ an
 which means that
 at least one route-filter is required.
 On the other hand, if $r_i$ and $r_j$ lie in
-different domains and this diamond
-was the only structure causing two paths to reach the same destination, \name could find OSPF weights for
-both the domains without using route-filters. 
-\loris{not sure if following sentence needed}
-In the limiting
-case where each router is a separate domain of size 1,
-no route-filters are required, and the entire 
-network can be configured using BGP. 
+different domains, no route-filters are required to resolve this diamond. 
+%\loris{not sure if following sentence needed}
+%In the limiting
+%case where each router is a separate domain of size 1,
+%no route-filters are required, and the entire 
+%network can be configured using BGP. 
 
-Before  starting the MCMC search, \name precomputed
+Before  starting the MCMC search, \name precomputes
 the set of all diamonds induced by the paths $\Pi$. 
-At each MCMC iteration, \name computes the cost of a
-domain assignment $\Theta$ by counting for how many $(r_i, r_j, \lambda, \lambda')$-diamonds
-$\Theta(r_i) = \Theta(r_j)$. This count $rc$ is our route-filter cost and is used to estimate the number of route-filters
-required to eliminate the diamonds.
-Notice that two different diamond that share an edge could be resolved
+For each
+domain assignment $\Theta$,
+\name estimates the number \loris{??} of required route-filters by counting for how many $(r_i, r_j, \lambda, \lambda')$-diamonds
+$\Theta(r_i) = \Theta(r_j)$. 
+Notice that two different diamonds that share an edge could be resolved
 by placing a single filter on the shared edge, whereas our estimated route-filter cost 
 would be 2. 
-\loris{I think this is true. 
-Intuitively, our algorithm is similar to the greedy algorithm for solving vertex cover~\cite{}, and 
-using a similar argument,
-we can show that our estimate produces at most twice as many route filters as the ones 
-needed to eliminate all diamonds.}
+%\loris{I think this is true, but not sure if necessary.
+%Intuitively, our algorithm is similar to the greedy algorithm for solving vertex cover~\cite{}, and 
+%using a similar argument,
+%we can show that our estimate produces at most twice as many route filters as the ones 
+%needed to eliminate all diamonds.}
 
 While diamonds in the same domain definitely require route filters, there might be
-sets of paths that do not contain diamonds but that require route filters. 
-These cases are not
+sets of paths that do not contain diamonds but that still require route filters
+and are not
 taken into account in our estimate. 
-On the other hand, our diamond-based estimate
+However, our diamond-based estimate
 can be computed efficiently and 
-our experiments show that reductions in the route-filter cost induced by our estimate
-lead to reductions in number of filters (~\Cref{some experiment}). 
+our experiments show that reductions in our estimate
+lead to reductions in number of filters (\Cref{some experiment}). 
+\loris{make sure experiments do say so}
 
 %\minisection{Cost of Configuration Overhead} 
 %Given a domain assignment $\Theta$, the exact number of static routes,
