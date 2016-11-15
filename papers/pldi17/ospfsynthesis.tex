@@ -15,13 +15,14 @@ that contains an optimal number of route-filters is NP-complete.
 Given a set of paths $\Pi$,
 a topology $T=(V,L)$,
 a domain-assignment function $\Theta$, such that $|\{\Theta(r) \mid r\in V\}|=1$,
-a number $n\geq 0$,
 the problem of finding 
-an $LP$, $W$, and $RF$,  such that
+a local preference  function $LP$, 
+a weight function$W$, and 
+and a route filter function $RF$,  such that
 $C=(T,W,RF,LP,\Theta)$,
 $\paths^C(PC) = \Pi$,
 and 
-$\sum_{\lambda\in\Lambda} |RF(\lambda)|=n$ is NP-complete.
+$\sum_{\lambda\in\Lambda} |RF(\lambda)|$ is minimal is NP-complete.
 We call this problem the \emph{intra-domain synthesis problem}.
 \end{theorem}
 \iffull
@@ -31,9 +32,9 @@ The reduction is from minimum vertex cover problem.
 \fi
 
 We first show how to solve the intra-domain synthesis problem when
-$n=0$---i.e., we are not allowed to use route filters---and then
-extend our technique to handle route filters. \aditya{move definition
-  of $n$ outside the theorem. also $n$ is overloaded..}
+we are not allowed to use route filters
+and then
+extend our technique to handle route filters.
 
 \begin{figure}
 	\centering
