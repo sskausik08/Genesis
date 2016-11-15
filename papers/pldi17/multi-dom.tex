@@ -25,7 +25,8 @@ We call this problem the \emph{inter-domain synthesis problem}.
 	How to configure inter-domain routing, CHANGE dst to lambda}
 \end{figure*}
 
-\subsection{Configuring BGP}
+\subsection{Configuring BGP and Static Routes}
+\minisection{BGP}
 BGP is a path-vector protocol where each router 
 advertises to its peers, 
 a route for a destination in the form 
@@ -78,7 +79,7 @@ g_3$ route would be chosen as it has the highest local preference
 of all routes received by $g_1$, and will be redistributed into the 
 OSPF domain. 
 
-\subsubsection{Configuring Static Routes} \label{sec:static}
+\minisection{Static Routes} \label{sec:static}
 Consider input path for $\lambda$ 
 as shown in \Cref{fig:bgpexample}(c). BGP Gateway $g_1$ 
 will receive a advertisement for $\lambda$ with domain
@@ -92,9 +93,35 @@ to enforce domain paths with loops. For the example in
 \noindent The path from $g_2$ to $\lambda$ does not 
 require static routes, as there are no more domain loops.
 
-Therefore, given a path $\pi \in \Pi$
+\subsection{Algorithm}
+For a path $\pi = l_1 l_2 \ldots l_m \in \Pi$, we
+can divide the path into intra-domain paths and inter-domain
+links. We express $\pi$ as 
+$\pi_1 l_1^2 \pi_2 \ldots l_{n-1}^n \pi_n$ where
+each subpath $\pi_i$ is completely in a
+domain, i.e., for each 
+link $(r_1,r_2) \in \pi_i \implies \Theta(r_1) = \Theta(r_2)$;
+and links $l_1^2, l_2^3 \ldots l_{n-1}^n$ 
+represent the inter-domain links. The domain path
+$\tilde{\pi} = d_1 \ldots d_n$ is the 
+domains of the intra-domain path segments in order
+: $\forall i \leq n. d_i = \Theta(\pi_i)$ (where
+$\Theta(\pi_i)$ denotes the domain of any router in the 
+intra-domain path $\pi_i$). 
 
 
+For a given path $\pi$ and corresponding path $\tilde{\pi}$,
+we find the longest non-looped domain subpath ending at
+destination: \texttt{min} $i$ such that
+$\forall j \geq i. ~\not\exists k \geq i. d_j = d_k$. 
+The subpath of $\pi$ 
+corresponding from domains $d_i \ldots d_n$ does
+not contain a domain loop, therefore, the inter-domain
+routing can be induced by configuring BGP. 
+For $\pi = l_1 l_2 \ldots l_m$, the 
+
+
+ 
 
 
 
@@ -194,7 +221,7 @@ not on the input path, and
 thus the synthesized configuration would forward traffic to
 the gateway specified by the input path. 
 We use the same 
-approach of picking route-filters from the unsatisfiable core
+approach of picking route-filters from the IIS
 (\secref{sec:routefilter}), route-filter $((r, n'), \lambda)$
 maps to following constraint in the IIS for some $g,g'$: 
 \begin{equation}
