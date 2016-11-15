@@ -3,13 +3,12 @@
 In this section, we present algorithms for 
 solving the path-compliance problem when the domain
 assignment function $\Theta$ is given to us.
-
 Before we present our techniques,
 we justify the complexity of our approach by showing that
 even the simplest variant of this problem is NP-complete.
 
-\loris{this theorem mixes the definitions because it already puts minimizing RF}
-\begin{theorem}[OSPF synthesis]
+\loris{why minimizing RF?}
+\begin{theorem}[Hardness of synthesis]
 \label{thm:ospfsynth}
 Given a set of paths $\Pi$,
 a topology $T=(V,L)$,
@@ -29,7 +28,6 @@ $\sum_{\lambda\in\Lambda} |RF(\lambda)|$ is minimal is NP-complete.
 \else
 The reduction is from the vertex cover problem.
 \fi
-
 In the next two sections, we first show how to solve the intra-domain synthesis problem---i.e., when there
 is only a single domain---and then how to solve the inter-domain synthesis problem---i.e., when
 there are multiple domains.
@@ -39,42 +37,10 @@ In this section, we present an algorithm for
 solving the path-compliance problem for 
 single-domain OSPF networks
 ---i.e., $|\{\Theta(r) \mid r\in V\}|=1$.
-We first show how to solve the problem when route filters cannot be used
-and then tackle the problem of placing route filters.
-
-\loris{some text about fewer RF= higher resiliency}
-
-Before we present our technique and its intricacies,
-we justify the complexity of our approach by showing that
-the problem of synthesizing an OSPF configuration
-that contains an optimal number of route-filters is NP-complete.
-
-\loris{this theorem mixes the definitions because it already puts minimizing RF}
-\begin{theorem}[OSPF synthesis]
-\label{thm:ospfsynth}
-Given a set of paths $\Pi$,
-a topology $T=(V,L)$,
-a domain-assignment function $\Theta$, such that $|\{\Theta(r) \mid r\in V\}|=1$,
-the problem of finding 
-a local preference  function $LP$, 
-a weight function$W$, and 
-and a route filter function $RF$,  such that
-$C=(T,W,RF,LP,\Theta)$,
-$\paths^C(PC) = \Pi$,
-and 
-$\sum_{\lambda\in\Lambda} |RF(\lambda)|$ is minimal is NP-complete.
-We call this problem the \emph{intra-domain synthesis problem}.
-\end{theorem}
-\iffull
-\input{route-filters-nphard}
-\else
-The reduction is from the vertex cover problem.
-\fi
-
-We first show how to solve the intra-domain synthesis problem when
+We first show how to solve the problem when
 we are not allowed to use route filters
 and then
-extend our technique to handle route filters.
+extend our technique to handle route filters, when these are allowed.
 
 \begin{figure}
 	\centering
@@ -120,26 +86,18 @@ extend our technique to handle route filters.
 			\loris{route-filters vs route filters}
 \subsubsection{Intra-domain Synthesis Without Route-filters} \label{sec:sarc}
  
-If $n=0$ and no route-filters are allowed,
-upon assigning 
- weights $W$ to links between routers (directed edges
- in the network topology),
- OSPF routers use
- Djikstra's algorithm to choose the
- shortest weighted path for a pair of endpoints. 
-We show how,
- given a set of input paths $\Pi$, \name 
-generates a set of linear constraints to 
-find weights for the edges in $L$
-such that 
- the shortest path through the network
- for these endpoints exactly match the input paths $\Pi$. 
- For example in \Cref{fig:ospfexample}(a), if the input
- path is $s\rightarrow r_1 \rightarrow t$ for
- destination IP $\lambda$, \name assigns
- edge weights such that the input path has a strictly
- smaller weight ($W=1+2$) than the other path $s \rightarrow t$ 
- ($W=5$). 
+When no route-filters are allowed,
+ OSPF routers use the edge weights $W$
+ to choose the
+ shortest weighted path for each pair of endpoints. 
+Our goal is to synthesize a $W$.
+ For example in \Cref{fig:ospfexample}(a), if $\Pi$ 
+ contains the 
+ path $\pi=s\rightarrow r_1 \rightarrow t$ for
+ destination IP $\lambda$, \name will assign
+ edge weights so that $\pi$ has
+ smaller weight ($W(\pi)=1+2$) than the path $\pi'=s \rightarrow t$ 
+ ($W(\pi')=5$). 
  
 The problem of synthesizing the weight function $W$ that
 realizes an input set of paths $\Pi$ is
@@ -155,17 +113,17 @@ is the destination router connected to $\lambda$.
  This destination tree
  property is due to the modifications in \genesis
  to support OSPF's destination-based forwarding. We
- define $\Delta=\{\xi_\lambda\mid \lambda \in \Lambda\}$ is   
+ define $\Delta=\{\xi_\lambda\mid \lambda \in \Lambda\}$,   
 the set of all destination trees. 
 
-
-we generate a set of linear equations
-to find the edge weight $W(r_1, r_2)$ 
+Given a set of input paths $\Pi$, \name 
+generates a set of linear constraints to 
+find proper weights $W(r_1, r_2)$ 
 for all $(r_1, r_2) \in L$.
 We use 
 $D(r_1, r_2)$ to denote the 
-shortest distance from $r_1$ to $r_2$.
-We add the equation $D(s,s) = 0$ 
+shortest distance from $r_1$ to $r_2$ and
+add the equation $D(s,s) = 0$ 
 for every $s\in S$ to denote that the distance
 from a node to itself is $0$.
 The
@@ -177,24 +135,22 @@ D(s, t) \leq W(s, r) + D(r, t)
 \end{equation}
 
 For each destination tree $\xi_\lambda\in\Delta$, we add equations to ensure 
-that the input paths with destination $d$ are indeed the shortest ones.
-If a path
-is the shortest path between its endpoints, then every 
-subpath of the path has to be the shortest between its endpoints
-as well (otherwise the complete path would not be the shortest).
+that the input paths with destination $d$ are the shortest ones.
+Notice that, if a path $\pi$
+is the shortest path between its endpoints, every 
+subpath of $\pi$ also has to be the shortest path between its endpoints.
+For each tree $\xi_\lambda$, we define the neighbour
+ $N_{\xi_\lambda}(s)$ to denote the 
+next-hop neighbour of router $s$ in the destination tree $\xi_\lambda$---i.e., the parent
+of $s$ in the tree or no node if $s$ is the root of the tree.
+%Since $\xi_\lambda$ is a directed tree, every router $r \in \xi_\lambda$
+%has one next-hop router, therefore $N_{\xi_\lambda}(s)$ is a singleton
+%set (the root of the tree (router connected to $\lambda$) has no next-hop
+%routers).
 
-Consider a tree $\xi_\lambda$ for destination $\lambda in \Lambda$. We define two neighbour
-functions: $N_T(s)$ denotes the set of neighbours of router $s$ 
-in the topology $T$, and $N_{\xi_\lambda}(s)$ denote the set of
-next-hop neighbours of router $s$ in the destination tree $\xi_\lambda$.
-Since $\xi_\lambda$ is a directed tree, every router $r \in \xi_\lambda$
-has one next-hop router, therefore $N_{\xi_\lambda}(s)$ is a singleton
-set (the root of the tree (router connected to $\lambda$) has no next-hop
-routers).
-
-We use the following equations to ensure that, for any 
-given two nodes $s$ and $t$ in
-$\xi_\lambda$, $t$ is reachable from $s$, 
+The following equations ensures that, for any 
+ two nodes $s$ and $t$ in
+$\xi_\lambda$, if $t$ is reachable from $s$, 
 the path from $s$ to $t$ in $\xi_\lambda$ is the 
 \emph{unique shortest path} from $s$ to $t$ in $T$.
 Let $Path_{\xi_\lambda}(s,t)$ be path from $s$ to $t$ in $\xi_\lambda$.
