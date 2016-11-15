@@ -28,7 +28,7 @@ We call this problem the \emph{intra-domain synthesis problem}.
 \iffull
 \input{route-filters-nphard}
 \else
-The reduction is from minimum vertex cover problem.
+The reduction is from the vertex cover problem.
 \fi
 
 We first show how to solve the intra-domain synthesis problem when
@@ -132,7 +132,7 @@ The
 following equation guarantees that $D(s,t)$ is not greater than 
 the actual shortest distance from $s$ to $t$.
 \begin{equation} \label{eq:dist}
-\forall s, t. ~\forall r. ~r \in N(s).~
+\forall s, t. ~\forall r \in N(s).~
 D(s, t) \leq W(s, r) + D(r, t)
 \end{equation}
 
@@ -205,36 +205,37 @@ route-filters are enabled, and then describe two
 techniques used to choose route-filters. 
 
 \minisection{Equations with route-filters}
-%We show how the technique used to solve the simplified synthesis
-%problem can be modified to handle filtered and unfiltered paths.
+\loris{why do we need to modify \eqref{eq:dist}? Can't we just add $D_d(s,t)\geq D(s,t)$ for
+all $d$}
 We assume we are given a set of route-filters $RF$ and 
 use $s\rightarrow_d^* t$ to denote that $s$ can reach $t$
 \loris{again double check notation}
 in $T$ without using any edge $l$, such that $(l,d)\in RF$.
 We use $D_d(r_1, r_2)$ to denote the shortest distance from $r_1$ to $r_2$
 using only edges that are not filtered for destination $d$.
-We can revise the equation in \eqref{eq:dist} to correctly restrict the values of $D_d$
+We can revise equation \eqref{eq:dist} and   to correctly restrict the values of $D_d$
 by simply ignoring all the filtered edges. 
-In the same way, we can modify equations  \eqref{eq:uniq1} and \eqref{eq:uniq2}, while
-equation \eqref{eq:uniq3} remains unchanged.
+We will add one modified version of equation \eqref{eq:dist} for each destination $d$.
+Similarly, we add modified versions of equation  \eqref{eq:uniq1}.
 
 While the encoding without route-filters produces $n$ equations, this
-encoding produces $|\Omega|n$ due to the multiple different distances
+encoding produces $|\Omega|n$ equations due to the multiple different distances
 $D_d$.  Notice that, the shortest distance $D_d(s,t)$ between two
 nodes $s$ and $t$ without using edges filtered for $d$ cannot be
 smaller than the shortest distance $D(s,t)$ obtained without
-considering route-filters.  We use this property to simplify the
+considering route-filters.  
+We use this property to simplify the
 encoding by only computing $D(s,t)$ and by replacing each instance of
-$D_d(s,t)$ with $D(s,t)$ in equations \eqref{eq:uniq1} and
-\eqref{eq:uniq2}.  It is easy to see that every solution of this
-simplified set of constraints is also a solution to the original
-solution \aditya{what does this mean?} (because $D(s,t)\leq
+$D_d(s,t)$ with $D(s,t)$ in equations \eqref{eq:uniq1}.  It is easy to see that 
+if the set of constraints with variables $D_d$ admits a solution,
+the corresponding set of constraints with variables $D$ 
+also admits a solution (because $D(s,t)\leq
 D_d(s,t)$).  However, the reverse is not true and the set of
 simplified equations can be unsatisfiable in cases in which the
 original set is satisfiable, causing addition of unnecessary filters.
 Our implementation uses this simplified set of equations, but we will
 show that this does not effect our ability to find good solutions in
-Section~\ref{s:eval}.
+Section~\ref{sec:evaluation}.
 
 
 %% We discuss two schemes  to add route-filters:
