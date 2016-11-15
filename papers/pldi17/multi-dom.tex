@@ -1,4 +1,4 @@
-\section{Synthesising Configurations across Multiple Domains}
+\subsection{Synthesising Inter-domain Configurations}
 \label{sec:synth-multi}
 
 \loris{every section should clearly state what we try to minimize---route filters,
@@ -34,7 +34,7 @@ the correct gateway routers.
 	How to configure inter-domain routing, CHANGE dst to lambda}
 \end{figure*}
 
-\subsection{Configuring BGP and Static Routes}
+\subsubsection{Configuring BGP and Static Routes}
 BGP is a path-vector protocol where each router,
 for each destination $d$,
 advertises to its peers
@@ -224,7 +224,7 @@ This algorithm is described in the next section.
 %E local prefs + E(E - 1) iBGP filters!
 %
 %\todo{Changes to OSPF synthesis to ensure closest gateway}
-\subsection{Modified OSPF Synthesis for Multiple Gateways}
+\subsubsection{Modified OSPF Synthesis for Multiple Gateways}
 When BGP routes of destination $\lambda$ 
 are redistributed by multiple gateways to an 
 OSPF domain, \name uses a modified OSPF synthesis
