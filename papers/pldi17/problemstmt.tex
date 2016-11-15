@@ -20,17 +20,28 @@ the set of neighbour routers of $s$.
 We define $\Lambda$ to denote the set of destination IP subnets;
 distributed protocols make forwarding decisions based on the 
 destination IP address/subnet.
-Besides the topology, our configuration also contains other global parameters and functions, such as edge
-weights and routing preferences. 
-We use $C$ to denote the tuple containing $T$ as well as these elements, which we introduce in the following sections.
 
 A path $\pi = (u_1,v_1) (u_2, v_2) \ldots (u_n, v_n) \in L^*$ is a loop-free valid path if
 a  vertex is not visited more than once ($\forall i.j \leq n. 
 ~i \not= j \wedge u_i \not= u_j$) and adjacent links in the
 path share a router ($\forall i < n. ~v_i = u_{i+1}$).
 Given two nodes $s$ and $t$, we use $\Pi_s^t$ to denote the set of all paths
-$\pi$ with source $s$ (i.e., $u_1=s$) and target $t$ (i.e., $v_n=t$).
+$\pi$ with source $s$ (i.e., $u_1=s$) and target $t$ (i.e., $v_n=t$). 
+We also define \emph{in} operator for paths i.e., a link $l \in
+\pi$ if $l$ is in the path. 
 
+Besides the topology, our configuration also contains other global parameters and functions, such as edge
+weights and routing preferences. 
+We use $C$ to denote the tuple containing $T$ as well as these elements, which we introduce in the following sections.
+
+
+
+To account for networks divided into domains and using different protocols,
+we define a router domain assignment function
+$\Theta: V \rightarrow \nat$ which maps each router to a domain 
+(denoted by a natural number). Each domain uses OSPF as the 
+intra-domain routing protocol, and BGP for the inter-domain routing
+protocol. 
 
 \minisection{Static Routes}
 Static routing occurs when a router uses a 
@@ -205,12 +216,7 @@ I think this very first paragraph should come before the other two
 and then you have only the second part that puts things together.
 And in previous two sections you should explain that you do intra and inter domain.
 }
-To account for networks divided into domains and using different protocols,
-we define a router domain assignment function
-$\Theta: V \rightarrow \nat$ which maps each router to a domain 
-(denoted by a natural number). Each domain uses OSPF as the 
-intra-domain routing protocol, and BGP for the inter-domain routing
-protocol. 
+
 
 We can finally summarize all the components of the configuration graph $C$
 as a tuple $(T, W,RF,LP,\Theta)$ and describe how routing happens across domains.
