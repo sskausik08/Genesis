@@ -1,6 +1,8 @@
 \section{Synthesising Configurations across Multiple Domains}
 \label{sec:synth-multi}
 
+\loris{every section should clearly state what we try to minimize---route filters,
+static routes?}
 In this section, we present an algorithm for 
 solving the path-compliance problem in the presence
 of multiple domains---i.e., $|\{\Theta(r) \mid r\in V\}|>1$.
@@ -26,18 +28,19 @@ We call this problem the \emph{inter-domain synthesis problem}.
 \end{figure*}
 
 \subsection{Configuring BGP and Static Routes}
-\minisection{BGP}
-BGP is a path-vector protocol where each router 
-advertises to its peers, 
-a route for a destination in the form 
-of a path of domains to reach the destination.  
-For path-compliance, we need to configure
-BGP routers such the route chosen by BGP
-and redistributed into OSPF is the policy-compliant
-path given as input. We describe three different
-cases of how BGP is configured.  
+BGP is a path-vector protocol where each router,
+for each destination $d$,
+advertises to its peers
+what sequence of domains one should follow to get to  $d$.  
+In this section, we describe how to configure
+BGP routers so that the routes chosen by BGP (and redistributed into OSPF) 
+can yield the policy-compliant
+paths $Pi$ given as input. 
+\loris{better names than Ex1 etc. in fig also capital G versus lower case g, and increase font.}
+We need to take into account three different
+cases, which are illustrated in \Cref{fig:bgpexample}.  
 
-Consider path (1) $\in \Pi$ (\Cref{fig:bgpexample}(a)).
+The first case is when a path is preferred because it traverses fewer domains---e.g., path (1)  in \Cref{fig:bgpexample}(a).
 BGP router $g_3$ receives a route $2$ for $\lambda$ with domain path length 1, 
 while $g_1$ and $g_2$ will receive routes $1 \rightarrow 2$ 
 for $\lambda$ with 
