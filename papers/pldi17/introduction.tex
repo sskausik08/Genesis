@@ -125,11 +125,11 @@ maximizing endpoint resiliency, as \name requires
 route-filters to induce certain paths, thereby affecting resilience; 
 and minimizing the configuration overhead imposed by 
 inter-domain routing (BGP and static routes), which 
-improves configuration readability for performing manual changes 
-or using automated verification tools~\cite{batfish, arc, era}.
-
-and minimizing configuration 
-overhead. On average, we can increase endpoint resilience
+decreases configuration complexity, thus, easing
+ automated verification~\cite{batfish, arc, era} and 
+ improving readability 
+ for performing manual changes.
+On average, we can increase endpoint resilience
 by $1.6\times$ and reduce configuration overhead (static routes
 and BGP variables) by $0.3\times$ using MCMC sampling. 
 
@@ -144,20 +144,19 @@ Our approach is an important
 contribution towards the vision of 
 intent-driven networking~\cite{intent}.
 
-
-\minisection{Contributions} We make the following contributions:
-\begin{itemize}
+\noindent\textbf{Contributions.} We make the following contributions:
+\begin{compactitemize}
 	\item \name: a modular framework 
 	for policy enforcement in `traditional' networks
 	by synthesizing router configurations from policy-compliant paths. 
 	\item Synthesizing intra-domain configurations by
 	constraint solving in Linear rational arithmetic (LRA) and 
-	a learning-based procedure which extracts information from 
+	a learning procedure which extracts information from 
 	unsatisfiable cores. 
-	\item A stochastic search using MCMC sampling to find 
+	\item Stochastic search using MCMC sampling to find 
 	partitions of the network into multiple routing domains which
 	satisfy policies and optimization objectives on configurations.
 	\item An implementation of \name and evaluation of the 
 	intra- and inter-domain configuration synthesis for different
 	topologies and workloads. 
-\end{itemize}
+\end{compactitemize}
