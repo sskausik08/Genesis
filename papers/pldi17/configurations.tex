@@ -245,6 +245,9 @@ configuration cost $cc$.\loris{is the content of the footnote consistent with ou
 	operator may want to reduce only static routes.}.
 
 \minisection{Overall Cost Function} 
+\loris{rewrite this after policy language already takes this into account. 
+The it will be all about estimating the quantities in the objective and the aggregation will be for free.
+This para will go.}
 Finally, we need to combine the
 route-filter cost ($rc$) and configuration cost ($cc$) 
 based on the preference specified by the operator. 
@@ -261,4 +264,4 @@ obtained by dividing $rc$ and $cc$  by the worst costs seen during the MCMC sear
 Therefore, initially $\rho=1$ and later on $\rho$ is the improvement of the current configuration over
 the worst in terms of either configuration overhead or route-filter cost.
 \loris{I think the above trick breaks MCMC by making you stuck in local optima.
-What happens if we remove it?}
+What happens if we remove it? Also unnecessary detail.}

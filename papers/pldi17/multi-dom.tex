@@ -248,18 +248,16 @@ Let us define $\Gamma_\lambda$ to be the set of gateway
 routers for destination $\lambda$ in a given domain $d$. 
 We define the relation $r_1 \rightarrow^+_{\xi_{\lambda}} r_2$, which holds if
 $r_2$ is reachable from $r_1$ in the destination tree $\xi_\lambda$.
-For each subpath $r \rightarrow^+_{\xi_{\lambda}} g$ to destination $\lambda$,
-\name adds the following constraints 
+For each subpath $r \rightarrow^+_{\xi_{\lambda}} g$ to destination $\lambda$
+and for each $g' \in \Gamma_{\lambda}$ such that $g\neq g'$,
+\name adds the following constraint
 to ensure a router
 chooses the correct gateway so that input 
 paths are induced: 
 \begin{multline} \label{eq:gateway}
-\forall g' \in \Gamma_{\lambda}.~\forall r \in \xi_\lambda.~
-g' \not= g
-\rightarrow
-~\forall n' \in N(r) \setminus N_{\xi_\lambda}(r). \\
-W(r, n') + D(n', g') > \sum_{\mathclap{\substack{(r_i,r_j) \in r \rightarrow^+_{\xi_{\lambda}} g }}} 
-W(r_i, r_j) 
+\forall r' \in N(r) \setminus N_{\xi_\lambda}(r).~
+W_r^{r'} + D_{r'}^{g'} > \sum_{\mathclap{\substack{(r_1,r_2) \in r \rightarrow^+_{\xi_{\lambda}} g }}} 
+~W_{r_1}^{r_2}
 \end{multline}
 Like for unmodified OSPF synthesis, the system of
 constraints generated can be inconsistent and require
@@ -272,9 +270,3 @@ not on the input path.
 We use the same 
 approach for picking route-filters we presented in
 \secref{sec:routefilter}. 
-%route-filter $((r, n'), \lambda)$
-%maps to following constraint in the IIS for some $g,g'$: 
-%\begin{equation}
-%E(r, n') + D(n', g') > \sum_{\mathclap{\substack{(r_i,r_j) \in r \rightarrow^+_{\xi_{\lambda}} g }}} 
-%E(r_i, r_j) 
-%\end{equation}
