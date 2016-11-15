@@ -52,21 +52,21 @@ policies, otherwise performance, security, or availability problems may arise.
 % or fail (even if it is distributed), leading to (a partial) network failure.
 
 A common theme among these policies is that 
-they specify \emph{network-wide intent}~\cite{intent},
+they specify \emph{network-wide intent}~\cite{intent}: 
 operators can specify what they \emph{want} from the network as a 
 whole, instead of \emph{how} individual components of the network
 must be configured. 
 Software-defined networking (SDN) has led to the development 
 of various frameworks for network-wide policy enforcement
 ~\cite{netkat, simple, merlin, fattire, genesis}. In SDN,
-a centralized controller machine (control plane) controls
+a centralized controller (control plane) controls
 the end-to-end paths by managing forwarding rules on programmable
 network switches (data plane). The controller can program
 forwarding rules using the global view of the network
 topology to meet application requirements. While SDN 
 significantly enhances programmability of the network to 
-satisfy the diverse policy requirements in multi-tenant
-clouds and enterprise networks, it suffers from two 
+satisfy the diverse policy requirements in
+networks, it suffers from two 
 major challenges: 
 \emph{scalability} and \emph{failure-tolerance}. 
 
@@ -78,15 +78,17 @@ the controller has to detect and respond to the failure, and
 even establishing connectivity between endpoints could be delayed.
 Also, the controller is a central point of failure and controller
 failure can lead to network disruptions. 
-The principles of scalability and failure-tolerance 
-were instrumental to the design
-of 'traditional' networks (e.g., the Internet) using distributed
-routing protocols like OSPF and BGP to manage forwarding in the 
-network without a central control entity. Another reason for the 
+Another reason for the 
 slow adoption of SDN has been the cost involved in overhaul 
 of the network with programmable switches.  
 
-Unlike SDN which provide a clean abstraction
+The principles of scalability and failure-tolerance 
+were central to the design
+of ``traditional" networks that use distributed
+routing protocols such as OSPF and BGP 
+to manage forwarding in the 
+network without a central control entity.
+However, unlike SDN which provides a clean abstraction
 to program the network to satisfy policies 
 on end-to-end paths,
 programming (i.e., configuring) 
@@ -109,18 +111,19 @@ Dijkstra's shortest path---and their behavior can only be influenced
 through a limited set of parameters---e.g.,
 link weights. Similarly, BGP uses shortest
 path routing at a domain-granularity, and have different
-provisions to control routing (like local preferences).  
-\item Operators can have 
-heteregeneous protocol requirements based on operational
-factors like scalability and cost, thus requiring to model
-protocol interactions. 
+provisions to control routing (such as local preferences).  
+\item Operators require their networks to be split into domains
+with different protocols for intra- and inter-domain routing. 
+They need this for operational
+factors like scalability and cost, thus requiring us 
+to model heterogeneous protocol interactions. 
 \item Most policies are
 global---i.e., they concern end-to-end paths, not individual devices and
 links---making it difficult to map policies to
 individual router configurations. 
 \item Since failure-tolerance is handled in a distributed 
 fashion with no involvement of a central control entity,  
-failure-tolerance properties like resilience under bounded
+properties like resilience (path availability) under bounded
 number of network failures must be taken into account in
 the generation of router configurations. 
 
@@ -146,19 +149,24 @@ and control-plane requirements, our goal is to synthesize
 control plane configurations that comply with the control-plane
 requirements and generate paths that comply with the path requirements.
 \loris{maybe a couple of sentences on what policies}
-Concretely, we investigate three increasingly hard problems:
-1) synthesizing configurations for \emph{intra-domain} routing where all routers
-use shortest-path based routing (OSPF) (Section~\ref{sec:synthesis});
-2) synthesizing configurations for \emph{intra-domain} routing where the network is 
-divided into domains, each domain uses shortest-path routing, and routing across domain
-is based on local-preferences (BGP) (Section~\ref{sec:synth-multi});
-3) synthesizing configurations as well as domain assignments for \emph{intra-domain} routing where 
-we as part of the problem we have to decide how routers are grouped into different domains (Section~\ref{sec:synth-dom-ass}).
+Concretely, we investigate two increasingly hard problems:
+1) synthesizing intra- and inter-domain configurations 
+for routing for a given partition of the network 
+into multiple routing domains, where 
+each domain uses OSPF shortest-path routing, 
+and routing across domain is based on BGP local preferences 
+and static routes (Section~\ref{sec:synthesis});
+2) synthesizing configurations 
+as well as domain assignments i.e., 
+decide how routers are 
+grouped into different domains 
+which satisfy the input policies (Section~\ref{sec:synth-dom-ass}). 
 Since we support complex policies---e.g.,  traffic isolation and 
 waypoints---as well as
 complex routing techniques---e.g., OSPF and BGP---the configuration
 synthesis problems are all computationally hard.
-We present solutions to these three synthesis problems in the following sections.
+We present solutions to these synthesis problems 
+in the following sections.
 \loris{do we want to anticipate the techniques?}
 
 %Unfortunately, this task is inherently challenging 
