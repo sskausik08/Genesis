@@ -4,12 +4,12 @@
 In this section, we present an algorithm for 
 solving the path-compliance when a domain assignment is not given to us.
 The algorithm searches the space of possible domain assignment $\Theta$ to find
-one that meets all \loris{control-plane?} policies and has good quantitative properties.
+one that meets all configuration policies and has good quantitative properties.
 In particular, we will focus our discussion on maximizing resiliency while minimizing
-configuration overhead---e.g.,  number of LoC and route-filters.
+configuration overhead---e.g., number of static routes and BGP configuration variables. 
 
 Formally, we are given a set of paths $\Pi$,
-a topology $T=(V,E)$,
+a topology $T=(V,L)$,
 a domain-assignment function $\Theta$ such that $|\{\Theta(r) \mid r\in V\}|>1$, 
 and we want to find functions
 $LP$, $W$, $RF$,  and $\Theta$ such that
@@ -34,7 +34,8 @@ $\paths^C(PC) = \Pi$  is NP-complete.
 \loris{messy}
 \end{theorem}
 
-Given the complexity of this problem, we opt for a greedy approach
+Given the complexity of this problem, we opt for a greedy
+(\kausik{stochastic?}) approach
 to  search the space of domain
 assignments. 
 \name uses Markov
@@ -108,8 +109,8 @@ in Pseudocode~\cref{alg:mcmc}.
 	\begin{algorithmic}[1] \label{alg:mcmc}
 		\Procedure{MCMCSearch}{}
 		\State{$\Theta \leftarrow$ random domain assignment}
-		\State{$\overline{cf} = 0$ \hspace{2cm} [Worst Conf. overhead]}
-		\State{$\overline{rf} = 0$ \hspace{2cm} [Worst route-filter est.]}
+		\State{$\overline{cc} = 0$ \hspace{2cm} [Worst Conf. overhead]}
+		\State{$\overline{rc} = 0$ \hspace{2cm} [Worst route-filter est.]}
 		\While{max iterations OR timeout}
 		\State{$\gamma$ = \Call{Cost}{$\Theta$}}
 		\State{$\Theta'$ = \Call{RandomChange}{$\Theta$}}
@@ -122,20 +123,20 @@ in Pseudocode~\cref{alg:mcmc}.
 		\EndProcedure
 		
 		\Procedure{Cost}{$\Theta$} 
-		\State{$cf \leftarrow$ Configuration overhead (Static routes + \newline \hspace*{1.5cm} 
+		\State{$cc \leftarrow$ Configuration overhead (Static routes + \newline \hspace*{1.5cm} 
 			BGP local preference entries + iBGP filters)}
-		\If{$cf > \overline{cf}$} 
-		\State{$\overline{cf} = cf$}
+		\If{$cc > \overline{cc}$} 
+		\State{$\overline{cc} = cc$}
 		\EndIf
-		\State{$rf \leftarrow$ Number of diamonds with  \newline 
+		\State{$rc \leftarrow$ Number of diamonds with  \newline 
 			\hspace*{1.3cm}  endpoints in same domain }
-		\If{$rf > \overline{rf}$} 
-		\State{$\overline{rf} = rf$}
+		\If{$rc > \overline{rc}$} 
+		\State{$\overline{rc} = rc$}
 		\EndIf
-		\State{$\gamma$ = max($cf/\overline{cf},
-			\alpha.rf/\overline{rf}$)  \newline
-			\hspace*{3.5cm} + 0.1*min($cf/\overline{cf},
-			\alpha.rf/\overline{rf}$)}
+		\State{$\gamma$ = max($cc/\overline{cc},
+			\alpha.rc/\overline{rc}$)  \newline
+			\hspace*{3.5cm} + 0.1*min($cc/\overline{cc},
+			\alpha.rc/\overline{rc}$)}
 		\State{\Return $\gamma$}
 		\EndProcedure
 		
@@ -152,10 +153,7 @@ in Pseudocode~\cref{alg:mcmc}.
 		\EndWhile
 		\EndProcedure
 	\end{algorithmic}
-	
 \end{algorithm}
-
-
 
 \subsection{Domain Assignment Cost}
 In the previous section, we presented the general structure of our search algorithm,
@@ -164,90 +162,60 @@ is computed. Intuitively, the cost function should capture
 how far we are from meeting all the given control-plane policies.
 For example, if we are trying to obtain good resiliency,
 domain assignments with better resiliency should have lower costs.
+Similarly, a configuration with lower number of static routes is better
+than one with more number of static routes. Therefore, we also consider 
+the configuration overhead in terms of static routes and BGP configuration
+variables in our cost function.
 The techniques presented in Section~\ref{sec:synth-multi} provide a way to 
 synthesize a configuration for each domain assignment and therefore compute
-very precise costs for each domain assignment. However, 
-we want MCMC to explore as many assignments as possible
-running these techniques for
-each domain assignment is infeasible (Theorem~\ref{} shows that, even for a single domain, computing accurate costs---e.g., number or
-required route filters---is an NP-complete
-problem).
-
-\loris{unclear what the cost will be, is this only about resiliency?}
-
-In this section, we propose techniques for approximating the cost of a domain assignment 
-by exploiting topological properties of the network and the domains.
-We first \loris{TODO}
-and then \loris{TODO}.
-
-\todo{Explain path, as\_path transformation more formally}
+very precise costs for each domain assignment. 
+However, 
+we want MCMC to explore as many assignments as possible,
+therefore 
+synthesizing the actual configurations for
+each domain assignment is infeasible (Theorem~\ref{thm:ospfsynthesis} shows that, 
+even for a single domain, computing accurate costs---e.g., 
+number of required route filters---is an NP-complete problem).
 
 
-%\begin{figure}
-%	\centering
-%	\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
-%	square/.style={regular polygon,regular polygon sides=4}] 
-%	\node[state] at (0,0) [fill=yellow] (s)  {$s$}; 
-%	\node[state] at (2,0.5) (v1)  {$r_1~~~~$}; 
-%	\node[state] at (2,-0.5) (u1) {$r_2~~~~$}; 
-%	\node[state, fill=black!30!green] at (4, 0)(t) {$t$};
-%	\path[->] 
-%	(s) edge  node {} (v1)
-%	edge  node {} (u1)
-%	edge [blue, dashed, bend right=45] node {} (t)
-%	edge [red, dashed, bend left=45] node {} (t)
-%	(u1) edge node {} (t)
-%	(v1) edge node {} (t);
-%	\path[-] (u1) edge [dashed] node[above] {} +(0,2);
-%	\path[-] (v1) edge [dashed] node[above] {} +(0,-2);
-%	\end{tikzpicture}
-%	\caption{Diamond}
-%	\label{fig:diamonddomain}
-%\end{figure}
+\minisection{Approximating number of route filters}
+We present a technique for over-approximating the number of route 
+filters required by a particular domain assignment. We use this 
+as an estimate of resiliency: A domain assignment with lesser number
+of route-filters will have higher resiliency. 
 
+For two paths $\pi_1, \pi_2$ for destinations $\lambda_1$ and $\lambda$
+form a $(r_s, r_t, \lambda_1, \lambda_2)$ diamond if and only if:
+\begin{multline}
+~(r_s,r_i) \in \pi_1 \wedge (r_s, r_j) \in \pi_2 \wedge r_i \not= r_j \\
+\wedge (r_k,r_t) \in \pi_1 \wedge (r_l, r_t) \in \pi_2 \wedge r_k \not= r_l
+\end{multline}
+Intuitively, a diamond is the smallest structure formed by two
+paths intersecting at $r_s$ and $r_t$ with edge-disjoint paths in 
+between these routers. 
+As a diamond 
+implies there are two unique shortest paths between $r_s$ and $r_t$,
+atleast one route-filter is required.
 
-\paragraph{Approximating number of route filters}
-We present a technique for \loris{over-approximating?} the number of route 
-filters required by a particular domain assignment.
-\loris{2 lines of intuition, need to finish previous section first to have notation}
-
-If a diamond created by the input paths (\Cref{fig:diamonddomain}),
-\name requires a route-filter to find a solution to OSPF
-edge weights. However, if $s$ and $t$ of the diamond lie in
+However, if $r_s$ and $r_t$ of the diamond lie in
 different domains, the inconsistent paths would be split 
 across domains, and \name can find OSPF weights for
 both the domains without route-filters (in the case if this
 diamond was the only source of inconsistency). In the limiting
-case where each router is a separate domain~\cite{bgpdatacenter}, 
-we do not require any OSPF route-filters, and the entire 
-network can be configured using BGP. Thus, a clever domain
-assignment can also be reduce the number of route-filters, and
-increase the resilience of paths. 
+case where each router is a separate domain of size 1,
+no route-filters are required, and the entire 
+network can be configured using BGP. 
 
-
-The process of finding the exact static and BGP configurations
-required to induce the input paths has polynomial time complexity,
-and thus can be found efficiently in every iteration of the MCMC
-sampling. To minimize the number of route-filters, we can consider 
-the number of route-filters for a given domain assignment $\Theta$ 
-as one component of the cost function, and thus MCMC will try
-to minimize the cost function, and consequently, the number of
-filters. However, finding the optimal number of route-filters for a given domain assignment is NP-hard (\secref{sec:rfcomplexity}), thus, \name
-cannot find the exact number of filters for each iteration to use for
-the cost function. 
-
-Instead, \name estimates the number of route-filters required for a 
-particular domain assignment $\Theta$ for the cost function. Before 
-we start the MCMC search, we undergo a preprocessing phase 
-where for every pair of input paths, we identify the
-number of diamonds created by the path (\todo{define diamond 
-	formally somewhere}) and store the start and end router of 
-each diamond. In a MCMC iteration based on the domain
-assignment $\Theta$, for every diamond, we check if the
-start and end router are part of the same domain. If yes, 
-we assume we require atleast one filter for this particular
-diamond and increment the route-filter cost by 1. The 
-route-filter cost is not increment if the start and end 
+Before \name starts the MCMC search, it undergoes a preprocessing phase 
+where for every pair of input paths, it identifies the
+number of diamonds created by the path 
+and store the start and end router of 
+each diamond. In a MCMC iteration based on the current 
+domain assignment $\Theta$, for every diamond, we check if 
+$\Theta(r_s) = \Theta(r_t)$. If yes, 
+we assume one filter for this particular
+diamond is required and increment the route-filter cost by 1. The 
+route-filter cost is not incremented if the start and end 
 router of the diamond belong in different domains in $\Theta$.
 
 The cost computed by the above procedure overestimates the
@@ -260,7 +228,25 @@ are not included in the route-filter cost. However, the
 cost can be computed efficiently every iteration, and 
 our experiments show reductions in route-filter cost 
 lead to reductions in number of filters(~\Cref{some experiment}). 
-\todo{Specify weird Route filter case without diamonds?}
 
-\paragraph{Approximating number of static routes}
-\loris{TODO, need notation from previous section}
+\minisection{Cost of Configuration Overhead} 
+Finding the actual number of static routes, and 
+BGP local preferences and iBGP filters can be performed 
+efficiently (\Cref{sec:synth-multi}), therefore, 
+configuration cost = Count of Static Routes + Count of 
+BGP local preferences + count of iBGP filters 
+(for all destinations)\footnote{
+	Operators can specify relative weights of each overhead, for e.g.--an
+	operator may want to reduce only static routes.}.
+
+\minisection{Overall Cost Function} 
+Route-Filter cost ($rc$) and Configuration cost ($cc$) 
+are inversely related. In the limiting cases,
+if the whole network was a single OSPF domain,$rc$ is maximum, while
+$cc$ is 0. Similarily, Conf-Cost is maximum when all routers are a
+separate domain. Therefore, to jointly optimize these quantities, we
+consider the $max(RC, \alpha*CC)$ where $\alpha$ is a tunable parameter
+to assign importance to different objectives. We normalize
+both costs by dividing them by the worst cost seen during the MCMC,
+thereby, the ratio is the improvement of the best configuration over
+the worst in terms of either configuration overhead or route-filter cost.
