@@ -7,10 +7,13 @@ assignment function $\Theta$ is given to us.
 Formally, we are given a set of paths $\Pi$,
 a topology $T=(V,L)$,
 a domain-assignment function $\Theta$, 
+and \loris{configuration policies $P$,}
 and we want to find functions
 $LP$, $W$, and $RF$,  such that
-$C=(T,W,RF,LP,\Theta)$ and
-$\paths^C(PC) = \Pi$.
+$C=(T,W,RF,LP,\Theta)$,
+$\paths^C(PC) = \Pi$, and
+\loris{$C$ satisfies $P$}.
+We call this the \emph{routing configuration synthesis} problem.
 
 \loris{talk about policy and optimization}
 
@@ -19,17 +22,8 @@ we justify the complexity of our approach by showing that
 even the simplest variant of this problem is NP-complete.
 \begin{theorem}[Hardness of synthesis]
 \label{thm:ospfsynth}
-Given a set of paths $\Pi$,
-a topology $T=(V,L)$,
-a domain-assignment function $\Theta$, 
-the problem of finding 
-a local preference  function $LP$, 
-a weight function $W$, and 
-and a route filter function $RF$,  such that
-$C=(T,W,RF,LP,\Theta)$,
-$\paths^C(PC) = \Pi$,
-and 
-$\sum_{\lambda\in\Lambda} |RF(\lambda)|$ is minimal is NP-complete.
+If $P$ requires to minimize the number of route filters the routing configuration synthesis
+problem is NP-complete.
 \end{theorem}
 \loris{adapt proof to simply say $n=1$}
 \iffull
@@ -46,12 +40,13 @@ In this section, we present an algorithm for
 solving the path-compliance problem for 
 single-domain OSPF networks
 ---i.e., $|\{\Theta(r) \mid r\in V\}|=1$.
+\loris{I keep talking about minimizing route filters, while your table says resilience}
+In this setting, the only metric we can minimize is the number of route-filters.
 We first show how to solve the problem when
 we are not allowed to use route filters
 and then
 extend our technique to handle route filters, when these are allowed.
 \loris{is this sentence true?}
-In this setting, the only metric we can minimize is the number of route-filters.
 
 \begin{figure}
 	\centering
