@@ -165,7 +165,20 @@ This function is defined on inter-domain links.
 From the routes received at $r$, the router
 picks the route with greatest local preference. 
 
-
+The Internal BGP (iBGP) protocol is used to 
+exchange external BGP routes 
+among BGP routers belonging
+to the same domain. A external route received 
+by $r_1$ with a local preference value will be 
+advertised to the rest of the BGP routers of the 
+domain as an iBGP route. We can configure iBGP 
+filters to prevent a router from advertising 
+a route to another router. We define the 
+function $IBF: V \times \Lambda \mapsto 2^V$. 
+If a BGP router $r_1 \in IBF(r_2, \lambda)$, then
+$r_2$ will not advertise a route for $\lambda$ to
+$r_1$ through iBGP. 
+ 
 \loris{is this algo 1?} Algorithm~\ref{alg:bgppathrules} defines the routing function 
 $\route_{bgp}^C$ 
 that given 
@@ -279,9 +292,7 @@ Given a source $s_1$, a destination $\lambda$ connected to target router $t$,
 \end{multline}
 where for each $i>1$, $g_i=G^C(\Theta(s_i),s_i,\lambda)$, 
 $s_i=\route_{bgp}^C(g_{i-1}, \lambda)$,
-and  $+$ is the concatenation operator for paths---i.e.,
-$\Pi_1+\Pi_2=\{\pi_1\pi_2\mid \pi_i\in\Pi_i\}$.
-\loris{we should have OSPF return single paths so we don't have this multiple paths problem}
+and  $+$ is the concatenation operator for paths. 
 
 \input{policy}
 
