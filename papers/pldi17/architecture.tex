@@ -81,12 +81,8 @@ forwarding using $Reach^*(sw,pc)$, we add
 constraints for every pair ($pc_1$,$pc_2$) having the same 
  destination subnet:
  \begin{multline}
- \forall sw. Reach^*(sw, pc_1) \wedge Reach^*(sw, pc_2) \implies \\ \bigvee_{n \in N(sw)} Fwd(sw, n, pc_1) \wedge Fwd(sw, n, pc_2)
+ \forall sw. Reach^*(sw, pc_1) \wedge Reach^*(sw, pc_2) \implies \\ \bigwedge_{n \in N(sw)} Fwd(sw, n, pc_1) \Leftrightarrow Fwd(sw, n, pc_2)
  \end{multline}
- \loris{
- I think the constraint should be
- $\bigwedge_{n \in N(sw)} Fwd(sw, n, pc_1) \Leftrightarrow Fwd(sw, n, pc_2)$.
- }
  $Fwd(sw_1, sw_2,pc)$ is valid if $sw_1$ forwards $pc$ to next-hop $sw_2$ and
  $N(sw)$ denotes the neighbours of $sw$. Essentially, 
  if a switch is reachable for both packet classes, 
