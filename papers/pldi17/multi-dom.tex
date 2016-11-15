@@ -93,15 +93,15 @@ to enforce domain paths with loops. For the example in
 \noindent The path from $g_2$ to $\lambda$ does not 
 require static routes, as there are no more domain loops.
 
-\subsection{Algorithm}
+\minisection{Algorithm}
 For a path $\pi = l_1 l_2 \ldots l_m \in \Pi$, we
 can divide the path into intra-domain paths and inter-domain
 links. We express $\pi$ as 
-$\pi_1 l_1^2 \pi_2 \ldots l_{n-1}^n \pi_n$ where
+$\pi_1 idl_1^2 \pi_2 \ldots idl_{n-1}^n \pi_n$ where
 each subpath $\pi_i$ is completely in a
 domain, i.e., for each 
 link $(r_1,r_2) \in \pi_i \implies \Theta(r_1) = \Theta(r_2)$;
-and links $l_1^2, l_2^3 \ldots l_{n-1}^n$ 
+and links $idl_1^2, idl_2^3 \ldots idl_{n-1}^n$ 
 represent the inter-domain links. The domain path
 $\tilde{\pi} = d_1 \ldots d_n$ is the 
 domains of the intra-domain path segments in order
@@ -112,16 +112,28 @@ intra-domain path $\pi_i$).
 
 For a given path $\pi$ and corresponding path $\tilde{\pi}$,
 we find the longest non-looped domain subpath ending at
-destination: \texttt{min} $i$ such that
+destination domain: $nl = $\texttt{min} $i$ such that
 $\forall j \geq i. ~\not\exists k \geq i. d_j = d_k$. 
-The subpath of $\pi$ 
-corresponding from domains $d_i \ldots d_n$ does
-not contain a domain loop, therefore, the inter-domain
-routing can be induced by configuring BGP. 
-For $\pi = l_1 l_2 \ldots l_m$, the 
+Therefore, the subpath of $\pi$ corresponding to
+domains $d_{nl} \ldots d_n$--- $\pi_{nl} ~idl_{nl}^{nl+1}\ldots idl_{n-1}^n \pi_n$
+can be induced by BGP (no loops in the domain path).
+For $i \in [1,nl-1]$, all links in $\pi_i$ 
+and $l_i^{i+1}$ 
+will require a static route for $\lambda$: 
+\begin{equation}
+\forall (r_1, r_2) \in (\bigcup_{i < nl} \pi_i) \cup (\bigcup_{i < nl} idl_i^{i+1}). ~SR(r_1, \lambda) = r_2
+\end{equation}
 
-
- 
+\noindent 
+For each path $\pi$, the intra-domain subpaths which are
+not statically routed is aggregated according to the domain 
+and \name applies
+OSPF synthesis for each domain with the subpaths lying 
+in the domain as input. For each destination $\lambda \in \Lambda$, 
+BGP is configured accordingly
+based on if there is a single gateway in domain (\Cref{fig:bgpexample}(a))
+or multiple gateways (\Cref{fig:bgpexample}(b)) for the paths of destination
+$\lambda$ in the domain. 
 
 
 
