@@ -3,13 +3,12 @@
 In this section, we present algorithms for 
 solving the path-compliance problem when the domain
 assignment function $\Theta$ is given to us.
-
 Before we present our techniques,
 we justify the complexity of our approach by showing that
 even the simplest variant of this problem is NP-complete.
 
-\loris{this theorem mixes the definitions because it already puts minimizing RF}
-\begin{theorem}[OSPF synthesis]
+\loris{why minimizing RF?}
+\begin{theorem}[Hardness of synthesis]
 \label{thm:ospfsynth}
 Given a set of paths $\Pi$,
 a topology $T=(V,L)$,
@@ -29,7 +28,6 @@ $\sum_{\lambda\in\Lambda} |RF(\lambda)|$ is minimal is NP-complete.
 \else
 The reduction is from the vertex cover problem.
 \fi
-
 In the next two sections, we first show how to solve the intra-domain synthesis problem---i.e., when there
 is only a single domain---and then how to solve the inter-domain synthesis problem---i.e., when
 there are multiple domains.
@@ -39,42 +37,10 @@ In this section, we present an algorithm for
 solving the path-compliance problem for 
 single-domain OSPF networks
 ---i.e., $|\{\Theta(r) \mid r\in V\}|=1$.
-We first show how to solve the problem when route filters cannot be used
-and then tackle the problem of placing route filters.
-
-\loris{some text about fewer RF= higher resiliency}
-
-Before we present our technique and its intricacies,
-we justify the complexity of our approach by showing that
-the problem of synthesizing an OSPF configuration
-that contains an optimal number of route-filters is NP-complete.
-
-\loris{this theorem mixes the definitions because it already puts minimizing RF}
-\begin{theorem}[OSPF synthesis]
-\label{thm:ospfsynth}
-Given a set of paths $\Pi$,
-a topology $T=(V,L)$,
-a domain-assignment function $\Theta$, such that $|\{\Theta(r) \mid r\in V\}|=1$,
-the problem of finding 
-a local preference  function $LP$, 
-a weight function$W$, and 
-and a route filter function $RF$,  such that
-$C=(T,W,RF,LP,\Theta)$,
-$\paths^C(PC) = \Pi$,
-and 
-$\sum_{\lambda\in\Lambda} |RF(\lambda)|$ is minimal is NP-complete.
-We call this problem the \emph{intra-domain synthesis problem}.
-\end{theorem}
-\iffull
-\input{route-filters-nphard}
-\else
-The reduction is from the vertex cover problem.
-\fi
-
-We first show how to solve the intra-domain synthesis problem when
+We first show how to solve the problem when
 we are not allowed to use route filters
 and then
-extend our technique to handle route filters.
+extend our technique to handle route filters, when these are allowed.
 
 \begin{figure}
 	\centering
