@@ -21,12 +21,14 @@ swCount = topology.getSwitchCount()
 edgeSwitches = (topology.getSwitchCount() * 2/ 5) - 1  
 k = int(math.sqrt(topology.getSwitchCount() * 4/ 5))
 
+endpoints = []
 
 for i in range(count) : 
 	while True:
 		s = random.randint(0,edgeSwitches)
 		d = random.randint(0,edgeSwitches)
-		if s <> d :
+		if s <> d and [s,d] not in endpoints:
+			endpoints.append([s,d])
 			break
 
 	
