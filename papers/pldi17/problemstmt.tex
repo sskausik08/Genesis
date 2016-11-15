@@ -1,4 +1,7 @@
 \section{Routing Model and Problem Definition}
+\loris{in several places we use $r\rightarrow r'$ for paths which makes it confusing with normal implication.
+I would replace them all with $r\cdots r'$.}
+
 In this section, we formally define the problem addressed by this paper.
 We first define common notions used throughout the paper and 
 then show how different routing protocols are represented in the paper.
@@ -109,6 +112,7 @@ in the network in the routing function.
 \end{multline}
 
 \minisection{BGP}
+\loris{need to add ibgp filtering also to configuration C}
 BGP is a path-vector inter-domain 
 routing protocol that connects 
 different autonomous systems (ASes), where each AS
