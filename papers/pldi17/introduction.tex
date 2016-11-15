@@ -1,12 +1,13 @@
 \section{Introduction}
 Programming networks to correctly forward flows according to user- and
-application-induced policies is notoriously difficult and
-error-prone~\cite{troubleshooting, bgpmisconfig}. At least three common characteristics of
-network policies are to blame: (1) a network may need to satisfy several
-types of policies, including reachability, isolation, service
-chaining, resilience, and traffic engineering; (2) the network
-must provide certain guarantees in the event of failures; and (3) most policies are global---i.e., they
-concern end-to-end paths, not individual devices and links.
+application-induced policies is difficult and
+error-prone~\cite{troubleshooting, bgpmisconfig}. At least three
+common characteristics of network policies are to blame: (1) a network
+may need to satisfy several types of policies, including reachability,
+isolation, service chaining, resilience, and traffic engineering; (2)
+the network must provide certain guarantees in the event of failures;
+and (3) most policies are global---i.e., they concern end-to-end
+paths, not individual devices/links.
 
 %(2) SDN tries to make realization centralized like policies, but it is hard
 %to ensure link failures don't impact the controller's ability to update the
@@ -15,14 +16,15 @@ concern end-to-end paths, not individual devices and links.
 %tolerance-perspective, but determining the appropriate distributed
 %realization of policies is hard.
 
-The global nature of network policies is one motivation for software-defined
-networking (SDN). SDN allows paths to be centrally computed over a global view
-of the network. However, it is difficult to ensure forwarding paths are
-correctly computed and installed in the presence of failures, even if the SDN
-controller is distributed~\cite{hasdn}.
-Traditional control planes that rely on distributed protocols to
-compute paths are preferable from a failure-tolerance perspective, but
-determining the appropriate distributed realization of policies is hard.
+The global nature of network policies is one motivation for
+software-defined networking (SDN). SDN allows paths to be centrally
+computed over a global view of the network. However, it is difficult
+to ensure forwarding paths are correctly computed and installed in the
+presence of failures, even if the SDN controller is
+distributed~\cite{hasdn}.  Traditional control planes that rely on
+distributed protocols to compute paths offer greater fault tolerance,
+but determining the appropriate distributed realization of policies is
+hard.
 
 %(3) Our goal is to automate the process of producing this distributed
 %realization. We want to handle a wide range of policies and leverage the many
@@ -34,22 +36,20 @@ determining the appropriate distributed realization of policies is hard.
 %endpoints and the state of the links in the network and whose output is a set
 %of paths.  Our goal is to synthesize this program.
 
-Our goal is to {\em automate the process of creating a correct distributed
-	realization of policies in a traditional control plane}. We wish to 
-handle a wide range of policies (e.g., reachability, service chaining, traffic
-engineering) to meet the security and compliance requirements of a 
-growing diversity of enterprise and cloud applications. With increasing
-sizes of networks, we must provide support for realizing 
-hierarchical control planes for scalability concerns. Thus, 
-we leverage the many protocols (e.g., OSPF, BGP) and mechanisms
-(e.g., route filters, route redistribution) available in traditional control
-planes to in order to achieve this goal. 
-We also want to ensure the generated control plane satisfies
-certain failure-tolerance properties. This contrasts with
-prior works
-~\cite{netegg, propane, merlin,simple,fattire, netkat, netkatcompiler, sol}, which generate SDN- or BGP-based
-control planes for a limited range of policies (e.g., inter-domain
-reachability).
+Our goal is to {\em automate the process of creating a correct
+  distributed realization of policies in a traditional control
+  plane}. We wish to handle a wide range of policies, e.g.,
+reachability, service chaining, and traffic engineering, to meet
+applications' diverse security and compliance requirements. With
+increasing sizes of networks, we must further provide support for
+realizing hierarchical control planes to ensure scalability,
+necessitating the use of multiple intra- and inter-domain routing
+protocols (e.g., OSPF and BGP). Finally, we want to ensure the
+generated control plane satisfies certain failure-tolerance
+properties. Thus, our work contrasts with prior efforts~\cite{netegg,
+  propane, merlin,simple,fattire, netkat, netkatcompiler, sol}, which
+generate SDN- or BGP-specific control planes for a limited range of
+policies (e.g., peering).
 
 %\kausik{Do we need this paragragh?}
 %Although a distributed control plane is composed of a collection of routing
@@ -67,13 +67,13 @@ is computationally hard.
 %In our setting, the specifications are the policies we want to realize and the programs 
 %are the control plane.
 First, even generating a set of policy-compliant 
-paths for a SDN (which has centralized control) is 
-computationally hard (for e.g. enforcing isolated
+paths for a SDN  is 
+computationally hard (e.g., enforcing isolated
 paths is NP-complete). 
 Second, to infer the concrete
-set of paths induced by the network configurations, 
+set of paths induced by network configurations, 
 one has to incorporate
-into the synthesis procedure 
+into synthesis
 complex concepts such as shortest path algorithms
 using theories like propositional logic (SAT) 
 and linear rational
@@ -88,61 +88,58 @@ sets of policies.
 %control plane from examples, and then applies a series of transformations to
 %produce a fully policy-compliant control plane.
 
-Instead, we propose 
-a two-phased approach to synthesizing configurations.
- First, we synthesize a concrete set of paths---i.e., 
- the forwarding state---satisfying  
-all the specified policies.
-such as reachability, waypoint, isolation, and
-traffic engineering. We use  
-\genesis~\cite{genesis} for
-synthesizing policy-compliant paths. 
+Instead, we propose \name, a two-phased approach to synthesizing
+configurations.  First, using \genesis~\cite{genesis}, we synthesize a
+concrete set of paths---i.e., the forwarding state---satisfying all
+the specified policies, such as, reachability, waypoint, isolation,
+and traffic engineering.
 %a partially-correct control plane from a set of example paths, such
 %as those contained within a sample data plane. 
-Second, we generate router configurations which
-induces the set of synthesized paths. This makes the synthesis 
-tractable, and we can perform multiple iterations 
-to produce policy-compliant configurations. 
+Second, we generate domain-level split of the routers in the network,
+and corresponding intra- and inter-domain router configurations, such
+that overall configurations induce the synthesized forwarding
+state. We show that this makes the synthesis tractable, and we can
+perform multiple iterations to eventually produce policy-compliant
+configurations.
 
-We present \name, 
-a framework to synthesize router configurations which 
-converge to a forwarding state such traffic is
-forwarded through the policy-compliant paths. 
-\name allows operators to use a combination of 
-protocols to impose a hierarchy of domains in their network.
-Each router is mapped to a domain and runs OSPF for intra-
-domain routing, while domains use BGP for inter-domain
-routing. We use constraint solving in Linear rational 
-arithmetic (LRA) and a learning-based procedure which 
-extracts information from unsatisfiable cores 
-for synthesizing intra-domain OSPF configurations. 
-We use MCMC sampling to stochastically search for 
-the best way to partition the network into multiple 
-domains which satisfy hard operator policies on configurations
-such as size of the each OSPF domain, and optimize objectives.
-The two main objective \name considers are 
-maximizing endpoint resiliency, as \name requires
-route-filters to induce certain paths, thereby affecting resilience; 
-and minimizing the configuration overhead imposed by 
-inter-domain routing (BGP and static routes), which 
-decreases configuration complexity, thus, easing
- automated verification~\cite{batfish, arc, era} and 
- improving readability 
- for performing manual changes.
-On average, we can increase endpoint resilience
-by $1.6\times$ and reduce configuration overhead (static routes
-and BGP variables) by $0.3\times$ using MCMC sampling. 
+%% We present \name, 
+%% a framework to synthesize router configurations which 
+%% converge to a forwarding state such traffic is
+%% forwarded through the policy-compliant paths. 
+%% \name allows operators to use a combination of 
+%% protocols to impose a hierarchy of domains in their network.
+To elaborate, in \name, each router is mapped to a domain and runs
+OSPF for intra- domain routing, while domains use BGP for inter-domain
+routing. We use constraint solving in Linear rational arithmetic (LRA)
+and a learning-based procedure which extracts information from
+unsatisfiable cores for synthesizing intra-domain OSPF configurations.
+We use MCMC sampling to stochastically search for the best way to
+partition the network into multiple domains which satisfy hard
+operator policies on configurations such as size of the each OSPF
+domain. Further, \name allows operators to optimize two key management
+objectives. The first is maximizing endpoint resiliency, as \name
+requires route-filters to induce certain paths, thereby affecting
+failure resilience. The second minimizing the configuration overhead imposed
+by inter-domain routing (BGP and static routes), which helps decrease
+configuration complexity, thus, easing automated
+verification~\cite{batfish, arc, era} and improving readability for
+performing future manual changes.
+
+\aditya{2-3 sentences on key experimental results. The following
+  sentence could be part of that.}  On average, we can increase
+endpoint resilience by $1.6\times$ and reduce configuration overhead
+(static routes and BGP variables) by $0.3\times$ using MCMC sampling.
 
 
-Automatically synthesizing distributed realizations 
-of network policies is an
-important step towards simplifying 
-network management and providing an 
-SDN-like interface for programming networks 
-running distributed routing protocols. 
-Our approach is an important
-contribution towards the vision of 
-intent-driven networking~\cite{intent}.
+%% Automatically synthesizing distributed realizations 
+%% of network policies is an
+%% important step towards simplifying 
+%% network management and providing an 
+%% SDN-like interface for programming networks 
+%% running distributed routing protocols. 
+%% Our approach is an important
+%% contribution towards the vision of 
+%% intent-driven networking~\cite{intent}.
 
 \noindent\textbf{Contributions.} We make the following contributions:
 \begin{compactitemize}
