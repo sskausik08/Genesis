@@ -21,14 +21,16 @@
 % into actual device configurations to make our system practical for use with
 % real networks.
 
-One of the foremost tasks in network management is programming the network to
-forward traffic in a manner consistent with user- and application-induced
-policies. Common types of policies include: reachability (i.e., which
-end-hosts can communicate), isolation (i.e., which flows cannot share links),
-service chaining (i.e., which middleboxes must be traversed), resilience
-(e.g., how many backup paths are available), and traffic engineering 
-objectives like minimizing the average link utilization. Every
-set of forwarding paths (i.e., data plane) installed in the network
+One of the foremost tasks in network management is programming the
+network to forward traffic in a manner consistent with user- and
+application-induced high-level policies. Common types of policies
+include: reachability (i.e., which end-hosts can communicate),
+isolation (i.e., which flows cannot share links), service chaining
+(i.e., which ``middleboxes'', e.g., firewalls, proxies, or load
+balancers, must be traversed), resilience (e.g., how many backup paths
+are available), and traffic engineering (e.g., minimizing the average
+link utilization). Every set of forwarding paths (i.e., data plane)
+installed in the network
 %---either manually or by a control plane---
 should conform to these 
 policies, otherwise performance, security, or availability problems may arise.
@@ -51,24 +53,19 @@ policies, otherwise performance, security, or availability problems may arise.
 % component may become bottlenecked
 % or fail (even if it is distributed), leading to (a partial) network failure.
 
-A common theme among these policies is that 
-they specify \emph{network-wide intent}~\cite{intent}: 
-operators can specify what they \emph{want} from the network as a 
-whole, instead of \emph{how} individual components of the network
-must be configured. 
-Software-defined networking (SDN) has led to the development 
-of various frameworks for network-wide policy enforcement
-~\cite{netkat, simple, merlin, fattire, genesis}. In SDN,
-a centralized controller (control plane) controls
-the end-to-end paths by managing forwarding rules on programmable
-network switches (data plane). The controller can program
-forwarding rules using the global view of the network
-topology to meet application requirements. While SDN 
-significantly enhances programmability of the network to 
-satisfy the diverse policy requirements in
-networks, it suffers from two 
-major challenges: 
-\emph{scalability} and \emph{failure-tolerance}. 
+A common theme among these policies is that they specify
+\emph{network-wide intent}~\cite{intent}: operators can specify what
+they \emph{want} from the network as a whole, instead of \emph{how}
+individual components of the network must be configured.
+Software-defined networking (SDN) has led to the development of
+various frameworks for network-wide policy enforcement ~\cite{netkat,
+  simple, merlin, fattire, genesis}. In SDN, a centralized controller
+(control plane) controls the end-to-end paths by managing forwarding
+rules on programmable network switches (data plane). The controller
+can program forwarding rules using the global view of the network
+topology to meet application requirements. While SDN significantly
+improves network programmability, it suffers from two major
+impediments: \emph{scalability} and \emph{failure-tolerance}.
 
 The centralized controller is responsible for installing 
 forwarding rules to all switches, and thus, as network sizes
@@ -78,9 +75,9 @@ the controller has to detect and respond to the failure, and
 even establishing connectivity between endpoints could be delayed.
 Also, the controller is a central point of failure and controller
 failure can lead to network disruptions. 
-Another reason for the 
-slow adoption of SDN has been the cost involved in overhaul 
-of the network with programmable switches.  
+%% Another reason for the 
+%% slow adoption of SDN has been the cost involved in overhaul 
+%% of the network with programmable switches.  
 
 The principles of scalability and failure-tolerance 
 were central to the design
@@ -110,13 +107,14 @@ available are predefined---e.g., OSPF uses
 Dijkstra's shortest path---and their behavior can only be influenced
 through a limited set of parameters---e.g.,
 link weights. Similarly, BGP uses shortest
-path routing at a domain-granularity, and have different
-provisions to control routing (such as local preferences).  
-\item Operators require their networks to be split into domains
-with different protocols for intra- and inter-domain routing. 
-They need this for operational
-factors like scalability and cost, thus requiring us 
-to model heterogeneous protocol interactions. 
+path routing at a domain-granularity, and has different
+parameters (such as local preferences).  
+\item Operators require their networks to be split hierarchically into
+  domains for operational factors such as scalability (e.g., OSPF does
+  not scale beyond 10s of routers) and cost (routers in large domains
+  need more routing table memory). In such cases, different protocols
+  for intra- and inter-domain routing must be used, and in turn this
+  requires us to model heterogeneous protocol interactions.
 \item Most policies are
 global---i.e., they concern end-to-end paths, not individual devices and
 links---making it difficult to map policies to
@@ -132,42 +130,37 @@ the generation of router configurations.
 %number of link failures.
 \end{itemize}
 
-\begin{figure}
-\centering
-\includegraphics[width=\columnwidth]{figures/architecture.pdf}
-\compactcaption{Two-phase process for generating a control plane
-       with failure-tolerance properties}
-\label{fig:architecture}
-\end{figure}
+%% \begin{figure}
+%% \centering
+%% \includegraphics[width=\columnwidth]{figures/architecture.pdf}
+%% \compactcaption{Two-phase process for generating a control plane
+%%        with failure-tolerance properties}
+%% \label{fig:architecture}
+%% \end{figure}
 
-\minisection{Configuration Synthesis}
-To address the aforementioned challenges, we propose
-to 
-\emph{automatically synthesise} policy-compliant configurations.
-Given a set of policies describing path requirements
-and control-plane requirements, our goal is to synthesize
-control plane configurations that comply with the control-plane
-requirements and generate paths that comply with the path requirements.
-\loris{maybe a couple of sentences on what policies}
-Concretely, we investigate two increasingly hard problems:
-1) synthesizing intra- and inter-domain configurations 
-for routing for a given partition of the network 
-into multiple routing domains, where 
-each domain uses OSPF shortest-path routing, 
-and routing across domain is based on BGP local preferences 
-and static routes (Section~\ref{sec:synthesis});
-2) synthesizing configurations 
-as well as domain assignments i.e., 
-decide how routers are 
-grouped into different domains 
-which satisfy the input policies (Section~\ref{sec:synth-dom-ass}). 
-Since we support complex policies---e.g.,  traffic isolation and 
-waypoints---as well as
-complex routing techniques---e.g., OSPF and BGP---the configuration
-synthesis problems are all computationally hard.
-We present solutions to these synthesis problems 
-in the following sections.
-\loris{do we want to anticipate the techniques?}
+\minisection{Configuration Synthesis} To address the aforementioned
+challenges, we propose to \emph{automatically synthesise}
+policy-compliant configurations.  Given a set of policies describing
+path requirements (e.g., reachability, way points, etc.)  and control
+plane design requirements (e.g., the number and maximum size of
+domains), our goal is to synthesize control plane configurations that
+comply with the control-plane requirements and generate paths that
+comply with the path requirements.  \loris{maybe a couple of sentences
+  on what policies}. This boils down to investigating two increasingly
+hard problems: 1) synthesizing intra- and inter-domain configurations
+for routing for a given partition of the network into multiple routing
+domains, where each domain uses OSPF shortest-path routing, and
+routing across domain is based on BGP local preferences and static
+routes (Section~\ref{sec:synthesis}); 2) synthesizing configurations
+as well as domain assignments i.e., decide how routers are grouped
+into different domains which satisfy the input policies
+(Section~\ref{sec:synth-dom-ass}).  Since we support complex
+policies---e.g., traffic isolation and waypoints---as well as complex
+routing techniques---e.g., OSPF and BGP---both configuration synthesis
+problems are all computationally hard.  We present solutions to these
+synthesis problems in the following sections. For the former, we use
+\aditya{xxx}. For the latter, we use \aditya{XXX} \loris{do we want to
+  anticipate the techniques?}
 
 %Unfortunately, this task is inherently challenging 
 %as it requires solving in one shot multiple

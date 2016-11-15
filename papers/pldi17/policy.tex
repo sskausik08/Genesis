@@ -4,8 +4,9 @@
 		\begin{tabular}{m{10em} | m{42em} } 
 			Policy &  Description \\ 
 			\hline
-			Reachability & Path from router $src$ to router $dst$ for packets matching $predicate$ \\ \hline
-			Reachability with \newline Ordered Waypoints & Path from router $src$ to router $dst$ for packets matching $predicate$ such that the path traverses $w \in W_1$ in any order, then $w \in W_2$ in any order after all waypoints in $W_1$ are traversed and so on.\\ \hline
+			Reachability & Path from router $src$ to router $dst$ for destination $\lambda$ \\ \hline
+			Reachability with \newline Ordered Waypoints & Path from router $src$ to router $dst$ for destination $\lambda$ 
+			such that for waypoint sets $W_1\ldots W_n$, path traverses $w \in W_1$ in any order, then $w \in W_2$ in any order after all waypoints in $W_1$ are traversed and so on.\\ \hline
 			Traffic Isolation & Paths of two reachability policies $R1$ and $R2$ do not share a link in the same direction \\ \hline
 			Traffic Engineering  & TE objectives: minimize total/max link utilization \\
 		\end{tabular}
