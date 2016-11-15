@@ -1,27 +1,19 @@
 \subsection{Synthesising Inter-domain Configurations}
-\label{sec:synth-multi}
+\label{sec:inter-synthesis}
 
-\loris{every section should clearly state what we try to minimize---route filters,
-static routes?}
+
 In this section, we present an algorithm for 
 solving the path-compliance problem in the presence
 of multiple domains---i.e., $|\{\Theta(r) \mid r\in V\}|>1$.
-However, we assume that the domain splitting $\Theta$ is given to us.
-Formally, we are given a set of paths $\Pi$,
-a topology $T=(V,L)$,
-a domain-assignment function $\Theta$ such that $|\{\Theta(r) \mid r\in V\}|>1$, 
-and we want to find functions
-$LP$, $W$, and $RF$,  such that
-$C=(T,W,RF,LP,\Theta)$ and
-$\paths^C(PC) = \Pi$.
-We call this problem the \emph{inter-domain synthesis problem}.
-In this section, we describe a hierarchical algorithm for solving this problem.
-Given the paths $\Pi$, we first determine 
+In this setting, we might want to some expression relating the number of 
+route-filters and \loris{what else static routes, BGP lines? related to policy lang}.
+First, our algorithm determines
 BGP configuration and static routes to ensure that the paths will traverse the correct
 domains.
-Then, we show how to modify the techniques given in Section~\ref{sec:synthesis}
+Second, we show how to modify the techniques given in Section~\ref{sec:intra-synthesis}
 to determine the edge weights in each domain to guarantee that paths traverse
 the correct gateway routers.
+
 
 \begin{figure*}
 	\centering
@@ -228,7 +220,7 @@ This algorithm is described in the next section.
 When BGP routes of destination $\lambda$ 
 are redistributed by multiple gateways to an 
 OSPF domain, \name uses a modified OSPF synthesis
-algorithm from \secref{sec:synthesis} to assign OSPF weights to the links in the domain
+algorithm from \secref{sec:intra-synthesis} to assign OSPF weights to the links in the domain
 and place route filters. 
 This is 
 required because an OSPF router will choose

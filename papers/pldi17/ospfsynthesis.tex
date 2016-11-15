@@ -1,13 +1,22 @@
 \section{Synthesising Routing Configurations}
+\label{sec:config-synthesis}
 
 In this section, we present algorithms for 
 solving the path-compliance problem when the domain
 assignment function $\Theta$ is given to us.
+Formally, we are given a set of paths $\Pi$,
+a topology $T=(V,L)$,
+a domain-assignment function $\Theta$, 
+and we want to find functions
+$LP$, $W$, and $RF$,  such that
+$C=(T,W,RF,LP,\Theta)$ and
+$\paths^C(PC) = \Pi$.
+
+\loris{talk about policy and optimization}
+
 Before we present our techniques,
 we justify the complexity of our approach by showing that
 even the simplest variant of this problem is NP-complete.
-
-\loris{why minimizing RF?}
 \begin{theorem}[Hardness of synthesis]
 \label{thm:ospfsynth}
 Given a set of paths $\Pi$,
@@ -32,7 +41,7 @@ In the next two sections, we first show how to solve the intra-domain synthesis 
 is only a single domain---and then how to solve the inter-domain synthesis problem---i.e., when
 there are multiple domains.
 
-\subsection{Synthesising Intradomain Configurations} \label{sec:synthesis}
+\subsection{Synthesising Intra-domain Configurations} \label{sec:intra-synthesis}
 In this section, we present an algorithm for 
 solving the path-compliance problem for 
 single-domain OSPF networks
@@ -41,6 +50,8 @@ We first show how to solve the problem when
 we are not allowed to use route filters
 and then
 extend our technique to handle route filters, when these are allowed.
+\loris{is this sentence true?}
+In this setting, the only metric we can minimize is the number of route-filters.
 
 \begin{figure}
 	\centering
