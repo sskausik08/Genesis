@@ -1,14 +1,13 @@
 \section{Architecture} \label{sec:architecture}
-In this section, we describe the architecture of our system.
-Since directly generating policy-compliant configurations
-is a challenging problem, we use a two-phase approach in which
-we first synthesize policy-compliant \emph{paths}
-using the tool \genesis~\cite{genesis} and then present
-a new tool, \name, that synthesises configuration that produce the
-paths we synthesized in the first phase. 
-Since the first phase may produce \emph{bad} paths for which the
-configuration synthesis is complicated or not possible,
-we then propose ways to restart the algorithm by computing new paths.
+In this section, we describe the architecture of our system.  Since
+directly generating policy-compliant configurations is a challenging
+problem, we use a two-phase approach in which we first synthesize
+policy-compliant \emph{paths} using the tool \genesis~\cite{genesis}
+and then we synthesize configurations that result in the paths we
+synthesized in the first phase; we refer to the latter as \name.
+The first phase may produce \emph{bad} paths for which the
+configuration synthesis is complicated or not possible. Thus, we
+propose ways to restart the algorithm by computing new paths.
 
 \subsection{\genesis: From Policies to Paths} \label{sec:genesis}
 The first phase of our approach produces a set of paths adhering to
@@ -32,7 +31,7 @@ $(r_1, r_2$, $pc)\in$ $Fwd$ if
 $r_1$ forwards packets of class $pc$ to router $r_2$---
 and 
 the relation $Reach \subseteq V \times PC \times \nat$ 
-to captures
+to capture
 the path reachability---i.e. $(r, pc, k)\in Reach$ if 
 the router $r$ is reachable in the path from the source
 router of packet class $pc$ in exactly $k$ steps. Based on
@@ -48,7 +47,7 @@ need to be modified to avoid generating paths that
 cannot be enforced by any routing configuration.
 
 OpenFlow switches~\cite{openflow} support match predicates for
-forwarding rules on different packet header fields like source
+forwarding rules on different packet header fields such as source
 and/or destination IP address, ports etc. However, legacy protocols
 like OSPF and BGP only support destination-based forwarding, 
 forcing the paths to a destination subnet to 
@@ -69,7 +68,7 @@ the subsequent downstream paths to the destination from the
 router do not \emph{diverge} at a router.  
 We define the relation $Reach^*(sw,pc)$ to model reachability 
 of $sw$ in the path of $pc$, i.e., it can be reached in zero or more
-steps from the source. We can be expressed $Reach^*(sw,pc)$ 
+steps from the source. We can express $Reach^*(sw,pc)$ 
 in the network forwarding model of \genesis as:
 \loris{$\mu$ not defined}
 \begin{equation}
@@ -89,7 +88,7 @@ constraints for every pair ($pc_1$,$pc_2$) having the same
  $\bigwedge_{n \in N(sw)} Fwd(sw, n, pc_1) \Leftrightarrow Fwd(sw, n, pc_2)$.
  }
  $Fwd(sw_1, sw_2,pc)$ is valid if $sw_1$ forwards $pc$ to next-hop $sw_2$ and
- $N(sw)$ denotes the neighbours of $sw$. Basically, 
+ $N(sw)$ denotes the neighbours of $sw$. Essentially, 
  if a switch is reachable for both packet classes, 
  then the next switch must be the same for both classes
  (paths will not diverge), and thus, the paths obtained
@@ -100,7 +99,7 @@ constraints for every pair ($pc_1$,$pc_2$) having the same
 \loris{consider adding more text to this sec}
 After we have computed a set of policy-compliant paths,
 we need to solve the path-compliance problem using such paths.
-To solve this problem, we propose the tool \name, which
+To solve this problem \name
 combines techniques in constraint solving and randomized search
 to efficiently generate router configurations for the paths obtained from \genesis.
 For a given domain division of the network,

@@ -30,8 +30,10 @@ We call this problem the \emph{intra-domain synthesis problem}.
 The reduction is from minimum vertex cover problem.
 \fi
 
-We first show how to solve the intra-domain synthesis problem when $n=0$---i.e., we are not allowed to use route filters---and
-then extend our technique to handle route filters.
+We first show how to solve the intra-domain synthesis problem when
+$n=0$---i.e., we are not allowed to use route filters---and then
+extend our technique to handle route filters. \aditya{move definition
+  of $n$ outside the theorem. also $n$ is overloaded..}
 
 \begin{figure}
 	\centering
@@ -99,7 +101,7 @@ such that
  ($W=5$). 
  
 The problem of synthesizing the weight function $W$ that
-that realizes an input set of paths $\Pi$ is
+realizes an input set of paths $\Pi$ is
 a
 variation of the so-called {\em inverse shortest path} 
 problem~\cite{isp}. 
@@ -187,7 +189,7 @@ This can be done by creating a
 route-filter $(l,d)$ for every link $l$ not in $\xi_d$. 
 However, this solution will place many more filters than necessary.
 Since the problem of optimally placing route-filters is NP-complete, 
-we propose a greedy strategy that does not guarantee to place a minimal number of filters, but works well in practice.
+we propose a greedy strategy that does not guarantee a minimal number of filters, but works well in practice.
 
 
 Our algorithm starts by trying to synthesize a solution
@@ -215,29 +217,36 @@ by simply ignoring all the filtered edges.
 In the same way, we can modify equations  \eqref{eq:uniq1} and \eqref{eq:uniq2}, while
 equation \eqref{eq:uniq3} remains unchanged.
 
-While the encoding without route-filters produces $n$ equations, this encoding produces $|\Omega|n$ due
-to the multiple different distances $D_d$.
-Notice that, the shortest distance $D_d(s,t)$ between two nodes $s$ and $t$ without using edges filtered for $d$ cannot be
-smaller than the shortest distance $D(s,t)$ obtained without considering route-filters.
-We use this property to simplify the encoding by only computing $D(s,t)$ and by replacing each instance of $D_d(s,t)$
-with $D(s,t)$ in
-equations \eqref{eq:uniq1} and \eqref{eq:uniq2}. 
-It is easy to see that every solution of this simplified set of constraints
-is also a solution to the original solution (because $D(s,t)\leq D_d(s,t)$).
-However, the reverse is not true and the set of simplified equations can be unsatisfiable
-in cases in which the original set is satisfiable, causing addition of unnecessary filters.
-Our implementation uses this simplified set of equations, but we will show that this
-does not effect our ability to find good solutions in the evaluation section.
+While the encoding without route-filters produces $n$ equations, this
+encoding produces $|\Omega|n$ due to the multiple different distances
+$D_d$.  Notice that, the shortest distance $D_d(s,t)$ between two
+nodes $s$ and $t$ without using edges filtered for $d$ cannot be
+smaller than the shortest distance $D(s,t)$ obtained without
+considering route-filters.  We use this property to simplify the
+encoding by only computing $D(s,t)$ and by replacing each instance of
+$D_d(s,t)$ with $D(s,t)$ in equations \eqref{eq:uniq1} and
+\eqref{eq:uniq2}.  It is easy to see that every solution of this
+simplified set of constraints is also a solution to the original
+solution \aditya{what does this mean?} (because $D(s,t)\leq
+D_d(s,t)$).  However, the reverse is not true and the set of
+simplified equations can be unsatisfiable in cases in which the
+original set is satisfiable, causing addition of unnecessary filters.
+Our implementation uses this simplified set of equations, but we will
+show that this does not effect our ability to find good solutions in
+Section~\ref{s:eval}.
 
 
+%% We discuss two schemes  to add route-filters:
+%% the first scheme 
 \minisection{Adding filters using unsatisfiable cores}
 When the set of linear equations does not admit a solution, we 
 add router-filters until, eventually, a solution is found.
-We discuss two schemes used to add route-filters:
-the first scheme uses unsatisfiable cores generated
-by the solver and the second scheme 
-finds topological structures called diamonds that 
-can never be handled without route-filters.\loris{do we leave this?}
+Our scheme for adding route filters
+uses unsatisfiable cores generated
+by the solver.
+%% and the second scheme 
+%% finds topological structures called diamonds that 
+%% can never be handled without route-filters.\loris{do we leave this?}
 
 LP-solvers have efficient procedures to return an
 unsatisfiable core, also called IIS (Irreducible Inconsistent Subsystem)~\cite{chinneck2007feasibility}. 
@@ -285,9 +294,9 @@ and we have reached a solution to the intra-domain synthesis problem.
 %a route-filter from an unsat-core satisfying certain
 %objectives. 
 
-Finding an IIS is an NP-hard problem~\cite{iiscomplexity}
-and can result in slow synthesis times.
-\loris{should we say, before starting we remove all diamonds?}
+%% Finding an IIS is an NP-hard problem~\cite{iiscomplexity}
+%% and can result in slow synthesis times.
+%% \loris{should we say, before starting we remove all diamonds?}
 %We identify a topological property of the set of input paths that 
 %is guaranteed to require route-filters and use it to produce an initial set of necessary route-filters.
 %This technique allows us to reduce the number of times we are required to compute  unsat-cores.
