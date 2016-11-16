@@ -132,33 +132,29 @@ accounts for the higher priority of static routes.
 \]
 
 \minisection{BGP} BGP is a path-vector inter-domain routing protocol
-that connects different autonomous systems (ASes), where each AS
+that connects different domains (also called autonomous systems), where each domain
 comprises of one or more routers (typically managed by a single
 entity). A BGP router receives routes from BGP peers (internal peers
 send iBGP routes, external peers send eBGP routes). Each route for the
 destination comprises of a domain-level path to the destination
-domain, and by default a BGP router will pick a path with fewest domains 
-to forward the packet for a destination.
+domain, and by default a BGP router will forward a packet through  the path that traverses fewer domains.
  
 To support policy routing, BGP routers can be configured with a
 \emph{local preference} variable to assign higher priorities to
 specific routes for a particular destination. We define the local
 preference function $LP: V \times V \times \Lambda \mapsto \nat$ as
-follows.  Given a BGP router $r$, neighbouring router $r_1$, and  
-destination $\lambda$, $LP(r, r_1, \lambda)$ specifies the local
-preference for a route received for destination $\lambda$ at BGP
-router $r$ from next-hop BGP router $r_1$.  This function is defined
-on inter-domain links.  From the routes received at $r$, the router
+follows.  Given a BGP router $r$, neighbouring router $r'$, and  
+destination $\lambda$, $LP(r, r', \lambda)$ specifies the local
+preference for the router $r$ to choose $r'$ as the next-hop router for destination $\lambda$.  This function is defined
+on inter-domain links---i.e., $r$ and $r'$ belong to different adjacent domains.  
+From the routes received at $r$, the router
 picks the route with greatest local preference.
 
 The Internal BGP (iBGP) protocol is used to 
 exchange external BGP routes 
 among BGP routers belonging
-to the same domain. A external route received 
-by $r_1$ with a local preference value configured 
-will be advertised to the rest of the BGP routers of the 
-domain as an iBGP route with the same local
-preference. We can configure iBGP 
+to the same domain. Informally, iBGP propagates local preferences of the routes to all the BGP routers within the same domain. 
+We can configure iBGP 
 filters to prevent a router from advertising 
 a route to another router. We do so using the 
 function $IF: V \times \Lambda \mapsto 2^V$;
@@ -178,18 +174,18 @@ returns
 the next-hop BGP router in the path. 
 \else
 We only describe the routing semantics of BGP
-informally. The BGP path selection algorithm is submitted as part of the supplementary material.
+informally and the complete BGP path selection algorithm is submitted as part of the supplementary material.
 \fi
 BGP 
 chooses a route with highest local preference, and
-if there is a tie, it then chooses the route with smallest
-AS path length~\cite{bgp}. 
+if there is a tie, it then chooses the route the traverses fewer domains~\cite{bgp}. 
 \name synthesizes configurations where all ties are 
-are broken using these criteria, and $\route_{bgp}^C(r,\lambda)$
-returns a single router for the inter-domain next-hop router. 
-Also, static routes 
-have a higher preference than BGP, therefore a static route
-$SR(r, \lambda)$ will be preferred over the BGP route.
+are broken using these criteria. Formally, we have a routing function 
+$\route_{bgp}^C(r,\lambda)$, that given a switch $r$ and a destination $\lambda$,
+returns the next-hop router for going from $r$ to $\lambda$. 
+Finally, static routes 
+have a higher preference than BGP routes, therefore a static route
+$SR(r, \lambda)$ will be preferred over any BGP route.
 
 \iffull
 \begin{algorithm} [t]
@@ -237,19 +233,19 @@ $SR(r, \lambda)$ will be preferred over the BGP route.
 \fi
 
 \minisection{OSPF+BGP+Static Routes} We now describe how routing
-happens across domains.  In domain $d$, traffic 
+happens in hierarchical domains.  Assume that in domain $d$, traffic 
 for destination $\lambda$ originates at source
-router $s$ (i.e., $\Theta(s) = d$). 
+router $s$---i.e., $\Theta(s) = d$. 
 If the target router $t$ connected to the
-destination belongs to domain $d$, then there exists a OSPF route for
+destination $\lambda$ belongs to domain $d$, then there exists a OSPF route for
 $\lambda$ at $s$, and the path taken would be
 $\route_{ospf}^C(s,t,\lambda)$.
 
 Consider the case of destination $\lambda$ being connected 
 to an external domain, thus, traffic for destination $\lambda$
-will be sent to a BGP gateway router of domain $d$ which 
-will forward it to its neighbouring domains till
-it reaches the internal domain of $\lambda$. A BGP gateway
+will be sent to a BGP gateway router $r$ of domain $d$ and $r$ 
+will forward  the traffic to its neighbouring domains till
+it reaches the internal domain of $\lambda$. Formally, a BGP gateway
 router is a router $g$ such that $\exists g' \in N(g). 
 ~\Theta(g') \not= \Theta(g)$. 
 
@@ -259,19 +255,18 @@ into OSPF (to prevent explosion of forwarding tables).
 BGP gateways in a domain exchange routes using iBGP,
 and if the best path chosen is an eBGP route, 
 the gateway redistributes the eBGP route into OSPF. 
-Therefore, multiple BGP routers
+Therefore, if multiple BGP routers
 can redistribute a route for $\lambda$,  
-the closest gateway (in terms of OSPF distance)
+the closest gateway in terms of OSPF distance
 is chosen. We define a gateway function $G^C$,
-that given a domain number $n\in \nat$
+that given a domain number $n\in \nat$,
 %a local preference $LP$,
 %a weight function $W$,
 %route filters $RF$,
 a router $r$ such that $\Theta(r)=n$,
 and destination $\lambda$ outside of domain $n$, 
-specifies the
-gateway chosen for a destination based on the
-closest router redistributing the route for $\lambda$. 
+returns the closest
+gateway router to $r$ for destination $\lambda$. 
 Finally, the routing function 
 $\route^C$
 %:\Theta \times LP \times W \times RF \times V \times V \times \Lambda \rightarrow L^* 
@@ -295,20 +290,20 @@ We assume a set of packet classes $PC : [0,C_{pc}]$
 and map each path (only reachability policies produce paths,
 the rest specify properties on these paths)
 to a unique integer in $PC$.
-For a packet class $pc$, $src_{pc}$ denotes the source router,
-$dst_{pc}$ denotes the destination router, and $\lambda_{pc}$
+For a packet class $pc$, $s_{pc}$ denotes the source router,
+$t_{pc}$ denotes the destination router, and $\lambda_{pc}$
 denotes the destination   address. 
 
 
 \begin{definition}[Induced Paths]
 Given a configuration $C$ and a set of packet classes $PC$, the set of paths
 $\paths^C(PC)$ induced by $C$ is defined as follows: 
-$\forall pc \in PC.$ $\route^C(src_{pc}, dst_{pc}, \lambda_{pc})$ $\in \paths^C(PC)$.
+$\forall pc \in PC.$ $\route^C(s_{pc}, t_{pc}, \lambda_{pc})$ $\in \paths^C(PC)$.
 \end{definition}
 
 \subsection{Problem Definition}
 \input{policy}
-\input{configpolicy}
+
 
 \minisection{Policies}
 \Cref{tab:policysupport} describes the path policies supported by \name.
@@ -355,7 +350,7 @@ the number of alternate paths between endpoints.
 However, this metric is too hard to handle as it depends on complex graph properties. 
 In practice, when we want improve resiliency, we try to minimize
 the number of filters; we will show that this strategy is effective. 
-
+\input{configpolicy}
 %different configuration metrics. For example,
 %we allow  route filters in OSPF synthesis 
 %(\secref{sec:ospfsynthesis}), which may yield undesirable
