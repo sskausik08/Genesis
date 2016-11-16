@@ -42,10 +42,10 @@ The OSPF configurations are expressed
 using two functions: edge weights $W$ and
 route-filters $RF$. For BGP configurations: 
 we have the local preference function $LP$ 
-and the iBGP filter function $IBF$. Static 
+and the iBGP filter function $IF$. Static 
 routes are expressed using the $SR$ function.
 We express the complete network configuration $C$
-as a tuple $(T,\Theta,W,RF,LP,IBF,SR)$.  In the 
+as a tuple $(T,\Theta,W,RF,LP,IF,SR)$.  In the 
 rest of the section, we describe each component 
 of the configuration $C$ and the routing function 
 $\route^C$ for the network given $C$. We ensure one  
@@ -160,12 +160,13 @@ will be advertised to the rest of the BGP routers of the
 domain as an iBGP route with the same local
 preference. We can configure iBGP 
 filters to prevent a router from advertising 
-a route to another router. We define the 
-function $IBF: V \times \Lambda \mapsto 2^V$. 
-If a BGP router $r_1 \in IBF(r_2, \lambda)$, then
+a route to another router. We do so using the 
+function $IF: V \times \Lambda \mapsto 2^V$;
+if a BGP router $r_1 \in IF(r_2, \lambda)$, then
 $r_2$ will not advertise a route for $\lambda$ to
 $r_1$ through iBGP. 
  
+ \iffull
 Algorithm~\ref{alg:bgppathrules} defines the routing function 
 $\route_{bgp}^C$ 
 that given 
@@ -174,7 +175,12 @@ a BGP router $r$
 and destination  
 $\lambda$,
 returns 
-the next-hop BGP router in the path. BGP 
+the next-hop BGP router in the path. 
+\else
+We only describe the routing semantics of BGP
+informally. The BGP path selection algorithm is submitted as part of the supplementary material.
+\fi
+BGP 
 chooses a route with highest local preference, and
 if there is a tie, it then chooses the route with smallest
 AS path length~\cite{bgp}. While, the actual implementation
@@ -186,6 +192,7 @@ returns a single router. Also, static routes
 have a higher preference than BGP, therefore a static route
 $SR(r, \lambda)$ will be preferred over the BGP route.
 
+\iffull
 \begin{algorithm} [t]
 	\begin{footnotesize} 
 		\caption{BGP Best Path Selection at router $r$ for dst. $\lambda$}
@@ -195,7 +202,7 @@ $SR(r, \lambda)$ will be preferred over the BGP route.
 			\hspace*{0.4cm} [Each route $\gamma$ of form $(\lambda, local\_pref, len, nexthop)$]
 			\State{$\Upsilon_{ebgp}$ = $\bigcup$ Route from external BGP neighbour for $\lambda$} 
 			\State{$\Upsilon_{ibgp}$ = $\bigcup$ Route from internal BGP router $r_1$:
-				 $r \not\in IBF(r_1, \lambda)$}
+				 $r \not\in IF(r_1, \lambda)$}
 			\State{$\Upsilon = \Upsilon_{ebgp}\cup \Upsilon_{ibgp}$}
 			\\
 			\If{$SR(r,\lambda) = r_1$} 
@@ -228,7 +235,7 @@ $SR(r, \lambda)$ will be preferred over the BGP route.
 		\end{algorithmic}
 	\end{footnotesize}
 \end{algorithm}
-
+\fi
 
 \minisection{OSPF+BGP+Static Routes} We now describe how routing
 happens across domains.  In domain $d$, let us consider a source
@@ -311,7 +318,7 @@ if the paths in $\Pi$ satisfy all the policies in $\Psi$ (see~\cite{genesis} for
 
 \Cref{tab:configpolicysupport} describes all the configuration policies supported by \name.
 For each configuration policy 
-we define what it means for  a configuration $C=(T,\Theta,W,RF,LP,IBF,SR)$ to satisfy it.
+we define what it means for  a configuration $C=(T,\Theta,W,RF,LP,IF,SR)$ to satisfy it.
 
 The first type of policy restricts how many OSPF domains $N_D$ a
 configuration might have, $c_1\leq N_D\leq c_2$, \loris{update table}
@@ -337,7 +344,7 @@ Finally, \name provides ways to specify upper bounds on the number of
 1) route filters, which in general reduce the resiliency of the network---i.e., $rc=|\cup_{\lambda\in \Lambda} RF(\lambda)|\leq C_{rc}$,
 2) static routes, which also affect resilience---i.e., $sc=|\{(v,\lambda)\mid \exists v'. SR(v,\lambda)=v'\}|\leq C_{sc}$, and
 3) BGP configurations, which increase the complexity of the network~\cite{batfish, arc, era}---i.e., 
-$bc=|\cup_{v,\lambda\in V\times\Lambda} IBF(v,\lambda)\cup \{(v,v',\lambda)\mid LP(v,v',\lambda)\neq \bot|\leq C_{bc}$.
+$bc=|\cup_{v,\lambda\in V\times\Lambda} IF(v,\lambda)\cup \{(v,v',\lambda)\mid LP(v,v',\lambda)\neq \bot|\leq C_{bc}$.
 \name also allows to minimize certain expression over the quantities $rc$, $sc$, and $bc$---e.g., $max(rc, sc+bc)$.
 
 %different configuration metrics. For example,
