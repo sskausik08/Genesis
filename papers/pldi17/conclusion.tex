@@ -1,1 +1,20 @@
 \section{Conclusion}
+
+In this paper, we presented \name, a system for automatically synthesizing a
+distributed network control plane (i.e., router configurations) from
+high-level policies. \name allows operators to provide constraints on
+how they wish their control plane designed (e.g., the number and size
+of constituent domains), as well as optimize other metrics that are
+central to management and operations, such as ensuring network paths
+are resilient to failures and that the configurations synthesized are
+simple. \name leverages a novel combination of ideas: Linear rational
+arithmetic (LRA) and a learning- based procedure for synthesizing
+intra-domain OSPF configurations, and MCMC sampling to stochastically
+search for the best way to partition the network into multiple domains
+and to configure BGP. To the best of our knowledge, \name is the first
+configuration synthesis system to provide comprehensive coverage of
+many operational goals (support for many types of policies,
+optimization of management and operational metrics, domain
+decomposition, etc). Detailed evaluation on realistic topologies shows
+that \name can synthesize optimal configurations quickly enough to be
+useful in practice.
