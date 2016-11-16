@@ -4,7 +4,8 @@ application-induced policies is difficult and
 error-prone~\cite{troubleshooting, bgpmisconfig}. At least three
 common characteristics of network policies are to blame: (1) a network
 may need to satisfy several types of policies, including reachability,
-isolation, service chaining, resilience, and traffic engineering; (2)
+isolation, service chaining, resilience, and traffic engineering \loris{in 
+this paper we don't do traffic eng do we?}; (2)
 the network must provide certain guarantees in the event of failures;
 and (3) most policies are global---i.e., they concern end-to-end
 paths, not individual devices/links.
@@ -79,28 +80,29 @@ using theories like propositional logic (SAT)
 and linear rational
 arithmetic (LRA). Even with recent 
 advances in Satisfiability Modulo Theories
-(SMT) solvers (e.g., Z3~\cite{z3}), 
-this approach does not scale to
+(SMT) solvers, 
+approaches that directly generate configurations  from policies
+do not scale to
 even moderately-sized networks or 
-sets of policies.
+sets of policies~\cite{synet}.
 
 %(6) We propose a two-phased approach that synthesizes a partially-correct
 %control plane from examples, and then applies a series of transformations to
 %produce a fully policy-compliant control plane.
 
 Instead, we propose \name, a two-phased approach to synthesizing
-configurations.  First, using \genesis~\cite{genesis}, we synthesize a
+configurations.  First, using the tool \genesis~\cite{genesis}, we synthesize a
 concrete set of paths---i.e., the forwarding state---satisfying all
 the specified policies, such as, reachability, waypoint, isolation,
 and traffic engineering.
 %a partially-correct control plane from a set of example paths, such
 %as those contained within a sample data plane. 
-Second, we generate 
+Second, we generate
 domain-level split of the routers in the network,
 and corresponding 
 intra- and inter-domain router configurations
-that induce the synthesized forwarding
-state. We show that this approach makes the synthesis tractable, and we can
+that induce the forwarding
+state synthesized by \genesis. We show that this approach makes the synthesis tractable, and we can
 perform multiple iterations to eventually produce policy-compliant
 configurations.
 
@@ -120,7 +122,8 @@ We use MCMC sampling to stochastically search for the best way to
 partition the network into multiple domains which satisfy hard
 operator policies on configurations such as size of the each OSPF
 domain. Further, \name allows operators to optimize two key management
-objectives. The first is maximizing endpoint resiliency, as \name
+objectives. The first is maximizing endpoint resiliency \loris{revise this after deciding what to do
+about resiliency vs rf}, as \name
 requires route-filters to induce certain paths, thereby affecting
 failure resilience. The second minimizing the configuration overhead imposed
 by inter-domain routing (BGP and static routes), which helps decrease
@@ -151,9 +154,9 @@ endpoint resilience by $1.6\times$ and reduce configuration overhead
 	by synthesizing router configurations from policy-compliant paths (\S~\ref{sec:architecture}). 
 	\item Algorithms that synthesize OSPF and BGP routing configurations that use
 	constraint solving in Linear rational arithmetic (LRA) and 
-	a learning procedure which extracts information from 
+	a procedure to extracts OSPF configurations from 
 	unsatisfiable cores (\S~\ref{sec:config-synthesis}). 
-	\item Stochastic search using MCMC sampling to find 
+	\item Stochastic search to find 
 	partitions of the network into multiple routing domains which
 	satisfy policies and optimization objectives on configurations (\S~\ref{sec:synth-dom-ass}).
 	\item An implementation of \name and evaluation of the 
