@@ -54,17 +54,19 @@ are a source of NP-completeness.  They also perform synthesis for a
 static domain assignment, where the input specifies if a router runs
 BGP or not.
 
-\minisection{Policy languages}
-Other works on centralized policy enforcement 
-for SDN are Merlin~\cite{merlin} and NetKAT~\cite{netkat}.  
-In Merlin, data planes that adhere to policies
-expressed using regular expressions are synthesized by first
-intersecting the topology with the regular expressions appearing in
-the policies and then encoding reachability in the intersected graph
-using mixed integer linear programming (ILP).
-Merlin supports minimum and maximum bandwidth guarantees.
+\minisection{Policy languages} While \name use \genesis, it could use
+other policy language frameworks as a front-end; these offer perhaps
+less rich policy support but offer better performance. %%  Other works on
+%% centralized policy enforcement for SDN are Merlin~\cite{merlin} and
+%% NetKAT~\cite{netkat}.
+In Merlin~\cite{merlin}, data planes that adhere to policies expressed
+using regular expressions are synthesized by first intersecting the
+topology with the regular expressions appearing in the policies and
+then encoding reachability in the intersected graph using mixed
+integer linear programming (ILP).  Merlin supports minimum and maximum
+bandwidth guarantees.
 
-NetKAT is a domain-specific language and logic for 
+NetKAT~\cite{netkat} is a domain-specific language and logic for 
 specifying and verifying network packet-processing functions
 for SDN, based on Kleene algebra with tests (KAT). Semantically,
 a NetKAT predicate and policy is a function that takes a packet
@@ -73,13 +75,18 @@ NetKAT can be used to express certain network-wide policies like
 reachability, waypoints using regular expressions for describing the paths, 
 and programs on virtual topologies; it uses
 BDDs and symbolic automata to translate global programs to local
-switch programs~\cite{netkatcompiler}. 
-However, the NetKAT semantics
-cannot be used to express policies based on hyperproperties
-~\cite{hyperproperties}, i.e., 
-the packet processing function requires multiple packet histories
-as input. Traffic engineering or isolated paths are policies
-based on hyperproperties. 
+switch programs~\cite{netkatcompiler}.
+
+As future work, we will consider how to apply these other front-ends to \name.
+
+%% However, the NetKAT semantics
+%% cannot be used to express policies based on hyperproperties
+%% ~\cite{hyperproperties}, i.e., 
+%% the packet processing function requires multiple packet histories
+%% as input. Traffic engineering or isolated paths are policies
+%% based on hyperproperties.
+
+%% While Genesis supports richer policies, its SMT-based approach is slower in synthesis. As part of future work, we will consider how
 
 %Fine-grained traffic engineering based on online demand/flow size estimation and 
 %rapid rerouting is also crucial for datacenter workloads, and extending \name's
