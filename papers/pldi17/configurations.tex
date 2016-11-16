@@ -2,27 +2,26 @@
 \label{sec:synth-dom-ass}
 
 In this section, we present an algorithm for 
-solving the path-compliance proven when a domain assignment is not given to us.
+solving the path-compliance synthesis problem when a domain assignment is not given to us (Definition~\ref{def}).
 The algorithm searches the space of possible domain assignment $\Theta$ to find
 one that meets all configuration policies and has good quantitative properties---e.g., minimizes
 the number of route filters.
-
-Formally, we are given 
-a topology $T=(V,L)$, a set of paths $\Pi$ and
-configuration policies $P$, 
-we want to find functions
-$W,RF,LP,IF,SR$ and $\Theta$ such that
-$C=(\Theta,W,$ $RF,LP$,$IF,SR)$,
-$C$
-We call this problem the \emph{domain assignment problem}.
-
-
-We first show that even the simplest variant of the domain assignment problem
+%Formally, we are given 
+%a topology $T=(V,L)$, a set of paths $\Pi$ and
+%configuration policies $P$, 
+%we want to find functions
+%$W,RF,LP,IF,SR$ and $\Theta$ such that
+%$C=(\Theta,W,$ $RF,LP$,$IF,SR)$,
+%$C$
+%We call this problem the \emph{domain assignment problem}.
+%
+We first show that when the domain assignment is not given,
+even the simplest variant of the path-compliance assignment problem
 is computationally hard.
 \begin{theorem}
 If $P$ requires to the number of route filters to be 0
 and the number of domains to be $n$, for some $n\geq 0$,
-the domain assignment problem is NP-complete.
+the path-compliance synthesis problem is NP-complete.
 \end{theorem}
 
 Given the complexity of this problem, we opt for a greedy
