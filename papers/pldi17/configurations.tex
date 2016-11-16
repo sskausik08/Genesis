@@ -19,8 +19,7 @@ We first show that when the domain assignment is not given,
 even the simplest variant of the path-compliance assignment problem
 is computationally hard.
 \begin{theorem}
-If $P$ requires to the number of route filters to be 0
-and the number of domains to be $n$, for some $n\geq 0$,
+If $P$ disallows the use of route filters ($rc\leq 0$)
 the path-compliance synthesis problem is NP-complete.
 \end{theorem}
 \iffull
@@ -29,33 +28,33 @@ the path-compliance synthesis problem is NP-complete.
 
 Given the complexity of this problem, we opt for a greedy
 stochastic search.
-\name uses Markov
-Chain Monte Carlo (MCMC) sampling methods, specifically the Metropolis-Hasting
-algorithm, a common technique used in different optimization 
+\name searches the space of assignments using Markov
+Chain Monte Carlo (MCMC) sampling methods and specifically the Metropolis-Hasting
+algorithm, a common technique used in several optimization 
 problems~\cite{stoke}. 
 We first present the general structure of our searching algorithm and 
 then describe how the quantities in Table~\ref{tab:configpolicysupport} can be computed
 or estimated to drive the search.
 
+
+
+\subsection{Searching Assignments with MCMC}
 MCMC sampling is a technique for 
 drawing elements from a
 probability density function in direct proportion to its value.
-In our setting, MCMC searches the space of domain assignments and
+In our setting, MCMC searches the space of domain assignments and,
 if we assign higher probabilities to domain assignments with lower cost, MCMC will explore
 good configurations more \emph{often} than bad ones.
-For MCMC to work we need to provide a transition function that let's us move from one domain assignment
+For MCMC to work we need to provide a transition function that lets us move from one domain assignment
 to another with a certain probability and a cost function that assigns costs (and therefore probabilities) to
-domain assignments. These two components are discussed in the next section.
-In our setting, the cost is computed through the quantity $e$ our policies $P$ want us to minimize or bound---e.g.,
-if we are trying to minimize the number of static routes $e=sc$.
+domain assignments. 
 
-\subsection{Searching Assignments with MCMC}
-In our case, each domain assignment $\Theta$
-as an associated cost $c(\Theta, e)$
-and of the expression 
+In our setting, each domain assignment $\Theta$
+has an associated cost $c(\Theta, e)$
+where
 $e=expr(rc, sc, bc)$
-we are trying to minimize.
-We will discuss how our cost function is implemented in the next sections.
+is the expression we are trying to minimize---e.g., if we are trying to minimize the number of static routes $e=sc$.
+We will discuss how our cost function is implemented in the Section~\ref{sec:cost-fun}.
 %Given the cost function $c(.)$ and probability density 
 %function $p(.)$, 
 %the Metropolis acceptance probability~\cite{metropolis}
@@ -70,29 +69,30 @@ We will discuss how our cost function is implemented in the next sections.
 %will suffice.
 
 The search starts by setting the current domain assignment 
-to some random $\Theta_0$.
+to some random domain $\Theta_0$.
 The following process then repeats.
 Given the current domain
 assignment $\Theta$, 
 compute a new domain assignment $\Theta'$ by randomly
-moving a boundary 
-router $r$ from one domain to another---i.e., $\Theta(r)\neq \Theta'(r)$ and
-for every $r'\neq r$, $\Theta(r')= \Theta'(r')$.
+moving a gateway 
+router $r$ from one domain to another---i.e., $\Theta(r){\neq}\Theta'(r)$ and
+for every $r'{\neq} r$, $\Theta(r'){=}\Theta'(r')$.
 If $c(\Theta',e)\leq c(\Theta,e)$, then $\Theta'$ becomes the current domain assignment.
 If $c(\Theta',e)>c(\Theta,e)$, then $\Theta'$ becomes the current domain assignment
-with probability $Pr(\Theta \rightarrow \Theta')= exp(-\beta\times(c(\Theta',e) - c(\Theta,e))$ (where $\beta$ is a positive constant) and 
+with probability $Pr(\Theta \rightarrow \Theta')= exp(-\beta\times(c(\Theta',e) - c(\Theta,e))$ (where $\beta$ is a positive constant) 
+while 
  $\Theta$ continues being the current domain assignment with probability $1-Pr(\Theta \rightarrow \Theta')$.
 \iffull
 The procedure is illustrated in \Cref{alg:mcmc}.
 \fi
 
-The algorithm will always accept a new proposal $\Theta'$
+The algorithm always accepts a new proposal $\Theta'$
 that has cost lower than $\Theta$. If $\Theta'$ has a 
-higher cost than $\Theta$, the proposal will be 
-accepted with probability depending on 
+higher cost than $\Theta$, the proposal is
+accepted with probability inversely proportional to
 how far the costs of $\Theta$ and $\Theta'$ are. This ensures that 
 the algorithm does not get stuck at local minima, but 
-explores proposals with smaller differences in cost with 
+explores proposals with small cost differences with 
 higher probability.
 
 \iffull
@@ -152,15 +152,16 @@ higher probability.
 \fi
 
 \subsection{The Cost of a Domain Assignment}
+\label{sec:cost-fun}
 In the previous section, we presented the general structure of our search algorithm,
 but we did not specify how the cost function $c(\Theta,e)$
 is computed. 
-By looking at our policy language in Table~\ref{tab:configpolicysupport},
-we see that the expression $e$ may contain
-the number of route filters $rc$,
-the number of static routes $sc$,
-and the number of BGP configuration entries $bc$.
-Computing the cost $c(\Theta,e)$ amounts to substituting in $e$ 
+%By looking at our policy language in Table~\ref{tab:configpolicysupport},
+%we see that the expression $e$ may contain
+%the number of route filters $rc$,
+%the number of static routes $sc$,
+%and the number of BGP configuration entries $bc$.
+Computing the cost $c(\Theta,e)$ amounts to substituting in $e=expr(rc, sc, bc)$
 the values of $rc$,
 $sc$, and $bc$ for the configuration $\Theta$.
 The techniques presented in Section~\ref{sec:inter-synthesis} provide a way to 
@@ -201,7 +202,7 @@ For each
 domain assignment $\Theta$,
 \name estimates the number of required 
 route filters $rc$ by counting for 
-how many $(r_i, r_j, \lambda, \lambda')$-diamonds,
+how many $(r_i, r_j, \lambda, \lambda')$-diamonds
 $\Theta(r_i) = \Theta(r_j)$. 
 Notice that two different diamonds that share an edge could be resolved
 by placing a single filter on the shared edge, whereas our estimated route filter cost 
@@ -218,9 +219,9 @@ and are not
 taken into account in our estimate. 
 However, our diamond-based estimate
 can be computed efficiently and 
-our experiments  (\Cref{sec:mcmceval}).  show that reductions 
+our experiments  show that reductions 
 in cost lead to decreased number of filters
-(and increased endpoint resilience).
+and increased endpoint resilience (\Cref{sec:mcmceval}).
 
 %\minisection{Cost of Configuration Overhead} 
 %Given a domain assignment $\Theta$, the exact number of static routes,
