@@ -169,9 +169,10 @@ The Internal BGP (iBGP) protocol is used to
 exchange external BGP routes 
 among BGP routers belonging
 to the same domain. A external route received 
-by $r_1$ with a local preference value will be 
-advertised to the rest of the BGP routers of the 
-domain as an iBGP route. We can configure iBGP 
+by $r_1$ with a local preference value configured 
+will be advertised to the rest of the BGP routers of the 
+domain as an iBGP route with the same local
+preference. We can configure iBGP 
 filters to prevent a router from advertising 
 a route to another router. We define the 
 function $IBF: V \times \Lambda \mapsto 2^V$. 
@@ -179,13 +180,12 @@ If a BGP router $r_1 \in IBF(r_2, \lambda)$, then
 $r_2$ will not advertise a route for $\lambda$ to
 $r_1$ through iBGP. 
  
-\loris{is this algo 1?} Algorithm~\ref{alg:bgppathrules} defines the routing function 
+Algorithm~\ref{alg:bgppathrules} defines the routing function 
 $\route_{bgp}^C$ 
 that given 
 %a local preference function $LP$,
-a source node $s$,
-a target node $t$,
-and destination IP 
+a BGP router $r$
+and destination  
 $\lambda$,
 returns 
 the next-hop BGP router in the path. BGP 
@@ -198,33 +198,43 @@ ordering maintained with respect to actual BGP implementations.
 We ensure all ties are broken, and $\route_{bgp}^C(r,\lambda)$
 returns a single router. Also, static routes 
 have a higher preference than BGP, therefore a static route
-$SR(r, \lambda)$ will be preferred over the BGP route. We
-would account for static routes for $\route_{bgp}^C(r,\lambda)$
-similarily as we defined in \Cref{eq:ospfmodel}.
-\loris{you actually have to show how or write something in algo}
-\loris{change algo one to have correct name $\route_{bgp}^C(r,\lambda)$. Also, the
-figure has to use the same notation LP etc...}
+$SR(r, \lambda)$ will be preferred over the BGP route.
+
 \begin{algorithm} [t]
 	\begin{footnotesize} 
-		\caption{BGP Best Path Algorithm}
+		\caption{BGP Best Path Selection at router $r$ for dst. $\lambda$}
 		\label{alg:bgppathrules}
 		\begin{algorithmic}[1]
-			\State{[Input] $R \leftarrow$ eBGP and iBGP routes for $\lambda$ at BGP router $g$} 
-			\State{[Output] $r_{best}$ : Best BGP route} \newline \newline
-			/* Find routes with highest \emph{local preference} */
-			\State{$R_{lp} = \{r \in R ~| ~\forall r_1 \in R. ~r.local\_pref \geq r1.local\_pref\}$}
-			\If{$|R_{lp}| = 1$}
-			\State{$r_{best} = r \in R_{lp}$}
+			\Procedure{BestPath}{} \\
+			\hspace*{0.4cm} [Each route $\gamma$ of form $(\lambda, local\_pref, len, nexthop)$]
+			\State{$\Upsilon_{ebgp}$ = $\bigcup$ Route from external BGP neighbour for $\lambda$} 
+			\State{$\Upsilon_{ibgp}$ = $\bigcup$ Route from internal BGP router $r_1$:
+				 $r \not\in IBF(r_1, \lambda)$}
+			\State{$\Upsilon = \Upsilon_{ebgp}\cup \Upsilon_{ibgp}$}
+			\\
+			\If{$SR(r,\lambda) = r_1$} 
+			\State{$\route^C_{bgp}(r, \lambda) = r_1$\hfill [Static Route has highest pref.]}
+			\Else \\
+			\indent\indent \hspace{0.3cm}[Find routes with highest \emph{local preference}]
+			\State{$\Upsilon_{lp} = \{\gamma \in \Upsilon \mid \forall \gamma_1 \in \Upsilon. ~\gamma.local\_pref \geq \gamma_1.local\_pref\}$}
+			\If{$|\Upsilon_{lp}| = 1$}
+			\State{$\gamma_{best} = \gamma \in \Upsilon_{lp}$}
 			\Else \newline
-			\indent /* Prefer the path with the smallest \emph{AS Path length} */
-			\State{$R_{as} = \{r \in R_{lp}  ~|~ \forall r_1 \in R_{lp}. ~r.path\_len \geq r_1.path\_len\} $}
-			\If{$|R_{as}| = 1$}
-			\State{$r_{best} = r \in R_{as}$}	
+			\hspace*{0.7cm}\indent [Prefer the path with the smallest \emph{AS Path length}]
+			\State{$\Upsilon_{as} = \{\gamma \in \Upsilon_{lp}  \mid \forall \gamma_1 \in \Upsilon_{lp}. ~\gamma.len \leq \gamma_1.len\} $}
+			\If{$|\Upsilon_{as}| = 1$}
+			\State{$\gamma_{best} = \gamma \in \Upsilon_{as}$}	
 			\EndIf
 			\EndIf
-			\If{$r_{best}.type = eBGP$}
-			\State{Redistribute $r_{best}$ to OSPF domain}
+			\If{$\gamma_{best} \in \Upsilon_{ebgp}$}
+			\State{$\route^C_{bgp}(r, \lambda) = \gamma_{best}.nexthop$}
+			\State{Redistribute $\gamma_{best}$ to OSPF domain}
+			\Else \\
+			\hspace*{0.7cm}\indent [Traffic for $\lambda$ will not exit domain through $r$]
+			\State{$\route^C_{bgp}(r, \lambda) = \bot$}
 			\EndIf
+			\EndIf
+			\EndProcedure
 			%				\State{ . }
 			%				\State{Prefer the path with the lowest \emph{multi-exit discriminator} (MED).}
 			%				\State{Prefer eBGP over iBGP paths.}
@@ -235,16 +245,7 @@ figure has to use the same notation LP etc...}
 
 
 \minisection{OSPF+BGP+Static Routes}
-\loris{kind of weird that we didn't divide routers into BGP and non-BGP early on}
-\loris{I removed W, RF, LP from all definitions of $\route_{ospf}^C$ and
-$\route_{bgp}^C$, since they are global parameters.
-I think this very first paragraph should come before the other two
-and then you have only the second part that puts things together.
-And in previous two sections you should explain that you do intra and inter domain.
-}
-
-
-describe how routing happens across domains.
+We now describe how routing happens across domains.
 In domain $d$, let us consider a source router $s$ (i.e., $\Theta(s) = d$) for 
 sending traffic for destination $\lambda$. Note that, the traffic
 could originate from other domains, then $s$ indicates the first
