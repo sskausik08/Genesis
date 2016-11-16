@@ -149,5 +149,15 @@ overhead by a factor of $0.3\times$. The tunable parameter $\alpha$
 can be used to assign different priorities to these objectives to get
 different trends. 
 
-\noindent\textbf{Summary}.
-\kausik{Discuss Genesis Experiment}
+\minisection{End-to-end Performance with Genesis}
+We evaluate the end-to-end performance 
+of synthesis of router configurations from policies 
+by integrating \name with \genesis. For this, we run
+the multi-tenant isolation workload~\cite{genesis} for
+a 80-router fat-tree topology. We perform the experiments
+for 20-80 packet classes, belonging to different tenants. 
+We find the performance of modified \genesis (with the tree
+constraints for destinations) to be comparable to \genesis 
+without the additional constraints. Also, for these workloads, we are able to 
+split the network into 4 OSPF domains and synthesize OSPF
+configurations in $<1$s with 0 route-filters.
