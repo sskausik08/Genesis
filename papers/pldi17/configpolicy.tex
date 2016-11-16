@@ -4,11 +4,10 @@
 		\begin{tabular}{m{6.5em}  m{17.7em} } 
 			{\bf Policy} & {\bf Description} \\ 
 			\hline
-			Count & Number of continous OSPF domains  \\ \hline
+			Count  & Number of OSPF domains: $c_1\leq N_D\leq c_2$  \\ \hline
 			Domain Size  & Lower and upper
-			limit of size of domain (number of routers) \\ \hline
-			BGP \newline Disable & Disable BGP on router (hardware constraint). 
-			Router cannot lie on boundary of domain \\ \hline
+			limit of size of domain (number of routers): $l\leq ds\leq u$ \\ \hline
+			BGP \newline Enable & Enable BGP on routers $B$ (hardware constraint) \\ \hline
 			Route-Filters: $rc$ & Lower bound number of filters:
 			$rc > C_{rc}$\\ \hline
 			Static Route: ${sc}$ & Upper bound number of static route rules: $sc < C_{sc}$ \\ \hline

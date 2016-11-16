@@ -320,12 +320,12 @@ For each configuration policy
 we define what it means for  a configuration $C=(\Theta,W,RF,LP,IF,SR)$ to satisfy it.
 
 The first type of policy restricts how many OSPF domains $N_D$ a
-configuration might have, $c_1\leq N_D\leq c_2$ 
+configuration might have
 and it is satisfied by $C$ iff $c_1\leq |\{\Theta(r)\mid r\in V\}|\leq
 c_2$.  This policy is useful for avoiding situations resulting in too
 many domains in the hierarchical split which can be difficult to
 administer.  The second type of policy allows the operator to restrict
-the size $k$ of each OSPF domain, $l\leq k\leq u$, because OSPF does
+the size $ds$ of each OSPF domain, $l\leq ds\leq u$, because OSPF does
 not scale gracefully with network size.  This policy is satisfied if
 for every domain $i$, $l\leq |\{r \mid \Theta(r)=i\}|\leq u$.
 
@@ -337,19 +337,19 @@ Certain
 	This policy is satisfied if none of the routers $V\setminus B$
 	is a gateway router.
 	Formally, for every $r\in V\setminus B$,
-	there doesn't exist a router $r'\in N(r)$ such that $\Theta(r) \not= \Theta(r_1)$
+	there does not exist a router $r'\in N(r)$ such that $\Theta(r) \not= \Theta(r')$
 
 Finally, \name provides ways to specify upper bounds on the number of
 1) route filters, which in general reduce the resiliency of the network---i.e., $rc=|\cup_{\lambda\in \Lambda} RF(\lambda)|\leq C_{rc}$,
 2) static routes---i.e., $sc=|\{(v,\lambda)\mid \exists v'. SR(v,\lambda)=v'\}|\leq C_{sc}$, and
 3) BGP configurations, which increase the complexity of the network---i.e., 
-$bc=|\cup_{v,\lambda\in V\times\Lambda} IF(v,\lambda)\cup \{(v,v',\lambda)\mid LP(v,v',\lambda)\neq \bot|\leq C_{bc}$.
+$bc=|\bigcup_{v,\lambda\in V\times\Lambda} IF(v,\lambda)\cup \{(v,v',\lambda)\mid LP(v,v',\lambda)\neq \bot\}|\leq C_{bc}$.
 \name also allows to minimize certain expressions over the quantities $rc$, $sc$, and $bc$---e.g., $max(rc, sc+bc)$. 
 Ideally, the most important metric we want to maximize is resiliency---i.e.,
 the number of alternate paths between endpoints.
 However, this metric is too hard to handle as it depends on complex graph properties. 
 In practice, when we want improve resiliency, we try to minimize
-the number of filters; we will show that this strategy is effective. 
+the number of filters; we will show that this strategy is effective in our experiments. 
 \input{configpolicy}
 %different configuration metrics. For example,
 %we allow  route filters in OSPF synthesis 
@@ -370,13 +370,13 @@ the number of filters; we will show that this strategy is effective.
 
 
 \minisection{Synthesis problems}
-\noindent We can now define what it means for a configuration $C$ to be policy-compliant
-and our synthesis problems.
+\noindent We now define when a configuration $C$ is policy-compliant
+and present our synthesis problems.
 \begin{definition}[Policy-Compliance] \label{def:policycompliance}
 	Given a set of path policies $\Psi$ and a set of configuration policies $P$,
-	the configuration $C$ is policy-compliant with $(\Psi,P)$,
+	a configuration $C$ is policy-compliant with $(\Psi,P)$,
 	$C \models (\Psi,P)$, if the set of
-	induced paths $\paths^C(PC) \models \Psi$
+	induced paths satisfies $\Psi$, $\paths^C(PC) \models \Psi$,
 	and $C$ satisfies the policies in $P$.
 	The \emph{configuration synthesis problem} is to find, given $\Psi$ and $P$,
 a configuration $C$ that is policy compliant with $(\Psi,P)$.
@@ -385,7 +385,7 @@ a configuration $C$ that is policy compliant with $(\Psi,P)$.
 As anticipated in Section~\ref{sec:motivation}, our approach will proceed in two phases,
 one of which solves the following sub-problem.  
 \begin{definition}[Path-Compliance] \label{def:pathcompliance}
-Given a set of configuration policies $P$,
+Given a set of configuration policies $P$
 and a set of paths $\Pi$ over packet classes $PC$,
 	a configurations $C$ is path-compliant with 
 	$(\Pi,P)$,
@@ -394,16 +394,5 @@ and a set of paths $\Pi$ over packet classes $PC$,
 a configuration $C$ that is path-compliant with $(\Pi,P)$.
 \end{definition}
 
-
-
-
-%We defined policy-compliance in terms of the 
-%paths of the packet classes satisfying path-based 
-%policies like isolation or traffic engineering. However,
-%depending on the assignment of routers to different domains,
-%the configurations generated may not be efficient
-%in deployment. Therefore, we extend the notion of 
-%compliance to policies on configurations 
-%(\Cref{tab:configpolicysupport}).
 
 
