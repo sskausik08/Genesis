@@ -70,7 +70,7 @@ which have fewer links than datacenter topologies.
 \Cref{fig:ospfeval}(b) shows the number of filters synthesized. 
 As the time taken is dependent on the number of iterations of
 the route-filter learning procedure, the number of filters
-shows a similar trend to OSPF synthesis time. On average, 2 route-filters
+shows a similar trend to OSPF synthesis time. On average, 2 route filters
 are required for each path in the Geant topology. 
 
 \noindent\textbf{Endpoint Resilience.}~~~\name's OSPF synthesis picks
@@ -83,7 +83,7 @@ endpoint resilience obtained by \name (solid traces)
 compared to the best endpoint resilience (achieved
 if there were no filters). For Geant, the endpoint 
 resilience obtained by \name trails the best by a small margin,
-even though 2 route-filters were required for each path. For
+even though 2 route filters were required for each path. For
 Fat-4 and Fat-6, there is a significant difference between resilience
 of the endpoints in \name and the best resilience. 
 However, we are able to achieve more than
@@ -108,7 +108,7 @@ resilience with lower configuration overhead. For these experiments,
 we consider two topologies: the Ion ISP topology (125 routers), and a
 80 router fat-tree topology (Fat-8). We run the MCMC sampling for 600s
 (iterations $>$ 100,000), and the tunable parameter $\alpha$ assigning
-priority for optimizing configuration overhead or route-filters is set
+priority for optimizing configuration overhead or route filters is set
 to 1. For the input, we generate random $n$ paths for $n/4$
 destination IPs, with path length chosen at random from $[3,10]$. We
 split the network into 5 OSPF domains each with size $\in [10,40]$. We

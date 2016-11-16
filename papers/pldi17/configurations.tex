@@ -5,7 +5,7 @@ In this section, we present an algorithm for
 solving the path-compliance proven when a domain assignment is not given to us.
 The algorithm searches the space of possible domain assignment $\Theta$ to find
 one that meets all configuration policies and has good quantitative properties---e.g., minimizes
-the number of route-filters.
+the number of route filters.
 
 \loris{all definitions are missing static routes, please fix}
 Formally, we are given a set of paths $\Pi$ and 
@@ -106,7 +106,7 @@ higher probability.
 		\Procedure{MCMCSearch}{$e$}
 		\State{$\Theta \leftarrow$ random domain assignment}
 %		\State{$\overline{cc} = 0$ \hspace{2cm} [Worst Conf. overhead]}
-%		\State{$\overline{rc} = 0$ \hspace{2cm} [Worst route-filter est.]}
+%		\State{$\overline{rc} = 0$ \hspace{2cm} [Worst route filter est.]}
 		\While{max iterations OR timeout}
 		\State{$\gamma$ = \Call{Cost}{$\Theta, e$}}
 		\State{$\Theta'$ = \Call{RandomChange}{$\Theta$}}
@@ -168,11 +168,11 @@ The techniques presented in Section~\ref{sec:inter-synthesis} provide a way to
 synthesize BGP configurations and static routes for a given domain assignment
 and can be used to 
 efficiently compute the quantities $sc$ and $bc$.
-However, we showed that, given a domain assignment, computing the  minimal required number of route-filters \loris{??}
+However, we showed that, given a domain assignment, computing the  minimal required number of route filters \loris{??}
 is a challenging problem (Theorem~\ref{thm:ospfsynth}).
 Since we want MCMC to explore as many assignments as possible
 computing 
-we present a heuristic technique for estimating the number of route-filters required by a 
+we present a heuristic technique for estimating the number of route filters required by a 
  domain assignment. 
 
 We say that two paths $\pi=(r_1,r_2)\cdots (r_{n-1},r_n), \pi'=(r_1',r_2')\cdots (r_{n-1}',r_n')$ with destinations $\lambda$ and $\lambda'$
@@ -189,23 +189,23 @@ If the paths $\pi$ and $\pi'$ completely lie in the same domain,
 the presence of a diamond 
 implies that OSPF needs to compute two different shortest paths between $r_i$ and $r_j$, 
 which means that
-at least one route-filter is required.
+at least one route filter is required.
 On the other hand, if $r_i$ and $r_j$ lie in
-different domains, no route-filters are required to resolve this diamond. 
+different domains, no route filters are required to resolve this diamond. 
 %\loris{not sure if following sentence needed}
 %In the limiting
 %case where each router is a separate domain of size 1,
-%no route-filters are required, and the entire 
+%no route filters are required, and the entire 
 %network can be configured using BGP. 
 
 Before  starting the MCMC search, \name precomputes
 the set of all diamonds induced by the paths $\Pi$. 
 For each
 domain assignment $\Theta$,
-\name estimates the number \loris{??} of required route-filters by counting for how many $(r_i, r_j, \lambda, \lambda')$-diamonds
+\name estimates the number \loris{??} of required route filters by counting for how many $(r_i, r_j, \lambda, \lambda')$-diamonds
 $\Theta(r_i) = \Theta(r_j)$. 
 Notice that two different diamonds that share an edge could be resolved
-by placing a single filter on the shared edge, whereas our estimated route-filter cost 
+by placing a single filter on the shared edge, whereas our estimated route filter cost 
 would be 2. 
 %\loris{I think this is true, but not sure if necessary.
 %Intuitively, our algorithm is similar to the greedy algorithm for solving vertex cover~\cite{}, and 
@@ -236,7 +236,7 @@ produce reduced number of filters (\Cref{some experiment}).
 %The it will be all about estimating the quantities in the objective and the aggregation will be for free.
 %This para will go.}
 %Finally, we need to combine the
-%route-filter cost ($rc$) and configuration cost ($cc$) 
+%route filter cost ($rc$) and configuration cost ($cc$) 
 %based on the preference specified by the operator. 
 %Interestingly, these two quantities are inversely related. 
 %If the whole network is a single OSPF domain, $rc$ is maximum, while
@@ -249,6 +249,6 @@ produce reduced number of filters (\Cref{some experiment}).
 %$RC$ and $CC$ are normalized versions of the costs
 %obtained by dividing $rc$ and $cc$  by the worst costs seen during the MCMC search.
 %Therefore, initially $\rho=1$ and later on $\rho$ is the improvement of the current configuration over
-%the worst in terms of either configuration overhead or route-filter cost.
+%the worst in terms of either configuration overhead or route filter cost.
 %\loris{I think the above trick breaks MCMC by making you stuck in local optima.
 %What happens if we remove it? Also unnecessary detail.}
