@@ -3,7 +3,7 @@ In this section, we describe the architecture of our system.  Since
 directly generating policy-compliant configurations is a challenging
 problem, we use a two-phase approach in which we first synthesize
 policy-compliant \emph{paths} using the tool \genesis~\cite{genesis}
-and then we synthesize configurations that result in the paths we
+and then synthesize configurations that result in the paths we
 synthesized in the first phase; we refer to the latter as \name.
 The first phase may produce \emph{bad} paths for which the
 configuration synthesis is complicated or not possible. Thus, we
@@ -16,17 +16,18 @@ system which synthesizes forwarding tables enforcing the policies.
 Some of the policies supported by \genesis are specified in 
 \Cref{tab:policysupport}. 
 Due to the rich policy language, generating policy-compliant paths is an NP-complete problem;
-\genesis leverages fast off-the-shelf SMT solvers to provide
-support for policy enforcement for a diverse set of policies.
+\genesis mitigates this problem by leveraging the power of SMT solvers.
+% to provide
+%support for policy enforcement for a diverse set of policies.
 Given a set of policies, \genesis generates a set of constraints 
-over propositional logic (SAT) and Linear rational arithmetic (LRA),
-such that the solutions to these constraints are forwarding
+over propositional logic (SAT) and Linear rational arithmetic (LRA);
+the solutions to these constraints are forwarding
 tables, which can be used to extract the 
 policy-compliant paths.
 
 \genesis uses the relation $Fwd \subseteq V \times V \times PC $  
 to capture 
-the network forwarding behavior,---i.e. 
+the network forwarding behavior---i.e. 
 $(r_1, r_2$, $pc)\in$ $Fwd$ if 
 $r_1$ forwards packets of class $pc$ to router $r_2$---
 and 
@@ -36,9 +37,7 @@ the path reachability---i.e. $(r, pc, k)\in Reach$ if
 the router $r$ is reachable in the path from the source
 router of packet class $pc$ in exactly $k$ steps. Based on
 the input policies, \genesis generates constraints over the $Fwd$
-and $Reach$ relations and finds a solution to the relations. 
-\genesis then extracts the concrete paths from the solution to the $Fwd$ and $Reach$
-relations.
+and $Reach$ relations. Finally, \genesis uses the solution to the relations to extracts the concrete paths.
 \begin{figure}
 	\centering
 	\includegraphics[width=\columnwidth]{figures/architecture.pdf}
@@ -62,41 +61,35 @@ Thus,
 at any router, there exists at most one forwarding rule per destination. 
 Since \genesis was built for
 SDN management,  a switch may forward to different switches
-packets that are directed to the same destination,
-and thus cannot be induced by any router
+packets that are directed to the same destination;
+this behaviour cannot be induced by any router
 configuration. 
 
-\loris{yet another name for switches $sw$, before
-it was $r$ etc.}
-We add constraints to \genesis to ensure that
+We modify the constraints given to \genesis to ensure that,
 if any two paths to a destination subnet intersect at a router,
 the subsequent downstream paths to the destination from the
-router do not \emph{diverge} at a router.  
+router do not \emph{diverge} at another router.  
 We define the relation $Reach^*(r,pc)$ to model reachability 
-of $r$ in the path of $pc$, i.e., it can be reached in zero or more
-steps from the source. We can express $Reach^*(r,pc)$ 
-in the network forwarding model of \genesis as:
-\loris{$\mu$ not defined}
+of $r$ in the path of $pc$, i.e., $r$ is traversed by the path for packet class $pc$. 
+If we allow pats of length at most $\mu$, we can define $Reach^*(r,pc)$ as:
 \begin{equation}
-	Reach^*(r,pc) = \bigvee_{k \in [0, \mu]} Reach(r, pc, k)
+	Reach^*(r,pc) = \bigvee_{k \in [0, \mu]} Reach(r, pc, k).
 \end{equation}
-$\mu$ denotes the synthetic limit of the length of the path. 
-$Reach(r, pc, k)$ is valid if $r$ is reachable in the path of
-class $pc$ in $k$ steps. Thus, to enforce the destination-based
-forwarding using $Reach^*(r,pc)$, we add
-constraints for every pair ($pc_1$,$pc_2$) having the same 
- destination subnet:
+To guarantee that the generate paths can be enforced using destination-based
+forwarding, for every pair of packet classes $pc_1$ and $pc_2$ that belong to the same 
+ destination subnet, we add
+the constraint:
  \begin{multline}
  \forall r. Reach^*(r, pc_1) \wedge Reach^*(r, pc_2) 
  \implies \\ \bigwedge_{n \in N(r)} Fwd(r, n, pc_1) \Leftrightarrow Fwd(r, n, pc_2)
  \end{multline}
- $Fwd(r_1, r_2,pc)$ is valid if $r_1$ forwards $pc$ to next-hop $r_2$ and
- $N(r)$ denotes the neighbours of $r$. Essentially, 
- if a router is reachable for both packet classes, 
- then the next router must be the same for both classes
- (paths will not diverge), and thus, the paths obtained
+Intuitively, 
+ if a router $r$ is reachable for both packet classes, 
+ then the next router $n$ in the path must be the same for both classes
+ (paths will not diverge). Thus, the paths obtained
  from \genesis for a destination will form a 
- directed destination tree. 
+ directed destination tree.
+ We will use this property in Section~\ref{sec:intra-synthesis}. 
 
 \subsection{\name: From Paths to Router Configurations} 
 After we have computed a set of policy-compliant paths,
