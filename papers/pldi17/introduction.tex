@@ -61,7 +61,7 @@ policies (e.g., peering).
 
 
 The problem of synthesizing router configurations
-such that the distributed control plane  
+for which the distributed control plane  
 generates policy-compliant paths 
 is computationally hard. 
 %In our setting, the specifications are the policies we want to realize and the programs 
@@ -74,8 +74,9 @@ Second, to infer the concrete
 set of paths induced by network configurations, 
 one has to incorporate
 into synthesis
-complex concepts such as shortest path algorithms
-using theories like propositional logic (SAT) 
+complex concepts---e.g., shortest path algorithms---which
+require constraints in complex
+theories---e.g., propositional logic (SAT) 
 and linear rational
 arithmetic (LRA). Even with recent 
 advances in Satisfiability Modulo Theories
@@ -101,9 +102,10 @@ domain-level split of the routers in the network,
 and corresponding 
 intra- and inter-domain router configurations
 that induce the forwarding
-state synthesized by \genesis. We show that this approach makes the synthesis tractable, and we can
-perform multiple iterations to eventually produce policy-compliant
-configurations.
+state synthesized by \genesis. We show that this approach makes synthesis tractable.
+%, and we can
+%perform multiple iterations to eventually produce policy-compliant
+%configurations.
 
 %% We present \name, 
 %% a framework to synthesize router configurations which 
@@ -113,13 +115,15 @@ configurations.
 %% protocols to impose a hierarchy of domains in their network.
 To elaborate, in \name, each router is mapped to a domain and runs
 OSPF for intra-domain routing, while domains use BGP for inter-domain
-routing. We use constraint solving in Linear rational arithmetic (LRA)
-and a learning-based procedure which extracts information from
-unsatisfiable cores for synthesizing intra-domain OSPF configurations.
-BGP configuration can be directly extracted from the domain mapping and the paths.
-We use MCMC sampling to stochastically search for the best way to
+routing. 
+We synthesize OSPF configurations using linear constraint solving to compute
+link weights and 
+a learning-based procedure for extracting more complex OSPF configuration from
+the unsatisfiable cores of the constraints.
+We compute BGP configuration directly from the domain mapping and the paths.
+Finally, we use MCMC sampling to stochastically search for the best way to
 partition the network into multiple domains which satisfy hard
-operator policies on configurations such as size of the each OSPF
+operator policies on configurations such as  the size of each OSPF
 domain. Further, \name allows operators to optimize two key management
 objectives. The first is maximizing endpoint resiliency, as \name
 requires route filters to induce certain paths, thereby affecting
