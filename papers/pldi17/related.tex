@@ -1,7 +1,4 @@
-\section{Related Work}
-\label{sec:related}
-
-\loris{copied from hotnets}
+\section{Related \& Future Work}\label{sec:related}
 \minisection{Centralized control}
 Programming routers for centralized control has been an
 active area of research in recent times. RCP~\cite{rcp} uses
@@ -16,110 +13,67 @@ network during failures, and the centralized controller
 has to respond to failures (response to failures can precomputed),
 thus making the controller a central point of failure. In contrast,
 our approach to distributed control plane synthesis can provide
-the same expressive power as Fibbing but also
+the same expressive power as Fibbing but 
 avoids any centralized component by engineering 
 the control plane parameters to match the input specifications. 
+Fibbing also does not take into account inter-domain routing. 
 
 \minisection{Configuration synthesis} Propane~\cite{propane} 
 tackles synthesis of BGP configurations to satisfy network-wide
-objectives, however they tackle a narrower space of BGP policies
-using algorithms over automata and graphs. ConfigAssure
-~\cite{configassure} uses a combination of 
+objectives. The policy language of Propane is suited to specify
+preferences on paths and peering policies among different autonomous
+systems, however
+it cannot support fine-grained policies over 
+paths like isolation or traffic engineering. Propane 
+translates policies to a graph-based intermediate representation,
+which are then compiled to device-level BGP configurations. 
+Propane also takes in account failures, generating BGP
+configurations which satisfy policies under failure scenarios. 
+ConfigAssure~\cite{configassure} uses a combination of 
 logic programming and SAT solving to synthesize network
-configurations. Fortz et. al~\cite{ospf-te} tackle the 
+configurations for security, 
+connectivity, performance and reliability requirements 
+specified as constraints.
+Fortz et. al~\cite{ospf-te} tackle the 
 problem of optimizing OSPF weights for performing traffic
 engineering, however their work is tailor-made to the 
 specific problem of TE and is inextensible to apply 
 to custom forwarding behaviors for other kinds of policies.
 
-\loris{add martin vechev stuff and say we do also domain assignment,
-resiliency, isolation, and bigger topologies}
+El-Hassany et. al~\cite{synet} tackle network-wide
+configuration synthesis (\Cref{def:policycompliance}) in an
+elegant manner by modelling the behavior and interactions of the routing
+protocols as a strafied Datalog program, and using 
+SMT to synthesize the Datalog input such that the fixed
+point of the Datalog program 
+(which represents the network's forwardng state after the 
+protocols have converged) satisfies certain policies.
+An earlier iteration of our work considered synthesizing
+network configurations directly from policies using SMT;
+however, we found that encoding OSPF's 
+shortest path-based constraints in SMT 
+was time-consuming for modern SMT solvers~\cite{z3} 
+and does not scale well to larger
+networks (the largest topology considered by 
+El-Hassany et. al is 16). Instead, we split the 
+problem by synthesizing policy-compliant paths,
+and can use LP-solvers (which are 
+faster and parallelizable) to tackle OSPF synthesis. 
+Their policy language does not support isolation or 
+traffic engineering, and they do not model 
+OSPF route-filters, which are a source of NP-completeness.
+They also perform synthesis for a static domain assignment, where
+the input specifies if a router runs BGP or not.
 
-\loris{following is from genesis paper}
-\textbf{One Big Switch:} Kang et. al~\cite{oneswitch} tackle a 
-similar problem of flow policy
-enforcement. However, their end-point policies deal with simple
-reachability. Their rule placement algorithm takes the path of the
-flow in the network (called the routing policy) as an input. %  and place rules
-% on this path to enforce the endpoint policy and taking in
-% consideration switch table constraints
-% Our solution can support enforcement of policies which
-% require different routing policies.
-Zhang et. al~\cite{distfirewall} build on the "one big switch"  
-abstraction~\cite{oneswitch} to optimize for the specific case of
-distributed firewall policy enforcement using ILP.  PGA~\cite{pga} provides
-a graph-level abstraction for specifying network policies like ACLs and
-middlebox service chaining. However, PGA abstracts the underlying
-network as "one big switch" and cannot be used to compose policies like
-tenant isolation or traffic engineering.
-
- \noindent {\bf Controller synthesis:}
- Program synthesis has
- seen limited applications to SDN controllers~\cite{netegg,decentralize}.
-These systems synthesize the
- behavior of individual switches (e.g., learning switches or
- firewalls); furthermore, these techniques apply to networks
- operating in a reactive mode (where the first packet of a connection
- is processed by the controller to determine the actions to
- employ). Such switch-centric approaches are too constraining and
- cannot be applied to realize network-wide objectives considered 
- in \name.
- Synthesis has been also used for generating consistent network
- updates~\cite{updates, customconsistency}. But this problem is orthogonal to 
- policy enforcement.
- 
-\noindent {\bf Policy languages:}
-The closest approaches to ours are Merlin~\cite{merlin},
-NetGen~\cite{netgen} and NetKAT~\cite{netkat}.  
+\minisection{Policy languages}
+Other works on centralized policy enforcement 
+for SDN are Merlin~\cite{merlin} and NetKAT~\cite{netkat}.  
 In Merlin, data planes that adhere to policies
 expressed using regular expressions are synthesized by first
 intersecting the topology with the regular expressions appearing in
 the policies and then encoding reachability in the intersected graph
 using mixed integer linear programming (ILP).
-%Unlike \Name, 
 Merlin supports minimum and maximum bandwidth guarantees.
-In its current iteration, 
-Merlin's encoding does not support isolation policies, but we believe
-that it could be extended to support them.  
-%We cannot evaluate the
-%performance impact of this extension, however.  
-A more prominent
-difference arises with unordered waypoint policies: expressing a
-policy including a waypoint set $W$ of size $k$ requires a regular
-expression of size exponential in $k$ as all the possible permutations
-of the elements of $W$ must be considered. This fact clearly 
-impacts the performance of 
-Merlin's compiler that would have to generate a mixed ILP with a
-large number of variables.  In \Name, this is not the case as waypoints
-can be encoded with polynomially many constraints.  While this does
-not affect the theoretical complexity, our compiler does not incur
-an a-priori exponential blow-up; it rather relies on the power
-of SMT solvers to guide the search.  This is one of the main aspects
-behind our decision of not using regular expressions to express
-policies.  \Name uses a restricted form of regular expressions as 
-tactics that leverage the network topology.  While in Merlin,
-regular expressions \emph{increase} the number of constraints
-generated by the compiler, tactics \emph{decrease}
-the number of generated constraints, therefore speeding up the search.
-To the best of our knowledge, this is the first use of constraints
-that leverages the topology structure to simplify the search.
-
-In NetGen, network updates that adhere to policies expressed using
-regular expressions are synthesized using SMT solvers.  Given a
-specification which mentions the packet classes, the old path, and the
-new path, NetGen solves the network change problem using an SMT solver.
-Due to the use of regular expressions NetGen also suffers the
-limitations we just discussed for Merlin. Interestingly, NetGen uses
-a specific encoding of regular expressions based on uninterpreted
-functions that helps reduce the number of constraints. While this
-encoding is fast when updating a single path, we do not see a way to
-extend it to our global synthesis setting.  A crucial aspect of NetGen
-is that in its problem formulation each path can be synthesized
-independently and without affecting the other already synthesized
-paths.  This is not the case when supporting isolation policies: if an
-old path needs to be moved to satisfy a new policy (e.g., because a
-link is under maintenance), re-synthesizing such a path can require
-re-synthesizing other paths. 
 
 NetKAT is a domain-specific language and logic for 
 specifying and verifying network packet-processing functions
@@ -140,17 +94,17 @@ based on hyperproperties.
 
 \noindent
 {\bf Future directions:}  
-Fine-grained traffic engineering based on online demand/flow size estimation and 
-rapid rerouting is also crucial for datacenter workloads, and extending \name's
-TE policies to fine-grained timescales is subject of future work.
-Also, the performance
-of SMT solvers with optimization objectives is quite slow, and calls for 
-domain-specific techniques to speed up the synthesis. Also, datacenter
-networks are highly symmetrical, and this symmetry can be leveraged
-to speed up synthesis (similar to the work of Plotkin et. al~\cite{symmetry} to
-speed up network verification using symmetry). The main challenges of
-using symmetry in synthesis is considering two aspects of symmetry: network
-symmetry and policy symmetry. Also, our treatment of resilience synthesis
-is preliminary and future work will be geared towards synthesizing resilient
-forwarding planes incorporating capacity constraints and traffic engineering.
+%Fine-grained traffic engineering based on online demand/flow size estimation and 
+%rapid rerouting is also crucial for datacenter workloads, and extending \name's
+%TE policies to fine-grained timescales is subject of future work.
+%Also, the performance
+%of SMT solvers with optimization objectives is quite slow, and calls for 
+%domain-specific techniques to speed up the synthesis. Also, datacenter
+%networks are highly symmetrical, and this symmetry can be leveraged
+%to speed up synthesis (similar to the work of Plotkin et. al~\cite{symmetry} to
+%speed up network verification using symmetry). The main challenges of
+%using symmetry in synthesis is considering two aspects of symmetry: network
+%symmetry and policy symmetry. Also, our treatment of resilience synthesis
+%is preliminary and future work will be geared towards synthesizing resilient
+%forwarding planes incorporating capacity constraints and traffic engineering.
  
