@@ -1,7 +1,4 @@
 \section{Routing Model and Problem Definition}
-\loris{in several places we use $r\rightarrow r'$ for paths which makes it confusing with normal implication.
-I would replace them all with $r\cdots r'$.}
-
 In this section, we formally define the problem addressed in this
 paper.  We first define common notations and then show how different
 routing protocols are represented.  In particular, we model static
@@ -19,7 +16,7 @@ We use the neighbour function $N(s) = \{s'\ | \ (s,s') \in L \}$ to denote
 the set of neighbour routers of $s$. 
 We define $\Lambda$ to denote the set of destination IP subnets;
 distributed protocols make forwarding decisions based on the 
-destination IP address/subnet.
+destination address/subnet.
 
 A path $\pi = (u_1,v_1) (u_2, v_2) \ldots (u_n, v_n) \in L^*$ is a loop-free valid path if
 a  vertex is not visited more than once ($\forall i.j \leq n. 
@@ -68,10 +65,11 @@ neighbouring router $r_1 \in N(r)$. We define the static route partial
 function $SR: V \times \Lambda \mapsto V$ such that, for a router $r$
 and destination $\lambda$, if $SR(r,\lambda)=r'$, then traffic for
 destination $\lambda$ reaching node $r$ is always forwarded to node
-$r'$.  \loris{might want to say how you construct it and that we
-  assume SR is well formed, i.e., things form paths.}  Using $SR$, we
+$r'$. Using $SR$, we
 construct the complete static paths between routers in the network
-$\Pi_{SR}$.
+$\Pi_{SR}$. We assume $SR$ forms paths which replace OSPF or
+BGP path fragments, \name will construct static routes based on this
+property.
 
 %These paths would have a highest preference.
 
@@ -81,7 +79,7 @@ state information from other routers and uses this to create a map of
 the network. Positive weights are defined for each link in the
 network, and each router used Djikstra's algorithm to forward to the
 destination along the weighted shortest path to the router the
-destination IP is connected to.
+destination   is connected to.
 
 Let us
 define the OSPF weight function $W: L \rightarrow \rat$ which 
@@ -100,9 +98,9 @@ particular destination along a link.
 Formally, a route-filter is a pair $(l,\lambda)\in L\times \Lambda$
 which disables the link $l$ for destination $\lambda$. 
 We define the route-filter function 
-$RF: \Lambda \rightarrow 2^L$ which maps each destination IP
+$RF: \Lambda \rightarrow 2^L$ which maps each destination  
 to a set of filtered links in the topology. 
-Given an IP destination $\lambda\in \Lambda$, 
+Given an   destination $\lambda\in \Lambda$, 
 a legal path with respect to $RF$ and $\lambda$
 is a valid path $\pi=l_1\cdots l_k$ such that for every $i$,
 $l_i\not\in RF(\lambda)$.
@@ -115,9 +113,9 @@ that given
 %a route-filter function $RF$,
 a source node $s$,
 a target node $t$,
-and destination IP 
+and destination   
 $\lambda$,
-returns the OSPF-induced paths from $s$ to $t$ for destination IP $\lambda$.
+returns the OSPF-induced paths from $s$ to $t$ for destination   $\lambda$.
 The paths between two nodes are
 the shortest paths in the network
 that do not cross any link that belongs to $RF(\lambda)$. We also
@@ -144,7 +142,7 @@ To support policy routing, BGP routers can be configured with a
 \emph{local preference} variable to assign higher priorities to
 specific routes for a particular destination. We define the local
 preference function $LP: V \times V \times \Lambda \mapsto \nat$ as
-follows.  Given a BGP router $r$, neighbouring router $r_1$, and IP
+follows.  Given a BGP router $r$, neighbouring router $r_1$, and  
 destination $\lambda$, $LP(r, r_1, \lambda)$ specifies the local
 preference for a route received for destination $\lambda$ at BGP
 router $r$ from next-hop BGP router $r_1$.  This function is defined
@@ -183,12 +181,11 @@ informally. The BGP path selection algorithm is submitted as part of the supplem
 BGP 
 chooses a route with highest local preference, and
 if there is a tie, it then chooses the route with smallest
-AS path length~\cite{bgp}. While, the actual implementation
-of BGP uses several other criteria,
-\name uses these rules to synthesize BGP configurations with 
-ordering maintained with respect to actual BGP implementations.
-We ensure all ties are broken, and $\route_{bgp}^C(r,\lambda)$
-returns a single router. Also, static routes 
+AS path length~\cite{bgp}. 
+\name synthesizes configurations where all ties are 
+are broken using these criteria, and $\route_{bgp}^C(r,\lambda)$
+returns a single router for the inter-domain next-hop router. 
+Also, static routes 
 have a higher preference than BGP, therefore a static route
 $SR(r, \lambda)$ will be preferred over the BGP route.
 
@@ -238,11 +235,10 @@ $SR(r, \lambda)$ will be preferred over the BGP route.
 \fi
 
 \minisection{OSPF+BGP+Static Routes} We now describe how routing
-happens across domains.  In domain $d$, let us consider a source
-router $s$ (i.e., $\Theta(s) = d$) for sending traffic for destination
-$\lambda$. Note that the traffic could originate from other domains;
-then, $s$ indicates the first router in the domain.\loris{don't
-  understand prev sentence} If the target router $t$ connected to the
+happens across domains.  In domain $d$, traffic 
+for destination $\lambda$ originates at source
+router $s$ (i.e., $\Theta(s) = d$). 
+If the target router $t$ connected to the
 destination belongs to domain $d$, then there exists a OSPF route for
 $\lambda$ at $s$, and the path taken would be
 $\route_{ospf}^C(s,t,\lambda)$.
@@ -257,21 +253,23 @@ router is a router $g$ such that $\exists g' \in N(g).
 
 However, not all BGP routes for $\lambda$
 are distributed 
-into OSPF (to prevent explosion of forwarding tables). Instead,
-BGP gateways in a domain exchange routes using iBGP to choose
-the best gateway, which then redistributes the external
-(eBGP route) into OSPF (\Cref{alg:bgppathrules}). If multiple
-gateways advertise the destination $\lambda$ into the OSPF 
-domain, then the closest gateway (in terms of OSPF distance)
+into OSPF (to prevent explosion of forwarding tables). 
+BGP gateways in a domain exchange routes using iBGP,
+and if the best path chosen is an eBGP route, 
+the gateway redistributes the eBGP route into OSPF. 
+Therefore, multiple BGP routers
+can redistribute a route for $\lambda$,  
+the closest gateway (in terms of OSPF distance)
 is chosen. We define a gateway function $G^C$,
 that given a domain number $n\in \nat$
 %a local preference $LP$,
 %a weight function $W$,
 %route filters $RF$,
 a router $r$ such that $\Theta(r)=n$,
-and destination IP $\lambda$ outside of domain $n$, specifies the
-gateway chosen for a destination based on both BGP and OSPF
-configurations.\loris{how is prev func defined?} 
+and destination $\lambda$ outside of domain $n$, 
+specifies the
+gateway chosen for a destination based on the
+closest router redistributing the route for $\lambda$. 
 Finally, the routing function 
 $\route^C$
 %:\Theta \times LP \times W \times RF \times V \times V \times \Lambda \rightarrow L^* 
@@ -288,16 +286,14 @@ where for each $i>1$, $g_i=G^C(\Theta(s_i),s_i,\lambda)$,
 $s_i=\route_{bgp}^C(g_{i-1}, \lambda)$,
 and  $+$ is the concatenation operator for paths. 
 
-
-
 \minisection{Induced paths}
 We assume a set of packet classes $PC : [0,C_{pc}]$ 
-and map each path (specified by a reachability policy) \aditya{why
-  just reachability?}   
+and map each path (only reachability policies produce paths,
+the rest specify properties on these paths)
 to a unique integer in $PC$.
 For a packet class $pc$, $src_{pc}$ denotes the source router,
 $dst_{pc}$ denotes the destination router, and $\lambda_{pc}$
-denotes the destination IP address. 
+denotes the destination   address. 
 
 
 \begin{definition}[Induced Paths]
