@@ -1,5 +1,5 @@
 
-\begin{figure*}[!t]
+\begin{figure*}[!th]
 	\centering
 	\subfloat[Synthesis Time]
 	{\includegraphics[width=0.66\columnwidth]{figures/ospfTime.eps}}
@@ -55,7 +55,7 @@ These sizes are consistent with operator preferences to restrict
 the size of a domain to under 50 routers (OSPF does not scale
 well as domain size increases). We generate $n$ random input paths for
 $n/4$ destinations spread across the topology and path
-lengths in the range [3, 5]. For each metric, we perform 20 experiments
+lengths in the range [3, 5]. We vary $n$ from 10 to 200. For each metric, we perform 20 experiments
 and report average and standard deviation. 
 
 \noindent\textbf{Synthesis Time.}~~~\Cref{fig:ospfeval}(a) 
@@ -76,12 +76,12 @@ are required for each path in the Geant topology.
 \noindent\textbf{Endpoint Resilience.}~~~\name's OSPF synthesis picks
 filters which have the least effect on endpoint resilience, as it  
 is a more important metric than the number of filters. We express this
-by computing the average of $t-resilience$ for each endpoint considering
-the filters ($t-resilience$ means size of mincut is $t+1$).
+by computing the average of \emph{t-resilience} for each endpoint considering
+the filters (\emph{t-resilience} means size of mincut is $t+1$).
 \Cref{fig:ospfeval}(c) shows the average
 endpoint resilience obtained by \name (solid traces) 
-compared to the best endpoint resilience (achieved
-if there were no filters). For Geant, the endpoint 
+compared to the best possible endpoint resilience that  can be achieved
+without filters. For Geant, the endpoint 
 resilience obtained by \name trails the best by a small margin,
 even though 2 route filters were required for each path. For
 Fat-4 and Fat-6, there is a significant difference between resilience
@@ -110,10 +110,12 @@ we consider two topologies: the Ion ISP topology (125 routers), and a
 (iterations $>$ 100,000), and the tunable parameter $\alpha$ assigning
 priority for optimizing configuration overhead or route filters is set
 to 1. For the input, we generate random $n$ paths for $n/4$
-destination IPs, with path length chosen at random from $[3,10]$. We
-split the network into 5 OSPF domains each with size $\in [10,40]$. We
+destination IPs, with path length chosen at random from $[3,10]$. 
+We vary $n$ from 200 to 1,000.
+We
+split the network into 5 OSPF domains each with size in $[10,40]$. We
 conduct these experiments 20 times each, and report the average and
-std. deviation of the metrics.
+standard deviation of the metrics.
 
 \noindent\textbf{Configuration Overhead.}~~~
 \Cref{fig:mcmceval}(a) shows the configuration overhead $bc + rc$ 
@@ -145,9 +147,11 @@ for varying number of paths in \Cref{fig:mcmceval}(c). The MCMC
 sampling is able to find a domain assignment
 with 1.6$\times$ higher total endpoint resilience for both types
 of topologies. At the same time, it is also able to reduce configuration
-overhead by a factor of $0.3\times$. The tunable parameter $\alpha$ 
-can be used to assign different priorities to these objectives to get
-different trends. 
+overhead by a factor of $0.3\times$. 
+%The tunable parameter $\alpha$ 
+%can be used to assign different priorities to these objectives to get
+%different trends. 
+
 
 \subsection{End-to-end Performance with Genesis} \label{sec:genzep}
 We evaluate the end-to-end performance 
@@ -158,6 +162,6 @@ a 80-router fat-tree topology. We perform the experiments
 for 20-80 packet classes, belonging to different tenants. 
 We find the performance of modified \genesis (with the tree
 constraints for destinations) to be comparable to \genesis 
-without the additional constraints. Also, for these workloads, we are able to 
+without the additional constraints \loris{how much time?}. Also, for these workloads, we are able to 
 split the network into 4 OSPF domains and synthesize OSPF
-configurations in $<1$s with 0 route-filters.
+configurations with 0 route-filters in less than $1$s .
