@@ -317,6 +317,8 @@ if the paths in $\Pi$ satisfy all the policies in $\Psi$ (see~\cite{genesis} for
 
 
 \Cref{tab:configpolicysupport} describes all the configuration policies supported by \name.
+A configuration $C$ satisfies a set of configuration policies $P$
+if $C$ satisfies every constraint in $P$.
 For each configuration policy 
 we define what it means for  a configuration $C=(\Theta,W,RF,LP,IF,SR)$ to satisfy it.
 
@@ -345,11 +347,12 @@ Finally, \name provides ways to specify upper bounds on the number of
 2) static routes---i.e., $sc=|\{(v,\lambda)\mid \exists v'. SR(v,\lambda)=v'\}|\leq C_{sc}$, and
 3) BGP configurations, which increase the complexity of the network---i.e., 
 $bc=|\cup_{v,\lambda\in V\times\Lambda} IF(v,\lambda)\cup \{(v,v',\lambda)\mid LP(v,v',\lambda)\neq \bot|\leq C_{bc}$.
-\name also allows to minimize certain expressions over the quantities $rc$, $sc$, and $bc$---e.g., $max(rc, sc+bc)$. Ideally, we would like to 
-increase the resilience of the endpoints (in terms of alternate
-paths available), however it is harder to reason about. Wherever
-possible, we try to maximize resilience, otherwise, we try to
-minimize number of filters to increase resiliency. 
+\name also allows to minimize certain expressions over the quantities $rc$, $sc$, and $bc$---e.g., $max(rc, sc+bc)$. 
+Ideally, the most important metric we want to maximize is resiliency---i.e.,
+the number of alternate paths between endpoints.
+However, this metric is too hard to handle as it depends on complex graph properties. 
+In practice, when we want improve resiliency, we try to minimize
+the number of filters; we will show that this strategy is effective. 
 
 %different configuration metrics. For example,
 %we allow  route filters in OSPF synthesis 
@@ -367,8 +370,7 @@ minimize number of filters to increase resiliency.
 %another objective \name considers is the configuration overhead
 %to ensure path-compliance.
 
-A configuration $C$ satisfies a set of configuration policies $P$
-if $C$ satisfies every constraint in $P$.
+
 
 \minisection{Synthesis problems}
 \noindent We can now define what it means for a configuration $C$ to be policy-compliant
