@@ -2,7 +2,7 @@
 \label{sec:synth-dom-ass}
 
 In this section, we present an algorithm for 
-solving the path-compliance synthesis problem when a domain assignment is not given to us (Definition~\ref{def}).
+solving the path-compliance synthesis problem when a domain assignment is not given to us (Definition~\ref{def:pathcompliance}).
 The algorithm searches the space of possible domain assignment $\Theta$ to find
 one that meets all configuration policies and has good quantitative properties---e.g., minimizes
 the number of route filters.
@@ -53,30 +53,31 @@ and of the expression
 $e=expr(rc, sc, bc)$
 we are trying to minimize.
 We will discuss how our cost function is implemented in the next sections.
-Given the cost function $c(.)$ and probability density 
-function $p(.)$, 
-the Metropolis acceptance probability~\cite{metropolis}
-for a transition from $\Theta \rightarrow \Theta'$ is as follows:
-\begin{multline}
-Pr(\Theta \rightarrow \Theta') = min(1, \frac{p(\Theta')}{p(\Theta)}) \\
-= min(1, exp(-\beta.(C(\Theta') - C(\Theta)))
-\end{multline}
-where $\beta$ is a positive constant. With the Metropolis
-algorithm, we can perform MCMC without calculating the actual
-probability density function $p(.)$, the arbitary cost function $c(.)$
-will suffice.
+%Given the cost function $c(.)$ and probability density 
+%function $p(.)$, 
+%the Metropolis acceptance probability~\cite{metropolis}
+%for a transition from $\Theta \rightarrow \Theta'$ is as follows:
+%\begin{multline}
+%Pr(\Theta \rightarrow \Theta') = min(1, \frac{p(\Theta')}{p(\Theta)}) \\
+%= min(1, exp(-\beta.(C(\Theta') - C(\Theta)))
+%\end{multline}
+%where $\beta$ is a positive constant. With the Metropolis
+%algorithm, we can perform MCMC without calculating the actual
+%probability density function $p(.)$, the arbitary cost function $c(.)$
+%will suffice.
 
 The search starts by setting the current domain assignment 
 to some random $\Theta_0$.
 The following process then repeats.
 Given the current domain
 assignment $\Theta$, 
-computes a new domain assignment $\Theta'$ by randomly
-moving a router $r$ from one domain to another---i.e., $\Theta(r)\neq \Theta'(r)$ and
+compute a new domain assignment $\Theta'$ by randomly
+moving a boundary 
+router $r$ from one domain to another---i.e., $\Theta(r)\neq \Theta'(r)$ and
 for every $r'\neq r$, $\Theta(r')= \Theta'(r')$.
 If $c(\Theta',e)\leq c(\Theta,e)$, then $\Theta'$ becomes the current domain assignment.
 If $c(\Theta',e)>c(\Theta,e)$, then $\Theta'$ becomes the current domain assignment
-with probability $Pr(\Theta \rightarrow \Theta')=p(\Theta')/p(\Theta)$ and 
+with probability $Pr(\Theta \rightarrow \Theta')= exp(-\beta\times(c(\Theta',e) - c(\Theta,e))$ (where $\beta$ is a positive constant) and 
  $\Theta$ continues being the current domain assignment with probability $1-Pr(\Theta \rightarrow \Theta')$.
 \iffull
 The procedure is illustrated in \Cref{alg:mcmc}.
