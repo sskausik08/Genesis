@@ -21,15 +21,14 @@ network configurations for security, connectivity, performance and
 reliability requirements specified as constraints; but it does not
 support resilience or hierarchical domain splitting.  Fortz
 et. al~\cite{ospf-te} tackle the problem of optimizing OSPF weights
-for performing traffic engineering, however their work is tailor-made
+for performing traffic engineering, but their work is tailor-made
 to just this specific problem.
 
 Propane~\cite{propane} tackles the specific problem of synthesizing
 BGP configurations to ensure network-wide objectives hold even under
 failures. The policy language of Propane is suited to specify
 preferences on paths and peering policies among different autonomous
-systems; however it cannot support fine-grained policies over paths
-such as isolation or traffic engineering. Propane translates policies
+systems, but it does not support fine-grained policies over paths---e.g.,  isolation and traffic engineering. Propane translates policies
 to a graph-based intermediate representation, which is then compiled
 to device-level BGP configurations. It is unclear how to extend
 Propane to incorporate domains, configuration complexity, or OSPF.
@@ -49,7 +48,7 @@ largest topology considered by El-Hassany et. al is 16). Instead, we
 split the problem by synthesizing policy-compliant paths, and can use
 LP-solvers (which are faster and parallelizable) to tackle OSPF
 synthesis.  Their policy language does not support isolation or
-traffic engineering, and they do not model OSPF route-filters, which
+traffic engineering, and they do not model OSPF route filters, which
 are a source of NP-completeness.  They also perform synthesis for a
 static domain assignment, where the input specifies if a router runs
 BGP or not.

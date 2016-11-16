@@ -13,6 +13,10 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 
 matplotlib.rcParams['text.usetex'] = True
+label_size = 20
+matplotlib.rcParams['xtick.labelsize'] = label_size 
+matplotlib.rcParams['ytick.labelsize'] = label_size 
+
 
 def adjustFigAspect(fig,aspect=1):
     '''
@@ -35,43 +39,44 @@ def adjustFigAspect(fig,aspect=1):
 
 
 
-mcmcOspfFig = plt.figure(1)
-x = range(200, 1200, 200)
-ionOspfTime = [2.826036562,13.22029387,30.66177595,53.75930157,84.38471965]
-ionOspfTimeDev = [1.306434742,5.339237255,17.35039753,12.7969357,28.06683488]
+# mcmcOspfFig = plt.figure(1)
+# x = range(200, 1200, 200)
+# ionOspfTime = [2.826036562,13.22029387,30.66177595,53.75930157,84.38471965]
+# ionOspfTimeDev = [1.306434742,5.339237255,17.35039753,12.7969357,28.06683488]
 
-ionOspfTimeWorst = [6.625324065,24.20217831,52.20715576,102.0118506,155.8072723]
-ionOspfTimeWorstDev = [3.695985186,9.135339765,20.03381014,29.3882802,42.76292523]
+# ionOspfTimeWorst = [6.625324065,24.20217831,52.20715576,102.0118506,155.8072723]
+# ionOspfTimeWorstDev = [3.695985186,9.135339765,20.03381014,29.3882802,42.76292523]
 
-fatOspfTime = [3.849331415,29.72222464,91.95010151,143.8896235,256.4885268]
-fatOspfTimeDev = [2.940273538,12.82948726,29.2540355,46.86148018,73.02557615]
+# fatOspfTime = [3.849331415,29.72222464,91.95010151,143.8896235,256.4885268]
+# fatOspfTimeDev = [2.940273538,12.82948726,29.2540355,46.86148018,73.02557615]
 
-fatOspfTimeWorst = [4.72883755,30.72432349,84.91012555,132.2256593,211.6510137]
-fatOspfTimeWorstDev = [2.825310883,18.35972093,57.95030373,67.09457017,158.4882292]
+# fatOspfTimeWorst = [4.72883755,30.72432349,84.91012555,132.2256593,211.6510137]
+# fatOspfTimeWorstDev = [2.825310883,18.35972093,57.95030373,67.09457017,158.4882292]
 
-markersize = 11
+# markersize = 11
 
-plt.xlim(xmin=190, xmax=1010)
+# plt.xlim(xmin=190, xmax=1010)
 
-plt.plot(x, ionOspfTime, '#ff7f00', marker="o", markersize=markersize, label="Best (Ion)")
-plt.errorbar(x, ionOspfTime, color='#ff7f00', yerr=ionOspfTimeDev, linestyle="None")
-plt.plot(x, ionOspfTimeWorst, '#ff7f00', linestyle='--', marker="^", markersize=markersize, label="Worst (Ion)")
-plt.errorbar(x, ionOspfTimeWorst, color='#ff7f00',  yerr=ionOspfTimeWorstDev, linestyle="None")
+# plt.plot(x, ionOspfTime, '#ff7f00', marker="o", markersize=markersize, label="Best (Ion)")
+# plt.errorbar(x, ionOspfTime, color='#ff7f00', yerr=ionOspfTimeDev, linestyle="None")
+# plt.plot(x, ionOspfTimeWorst, '#ff7f00', linestyle='--', marker="^", markersize=markersize, label="Worst (Ion)")
+# plt.errorbar(x, ionOspfTimeWorst, color='#ff7f00',  yerr=ionOspfTimeWorstDev, linestyle="None")
 
-plt.plot(x, fatOspfTime, '#377eb8',marker="D", markersize=markersize, label="Best (Fat-8)")
-plt.errorbar(x, fatOspfTime, color='#377eb8', yerr=fatOspfTimeDev, linestyle="None")
-plt.plot(x, fatOspfTimeWorst, '#377eb8', linestyle='--', marker="s", markersize=markersize, label="Worst (Fat-8)")
-plt.errorbar(x, fatOspfTimeWorst, color='#377eb8', yerr=fatOspfTimeWorstDev, linestyle="None")
+# plt.plot(x, fatOspfTime, '#377eb8',marker="D", markersize=markersize, label="Best (Fat-8)")
+# plt.errorbar(x, fatOspfTime, color='#377eb8', yerr=fatOspfTimeDev, linestyle="None")
+# plt.plot(x, fatOspfTimeWorst, '#377eb8', linestyle='--', marker="s", markersize=markersize, label="Worst (Fat-8)")
+# plt.errorbar(x, fatOspfTimeWorst, color='#377eb8', yerr=fatOspfTimeWorstDev, linestyle="None")
 
-plt.legend(loc='upper left', frameon=False, fontsize=18)
+# plt.legend(loc='upper left', frameon=False, fontsize=18)
 
-plt.xlabel('Number of Paths', fontsize=20)
-plt.ylabel('OSPF Synthesis Time', fontsize=20)
+# plt.xlabel('Number of Paths', fontsize=20)
+# plt.ylabel('OSPF Synthesis Time', fontsize=20)
 
-plt.grid()
-plt.savefig('ospfSynthesisTimeMCMC.eps', format='eps', dpi=1000, bbox_inches='tight')
+# plt.grid()
+# plt.savefig('ospfSynthesisTimeMCMC.eps', format='eps', dpi=1000, bbox_inches='tight')
 
 mcmcConfigFig = plt.figure(2)
+
 x = range(200, 1200, 200)
 ionConf = [110,221.8,321.1,462.1,563.6]
 ionConfDev = [14.78738201,20.31748016,34.67123789,54.41062203,68.61824217]
@@ -102,7 +107,7 @@ plt.errorbar(x, fatConfWorst, color='#377eb8', yerr=fatConfWorstDev, linestyle="
 plt.legend(loc='upper left', frameon=False, fontsize=18)
 
 plt.xlabel('Number of Paths', fontsize=20)
-plt.ylabel('Lines of Configuration', fontsize=20)
+plt.ylabel('Configuration Overhead', fontsize=20)
 
 plt.grid()
 plt.savefig('confMCMC.eps', format='eps', dpi=1000, bbox_inches='tight')
@@ -136,7 +141,7 @@ plt.errorbar(x, fatTRLWorst, color='#377eb8', yerr=fatTRLWorstDev, linestyle="No
 plt.legend(loc='upper left', frameon=False, fontsize=18)
 
 plt.xlabel('Number of Paths', fontsize=20)
-plt.ylabel('Total Loss of Resilience', fontsize=20)
+plt.ylabel('Total Resilience Loss (TRL)', fontsize=20)
 
 plt.grid()
 plt.savefig('TRLMCMC.eps', format='eps', dpi=1000, bbox_inches='tight')

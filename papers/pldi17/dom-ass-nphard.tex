@@ -1,0 +1,61 @@
+\begin{proof}
+We show the $k$-graph coloring problem, which is NP-complete
+reduces to finding a domain assignment such that the number
+of filters is 0. 
+The latter is also in NP, so after the reduction we 
+can conclude that it is also NP-complete.
+
+Let $G = (V,E)$ be an instance of the 
+$k$-graph coloring problem. Formally, 
+we need to find a coloring $C: V \mapsto \{1,2,\ldots k\}$
+such that for $\forall (u, v) \in E. C(u) 
+\not= C(v)$.
+
+\begin{figure}[H]
+	\centering
+	\begin{tikzpicture}[shorten >=0.5pt,node distance=1.5cm,on grid,auto,
+	square/.style={regular polygon,regular polygon sides=4}] 
+	\node[state] at (0,0) (s)  {$r_u$}; 
+	\node[state] at (2,-0.75) (v1)  {$d_1$}; 
+	\node[state] at (2,0.75) (u1)  {$d_2$};
+	\node[state] at (4,0) (t) {$r_v$};
+	\path[->] 
+	(s) edge [red] node {} (v1)
+	edge  [blue]  node {} (u1)
+	(u1) edge [blue] node {} (t)
+	(v1) edge [red] node {} (t);
+	\path[-] 
+	(s) edge node {} (t);
+	\end{tikzpicture}
+	\caption{Construction}
+	\label{fig:domasscomplexity}
+\end{figure}
+
+Let us consider a network topology $T = (R,L)$. 
+For each $v \in V$, add a router $r_v \in R$. To
+ensure any domain assignment to the $r_v$'s is valid, we 
+add edges to connect every router. 
+
+For every edge $(u, v) \in E$, we construct a
+$(u, v, \lambda_1, \lambda_2)$-$diamond$ (Section 6.2) %TODO
+as illustrated in \Cref{fig:domasscomplexity}. For every
+edge $(u, v) \in E$, we add $d_1, d_2$ to R, and add
+paths: $u \rightarrow d_1 \rightarrow v$ and 
+ $u \rightarrow d_2 \rightarrow v$ to $\Pi$. 
+ 
+Suppose we find a domain assignment $\Theta$ 
+with $k$ domains such that number of route filters is zero. 
+Since, filter count is 0, for two routers $r_u, r_v$ which 
+have a diamond, $\Theta(r_u) \not= \Theta(r_v)$. This is
+because, if $\Theta(r_u) = \Theta(r_v)$, then atleast 
+one route-filter would be required to eliminate the diamond. 
+Therefore, for every edge in $(u,v) \in E$, 
+the routers $r_u$ and $r_v$ belong to 
+different domains, therefore $u$ and $v$ have different colors. 
+There, the $k$-graph coloring problem reduces to finding 
+a domain assignment with zero filters.  
+Therefore, the policy-compliance synthesis problem is NP-complete.
+\end{proof}
+
+
+
