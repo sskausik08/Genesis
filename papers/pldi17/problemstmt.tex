@@ -37,7 +37,7 @@ $\Theta: V \rightarrow \nat$ which maps each router to a domain
 
 The OSPF configurations are expressed 
 using two functions: edge weights $W$ and
-route-filters $RF$. For BGP configurations: 
+ route filters $RF$. For BGP configurations: 
 we have the local preference function $LP$ 
 and the iBGP filter function $IF$. Static 
 routes are expressed using the $SR$ function.
@@ -90,14 +90,14 @@ path $\pi=l_1\ldots l_n$, we indicate the sum of weights of the
 links in the path by $w(\pi)=\sum l_i$. 
 
 
-We allow route-filters
+We allow  route filters
 to selectively disable an
 edge for a given destination by  
 blocking advertisements to a
 particular destination along a link. 
-Formally, a route-filter is a pair $(l,\lambda)\in L\times \Lambda$
+Formally, a  route filter is a pair $(l,\lambda)\in L\times \Lambda$
 which disables the link $l$ for destination $\lambda$. 
-We define the route-filter function 
+We define the  route filter function 
 $RF: \Lambda \rightarrow 2^L$ which maps each destination  
 to a set of filtered links in the topology. 
 Given an   destination $\lambda\in \Lambda$, 
@@ -110,7 +110,7 @@ We define the routing function
 $\route_{ospf}^G$ 
 that given 
 %a weight function $W$,
-%a route-filter function $RF$,
+%a  route filter function $RF$,
 a source node $s$,
 a target node $t$,
 and destination   
@@ -310,8 +310,8 @@ $\forall pc \in PC.$ $\route^C(src_{pc}, dst_{pc}, \lambda_{pc})$ $\in \paths^C(
 \Cref{tab:policysupport} describes the path policies supported by \name.
 Given  a set $\Psi$ of
 path policies, we say that
-a set of paths $\Pi$ is policy-compliant with respect to $\Psi$, $\paths^C(PC) \models \Psi$,
-if the paths in $\Pi$ satisfy all the policies in $\Psi$ (see~\cite{genesis} for the formal definition).
+a set of paths $\Pi$ is policy-compliant with respect to $\Psi$, $\Pi \models \Psi$,
+if the paths in $\Pi$ satisfy all the policies in $\Psi$ (see~\cite{genesis} for the formal definition). 
 
 
 \Cref{tab:configpolicysupport} describes all the configuration policies supported by \name.
@@ -319,9 +319,9 @@ For each configuration policy
 we define what it means for  a configuration $C=(T,\Theta,W,RF,LP,IF,SR)$ to satisfy it.
 
 The first type of policy restricts how many OSPF domains $N_D$ a
-configuration might have, $c_1\leq N_D\leq c_2$, \loris{update table}
+configuration might have, $c_1\leq N_D\leq c_2$ 
 and it is satisfied by $C$ iff $c_1\leq |\{\Theta(r)\mid r\in V\}|\leq
-c_2$.  This policy is useful for avoiding situation resulting in too
+c_2$.  This policy is useful for avoiding situations resulting in too
 many domains in the hierarchical split which can be difficult to
 administer.  The second type of policy allows the operator to restrict
 the size $k$ of each OSPF domain, $l\leq k\leq u$, because OSPF does
@@ -340,13 +340,17 @@ Certain
 
 Finally, \name provides ways to specify upper bounds on the number of
 1) route filters, which in general reduce the resiliency of the network---i.e., $rc=|\cup_{\lambda\in \Lambda} RF(\lambda)|\leq C_{rc}$,
-2) static routes, which also affect resilience---i.e., $sc=|\{(v,\lambda)\mid \exists v'. SR(v,\lambda)=v'\}|\leq C_{sc}$, and
-3) BGP configurations, which increase the complexity of the network~\cite{batfish, arc, era}---i.e., 
+2) static routes---i.e., $sc=|\{(v,\lambda)\mid \exists v'. SR(v,\lambda)=v'\}|\leq C_{sc}$, and
+3) BGP configurations, which increase the complexity of the network---i.e., 
 $bc=|\cup_{v,\lambda\in V\times\Lambda} IF(v,\lambda)\cup \{(v,v',\lambda)\mid LP(v,v',\lambda)\neq \bot|\leq C_{bc}$.
-\name also allows to minimize certain expression over the quantities $rc$, $sc$, and $bc$---e.g., $max(rc, sc+bc)$.
+\name also allows to minimize certain expressions over the quantities $rc$, $sc$, and $bc$---e.g., $max(rc, sc+bc)$. Ideally, we would like to 
+increase the resilience of the endpoints (in terms of alternate
+paths available), however it is harder to reason about. Wherever
+possible, we try to maximize resilience, otherwise, we try to
+minimize number of filters to increase resiliency. 
 
 %different configuration metrics. For example,
-%we allow route-filters in OSPF synthesis 
+%we allow  route filters in OSPF synthesis 
 %(\secref{sec:ospfsynthesis}), which may yield undesirable
 %endpoint resilience, thereby, synthesizing configurations
 %which provide a specified metric of resilience or maximize
@@ -361,13 +365,14 @@ $bc=|\cup_{v,\lambda\in V\times\Lambda} IF(v,\lambda)\cup \{(v,v',\lambda)\mid L
 %another objective \name considers is the configuration overhead
 %to ensure path-compliance.
 
-A configuration $C$ satisfies a set configuration policies $P$
+A configuration $C$ satisfies a set of configuration policies $P$
 if $C$ satisfies every constraint in $P$.
 
 \minisection{Synthesis problems}
 \noindent We can now define what it means for a configuration $C$ to be policy-compliant
 and our synthesis problems.
 \loris{quickly summarize what it means for paths to satisfy $\Psi$.}
+\kausik{Para 1 of policies}
 \begin{definition}[Policy-Compliance]
 	Given a set of path policies $\Psi$ and a set of configuration policies $P$,
 	the configuration $C$ is policy-compliant with $(\Psi,P)$,
@@ -377,9 +382,6 @@ and our synthesis problems.
 	The \emph{configuration synthesis problem} is to find, given $\Psi$ and $P$,
 a configuration $C$ that is policy compliant with $(\Psi,P)$.
 \end{definition}
-
-
-\loris{remove $T$ everywhere from $C$, we will assume is fixed}
 
 As anticipated in Section~\ref{sec:motivation}, our approach will proceed in two phases,
 one of which solves the following sub-problem.  
