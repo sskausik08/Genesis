@@ -7,15 +7,13 @@ The algorithm searches the space of possible domain assignment $\Theta$ to find
 one that meets all configuration policies and has good quantitative properties---e.g., minimizes
 the number of route filters.
 
-\loris{all definitions are missing static routes, please fix}
-Formally, we are given a set of paths $\Pi$ and 
-a topology $T=(V,L)$,
-\loris{configuration policies $P$,}
-and we want to find functions
-$LP$, $W$, $RF$,  and $\Theta$ such that
-$C=(T,\Theta,W,RF,LP,IF,SR)$,
-$\paths^C(PC) = \Pi$, and
-\loris{$C$ satisfies $P$}.
+Formally, we are given 
+a topology $T=(V,L)$, a set of paths $\Pi$ and
+configuration policies $P$, 
+we want to find functions
+$W,RF,LP,IF,SR$ and $\Theta$ such that
+$C=(\Theta,W,$ $RF,LP$,$IF,SR)$,
+$C$
 We call this problem the \emph{domain assignment problem}.
 
 
@@ -49,10 +47,7 @@ domain assignments. These two components are discussed in the next section.
 In our setting, the cost is computed through the quantity $e$ our policies $P$ want us to minimize or bound---e.g.,
 if we are trying to minimize the number of static routes $e=sc$.
 
-
-
 \subsection{Searching Assignments with MCMC}
-
 In our case, each domain assignment $\Theta$
 as an associated cost $c(\Theta, e)$
 and of the expression 
@@ -64,7 +59,7 @@ into a probability density function in the following way~\cite{mcmcbook}:
 \begin{equation}
 	p(\Theta) = \frac{1}{Z}exp(-\beta * c(\Theta))
 \end{equation}
-where $\beta$ is a positive constant and $Z$ is a partition function \loris{over what?} that
+where $\beta$ is a positive constant and $Z$ is a partition function that
 normalizes the distribution. Computing $Z$ is in general 
 intractable, and the Metropolis-Hasting algorithm 
 explores the set of possible assignments representing $p$ without computing $Z$. 
@@ -93,8 +88,6 @@ how far the costs of $\Theta$ and $\Theta'$ are. This ensures that
 the algorithm does not get stuck at local minima, but 
 explores proposals with smaller differences in cost with 
 higher probability.
-
-\loris{I've been linking to table 1 instead of table 2 everywhere, please fix}
 
 \iffull
 \begin{algorithm}[t]
@@ -152,28 +145,26 @@ higher probability.
 \end{algorithm}
 \fi
 
-\loris{in preliminaries early on define that we use $l\in\pi$ to say path $\pi$ contains a link $l$.}
 \subsection{The Cost of a Domain Assignment}
 In the previous section, we presented the general structure of our search algorithm,
 but we did not specify how the cost function $c(\Theta,e)$
 is computed. 
-By looking at our policy language in Table~\ref{},
+By looking at our policy language in Table~\ref{tab:configpolicysupport},
 we see that the expression $e$ may contain
-the number of route filers \loris{??},
+the number of route filters $rc$,
 the number of static routes $sc$,
-and the number of BGP configurations entries $bc$.
-Computing the cost $c(\Theta,e)$ amounts to substituting in $e$ the values of \loris{??},
+and the number of BGP configuration entries $bc$.
+Computing the cost $c(\Theta,e)$ amounts to substituting in $e$ 
+the values of $rc$,
 $sc$, and $bc$ for the configuration $\Theta$.
 The techniques presented in Section~\ref{sec:inter-synthesis} provide a way to 
 synthesize BGP configurations and static routes for a given domain assignment
 and can be used to 
 efficiently compute the quantities $sc$ and $bc$.
-However, we showed that, given a domain assignment, computing the  minimal required number of route filters \loris{??}
+However, we showed that, given a domain assignment, computing the  minimal required number of route filters $rc$
 is a challenging problem (Theorem~\ref{thm:ospfsynth}).
-Since we want MCMC to explore as many assignments as possible
-computing 
-we present a heuristic technique for estimating the number of route filters required by a 
- domain assignment. 
+Since we want MCMC to explore as many assignments as possible,
+we present a heuristic technique for estimating the number of route filters required by a domain assignment. 
 
 We say that two paths $\pi=(r_1,r_2)\cdots (r_{n-1},r_n), \pi'=(r_1',r_2')\cdots (r_{n-1}',r_n')$ with destinations $\lambda$ and $\lambda'$
 form an $(r_i, r_j, \lambda, \lambda')$\emph{-diamond} if and only if
@@ -202,7 +193,9 @@ Before  starting the MCMC search, \name precomputes
 the set of all diamonds induced by the paths $\Pi$. 
 For each
 domain assignment $\Theta$,
-\name estimates the number \loris{??} of required route filters by counting for how many $(r_i, r_j, \lambda, \lambda')$-diamonds
+\name estimates the number of required 
+route filters $rc$ by counting for 
+how many $(r_i, r_j, \lambda, \lambda')$-diamonds,
 $\Theta(r_i) = \Theta(r_j)$. 
 Notice that two different diamonds that share an edge could be resolved
 by placing a single filter on the shared edge, whereas our estimated route filter cost 
@@ -219,8 +212,9 @@ and are not
 taken into account in our estimate. 
 However, our diamond-based estimate
 can be computed efficiently and 
-our experiments show that reductions our MCMC runs 
-produce reduced number of filters (\Cref{some experiment}). 
+our experiments  (\Cref{sec:mcmceval}).  show that reductions 
+in cost lead to decreased number of filters
+(and increased endpoint resilience).
 
 %\minisection{Cost of Configuration Overhead} 
 %Given a domain assignment $\Theta$, the exact number of static routes,
