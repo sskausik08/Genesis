@@ -66,34 +66,33 @@ We add constraints to \genesis to ensure that
 if any two paths to a destination subnet intersect at a router,
 the subsequent downstream paths to the destination from the
 router do not \emph{diverge} at a router.  
-We define the relation $Reach^*(sw,pc)$ to model reachability 
-of $sw$ in the path of $pc$, i.e., it can be reached in zero or more
-steps from the source. We can express $Reach^*(sw,pc)$ 
+We define the relation $Reach^*(r,pc)$ to model reachability 
+of $r$ in the path of $pc$, i.e., it can be reached in zero or more
+steps from the source. We can express $Reach^*(r,pc)$ 
 in the network forwarding model of \genesis as:
 \loris{$\mu$ not defined}
 \begin{equation}
-	Reach^*(sw,pc) = \bigvee_{k \in [0, \mu]} Reach(sw, pc, k)
+	Reach^*(r,pc) = \bigvee_{k \in [0, \mu]} Reach(r, pc, k)
 \end{equation}
 $\mu$ denotes the synthetic limit of the length of the path. 
-$Reach(sw, pc, k)$ is valid if $sw$ is reachable in the path of
+$Reach(r, pc, k)$ is valid if $r$ is reachable in the path of
 class $pc$ in $k$ steps. Thus, to enforce the destination-based
-forwarding using $Reach^*(sw,pc)$, we add
+forwarding using $Reach^*(r,pc)$, we add
 constraints for every pair ($pc_1$,$pc_2$) having the same 
  destination subnet:
  \begin{multline}
- \forall sw. Reach^*(sw, pc_1) \wedge Reach^*(sw, pc_2) 
- \implies \\ \bigwedge_{n \in N(sw)} Fwd(sw, n, pc_1) \Leftrightarrow Fwd(sw, n, pc_2)
+ \forall r. Reach^*(r, pc_1) \wedge Reach^*(r, pc_2) 
+ \implies \\ \bigwedge_{n \in N(r)} Fwd(r, n, pc_1) \Leftrightarrow Fwd(r, n, pc_2)
  \end{multline}
- $Fwd(sw_1, sw_2,pc)$ is valid if $sw_1$ forwards $pc$ to next-hop $sw_2$ and
- $N(sw)$ denotes the neighbours of $sw$. Essentially, 
- if a switch is reachable for both packet classes, 
- then the next switch must be the same for both classes
+ $Fwd(r_1, r_2,pc)$ is valid if $r_1$ forwards $pc$ to next-hop $r_2$ and
+ $N(r)$ denotes the neighbours of $r$. Essentially, 
+ if a router is reachable for both packet classes, 
+ then the next router must be the same for both classes
  (paths will not diverge), and thus, the paths obtained
- from \genesis for a destination subnet will form a 
+ from \genesis for a destination will form a 
  directed destination tree. 
 
 \subsection{\name: From Paths to Router Configurations} 
-\loris{consider adding more text to this sec}
 After we have computed a set of policy-compliant paths,
 we need to solve the path-compliance problem using such paths.
 To solve this problem \name
