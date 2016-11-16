@@ -313,9 +313,8 @@ $\forall pc \in PC.$ $\route^C(src_{pc}, dst_{pc}, \lambda_{pc})$ $\in \paths^C(
 \end{definition}
 
 \subsection{Problem Definition}
-\noindent We can now define what it means for a configuration $C$ to be policy-compliant. 
 
-\paragraph{Policies}
+\minisection{Policies}
 \Cref{tab:policysupport} describes the path policies supported by \name.
 Given  a set $\Psi$ of
 path policies, we say that
@@ -374,25 +373,37 @@ $bc=|\cup_{v,\lambda\in V\times\Lambda} IBF(v,\lambda)\cup \{(v,v',\lambda)\mid 
 A configuration $C$ satisfies a set configuration policies $P$
 if $C$ satisfies every constraint in $P$.
 
-\paragraph{Synthesis problems}
- We are now ready to define our synthesis problems.
+\minisection{Synthesis problems}
+\noindent We can now define what it means for a configuration $C$ to be policy-compliant
+and our synthesis problems.
 \loris{quickly summarize what it means for paths to satisfy $\Psi$.}
 \begin{definition}[Policy-Compliance]
 	Given a set of path policies $\Psi$ and a set of configuration policies $P$,
-	the configuration $C$ is policy-compliant,
+	the configuration $C$ is policy-compliant with $(\Psi,P)$,
 	$C \models (\Psi,P)$, if the set of
 	induced paths $\paths^C(PC) \models \Psi$
 	and $C$ satisfies the policies in $P$.
+	The \emph{configuration synthesis problem} is to find, given $\Psi$ and $P$,
+a configuration $C$ that is policy compliant with $(\Psi,P)$.
 \end{definition}
 
-We will later look for configurations that induce a specific set of paths $\Pi$.  
+
+\loris{remove $T$ everywhere from $C$, we will assume is fixed}
+
+As anticipated in Section~\ref{sec:motivation}, our approach will proceed in two phases,
+one of which solves the following problem.  
 \begin{definition}[Path-Compliance]
 Given a set of configuration policies $P$,
 and a set of paths $\Pi$ over packet classes $PC$,
-	a configurations $C$ is path-compliant with respect to 
+	a configurations $C$ is path-compliant with 
 	$(\Pi,P)$,
 	if $\paths^C(PC)=\Pi$ and $C$ satisfies the policies in $P$.
+	The \emph{path-compliance synthesis problem} is to find, given $P$ and $\Pi$,
+a configuration $C$ that is path-compliant with $(\Pi,P)$.
 \end{definition}
+
+
+
 
 %We defined policy-compliance in terms of the 
 %paths of the packet classes satisfying path-based 
