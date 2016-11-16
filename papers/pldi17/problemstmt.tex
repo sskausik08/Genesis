@@ -378,7 +378,7 @@ the number of filters; we will show that this strategy is effective.
 \minisection{Synthesis problems}
 \noindent We can now define what it means for a configuration $C$ to be policy-compliant
 and our synthesis problems.
-\begin{definition}[Policy-Compliance]
+\begin{definition}[Policy-Compliance] \label{def:policycompliance}
 	Given a set of path policies $\Psi$ and a set of configuration policies $P$,
 	the configuration $C$ is policy-compliant with $(\Psi,P)$,
 	$C \models (\Psi,P)$, if the set of
@@ -390,7 +390,7 @@ a configuration $C$ that is policy compliant with $(\Psi,P)$.
 
 As anticipated in Section~\ref{sec:motivation}, our approach will proceed in two phases,
 one of which solves the following sub-problem.  
-\begin{definition}[Path-Compliance]
+\begin{definition}[Path-Compliance] \label{def:pathcompliance}
 Given a set of configuration policies $P$,
 and a set of paths $\Pi$ over packet classes $PC$,
 	a configurations $C$ is path-compliant with 

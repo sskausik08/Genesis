@@ -47,7 +47,7 @@ All experiments were conducted using a
 32-core Intel-Xeon 2.40GHz CPU machine and
 128GB of RAM.
 
-\subsection{OSPF Synthesis Performance}
+\subsection{OSPF Synthesis Performance}\label{sec:ospfeval}
 To benchmark the performance of \name's OSPF synthesis,
 we consider three topologies: Geant ISP topology with 40 routers,
 and 2 fat-tree topologies with 20 (Fat-4) and 45 routers (Fat-6). 
@@ -149,7 +149,7 @@ overhead by a factor of $0.3\times$. The tunable parameter $\alpha$
 can be used to assign different priorities to these objectives to get
 different trends. 
 
-\minisection{End-to-end Performance with Genesis}
+\subsection{End-to-end Performance with Genesis} \label{sec:genzep}
 We evaluate the end-to-end performance 
 of synthesis of router configurations from policies 
 by integrating \name with \genesis. For this, we run
