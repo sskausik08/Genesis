@@ -252,7 +252,8 @@ W_s^r + D_r^t  > \sum_{\mathclap{\substack{l_i=(r_1,r_2)}}}
 
 To remove this inequality from the set of constraints, we add the route filter $(s,r)$ to $RF(d)$.
 This route filter removes the given IIS, but the new set of equations may still be unsatisfiable because of other IISs. 
-The procedure is repeated and route filters are added until the resulting set of constraints becomes satisfiable.
+The procedure is repeated and route filters are added until the resulting set of constraints becomes satisfiable. In each iteration, we choose the filter
+which least affects endpoint resilience, i.e., does not lie on the mincut.
 
 
 

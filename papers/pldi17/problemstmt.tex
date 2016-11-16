@@ -32,7 +32,7 @@ We write $l \in \pi$ when the path $\pi$ contains the link $l$.
 To model hierarchical control planes in which
  the network is divided into continuous domains,
 we define a router domain assignment function
-$\Theta: V \rightarrow \nat$ which maps each router to a domain 
+$\Theta: V \mapsto \nat$ which maps each router to a domain 
 (denoted by a natural number).
 Each domain uses OSPF as the intra-domain routing protocol
 and BGP as the inter-domain routing protocol. 
@@ -84,7 +84,7 @@ a destination $\lambda$ is forwarded across the shortest path from $r$ to $\lamb
 Shortest paths are computed using Dijkstra's algorithm.
 
 Let us
-define the OSPF weight function $W: L \rightarrow \rat$ which 
+define the OSPF weight function $W: L \mapsto \rat$ which 
 maps edges of the topology to positive rational weights. 
 % todo: When to talk about converting LRA to LIA.
 For a given
@@ -148,7 +148,7 @@ destination $\lambda$, $LP(r, r', \lambda)$ specifies the local
 preference for the router $r$ to choose $r'$ as the next-hop router for destination $\lambda$.  This function is defined
 on inter-domain links---i.e., $r$ and $r'$ belong to different adjacent domains.  
 From the routes received at $r$, the router
-picks the route with greatest local preference.
+picks one with greatest local preference.
 
 The Internal BGP (iBGP) protocol is used to 
 exchange external BGP routes 
@@ -185,7 +185,7 @@ $\route_{bgp}^C(r,\lambda)$, that given a switch $r$ and a destination $\lambda$
 returns the next-hop router for going from $r$ to $\lambda$. 
 Finally, static routes 
 have a higher preference than BGP routes, therefore a static route
-$SR(r, \lambda)$ will be preferred over any BGP route.
+$SR(r, \lambda)$ will be preferred over BGP.
 
 \iffull
 \begin{algorithm} [t]
