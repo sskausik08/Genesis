@@ -1,10 +1,5 @@
-%\begin{figure}[t]
-%	\centering
-%	\includegraphics[width=0.7\columnwidth]{figures/ospfSynthesisTimeMCMC.eps}
-%	\compactcaption{MCMC OSPF Synthesis time}
-%	\label{fig:ospfmcmc}
-%\end{figure}
-\begin{figure*}
+
+\begin{figure*}[!t]
 	\centering
 	\subfloat[Synthesis Time]
 	{\includegraphics[width=0.66\columnwidth]{figures/ospfTime.eps}}
@@ -17,57 +12,18 @@
 \end{figure*}
 
 
-\begin{figure*}
-	\centering
-	\subfloat[Configuration Overhead]
-	{\includegraphics[width=0.66\columnwidth]{figures/confMCMC.eps}}
-	\subfloat[Total Loss of Resilience]
-	{\includegraphics[width=0.66\columnwidth]{figures/TRLMCMC.eps}}
-	\subfloat[MCMC Optimizations]
-	{\includegraphics[width=0.66\columnwidth]{figures/ratioMCMC.eps}}
-	\compactcaption{\label{fig:mcmceval}
-	MCMC Evaluation }
-\end{figure*}
-
-%\begin{figure}
-%	\centering
-%	\includegraphics[width=0.7\columnwidth]{figures/confMCMC.eps}
-%	\compactcaption{MCMC Lines of Conf}
-%	\label{fig:confmcmc}
-%\end{figure}
-%
-%\begin{figure}
-%	\centering
-%	\includegraphics[width=0.7\columnwidth]{figures/TRLMCMC.eps}
-%	\compactcaption{MCMC TRL}
-%	\label{fig:trlmcmc}
-%\end{figure}
-%
-%\begin{figure}
-%	\centering
-%	\includegraphics[width=0.7\columnwidth]{figures/ratioMCMC.eps}
-%	\compactcaption{MCMC Ratios}
-%	\label{fig:ratiomcmc}
-%\end{figure}
-
 
 
 
 \section{Evaluation}
  \label{sec:evaluation}
  
- We implemented a full working
- prototype of \name in Python, which works as a standalone
- system or can be integrated with \genesis. For a given
+ We implemented a 
+ prototype of \name in Python. Our prototype uses the LP solver Gurobi~\cite{gurobi} for synthesis of 
+ OSPF.   For a given
  workload, \name outputs abstract configurations, which
- specifies the assignment of domains to different routers,
- the static routes, BGP configuration variables (local 
- preferences and iBGP filters), and the OSPF link weights
- and route-filters for each domain, which can be 
+can be 
  translated to actual device configurations using templates~\cite{template}.
- \name uses the Gurobi LP solver~\cite{gurobi} for synthesis of 
- OSPF weights and filters. 
- 
 In this section, we evaluate \Name using
 %\loris{really don't like the word realistic}
 enterprise-scale data
@@ -76,8 +32,8 @@ sizes, and ISP topologies from the Internet Topology Zoo
 dataset~\cite{zoo} and ISP topologies.  
 Specifically, we ask:
 \begin{itemize}
-	\item What is the performance of \Name's OSPF synthesis
-	algorithm? How does synthesis time and resilience properties 
+	\item What is the performance of \Name's algorithm for synthesizing
+	OSPF configurations? How does synthesis time and resilience properties 
 	vary with size and type of the network and number of paths? (\secref{sec:ospfeval})
 	
 	\item How well does \name's stochastic domain assignment 
@@ -134,6 +90,18 @@ Fat-4 and Fat-6, there is a significant difference between resilience
 of the endpoints in \name and the best resilience, 
 however, we are able to achieve greater than
 50 percent of the resilience offered by the topology. 
+
+\begin{figure*}[!t]
+	\centering
+	\subfloat[Configuration Overhead]
+	{\includegraphics[width=0.66\columnwidth]{figures/confMCMC.eps}}
+	\subfloat[Total Loss of Resilience]
+	{\includegraphics[width=0.66\columnwidth]{figures/TRLMCMC.eps}}
+	\subfloat[MCMC Optimizations]
+	{\includegraphics[width=0.66\columnwidth]{figures/ratioMCMC.eps}}
+	\compactcaption{\label{fig:mcmceval}
+	MCMC Evaluation }
+\end{figure*}
 
 \subsection{Dynamic Domain Assignment Performance} \label{sec:mcmceval}
 In this section, we demonstrate the advantages of using MCMC sampling
