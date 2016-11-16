@@ -1,3 +1,16 @@
+\begin{figure*}
+	\centering
+	\subfloat[Single
+	BGP Gateway]{\includegraphics[width=0.61\columnwidth]{figures/bgp-example.pdf}}
+	\hfill
+	\subfloat[Multiple BGP Gateways]{\includegraphics[width=0.66\columnwidth]{figures/bgp-example2.pdf}}
+	\hfill
+	\subfloat[Static Routes]{\includegraphics[width=0.53\columnwidth]{figures/static-route.pdf}}
+	\compactcaption{\label{fig:bgpexample}
+	Examples of how BGP and static routes are configured for 
+	inter-domain routing given a domain assignment $\Theta$.}
+\end{figure*}
+
 \subsection{Synthesising Inter-domain Configurations}
 \label{sec:inter-synthesis}
 
@@ -15,18 +28,7 @@ to determine the edge weights and route filters
 the correct gateway routers.
 
 
-\begin{figure*}
-	\centering
-	\subfloat[Single
-	BGP Gateway]{\includegraphics[width=0.61\columnwidth]{figures/bgp-example.pdf}}
-	\hfill
-	\subfloat[Multiple BGP Gateways]{\includegraphics[width=0.66\columnwidth]{figures/bgp-example2.pdf}}
-	\hfill
-	\subfloat[Static Routes]{\includegraphics[width=0.53\columnwidth]{figures/static-route.pdf}}
-	\compactcaption{\label{fig:bgpexample}
-	Examples of how BGP and static routes are configured for 
-	inter-domain routing given a domain assignment $\Theta$.}
-\end{figure*}
+
 
 
 \subsubsection{Configuring BGP and Static Routes}
@@ -42,40 +44,40 @@ We need to take into account three different
 cases, which are illustrated in \Cref{fig:bgpexample}.  
 For sake of simplicity, we omit certain small details from the following discussion.
 
-The first case is when a path is preferred because it traverses fewer domains.
+In the first case, a path is preferred because it traverses fewer domains.
 For example, in \Cref{fig:bgpexample}(a), we want
-path (1) to be the chosen path from source $s$ 
+path (1)---i.e., the red one---to be the chosen path from source $s$ 
 to destination $\lambda$.
 Here, BGP router $g_3$ receives from $g_6$ an advertisement for a route to destination $\lambda$
 traversing only the domain $1$; this route has domain path length 1 as it only traverses 1 domain. 
 Instead, $g_1$ and $g_2$ receive advertisements for a route 
-($D2,D1$)
+(D2, D1)
 to destination $\lambda$  with 
 domain path length 2. Since our objective is to send traffic along
 $g_3$, for path (1) we do not need to add any further BGP configurations,
-and the route via $g_3$ is automatically redistributed into domain 0;
-for destination $\lambda$, the gateway at domain 0 is $g_3$, i.e.,
+and the route via $g_3$ is automatically redistributed into domain D0;
+for destination $\lambda$, the gateway at domain D0 is $g_3$, i.e.,
 $G^C(0, r_1, \lambda) = g_3$.
 
-The second case is when the requested path does not have shortest domain path length
+In the second case, the requested path does not have shortest domain path length
 and we therefore need to set local preferences.
 For example, let's say that in \Cref{fig:bgpexample}(a) we now want
-path (2) to be the chosen path from source $s$
+path (2)---i.e., the purple one---to be the chosen path from source $s$
 to destination $\lambda$. 
-Since, $g_1$'s route traverses more domains than
+Since $g_1$'s route traverses more domains than
  $g_3$'s route,
 we need to set the local preference of route received by $g_1$ 
 (from $g_4$) to a value greater than the preference for the route received by $g_3$. 
 In the example, we set the preference at node $g_1$: 
 $LP(g_1, g_4, \lambda) = 100$
-which causes $g_1$ to become gateway at domain 0 for destination $\lambda$, i.e., 
+which causes $g_1$ to become gateway at domain D0 for destination $\lambda$, i.e., 
 $G^C(0, r_1, \lambda) = g_1$.
 
-The third case is when two paths from different sources in the same domain, but for the same destination $\lambda$, exit 
+In the third case, two paths from different sources in the same domain, but for the same destination $\lambda$, exit 
 the domain through two different
 gateways.
 For example, in \Cref{fig:bgpexample}(b),
-the path from $r_1$ to $\lambda$ exits domain 0 through 
+the path from $r_1$ to $\lambda$ exits domain D0 through 
 gateway router $g_1$, while the path from $r_2$  to $\lambda$ exits 
 through $g_2$. 
 Moreover,  we assume that $g_1$ is the closest gateway to $r_1$ and 
@@ -103,12 +105,12 @@ Next we describe a case in which standard BGP cannot enforce
 the desired path, therefore requiring the use of static routes.
 Consider the path for destination $\lambda$ 
 shown in \Cref{fig:bgpexample}(c). BGP Gateway $g_1$, which is in
-domain $0$, 
+domain D0, 
 will receive a advertisement for $\lambda$ that goes through domain
-1 and then domain 0.
-This advertisment will be rejected because it creates a loop---i.e., the domain 0
+1 and then domain D0.
+This advertisment will be rejected because it creates a loop---i.e., the domain D0
 appears twice in the path. 
-To enforce domain paths with loops we use static routes. In this example
+To enforce domain paths with loops, we use static routes. In this example
 the static routes
 $SR(r_1,\lambda) = r_2$, $SR(r_2,\lambda) = g_1$, and $SR(g_1,\lambda) = g_2$ 
 guarantee that routes from $r_1$, $r_2$, and $g_2$ to $\lambda$ traverse the desired links.
@@ -132,29 +134,28 @@ if $idl_i^{i+1}=(r,r')$ then $\Theta(r_1) \neq \Theta(r_2)$.
 The domain path
 $\tilde{\pi} = d_1 \ldots d_n=\Theta(\pi_1)\ldots \Theta(\pi_n)$ describes the 
 domains traversed by $\pi$ (where
-$\Theta(\pi_i)$ denotes the domain of router in the 
+$\Theta(\pi_i)$ denotes the domain of the routers in the 
 domain path $\pi_i$). 
 
 
 For a given path $\pi$ and corresponding path $\tilde{\pi}$,
 we find the longest non-looped domain subpath ending in domain
 $d_n$. Formally, we find the smallest index $nl$ such that
-$\forall j \geq nl. ~\neg\exists k \geq i. d_j = d_k$. 
+$\forall j \geq nl. ~\neg\exists k \geq i.~d_j = d_k$. 
 The loop-free subpath $\pi'=\pi_{nl} ~idl_{nl}^{nl+1}\ldots idl_{n-1}^n \pi_n$ corresponding to
 domains $d_{nl} \ldots d_n$
 can be induced using BGP, as described in \Cref{fig:bgpexample}(a)
 and \Cref{fig:bgpexample}(b).
 For all links that are not in $\pi'$
-we will require static routes: 
-with abuse of notation for every link $(r_1,r_2)\in\bigcup_{i< nl} \pi_i\cup \bigcup_{i< nl}\{l_i^{i+1}\}$ 
+we will require static routes.
+With abuse of notation, for every link $(r_1,r_2)\in\bigcup_{i< nl} \pi_i\cup \bigcup_{i< nl}\{l_i^{i+1}\}$ 
 we have
 $SR(r_1, \lambda) = r_2$.
 
-For each intra-domain subpath $\pi_i$ that is not statically routed---i.e., $i\geq nl$,
-\name applies
+Finally, for each intra-domain subpath $\pi_i$ that is not statically routed---i.e., $i\geq nl$---\name applies
 OSPF synthesis for the domain $\Theta(\pi_i)$. 
 This is done after aggregating by domain across all subpaths obtained when processing all paths in $\Pi$.
-This algorithm is described in the next section.
+This part of the algorithm is described in the next section.
 %For each destination $\lambda \in \Lambda$, 
 %BGP is configured accordingly
 %based on if there is a single gateway in domain (\Cref{fig:bgpexample}(a))
@@ -221,17 +222,17 @@ This algorithm is described in the next section.
 %
 %\todo{Changes to OSPF synthesis to ensure closest gateway}
 \subsubsection{Modified OSPF Synthesis for Multiple Gateways}
-When BGP routes of destination $\lambda$ 
+When BGP routes for destination $\lambda$ 
 are redistributed by multiple gateways to an 
 OSPF domain, \name uses a modified OSPF synthesis
-algorithm from \secref{sec:intra-synthesis} to assign OSPF weights to the links in the domain
+algorithm from \secref{sec:intra-synthesis} to assign OSPF weights to the links in each domain
 and place route filters. 
 This is 
 required because an OSPF router will choose
 the closest BGP gateway in terms of OSPF distance 
 for $\lambda$. For instance, a router $r$ will choose
-from gateways $g_1$ and $g_2$ according to the $r-g_1$
-and $r-g_2$ distance induced by the OSPF weights. 
+from gateways $g_1$ and $g_2$ according to the OSPF distances from $r$ to $g_1$ and
+and $r$ to $g_2$. 
 Assume we are given the input subpath $\pi_i=r \rightarrow^+ g_1$ in
 the domain $d=\Theta(\pi_i)$ for some destination $\lambda$ outside
 of $d$; this path should reach $g_1$. 
@@ -247,9 +248,8 @@ $r_2$ is reachable from $r_1$ in the destination tree $\xi_\lambda$.
 For each subpath $r \rightarrow^+_{\xi_{\lambda}} g$ to destination $\lambda$
 and for each $g' \in \Gamma_{\lambda}$ such that $g\neq g'$,
 \name adds the following constraint
-to ensure a router
-chooses the correct gateway so that input 
-paths are induced: 
+to ensure that the  router $r$
+chooses the correct gateway: 
 \begin{multline} \label{eq:gateway}
 \forall r' \in N(r) \setminus N_{\xi_\lambda}(r).~
 W_r^{r'} + D_{r'}^{g'} > \sum_{\mathclap{\substack{(r_1,r_2) \in r \rightarrow^+_{\xi_{\lambda}} g }}} 
@@ -263,6 +263,5 @@ not on the input path.
 %, and 
 %thus the synthesized configuration would forward traffic to
 %the gateway specified by the input path. 
-We use the same 
-approach for picking route filters we presented in
+We pick route filters using the same approach we presented in
 \secref{sec:routefilter}. 
