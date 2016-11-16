@@ -7,21 +7,20 @@ custom routing functionality
 in networks to realize these policies, many networks deploy "traditional"
 control planes running distributed routing protocols like OSPF and BGP
 because they are scalable and robust to failures. However, realization of 
-policies by distributed control plane configurations is manual and error-prone,
-and as failure handling is distributed, ensuring policy-compliance under failures 
-can be challenging. 
+policies by distributed control plane configurations is manual and error-prone. 
 We show that synthesizing policy-compliant control planes is a
 challenging problem and  propose a two-phase 
 architecture to automatically realize 
-fault-tolerant control planes from policy specifications. 
+policy-compliant control planes. 
 The first phase
 uses prior work to synthesize paths that satisfy the policies pertaining to the data-plane and 
-the second phase synthesizes
-a control plane satisfies the policies pertaining to the control plane and produces the paths synthesized in the first phase. 
-This last phase combines constraint solving, for determining 
-the edge weights to be used for OSPF and BGP routing
-and 
-Markov Chain Monte Carlo (MCMC) sampling to identify a good way to partition the graph into
-multiple routing domains.
-We evaluate our techniques on real topologies and \loris{todo}
+the second phase uses constraint solving and Monte Carlo  search to synthesize
+a control plane that produces the paths synthesized in the first phase and also satisfies the policies pertaining to configurations. 
+%This last phase combines forma synthesis l tconstraint solving, for determining 
+%the edge weights to be used for OSPF and BGP routing
+%and 
+%Markov Chain Monte Carlo (MCMC) sampling to identify a good way to partition the graph into
+%multiple routing domains.
+We implement our techniques in a tool \name and show that \name can
+synthesize configurations for real topologies with up to 125 routers.
 \end{abstract}
