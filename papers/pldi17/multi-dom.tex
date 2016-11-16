@@ -44,11 +44,13 @@ For sake of simplicity, we omit certain small details from the following discuss
 
 The first case is when a path is preferred because it traverses fewer domains.
 For example, in \Cref{fig:bgpexample}(a), we want
-path (1) to be the chosen path from source $src$\loris{check if src is called src after fixing fig} to destination $\lambda$.
+path (1) to be the chosen path from source $s$ 
+to destination $\lambda$.
 Here, BGP router $g_3$ receives from $g_6$ an advertisement for a route to destination $\lambda$
 traversing only the domain $1$; this route has domain path length 1 as it only traverses 1 domain. 
-Instead, $g_1$ and $g_2$ receive advertisements for a route $2 \rightarrow 1$\loris{this arrow notation used consistently?}
-to destination $\lambda$ traversing 2 domains, therefore with 
+Instead, $g_1$ and $g_2$ receive advertisements for a route 
+($D2,D1$)
+to destination $\lambda$  with 
 domain path length 2. Since our objective is to send traffic along
 $g_3$, for path (1) we do not need to add any further BGP configurations,
 and the route via $g_3$ is automatically redistributed into domain 0;
@@ -64,8 +66,8 @@ Since, $g_1$'s route traverses more domains than
  $g_3$'s route,
 we need to set the local preference of route received by $g_1$ 
 (from $g_4$) to a value greater than the preference for the route received by $g_3$. 
-In the example, we set the preference at node $g_1$ to 
-100, $LP(??, ??, \lambda)$\loris{put correct values},
+In the example, we set the preference at node $g_1$: 
+$LP(g_1, g_4, \lambda) = 100$
 which causes $g_1$ to become gateway at domain 0 for destination $\lambda$, i.e., 
 $G^C(0, r_1, \lambda) = g_1$.
 
@@ -87,7 +89,7 @@ and
 the traffic from $r_2$ correctly exists through $g_2$. 
 To prevent that the traffic from $r_1$ also exists through $g_2$,
 we add an iBGP filter for the connection $g_2 \rightarrow g_1$ for
-destination IP $\lambda$.\footnote{$g_1$ and $g_2$ need not be connected by a 
+destination IP $\lambda$.\footnote{Gateways $g_1$ and $g_2$ need not be connected by a 
 link directly; iBGP establishes a connection among the 
 BGP routers in a domain.} Thus, $g_1$ will not receive the
 $g_2 \rightarrow g_4$ route from $g_2$, 
