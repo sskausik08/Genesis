@@ -5,22 +5,20 @@
 In this section, we present an algorithm for 
 solving the path-compliance problem in the presence
 of multiple domains---i.e., $|\{\Theta(r) \mid r\in V\}|>1$.
-\loris{again, I say route filters}
-In this setting, we the policies in $P$ will try to minimize some expression
-over the number
-route filters, static routes, and BGP configurations.
-First, our algorithm determines \loris{the optimal?}
-BGP configuration and static routes to ensure that the paths will traverse the correct
-domains.
-Second, we show how to modify the techniques given in Section~\ref{sec:intra-synthesis}
-to determine the edge weights and route filters in each domain to guarantee that paths traverse
+First, our algorithm determines the 
+BGP configuration and static routes to ensure that the 
+paths will traverse the correct domains.
+Second, we show how to modify the 
+techniques given in Section~\ref{sec:intra-synthesis}
+to determine the edge weights and route filters
+ in each domain to guarantee that paths traverse
 the correct gateway routers.
 
 
 \begin{figure*}
 	\centering
 	\subfloat[Single
-	BGP Gateway]{\includegraphics[width=0.66\columnwidth]{figures/bgp-example.pdf}}
+	BGP Gateway]{\includegraphics[width=0.61\columnwidth]{figures/bgp-example.pdf}}
 	\hfill
 	\subfloat[Multiple BGP Gateways]{\includegraphics[width=0.66\columnwidth]{figures/bgp-example2.pdf}}
 	\hfill
