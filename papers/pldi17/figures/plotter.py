@@ -104,7 +104,7 @@ plt.errorbar(x, fatConf, color='#377eb8', yerr=fatConfDev, linestyle="None")
 plt.plot(x, fatConfWorst, '#377eb8', linestyle='--', marker="s", markersize=markersize, label="Worst (Fat-8)")
 plt.errorbar(x, fatConfWorst, color='#377eb8', yerr=fatConfWorstDev, linestyle="None")
 
-plt.legend(loc='upper left',  ncol=2, frameon=False, fontsize=18)
+plt.legend(loc='upper left', frameon=False, fontsize=18)
 
 plt.xlabel('Number of Paths', fontsize=20)
 plt.ylabel('Configuration Overhead', fontsize=20)
