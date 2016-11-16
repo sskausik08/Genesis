@@ -89,7 +89,7 @@ maps edges of the topology to positive rational weights.
 % todo: When to talk about converting LRA to LIA.
 For a given
 path $\pi=l_1\ldots l_n$, we indicate the sum of weights of the
-links in the path by $w(\pi)=\sum l_i$. 
+links in the path by $W(\pi)=\sum W(l_i)$. 
 
 
 We allow  route filters
@@ -122,14 +122,15 @@ The paths between two nodes are
 the shortest paths in the network
 that do not cross any link that belongs to $RF(\lambda)$. We also
 account for the higher priority of static routes.
-\begin{multline} \label{eq:ospfmodel}
-\route_{ospf}^C(s,t,\lambda) = \\
+\[
+\route_{ospf}^C(s,t,\lambda) = 
 \begin{cases}
-\text{$\Pi_s^t \cap \Pi_{SR}$}  & \text{if $\Pi_s^t \cap \Pi_{SR} \not=\emptyset$} \\
-\text{$\{\pi \mid  \pi\in \Pi_s^t\cap \Pi_\lambda ~\wedge $} & \\
-\text{~~~~$\neg\exists \pi'\in\Pi_s^t\cap \Pi_\lambda . w(\pi')< w(\pi)\}$} & \text{otherwise}
+\pi  & \text{$\Pi_s^t \cap \Pi_{SR} =\{\pi\}$} \\
+\pi & 
+\text{$\Pi_s^t \cap \Pi_{SR} =\emptyset \wedge \pi\in \Pi_s^t\cap \Pi_\lambda ~\wedge $}  \\
+& \text{~~~~$\neg\exists \pi'\in\Pi_s^t\cap \Pi_\lambda . W(\pi')< W(\pi)$} 
 \end{cases}
-\end{multline}
+\]
 
 \minisection{BGP} BGP is a path-vector inter-domain routing protocol
 that connects different autonomous systems (ASes), where each AS
@@ -277,13 +278,15 @@ $\route^C$
 %:\Theta \times LP \times W \times RF \times V \times V \times \Lambda \rightarrow L^* 
 returns paths from source to destination in a inter-domain network:
 given a source $s_1$ and a destination $\lambda$ connected to target router $t$, 
-\begin{multline}
+\[
+\begin{array}{c}
 	\route^C(s_1, t, \lambda) = 
 	\route_{ospf}^C(s_1,g_1, \lambda) + 
-	 (g_1, s_2 )+ \\
+	 (g_1, s_2 )+\qquad\qquad\qquad  \\
 %	~~~~~~~~~~~~~~~~~~~~~~~~~\route_{ospf}^C(s_2,g_2, \lambda) + (g_2, s_3) + \\
-	\ldots  + (g_{n-1}, s_n) +\route_{ospf}^C(s_n,t,\lambda)
-\end{multline}
+	\qquad\qquad\qquad\qquad \ldots  + (g_{n-1}, s_n) +\route_{ospf}^C(s_n,t,\lambda)
+\end{array}
+\]
 Here, for each $i>1$, $g_i=G^C(\Theta(s_i),s_i,\lambda)$, 
 $s_i=\route_{bgp}^C(g_{i-1}, \lambda)$,
 and  $+$ is the concatenation operator for paths. 
