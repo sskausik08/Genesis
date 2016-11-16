@@ -3,8 +3,7 @@ We show that the decision version of the minimum
 vertex cover problem, i.e., there exists a vertex cover
 of size $ \leq k$, which is NP-complete, 
 reduces to finding a set of route-filters of size $ \leq k$ \
-and OSPF weights which forward traffic along the
-input paths under non-failure scenarios. 
+and OSPF weights for a network with only one domain. 
 The latter is also in NP, so after the reduction we 
 can conclude that it is also NP-complete.
 
@@ -91,13 +90,13 @@ prove \Cref{lemma:diamond}.
 \end{lemma}
 
 \begin{proof}
-Consider the following diamond in \Cref{fig:diamond}
+Consider the following diamond % in \Cref{fig:diamond}
 constructed by paths $p_1$: $s \rightarrow r_1 \rightarrow t$ 
 for destination $d_1$ and $p_2$:$s \rightarrow r_2 \rightarrow t$ 
 for destination $d_2$. Let us assume there exists a solution 
 for the OSPF edge weights without any route-filters. 
 
-As described in \Cref{sec:ospfsynthesis}, 
+As we will describe in \Cref{sec:intra-synthesis}, 
 to ensure $p_1$ is the shortest path from $s$ to $t$, the following
 linear inequality is added to ensure $p_1$ is shorter than the
 path from $s$ to $t$ via $r_2$: 

@@ -7,25 +7,21 @@ assignment function $\Theta$ is given to us.
 Formally, we are given a set of paths $\Pi$,
 a topology $T=(V,L)$,
 a domain-assignment function $\Theta$, 
-and \loris{configuration policies $P$,}
+and configuration policies $P$,
 and we want to find functions
 $LP$, $W$, and $RF$,  such that
 $C=(T,\Theta,W,RF,LP,IF,SR)$,
 $\paths^C(PC) = \Pi$, and
-\loris{$C$ satisfies $P$}.
-We call this the \emph{routing configuration synthesis} problem.
-
-\loris{talk about policy and optimization}
-
+$C$ satisfies $P$.
+%We call this problem the \emph{routing configuration synthesis} problem.
 Before we present our techniques,
-we justify the complexity of our approach by showing that
-even the simplest variant of this problem is NP-complete.
+we  show that
+even the simplest variant of this problem is computationally hard.
 \begin{theorem}[Hardness of synthesis]
 \label{thm:ospfsynth}
-If $P$ requires to minimize the number of route filters the routing configuration synthesis
+If $P$ requires to minimize the number of route filters and $\Theta$ is given, the path-compliance synthesis
 problem is NP-complete.
 \end{theorem}
-\loris{adapt proof to simply say $n=1$}
 \iffull
 \input{route-filters-nphard}
 \else
