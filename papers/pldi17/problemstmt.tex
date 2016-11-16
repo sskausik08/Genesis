@@ -312,79 +312,95 @@ $\paths^C(PC)$ induced by $C$ is defined as follows:
 $\forall pc \in PC.$ $\route^C(src_{pc}, dst_{pc}, \lambda_{pc})$ $\in \paths^C(PC)$.
 \end{definition}
 
-\subsection{Synthesis of Policy-compliant Configurations}
-\noindent We can now define what it means for a configuration $C$ to be policy-compliant. Let 
-$\Psi$ denote the set of constraints corresponding to the 
-path-based input policies (\Cref{tab:policysupport}). 
+\subsection{Problem Definition}
+\noindent We can now define what it means for a configuration $C$ to be policy-compliant. 
+
+\paragraph{Policies}
+\Cref{tab:policysupport} describes the path policies supported by \name.
+Given  a set $\Psi$ of
+path policies, we say that
+a set of paths $\Pi$ is policy-compliant with respect to $\Psi$, $\paths^C(PC) \models \Psi$,
+if the paths in $\Pi$ satisfy all the policies in $\Psi$ (see~\cite{genesis} for the formal definition).
+
+
+\Cref{tab:configpolicysupport} describes all the configuration policies supported by \name.
+For each configuration policy 
+we define what it means for  a configuration $C=(T,\Theta,W,RF,LP,IBF,SR)$ to satisfy it.
+
+The first type of policy restricts how many OSPF domains $N_D$
+a configuration might have, $c_1\leq N_D\leq c_2$, \loris{update table}
+and it is satisfied by $C$ iff $c_1\leq |\{\Theta(r)\mid r\in V\}|\leq c_2$.
+This policy is useful for avoiding situation in which too many domains
+can cause flooding 
+of BGP updates and  
+overwhelm the network when links fail. 
+For the same reason, the second type of policy allows the operator to restrict the size $k$ of each OSPF domain,
+$l\leq k\leq u$.
+This policy is satisfied if  for every domain $i$, $l\leq |\{r \mid \Theta(r)=i\}|\leq u$.
+
+
+Certain 
+	routers may not be suited to run BGP due to resource
+	constraints. Thus, the operator can specify what set of 
+	routers $B\subseteq V$ is BGP compatible.  
+	This policy is satisfied if none of the routers $V\setminus B$
+	is a gateway router.
+	Formally, for every $r\in V\setminus B$,
+	there doesn't exist a router $r'\in N(r)$ such that $\Theta(r) \not= \Theta(r_1)$
+
+Finally, \name provides ways to specify upper bounds on the number of
+1) route filters, which in general reduce the resiliency of the network---i.e., $rc=|\cup_{\lambda\in \Lambda} RF(\lambda)|\leq C_{rc}$,
+2) static routes, which also affect resilience---i.e., $sc=|\{(v,\lambda)\mid \exists v'. SR(v,\lambda)=v'\}|\leq C_{sc}$, and
+3) BGP configurations, which increase the complexity of the network~\cite{batfish, arc, era}---i.e., 
+$bc=|\cup_{v,\lambda\in V\times\Lambda} IBF(v,\lambda)\cup \{(v,v',\lambda)\mid LP(v,v',\lambda)\neq \bot|\leq C_{bc}$.
+\name also allows to minimize certain expression that the quantities $rc$, $sc$, and $bc$---e.g., $max(rc, sc+bc)$.
+
+%different configuration metrics. For example,
+%we allow route-filters in OSPF synthesis 
+%(\secref{sec:ospfsynthesis}), which may yield undesirable
+%endpoint resilience, thereby, synthesizing configurations
+%which provide a specified metric of resilience or maximize
+%the metric. Similarily, to enable path-based inter-domain routing, 
+%\name needs	to set up static routes along the path, or configure BGP 
+%variables like local preferences to ensure the configurations 
+%induce the input paths.
+%These increase the size of the configurations,
+%thus increasing the complexity of verifying correctness either 
+%manually or using verification tools~\cite{batfish, arc, era}. 
+%Therefore,
+%another objective \name considers is the configuration overhead
+%to ensure path-compliance.
+
+A configuration $C$ satisfies a set configuration policies $P$
+if $C$ satisfies every constraint in $P$.
+
+\paragraph{Synthesis problems}
+ We are now ready to define our synthesis problems.
 \loris{quickly summarize what it means for paths to satisfy $\Psi$.}
 \begin{definition}[Policy-Compliance]
-	The configuration $C$ is policy-compliant,
-	$C \models \Psi$, if the set of
-	induced paths $\paths^C(PC) \models \Psi$.
+	Given a set of path policies $\Psi$ and a set of configuration policies $P$,
+	the configuration $C$ is policy-compliant,
+	$C \models (\Psi,P)$, if the set of
+	induced paths $\paths^C(PC) \models \Psi$
+	and $C$ satisfies the policies in $P$.
 \end{definition}
 
 We will later look for configurations that induce a specific set of paths $\Pi$.  
 \begin{definition}[Path-Compliance]
-	The configurations $C$ is path-compliant with respect to 
-	a set of paths $\Pi$ over packet classes $PC$,
-	if $\paths^C(PC)=\Pi$.
+Given a set of configuration policies $P$,
+and a set of paths $\Pi$ over packet classes $PC$,
+	a configurations $C$ is path-compliant with respect to 
+	$(\Pi,P)$,
+	if $\paths^C(PC)=\Pi$ and $C$ satisfies the policies in $P$.
 \end{definition}
 
-We defined policy-compliance in terms of the 
-paths of the packet classes satisfying path-based 
-policies like isolation or traffic engineering. However,
-depending on the assignment of routers to different domains,
-the configurations generated may not be efficient
-in deployment. Therefore, we extend the notion of 
-compliance to policies on configurations 
-(\Cref{tab:configpolicysupport}).
+%We defined policy-compliance in terms of the 
+%paths of the packet classes satisfying path-based 
+%policies like isolation or traffic engineering. However,
+%depending on the assignment of routers to different domains,
+%the configurations generated may not be efficient
+%in deployment. Therefore, we extend the notion of 
+%compliance to policies on configurations 
+%(\Cref{tab:configpolicysupport}).
 
-\paragraph{Number and size of OSPF domains.} 
-The OSPF routing protocol does not scale 
-with increasing network sizes
-as it uses
-flooding of link-state packets. Flooding 
-of updates can  
-overwhelm the network when links fail. 
-Ideally, operators would want to specify
-limits on the size of an OSPF routing domain 
-($l \leq$ size $\leq u$)
-Operators can also specify the number of OSPF domains 
-($N_D$)
-for administrative reasons (each domain can be
-managed by a separate entity). For the  
-set of domains $D = \{\Theta(r) \mid r \in V\}$:
-\begin{equation}
-	|D| = N_{D} ~\wedge \forall d \in D. ~l \leq |\{r \mid \Theta(r) = d\}| \leq u
-\end{equation}
 
-\paragraph{BGP-Compatibility} Certain 
-	routers may not be suited to run BGP due to resource
-	constraints. Thus, the operator can specify if a 
-	router is BGP compatible or not.  
-	For the set of routers $\bar{B}$ which cannot run BGP, the
-	domain assignment $\Theta$ must ensure the router
-	does not lie on the boundary of a domain (and therefore,
-	run BGP):
-\begin{equation}
-	\forall r \in \bar{B}. ~\not\exists r_1 \in N(r).~\Theta(r) \not= \Theta(r_1) 
-\end{equation} 
-
-\paragraph{Optimizations}  
-\loris{this sec is too informal}
-Ideally, \name should provide mechanisms to optimize
-different configuration metrics. For example,
-we allow route-filters in OSPF synthesis 
-(\secref{sec:ospfsynthesis}), which may yield undesirable
-endpoint resilience, thereby, synthesizing configurations
-which provide a specified metric of resilience or maximize
-the metric. Similarily, to enable path-based inter-domain routing, 
-\name needs	to set up static routes along the path, or configure BGP 
-variables like local preferences to ensure the configurations 
-induce the input paths.
-These increase the size of the configurations,
-thus increasing the complexity of verifying correctness either 
-manually or using verification tools~\cite{batfish, arc, era}. 
-Therefore,
-another objective \name considers is the configuration overhead
-to ensure path-compliance.
