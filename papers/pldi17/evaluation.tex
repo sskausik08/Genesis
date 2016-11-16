@@ -53,7 +53,7 @@ To benchmark our performance of \name's OSPF synthesis,
 we consider three topologies: Geant ISP topology with 40 routers,
 and 2 fat-tree topologies with 20 (Fat-4) and 45 routers (Fat-6). 
 These sizes are consistent with operator preferences to restrict
-the size of a domain to under 50 routers (OSPF does not scale w
+the size of a domain to under 50 routers (OSPF does not scale
 well as domain size increases). We generate $n$ random input paths for
 $n/4$ destinations spread across the topology and 
 lengths in range [3,5]. For each metric, we perform 20 experiments
@@ -64,22 +64,20 @@ shows the synthesis time for increasing number of paths.
 The time taken for Fat-6 is much greater than Fat-4 or Geant
 due to more number of links, therefore there are more link weights
 to synthesize, and greater alternate paths to add constraints for. 
-For Geant, we can sybthesize weights and filters in 200 seconds 
+For Geant, we can synthesize weights and filters in 200 seconds 
 for 200 paths, thus OSPF synthesis is effective for ISP topologies
-which have lesser links than datacenter topologies. 
+which have fewer links than datacenter topologies. 
 \Cref{fig:ospfeval}(b) shows the number of filters synthesized. 
 As the time taken is dependent on the number of iterations of
 the route-filter learning procedure, the number of filters
 shows a similar trend to OSPF synthesis time. On average, 2 route-filters
 are required for each path in the Geant topology. 
 
-\noindent\textbf{Endpoint Resilience.}~~~While the number of 
-filters is related to synthesis time, our OSPF synthesis picks
+\noindent\textbf{Endpoint Resilience.}~~~OSPF synthesis picks
 filters which have the least effect on endpoint resilience, as it  
 is a more important metric than the number of filters. We express this
 by computing the average of $t-resilience$ for each endpoint considering
-the filters ($t-resilience$ = $t+1$ edge-disjoint backup paths between the 
-endpoints).
+the filters ($t-resilience$ = size of mincut is $t+1$).
 \Cref{fig:ospfeval}(c) shows the average
 endpoint resilience obtained by \name (solid traces) 
 compared to the best endpoint resilience (achieved
@@ -87,8 +85,8 @@ if there were no filters). For Geant, the endpoint
 resilience obtained by \name trails the best by a small margin,
 even though 2 route-filters were required for each path. For
 Fat-4 and Fat-6, there is a significant difference between resilience
-of the endpoints in \name and the best resilience, 
-however, we are able to achieve greater than
+of the endpoints in \name and the best resilience. 
+However, we are able to achieve more than
 50 percent of the resilience offered by the topology. 
 
 \begin{figure*}[!t]
@@ -117,9 +115,8 @@ in 5 OSPF domains each with size $\in [10,40]$. We conduct these
 experiments for 20 readings, and report average and deviation of the metrics. 
 
 \noindent\textbf{Configuration Overhead.}~~~
-\Cref{fig:mcmceval}(a) shows the configuration overhead incurred by
-\name for synthesizing inter-domain configurations. The configuration
-is the sum of static route rules, BGP local preferences and iBGP filters. 
+\Cref{fig:mcmceval}(a) shows the configuration overhead $bc + rc$ 
+incurred by \name for synthesizing inter-domain configurations.
 For the Fat-8 topology which has greater path diversity, we incur more 
 overhead to ensure path-compliance than the Ion topology. 
 The Best traces indicate the best domain assignment found by MCMC, while 
