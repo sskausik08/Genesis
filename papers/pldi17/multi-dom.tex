@@ -8,12 +8,12 @@ of multiple domains---i.e., $|\{\Theta(r) \mid r\in V\}|>1$.
 \loris{again, I say route filters}
 In this setting, we the policies in $P$ will try to minimize some expression
 over the number
-route-filters, static routes, and BGP configurations.
+route filters, static routes, and BGP configurations.
 First, our algorithm determines \loris{the optimal?}
 BGP configuration and static routes to ensure that the paths will traverse the correct
 domains.
 Second, we show how to modify the techniques given in Section~\ref{sec:intra-synthesis}
-to determine the edge weights and route-filters in each domain to guarantee that paths traverse
+to determine the edge weights and route filters in each domain to guarantee that paths traverse
 the correct gateway routers.
 
 
@@ -169,7 +169,7 @@ This algorithm is described in the next section.
 %exit and enter a domain multiple times. 
 %While static routes
 %do not reduce the resilience of the network (all routes are still
-%enabled, unlike route-filters), a network under flux will have
+%enabled, unlike route filters), a network under flux will have
 %unpredictable routing behaviour, unlike with only OSPF and BGP
 %configured at the routers. 
 %Also, static routes have to be installed per-destination, thus increasing
@@ -259,12 +259,12 @@ W_r^{r'} + D_{r'}^{g'} > \sum_{\mathclap{\substack{(r_1,r_2) \in r \rightarrow^+
 \end{multline}
 Like for unmodified OSPF synthesis, the system of
 constraints generated can be inconsistent and require
-route-filters to eliminate constraints
+route filters to eliminate constraints
 and  filter shorter routes to gateways which are
 not on the input path.
 %, and 
 %thus the synthesized configuration would forward traffic to
 %the gateway specified by the input path. 
 We use the same 
-approach for picking route-filters we presented in
+approach for picking route filters we presented in
 \secref{sec:routefilter}. 

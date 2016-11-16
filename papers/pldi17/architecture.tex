@@ -107,7 +107,7 @@ to efficiently generate router configurations for the paths obtained from \genes
 For a given domain division of the network,
 \name uses linear constraints to generate OSPF weights and BGP preferences.
 If the constraints fail, \name uses the unsatisfiable cores to
-identify where to place route-filters.
+identify where to place route filters.
 To decide how to split the network into domains,
 \name uses Markov Chain Monte Carlo (MCMC) search to find
 domain assignments that satisfy the configuration policies and have good resilience.
@@ -160,9 +160,9 @@ These techniques are described in detail in the next two sections.
 %$s\rightarrow r_1 \rightarrow t$ path ($w=1+2$), therefore,
 %both traffic is forwarded through the input paths for
 %both the destinations. 
-%This blocking mechanism is called a route-filter, and
+%This blocking mechanism is called a route filter, and
 %we modify \name's OSPF synthesis algorithm to support
-%route-filtering (\secref{sec:filtering}).
+%route filtering (\secref{sec:filtering}).
 %
 %
 %\begin{figure}
@@ -183,7 +183,7 @@ These techniques are described in detail in the next two sections.
 %				(t) edge [red, dashed] node {} (d1);
 %				\end{tikzpicture}
 %			}}}
-%			\subfloat[Route-Filters]{
+%			\subfloat[Route Filters]{
 %				\resizebox {0.5\columnwidth} {!} {
 %					\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
 %					square/.style={regular polygon,regular polygon sides=4}] 
@@ -253,7 +253,7 @@ These techniques are described in detail in the next two sections.
 %domain assignment of routers 
 %can optimize different metrics, like the
 %inter-domain configuration overhead (like BGP local
-%preferences and static routes) and OSPF route-filters
+%preferences and static routes) and OSPF route filters
 %in the different domains. Thus, instead of operators
 %specifying a static domain assignment, \name stochastically
 %searches for the best domain assignment from the space of 
