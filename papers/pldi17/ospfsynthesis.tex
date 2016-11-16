@@ -10,7 +10,7 @@ a domain-assignment function $\Theta$,
 and configuration policies $P$,
 and we want to find functions
 $LP$, $W$, and $RF$,  such that
-$C=(T,\Theta,W,RF,LP,IF,SR)$,
+$C=(\Theta,W,RF,LP,IF,SR)$,
 $\paths^C(PC) = \Pi$, and
 $C$ satisfies $P$.
 %We call this problem the \emph{routing configuration synthesis} problem.
@@ -19,7 +19,7 @@ we  show that
 even the simplest variant of this problem is computationally hard.
 \begin{theorem}[Hardness of synthesis]
 \label{thm:ospfsynth}
-If $P$ requires to minimize the number of route filters and $\Theta$ is given, the path-compliance synthesis
+If $P$ bounds the number of route filters ($rc\leq C_{rc}$) and $\Theta$ is given, the path-compliance synthesis
 problem is NP-complete.
 \end{theorem}
 \iffull
@@ -41,7 +41,7 @@ However, we will show heuristics for picking route filters to also maximize resi
 We first show how to solve the problem when
 we are not allowed to use route filters
 and then
-extend our technique to handle route filters, when these are allowed.
+extend our technique to handle route filters.
 
 \begin{figure}
 	\centering
