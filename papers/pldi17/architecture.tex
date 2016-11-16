@@ -4,7 +4,7 @@ directly generating policy-compliant configurations is a challenging
 problem, we use a two-phase approach in which we first synthesize
 policy-compliant \emph{paths} using the tool \genesis~\cite{genesis}
 and then synthesize configurations that result in the paths we
-synthesized in the first phase; we refer to the latter as \name.
+synthesized in the first phase; we refer to tool that performs the second phase as \name.
 The first phase may produce \emph{bad} paths for which the
 configuration synthesis is complicated or not possible. Thus, we
 propose ways to restart the algorithm by computing new paths.
@@ -33,7 +33,7 @@ $r_1$ forwards packets of class $pc$ to router $r_2$---
 and 
 the relation $Reach \subseteq V \times PC \times \nat$ 
 to capture
-the path reachability---i.e. $(r, pc, k)\in Reach$ if 
+ path reachability---i.e. $(r, pc, k)\in Reach$ if 
 the router $r$ is reachable in the path from the source
 router of packet class $pc$ in exactly $k$ steps. Based on
 the input policies, \genesis generates constraints over the $Fwd$
@@ -46,11 +46,6 @@ and $Reach$ relations. Finally, \genesis uses the solution to the relations to e
 	\label{fig:architecture}
 \end{figure}
 \paragraph{Modifications to \genesis}
-We  discuss how the
-constraints of \genesis~\cite{genesis}
-need to be modified to avoid generating paths that 
-cannot be enforced by any routing configuration.
-
 OpenFlow switches~\cite{openflow} support match predicates for
 forwarding rules on different packet header fields such as source
 and/or destination IP address, ports etc. However, legacy protocols
@@ -63,22 +58,25 @@ Since \genesis was built for
 SDN management,  a switch may forward to different switches
 packets that are directed to the same destination;
 this behaviour cannot be induced by any router
-configuration. 
+configuration. We  discuss how the
+constraints of \genesis~\cite{genesis}
+need to be modified to avoid generating paths that 
+cannot be enforced by any routing configuration.
 
-We modify the constraints given to \genesis to ensure that,
+Concretely, we modify the constraints given to \genesis to ensure that,
 if any two paths to a destination subnet intersect at a router,
 the subsequent downstream paths to the destination from the
 router do not \emph{diverge} at another router.  
 We define the relation $Reach^*(r,pc)$ to model reachability 
-of $r$ in the path of $pc$, i.e., $r$ is traversed by the path for packet class $pc$. 
-If we allow pats of length at most $\mu$, we can define $Reach^*(r,pc)$ as:
+of $r$ in the path of $pc$---i.e., $r$ is traversed by the path for packet class $pc$. 
+If we allow paths of length at most $\mu$, we can define $Reach^*(r,pc)$ as:
 \begin{equation}
-	Reach^*(r,pc) = \bigvee_{k \in [0, \mu]} Reach(r, pc, k).
+	Reach^*(r,pc) \Leftrightarrow \bigvee_{k \in [0, \mu]} Reach(r, pc, k).
 \end{equation}
 To guarantee that the generate paths can be enforced using destination-based
-forwarding, for every pair of packet classes $pc_1$ and $pc_2$ that belong to the same 
- destination subnet, we add
-the constraint:
+forwarding we add
+the following constraint for every pair of packet classes $pc_1$ and $pc_2$ that belong to the same 
+ destination subnet:
  \begin{multline}
  \forall r. Reach^*(r, pc_1) \wedge Reach^*(r, pc_2) 
  \implies \\ \bigwedge_{n \in N(r)} Fwd(r, n, pc_1) \Leftrightarrow Fwd(r, n, pc_2)
@@ -98,14 +96,16 @@ To solve this problem \name
 combines techniques in constraint solving and randomized search
 to efficiently generate router configurations for the paths obtained from \genesis.
 For a given domain division of the network,
-\name uses linear constraints to generate OSPF weights and BGP preferences.
-If the constraints fail, \name uses the unsatisfiable cores to
+\name uses linear constraints to generate OSPF weights and 
+the structure of the paths  to generate BGP preferences.
+If the generated linear  constraints cannot be solved, \name uses the unsatisfiable cores to
 identify where to place route filters.
 To decide how to split the network into domains,
 \name uses Markov Chain Monte Carlo (MCMC) search to find
 domain assignments that satisfy the configuration policies and have good resilience.
 When the MCMC search does not progress and cannot find good solutions,
-we restart the search by asking \genesis to generate a new set of paths.
+we restart the search by asking \genesis to generate a new set of paths that is different from
+the previously generated ones.
 These techniques are described in detail in the next two sections.
 
 %\subsection{Challenges}
