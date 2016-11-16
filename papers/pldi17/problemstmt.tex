@@ -298,16 +298,9 @@ and  $+$ is the concatenation operator for paths.
 \input{policy}
 
 \minisection{Induced paths}
-Since, most distributed routing protocols only support
-destination forwarding, our language supports reachability predicates 
-of the form \texttt{dst.IP} = $\lambda$. To 
-model policies for different source IP subnets, we can create
-multiple reachability policies with different source routers---i.e.,
-\texttt{dst.IP} = $\lambda$ : \texttt{s >> t} (where $s$ is
-the router connected to the source IP subnet, $t$ is the router
-which $\lambda$ is connected to).
 We assume a set of packet classes $PC : [0,C_{pc}]$ 
-and map each reachability policy to a unique integer in $PC$.
+and map each path (specified by a reachability policy) 
+to a unique integer in $PC$.
 For a packet class $pc$, $src_{pc}$ denotes the source router,
 $dst_{pc}$ denotes the destination router, and $\lambda_{pc}$
 denotes the destination IP address. 
@@ -316,14 +309,10 @@ denotes the destination IP address.
 \begin{definition}[Induced Paths]
 Given a configuration $C$ and a set of packet classes $PC$, the set of paths
 $\paths^C(PC)$ induced by $C$ is defined as follows: 
-$\forall pc \in PC. \route^C(src_{pc}, dst_{pc}, \lambda_{pc}) \in \paths^C(PC)$.
+$\forall pc \in PC.$ $\route^C(src_{pc}, dst_{pc}, \lambda_{pc})$ $\in \paths^C(PC)$.
 \end{definition}
 
 \subsection{Synthesis of Policy-compliant Configurations}
-
-
-
-
 \noindent We can now define what it means for a configuration $C$ to be policy-compliant. Let 
 $\Psi$ denote the set of constraints corresponding to the 
 path-based input policies (\Cref{tab:policysupport}). 
@@ -358,15 +347,16 @@ flooding of link-state packets. Flooding
 of updates can  
 overwhelm the network when links fail. 
 Ideally, operators would want to specify
-limits on the size of an OSPF routing domain. 
-Operators can also specify the number of OSPF domains
+limits on the size of an OSPF routing domain 
+($l \leq$ size $\leq u$)
+Operators can also specify the number of OSPF domains 
+($N_D$)
 for administrative reasons (each domain can be
 managed by a separate entity). For the  
 set of domains $D = \{\Theta(r) \mid r \in V\}$:
 \begin{equation}
-	|D| \leq N_{D} ~\wedge \forall d \in D. ~l \leq |\{r \mid \Theta(r) = d\}| \leq u
+	|D| = N_{D} ~\wedge \forall d \in D. ~l \leq |\{r \mid \Theta(r) = d\}| \leq u
 \end{equation}
-\loris{you didn't define most quantities $N_D$ etc..}
 
 \paragraph{BGP-Compatibility} Certain 
 	routers may not be suited to run BGP due to resource
