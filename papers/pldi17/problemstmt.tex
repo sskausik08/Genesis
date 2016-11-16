@@ -288,7 +288,7 @@ where for each $i>1$, $g_i=G^C(\Theta(s_i),s_i,\lambda)$,
 $s_i=\route_{bgp}^C(g_{i-1}, \lambda)$,
 and  $+$ is the concatenation operator for paths. 
 
-\input{policy}
+
 
 \minisection{Induced paths}
 We assume a set of packet classes $PC : [0,C_{pc}]$ 
@@ -307,6 +307,8 @@ $\forall pc \in PC.$ $\route^C(src_{pc}, dst_{pc}, \lambda_{pc})$ $\in \paths^C(
 \end{definition}
 
 \subsection{Problem Definition}
+\input{policy}
+\input{configpolicy}
 
 \minisection{Policies}
 \Cref{tab:policysupport} describes the path policies supported by \name.

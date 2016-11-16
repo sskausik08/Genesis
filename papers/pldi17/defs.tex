@@ -64,7 +64,76 @@
 \def\paths{\mathfrak{P}}
 
 
+%-----
+%Space tricks
+
 \algtext*{EndWhile}% Remove "end while" text
 \algtext*{EndIf}% Remove "end if" text
 \algtext*{EndProcedure}% Remove "end while" text
 \algtext*{EndFor}% Remove "end while" text
+
+\makeatletter
+\lst@InstallKeywords k{attributes}{attributestyle}\slshape{attributestyle}{}ld
+\makeatother
+\newcommand\gtt[1]{{\color{gray}\texttt{\textbf{#1}}}}
+\newcommand\nf[1]{{\normalfont#1}}
+\usepackage[scaled=0.80]{DejaVuSansMono}
+\lstdefinestyle{customc}{
+  belowcaptionskip=1\baselineskip,
+  breaklines=true,
+  xleftmargin=\parindent,
+  language=C,
+  showstringspaces=false,
+  basicstyle=\small\ttfamily,
+  keywordstyle=\small\bfseries\ttfamily\color{NavyBlue},
+  commentstyle=\itshape\color{black},
+  identifierstyle=\ttfamily\color{black},
+  stringstyle=\itshape\color{NavyBlue},
+  keywords={ map, flatMap, reduce, return, define, gaussian, gauss, step, elif, then, skip, if, else, reduceByKey, sensitiveAttribute, fairnessTarget, def},
+moreattributes={ let, where}, % etc...
+attributestyle = \itshape\ttfamily\color{attributecolor}
+}
+
+\setlist[itemize]{
+    %labelindent=.4cm,
+    %style=unboxed,
+    %leftmargin=.4cm,
+    %font=\itshape,
+    topsep=.5ex,
+    itemsep=0ex,
+    leftmargin=1em,
+    %itemindent=1em
+}
+
+\setlist[description]{
+    labelindent=.4cm,
+    style=unboxed,
+    leftmargin=.4cm,
+    font=\itshape,
+    topsep=.5ex,
+    itemsep=0ex
+}
+
+\lstset{columns=fullflexible,
+        mathescape=true,
+        literate=,
+        numbersep=5pt,
+        numberstyle=\tt\color{gray}
+}
+\lstset{escapechar=@,style=customc}
+
+%space above and below
+\lstset{aboveskip=2pt,belowskip=2pt}
+
+\let\originalleft\left
+\let\originalright\right
+\renewcommand{\left}{\mathopen{}\mathclose\bgroup\originalleft}
+\renewcommand{\right}{\aftergroup\egroup\originalright}
+
+\expandafter\def\expandafter\normalsize\expandafter{%
+    \normalsize
+    \setlength\abovedisplayskip{2pt}
+    \setlength\belowdisplayskip{2pt}
+    \setlength\abovedisplayshortskip{2pt}
+    \setlength\belowdisplayshortskip{2pt}
+}
