@@ -13,7 +13,7 @@ a topology $T=(V,L)$,
 \loris{configuration policies $P$,}
 and we want to find functions
 $LP$, $W$, $RF$,  and $\Theta$ such that
-$C=(T,\Theta,W,RF,LP,IBF,SR)$,
+$C=(T,\Theta,W,RF,LP,IF,SR)$,
 $\paths^C(PC) = \Pi$, and
 \loris{$C$ satisfies $P$}.
 We call this problem the \emph{domain assignment problem}.
@@ -81,7 +81,9 @@ If $c(\Theta',e)\leq c(\Theta,e)$, then $\Theta'$ becomes the current domain ass
 If $c(\Theta',e)>c(\Theta,e)$, then $\Theta'$ becomes the current domain assignment
 with probability $Pr(\Theta \rightarrow \Theta')=p(\Theta')/p(\Theta)$ and 
  $\Theta$ continues being the current domain assignment with probability $1-Pr(\Theta \rightarrow \Theta')$.
+\iffull
 The procedure is illustrated in \Cref{alg:mcmc}.
+\fi
 
 The algorithm will always accept a new proposal $\Theta'$
 that has cost lower than $\Theta$. If $\Theta'$ has a 
@@ -94,6 +96,7 @@ higher probability.
 
 \loris{I've been linking to table 1 instead of table 2 everywhere, please fix}
 
+\iffull
 \begin{algorithm}[t]
 	\floatname{algorithm}{Algorithm}
 	\caption{Markov Chain Monte Carlo search for  finding a
@@ -147,6 +150,7 @@ higher probability.
 %		\EndProcedure
 	\end{algorithmic}
 \end{algorithm}
+\fi
 
 \loris{in preliminaries early on define that we use $l\in\pi$ to say path $\pi$ contains a link $l$.}
 \subsection{The Cost of a Domain Assignment}
@@ -215,9 +219,8 @@ and are not
 taken into account in our estimate. 
 However, our diamond-based estimate
 can be computed efficiently and 
-our experiments show that reductions in our estimate
-lead to reductions in number of filters (\Cref{some experiment}). 
-\loris{make sure experiments do say so}
+our experiments show that reductions our MCMC runs 
+produce reduced number of filters (\Cref{some experiment}). 
 
 %\minisection{Cost of Configuration Overhead} 
 %Given a domain assignment $\Theta$, the exact number of static routes,
