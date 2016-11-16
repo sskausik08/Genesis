@@ -18,66 +18,66 @@
 \section{Evaluation}
  \label{sec:evaluation}
  
- We implemented a 
- prototype of \name in Python. Our prototype uses the LP solver Gurobi~\cite{gurobi} for synthesis of 
- OSPF.   For a given
- workload, \name outputs abstract configurations, which
-can be 
- translated to actual device configurations using templates~\cite{template}.
-In this section, we evaluate \Name using
+ We implemented a prototype of \name in Python. Our prototype uses the
+ LP solver Gurobi~\cite{gurobi} for synthesis of OSPF configurations.
+ For a given workload, \name outputs abstract configurations, which
+ can be translated to actual device configurations using
+ templates~\cite{template}.  In this section, we evaluate \Name using
 %\loris{really don't like the word realistic}
 enterprise-scale data
 center fat-tree topologies~\cite{fattree} of different 
 sizes, and ISP topologies from the Internet Topology Zoo 
-dataset~\cite{zoo} and ISP topologies.  
+dataset~\cite{zoo}.  
 Specifically, we ask:
 \begin{itemize}
-	\item What is the performance of \Name's algorithm for synthesizing
-	OSPF configurations? How does synthesis time and resilience properties 
-	vary with size and type of the network and number of paths? (\secref{sec:ospfeval})
+	\item What is the performance of \Name's algorithm for
+          synthesizing OSPF configurations? How do the synthesis time
+          and resilience properties vary with size and type of the
+          network and number of paths? (\secref{sec:ospfeval})
 	
 	\item How well does \name's stochastic domain assignment 
 	search work in optimizing configuration overhead
 	and maximizing endpoint resilience of the paths? (\secref{sec:mcmceval})
 	
-	\item How does \name perform in an end-to-end scenario, going
-	from policies to configurations in conjuction with \genesis? 
-	(\secref{sec:genzep})
+	\item How does \name perform end-to-end going from policies to
+          configurations in conjunction with \genesis?
+          (\secref{sec:genzep})
 \end{itemize}
 All experiments were conducted using a
 32-core Intel-Xeon 2.40GHz CPU machine and
 128GB of RAM.
 
 \subsection{OSPF Synthesis Performance}
-To benchmark our performance of \name's OSPF synthesis,
+To benchmark the performance of \name's OSPF synthesis,
 we consider three topologies: Geant ISP topology with 40 routers,
 and 2 fat-tree topologies with 20 (Fat-4) and 45 routers (Fat-6). 
 These sizes are consistent with operator preferences to restrict
 the size of a domain to under 50 routers (OSPF does not scale
 well as domain size increases). We generate $n$ random input paths for
-$n/4$ destinations spread across the topology and 
-lengths in range [3,5]. For each metric, we perform 20 experiments
+$n/4$ destinations spread across the topology and path
+lengths in the range [3, 5]. For each metric, we perform 20 experiments
 and report average and standard deviation. 
 
 \noindent\textbf{Synthesis Time.}~~~\Cref{fig:ospfeval}(a) 
 shows the synthesis time for increasing number of paths. 
 The time taken for Fat-6 is much greater than Fat-4 or Geant
-due to more number of links, therefore there are more link weights
+due to have more links; therefore there are more link weights
 to synthesize, and greater alternate paths to add constraints for. 
 For Geant, we can synthesize weights and filters in 200 seconds 
-for 200 paths, thus OSPF synthesis is effective for ISP topologies
-which have fewer links than datacenter topologies. 
+for 200 paths. Thus OSPF synthesis is effective for ISP topologies
+which have fewer links than datacenter topologies.
+
 \Cref{fig:ospfeval}(b) shows the number of filters synthesized. 
 As the time taken is dependent on the number of iterations of
 the route-filter learning procedure, the number of filters
 shows a similar trend to OSPF synthesis time. On average, 2 route-filters
 are required for each path in the Geant topology. 
 
-\noindent\textbf{Endpoint Resilience.}~~~OSPF synthesis picks
+\noindent\textbf{Endpoint Resilience.}~~~\name's OSPF synthesis picks
 filters which have the least effect on endpoint resilience, as it  
 is a more important metric than the number of filters. We express this
 by computing the average of $t-resilience$ for each endpoint considering
-the filters ($t-resilience$ = size of mincut is $t+1$).
+the filters ($t-resilience$ means size of mincut is $t+1$).
 \Cref{fig:ospfeval}(c) shows the average
 endpoint resilience obtained by \name (solid traces) 
 compared to the best endpoint resilience (achieved
@@ -103,16 +103,17 @@ However, we are able to achieve more than
 
 \subsection{Dynamic Domain Assignment Performance} \label{sec:mcmceval}
 In this section, we demonstrate the advantages of using MCMC sampling
-to find a domain assignment which can provide higher endpoint resilience
-with lower configuration overhead. For these experiments, we consider 
-two topologies: the Ion ISP topology (125 routers), and a 80 router 
-fat-tree topology (Fat-8). We run the MCMC sampling for 600s (iterations
-$>$ 100,000), and the tunable parameter $\alpha$ assigning priority for 
-optimizing configuration overhead or route-filters is set to 1. For 
-the input, we generate random $n$ paths for $n/4$ destination IPs, with
-path length chosen at random from $[3,10]$. We split the network
-in 5 OSPF domains each with size $\in [10,40]$. We conduct these
-experiments for 20 readings, and report average and deviation of the metrics. 
+to find a domain assignment which can provide higher endpoint
+resilience with lower configuration overhead. For these experiments,
+we consider two topologies: the Ion ISP topology (125 routers), and a
+80 router fat-tree topology (Fat-8). We run the MCMC sampling for 600s
+(iterations $>$ 100,000), and the tunable parameter $\alpha$ assigning
+priority for optimizing configuration overhead or route-filters is set
+to 1. For the input, we generate random $n$ paths for $n/4$
+destination IPs, with path length chosen at random from $[3,10]$. We
+split the network into 5 OSPF domains each with size $\in [10,40]$. We
+conduct these experiments 20 times each, and report the average and
+std. deviation of the metrics.
 
 \noindent\textbf{Configuration Overhead.}~~~
 \Cref{fig:mcmceval}(a) shows the configuration overhead $bc + rc$ 
@@ -125,17 +126,16 @@ configuration cost.
 This illustrates
 the effectiveness of MCMC sampling in finding configurations with lower overhead on average.
 
-\noindent\textbf{Endpoint Resilience.}~~~
-\Cref{fig:mcmceval}(b) shows the loss in total endpoint resilience
-with varying number of paths (the count 
-of backup paths for endpoints filtered by the configurations). For the
-Worst traces, we store the worst domain assignment in terms of route-filter
-cost and synthesize the OSPF configurations for each domain and calculate
-the total resilience loss. We observe that 
-the MCMC sampling can find domain 
-assignments with lower resilience loss than the worst case. This 
-also illustrates the effectiveness of the route-filter estimate we use
-for the cost function, a reduction in cost results in greater resilience. 
+\noindent\textbf{Endpoint Resilience.}~~~ \Cref{fig:mcmceval}(b) shows
+the loss in total endpoint resilience with varying number of paths
+(the count of backup paths for endpoints filtered by the
+configurations). For the Worst traces, we store the worst domain
+assignment in terms of route-filter cost and synthesize the OSPF
+configurations for each domain and calculate the total resilience
+loss. We observe that the MCMC sampling can find domain assignments
+with lower resilience loss than the worst case. This also illustrates
+the effectiveness of the route-filter estimate we use for the cost
+function: a reduction in cost results in greater resilience.
 
 \noindent\textbf{Joint Optimization.}~~~
 We plot the average Conf Ratio 
