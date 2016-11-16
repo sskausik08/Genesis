@@ -30,7 +30,6 @@ the correct gateway routers.
 	inter-domain routing given a domain assignment $\Theta$.}
 \end{figure*}
 
-\loris{ CHANGE dst to lambda in fig.}
 
 \subsubsection{Configuring BGP and Static Routes}
 BGP is a path-vector protocol where each router,
@@ -41,7 +40,6 @@ In this section, we describe how to configure
 BGP routers so that the routes chosen by BGP (and redistributed into OSPF) 
 can yield the policy-compliant
 paths $\Pi$ given as input. 
-\loris{better names than Ex1 etc. in fig also capital G versus lower case g, and increase font.}
 We need to take into account three different
 cases, which are illustrated in \Cref{fig:bgpexample}.  
 For sake of simplicity, we omit certain small details from the following discussion.
@@ -90,7 +88,7 @@ we have that $g_2$ is advertised to the OSPF domain
 and
 the traffic from $r_2$ correctly exists through $g_2$. 
 To prevent that the traffic from $r_1$ also exists through $g_2$,
-we add an iBGP filter\loris{is this like a route filter, our model doesn't have it?} for the connection $g_2 \rightarrow g_1$ for
+we add an iBGP filter for the connection $g_2 \rightarrow g_1$ for
 destination IP $\lambda$.\footnote{$g_1$ and $g_2$ need not be connected by a 
 link directly; iBGP establishes a connection among the 
 BGP routers in a domain.} Thus, $g_1$ will not receive the
