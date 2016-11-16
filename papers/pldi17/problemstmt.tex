@@ -1,10 +1,10 @@
 \section{Routing Model and Problem Definition}
 In this section, we formally define the problem addressed in this
-paper.  We first define common notations and then show how different
+paper.  We first define how different
 routing protocols are represented.  In particular, we model static
 routes, OSPF shortest-path routing, and BGP preference-based routing.
-Finally, we formally define when a certain configuration meets a given
-set of policies and conclude with the configuration synthesis problems
+Then, we formally define when a certain configuration meets a given
+set of policies and present the configuration synthesis problems
 we tackle.
 
 \subsection{Routing Model}
@@ -17,25 +17,26 @@ We use the neighbour function $N(s) = \{s'\ | \ (s,s') \in L \}$ to denote
 the set of neighbour routers of $s$. 
 We define $\Lambda$ to denote the set of destination IP subnets;
 distributed protocols make forwarding decisions based on the 
-destination address/subnet.
+destination address/subnet (see Figure~\ref{fig:ospfexample}).
 
 A path $\pi = (u_1,v_1) (u_2, v_2) \cdots (u_n, v_n) \in L^*$ is a loop-free valid path if
-a  vertex is not visited more than once ($\forall i.j \leq n. 
-~i \not= j \wedge u_i \not= u_j$) and adjacent links in the
-path share a router ($\forall i < n. ~v_i = u_{i+1}$).
+a  vertex is not visited more than once---i.e.,
+$u_1\neq v_n\wedge\forall i,j \leq n. 
+~i \not= j \rightarrow u_i \not= u_j$---and adjacent links in the
+path share a router---i.e., $\forall i < n. ~v_i = u_{i+1}$.
 Sometimes we represent the path $\pi$ as $u_1\rightarrow u_2 \rightarrow  \cdots \rightarrow v_n$.
 Given two nodes $s$ and $t$, we use $\Pi_s^t$ to denote the set of all paths
-$\pi$ with source $s$ (i.e., $u_1=s$) and target $t$ (i.e., $v_n=t$). 
-We also define the $\in$ operator for paths i.e., a link $l \in
-\pi$ if $l$ is in the path. 
+with source $s$ and target $t$---i.e., $u_1=s$ and  $v_n=t$. 
+We write $l \in \pi$ when the path $\pi$ contains the link $l$. 
 
-\name tackles the synthesis of a hierarchical control plane, 
-where the network is divided into continuous domains. 
-Each domain uses OSPF as the intra-domain routing protocol, 
-and BGP for the inter-domain routing protocol. 
-We define a router domain assignment function
+To model hierarchical control planes in which
+ the network is divided into continuous domains,
+we define a router domain assignment function
 $\Theta: V \rightarrow \nat$ which maps each router to a domain 
 (denoted by a natural number).
+Each domain uses OSPF as the intra-domain routing protocol
+and BGP as the inter-domain routing protocol. 
+
 
 The OSPF configurations are expressed 
 using two functions: edge weights $W$ and
@@ -47,31 +48,31 @@ We express the complete network configuration $C$
 as a tuple $(\Theta,W,RF,LP,IF,SR)$.  In the 
 rest of the section, we describe each component 
 of the configuration $C$ and the routing function 
-$\route^C$ for the network given $C$. We ensure one  
-simplifying property for $C$: for two 
-routers $r_1$ and $r_2$ in the network,
+$\route^C$ for the network given the configuration $C$. 
+We assume the following  
+simplifying property for $C$: for any two 
+routers $r_1$ and $r_2$,
 traffic will be forwarded from $r_1$ to $r_2$ 
 along a single path. 
-Thus, when synthesizing $C$, we ensure the components
-of $C$ satisfy this property.
+When synthesizing $C$, we will ensure that this property is satisfied.
 
 
 \minisection{Static Routes} Static routing refers to a router using a
 manually-configured routing entry, rather than information from
-dynamic protocols like OSPF or BGP.  It is useful to enforce certain
-paths that are not easily realizable using routing protocols.  Static
-routes have the highest preference over other routes for the same
-destination at a router.  For a destination $\lambda$, a static route
-configured at router $r$ ensures the traffic to forward to a
-neighbouring router $r_1 \in N(r)$. We define the static route partial
-function $SR: V \times \Lambda \mapsto V$ such that, for a router $r$
+dynamic protocols like OSPF or BGP.  Static routing is useful to enforce certain
+paths that are not easily realizable using routing protocols because 
+static
+routes for a given destination have the highest preference over other routes for the same
+destination.  
+We define the static route partial
+function $SR: V \times \Lambda \mapsto V$ with the following meaning. 
+Given a router $r$
 and destination $\lambda$, if $SR(r,\lambda)=r'$, then traffic for
 destination $\lambda$ reaching node $r$ is always forwarded to node
-$r'$. Using $SR$, we
-construct the complete static paths between routers in the network
-$\Pi_{SR}$. We assume $SR$ forms paths which replace OSPF or
-BGP path fragments, \name will construct static routes based on this
-property.
+$r'$. We assume that  the static routes induced by the function $SR$ form paths and
+we use $\Pi_{SR}$ to denote the set of all  static paths. 
+Formally, for a destination $\lambda$ and a router $r$, if $SR(r,\lambda)=r'$ then
+either $r'$ is directly connected to the subnet $\lambda$ or there exists $r''$ such that $SR(r',\lambda)=r''$.
 
 %These paths would have a highest preference.
 
