@@ -2,9 +2,8 @@
 We show that the decision version of the minimum 
 vertex cover problem, i.e., there exists a vertex cover
 of size $ \leq k$, which is NP-complete, 
-reduces to finding a set of route-filters of size $ \leq k$ \
-and OSPF weights which forward traffic along the
-input paths under non-failure scenarios. 
+reduces to finding a set of route filters of size $ \leq k$ \
+and OSPF weights for a network with only one domain. 
 The latter is also in NP, so after the reduction we 
 can conclude that it is also NP-complete.
 
@@ -15,7 +14,7 @@ if $\forall (v_1, v_2) \in E. ~v_1 \in VC \vee v_2 \in VC$.
 
 We now show how to construct a topology $T=(S,L)$ 
 and a corresponding set of paths $P$ that can be 
-induced by route-filter set $R$ such that $|R| \leq k$  
+induced by route filter set $R$ such that $|R| \leq k$  
 iff the corresponding $VC(R)$ is a vertex cover of 
 the graph $G$ and $|VC(R)| \leq k$.
 
@@ -70,34 +69,34 @@ $~s_{uv} \rightarrow r_v^1 \rightarrow r_v^2 \rightarrow t_{uv}$
 for destination host $d_u$.
 (dashed paths in \Cref{fig:rfcomplexity}). 
 
-We now prove that if there exists a set of route-filters
+We now prove that if there exists a set of route filters
 $R$ such that $|R| \leq k$ such that the resulting configurations
 forwards traffic along $P$, then there exists a vertex cover $VC$
 of $G$ such that $|VC| \leq k$. 
 
-For each route-filter $r \in R$, one of its endpoints 
+For each route filter $r \in R$, one of its endpoints 
 has to be either $r_v^1$ or $r_v^2$, corresponding
 to some vertex $v \in V$ (structure of topology $T$). 
 We construct a set $VC(R)$ by adding the vertex $v$ 
-based on the endpoints of each route-filter $r \in R$.
+based on the endpoints of each route filter $r \in R$.
 To show that $VC(R)$ is a vertex cover of $G$, we first
 prove \Cref{lemma:diamond}.
 
 \begin{lemma} \label{lemma:diamond}
 	 For each diamond formed by the input paths, atleast 1 
-	 route-filter on one of the edges of the paths of the diamond 
+	 route filter on one of the edges of the paths of the diamond 
 	 is required to find a valid solution to the
 	 OSPF edge weights.  
 \end{lemma}
 
 \begin{proof}
-Consider the following diamond in \Cref{fig:diamond}
+Consider the following diamond % in \Cref{fig:diamond}
 constructed by paths $p_1$: $s \rightarrow r_1 \rightarrow t$ 
 for destination $d_1$ and $p_2$:$s \rightarrow r_2 \rightarrow t$ 
 for destination $d_2$. Let us assume there exists a solution 
-for the OSPF edge weights without any route-filters. 
+for the OSPF edge weights without any route filters. 
 
-As described in \Cref{sec:ospfsynthesis}, 
+As we will describe in \Cref{sec:intra-synthesis}, 
 to ensure $p_1$ is the shortest path from $s$ to $t$, the following
 linear inequality is added to ensure $p_1$ is shorter than the
 path from $s$ to $t$ via $r_2$: 
@@ -110,7 +109,7 @@ to $t$, the linear inequality added is:
 \begin{equation}  \label{eq:diamond2}
 e(s,r_2) + e(r_2, t) < e(s, r_1) + e(r_1,t)
 \end{equation}
-Since there are no route-filters on the edges
+Since there are no route filters on the edges
 of $p_1$ and $p_2$, none of the above equations are 
 eliminated (\Cref{sec:routefilter}). 
 Adding equations \ref{eq:diamond1} and  \ref{eq:diamond2} 
@@ -119,7 +118,7 @@ and therefore, no solution to
 the edge weights exists for this system of equations, 
 which contradicts our assumption. Therefore,
 for each diamond formed by the input paths, atleast 1 
-route-filter on one of the edges of the paths of the diamond 
+route filter on one of the edges of the paths of the diamond 
 is required to find a valid solution to the
 OSPF edge weights.  
 \end{proof}
@@ -127,7 +126,7 @@ OSPF edge weights.
 For every edge $(u,v) \in E$, the constructed paths from 
 $s_{uv}$ to $t_{uv}$ form a diamond. Thus, by lemma 1, 
 the diamond corresponding to each edge in $G$ 
-requires atleast one route-filter to eliminate
+requires atleast one route filter to eliminate
 the inconsistency caused by the diamond, thus, one 
 of vertices $\{u,v\}$ will be in $VC(R)$, and edge $(u,v)$
 is covered. Thus, if $R$ eliminates all diamond inconsistencies
@@ -135,7 +134,7 @@ to find a solution to the OSPF weights, the corresponding set
 $VC(R)$ covers all edges in $E$. Therefore, $VC(R)$ is a vertex
 cover. 
 
-Thus, by finding a set of route-filters $R$ such that $|R| \leq k$
+Thus, by finding a set of route filters $R$ such that $|R| \leq k$
 such that all the diamond inconsistencies are eliminated, and there
 exists OSPF weights $W$ such that the configurations forward traffic
 along $P$, we can find a vertex cover $VC$ for graph $G$ such that
@@ -144,7 +143,7 @@ $|VC| \leq k$.
 This transformation is polynomial, the constructed 
 network topology $T$ has $2|V| + 2|E|$ nodes, 
 $|V| + 4|E|$ links and $2|E|$ paths. Therefore, OSPF
-configuration synthesis with number of route-filters $\leq k$ is
+configuration synthesis with number of route filters $\leq k$ is
 NP-complete. Thus, OSPF synthesis with minimal number of 
-route-filters is NP-hard. 
+route filters is NP-hard. 
 \end{proof}

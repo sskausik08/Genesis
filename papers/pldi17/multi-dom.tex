@@ -1,40 +1,37 @@
-\section{Synthesising Configurations across Multiple Domains}
-\label{sec:synth-multi}
+\subsection{Synthesising Inter-domain Configurations}
+\label{sec:inter-synthesis}
 
-\loris{every section should clearly state what we try to minimize---route filters,
-static routes?}
+
 In this section, we present an algorithm for 
 solving the path-compliance problem in the presence
 of multiple domains---i.e., $|\{\Theta(r) \mid r\in V\}|>1$.
-However, we assume that the domain splitting $\Theta$ is given to us.
-Formally, we are given a set of paths $\Pi$,
-a topology $T=(V,L)$,
-a domain-assignment function $\Theta$ such that $|\{\Theta(r) \mid r\in V\}|>1$, 
-and we want to find functions
-$LP$, $W$, and $RF$,  such that
-$C=(T,W,RF,LP,\Theta)$ and
-$\paths^C(PC) = \Pi$.
-We call this problem the \emph{inter-domain synthesis problem}.
-In this section, we describe a hierarchical algorithm for solving this problem.
-Given the paths $\Pi$, we first determine 
+\loris{again, I say route filters}
+In this setting, we the policies in $P$ will try to minimize some expression
+over the number
+route filters, static routes, and BGP configurations.
+First, our algorithm determines \loris{the optimal?}
 BGP configuration and static routes to ensure that the paths will traverse the correct
 domains.
-Then, we show how to modify the techniques given in Section~\ref{sec:synthesis}
-to determine the edge weights in each domain to guarantee that paths traverse
+Second, we show how to modify the techniques given in Section~\ref{sec:intra-synthesis}
+to determine the edge weights and route filters in each domain to guarantee that paths traverse
 the correct gateway routers.
+
 
 \begin{figure*}
 	\centering
-	\subfloat[Ex1]{\includegraphics[width=0.66\columnwidth]{figures/bgp-example.pdf}}
+	\subfloat[Single
+	BGP Gateway]{\includegraphics[width=0.66\columnwidth]{figures/bgp-example.pdf}}
 	\hfill
-	\subfloat[Ex2]{\includegraphics[width=0.66\columnwidth]{figures/bgp-example2.pdf}}
+	\subfloat[Multiple BGP Gateways]{\includegraphics[width=0.66\columnwidth]{figures/bgp-example2.pdf}}
 	\hfill
-	\subfloat[Ex3]{\includegraphics[width=0.53\columnwidth]{figures/static-route.pdf}}
+	\subfloat[Static Routes]{\includegraphics[width=0.53\columnwidth]{figures/static-route.pdf}}
 	\compactcaption{\label{fig:bgpexample}
-	How to configure inter-domain routing, CHANGE dst to lambda}
+	Examples of how BGP and static routes are configured for 
+	inter-domain routing given a domain assignment $\Theta$.}
 \end{figure*}
 
-\subsection{Configuring BGP and Static Routes}
+
+\subsubsection{Configuring BGP and Static Routes}
 BGP is a path-vector protocol where each router,
 for each destination $d$,
 advertises to its peers
@@ -43,7 +40,6 @@ In this section, we describe how to configure
 BGP routers so that the routes chosen by BGP (and redistributed into OSPF) 
 can yield the policy-compliant
 paths $\Pi$ given as input. 
-\loris{better names than Ex1 etc. in fig also capital G versus lower case g, and increase font.}
 We need to take into account three different
 cases, which are illustrated in \Cref{fig:bgpexample}.  
 For sake of simplicity, we omit certain small details from the following discussion.
@@ -92,7 +88,7 @@ we have that $g_2$ is advertised to the OSPF domain
 and
 the traffic from $r_2$ correctly exists through $g_2$. 
 To prevent that the traffic from $r_1$ also exists through $g_2$,
-we add an iBGP filter\loris{is this like a route filter, our model doesn't have it?} for the connection $g_2 \rightarrow g_1$ for
+we add an iBGP filter for the connection $g_2 \rightarrow g_1$ for
 destination IP $\lambda$.\footnote{$g_1$ and $g_2$ need not be connected by a 
 link directly; iBGP establishes a connection among the 
 BGP routers in a domain.} Thus, $g_1$ will not receive the
@@ -171,7 +167,7 @@ This algorithm is described in the next section.
 %exit and enter a domain multiple times. 
 %While static routes
 %do not reduce the resilience of the network (all routes are still
-%enabled, unlike route-filters), a network under flux will have
+%enabled, unlike route filters), a network under flux will have
 %unpredictable routing behaviour, unlike with only OSPF and BGP
 %configured at the routers. 
 %Also, static routes have to be installed per-destination, thus increasing
@@ -224,11 +220,11 @@ This algorithm is described in the next section.
 %E local prefs + E(E - 1) iBGP filters!
 %
 %\todo{Changes to OSPF synthesis to ensure closest gateway}
-\subsection{Modified OSPF Synthesis for Multiple Gateways}
+\subsubsection{Modified OSPF Synthesis for Multiple Gateways}
 When BGP routes of destination $\lambda$ 
 are redistributed by multiple gateways to an 
 OSPF domain, \name uses a modified OSPF synthesis
-algorithm from \secref{sec:synthesis} to assign OSPF weights to the links in the domain
+algorithm from \secref{sec:intra-synthesis} to assign OSPF weights to the links in the domain
 and place route filters. 
 This is 
 required because an OSPF router will choose
@@ -248,33 +244,25 @@ Let us define $\Gamma_\lambda$ to be the set of gateway
 routers for destination $\lambda$ in a given domain $d$. 
 We define the relation $r_1 \rightarrow^+_{\xi_{\lambda}} r_2$, which holds if
 $r_2$ is reachable from $r_1$ in the destination tree $\xi_\lambda$.
-For each subpath $r \rightarrow^+_{\xi_{\lambda}} g$ to destination $\lambda$,
-\name adds the following constraints 
+For each subpath $r \rightarrow^+_{\xi_{\lambda}} g$ to destination $\lambda$
+and for each $g' \in \Gamma_{\lambda}$ such that $g\neq g'$,
+\name adds the following constraint
 to ensure a router
 chooses the correct gateway so that input 
 paths are induced: 
 \begin{multline} \label{eq:gateway}
-\forall g' \in \Gamma_{\lambda}.~\forall r \in \xi_\lambda.~
-g' \not= g
-\rightarrow
-~\forall n' \in N(r) \setminus N_{\xi_\lambda}(r). \\
-W(r, n') + D(n', g') > \sum_{\mathclap{\substack{(r_i,r_j) \in r \rightarrow^+_{\xi_{\lambda}} g }}} 
-W(r_i, r_j) 
+\forall r' \in N(r) \setminus N_{\xi_\lambda}(r).~
+W_r^{r'} + D_{r'}^{g'} > \sum_{\mathclap{\substack{(r_1,r_2) \in r \rightarrow^+_{\xi_{\lambda}} g }}} 
+~W_{r_1}^{r_2}
 \end{multline}
 Like for unmodified OSPF synthesis, the system of
 constraints generated can be inconsistent and require
-route-filters to eliminate constraints
+route filters to eliminate constraints
 and  filter shorter routes to gateways which are
 not on the input path.
 %, and 
 %thus the synthesized configuration would forward traffic to
 %the gateway specified by the input path. 
 We use the same 
-approach for picking route-filters we presented in
+approach for picking route filters we presented in
 \secref{sec:routefilter}. 
-%route-filter $((r, n'), \lambda)$
-%maps to following constraint in the IIS for some $g,g'$: 
-%\begin{equation}
-%E(r, n') + D(n', g') > \sum_{\mathclap{\substack{(r_i,r_j) \in r \rightarrow^+_{\xi_{\lambda}} g }}} 
-%E(r_i, r_j) 
-%\end{equation}

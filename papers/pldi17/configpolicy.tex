@@ -1,20 +1,21 @@
-\begin{table}[t!]
+\begin{table}[!t]
 \begin{small}
 	\begin{center}
-		\begin{tabular}{m{6em} | m{18em} } 
-			Policy & Description \\ 
+		\begin{tabular}{m{6.5em}  m{17.7em} } 
+			{\bf Policy} & {\bf Description} \\ 
 			\hline
 			Count & Number of continous OSPF domains  \\ \hline
 			Domain Size  & Lower and upper
 			limit of size of domain (number of routers) \\ \hline
 			BGP \newline Disable & Disable BGP on router (hardware constraint). 
 			Router cannot lie on boundary of domain \\ \hline
-			Endpoint \newline Resilience & Strict lower bound/minimize average endpoint resilience \\ \hline
-			Static Route Overhead & Minimize the number of static route rules \\ \hline
-			BGP Config. Overhead & Minimize the number of local preference entries and
-			iBGP filters
+			Route-Filters: $rc$ & Lower bound number of filters:
+			$rc > C_{rc}$\\ \hline
+			Static Route: ${sc}$ & Upper bound number of static route rules: $sc < C_{sc}$ \\ \hline
+			BGP Config. Overhead: $bc$ & Upper bound the number of local preference entries and iBGP filters $bc < C_{bc}$ \\ \hline
+			Cost Minization & Minimize user-defined cost $expr(rc, sc, bc)$
 		\end{tabular}
 	\end{center}
-	\compactcaption{\name Domain assignment policy support.} \label{tab:configpolicysupport} 
+	\compactcaption{\name configuration policy support.} \label{tab:configpolicysupport} 
 \end{small}
 \end{table}

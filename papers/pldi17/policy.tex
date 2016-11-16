@@ -1,19 +1,19 @@
-\begin{table*}[thb]
+\begin{table}[!t]
 \begin{small}
 	\begin{center}
-		\begin{tabular}{m{6em} | m{14em} | m{32em} } 
-			Policy &  GPL Syntax & Description \\ 
+		\begin{tabular}{m{7.8em}  m{15.9em} } 
+			{\bf Policy} & {\bf Description} \\ 
 			\hline
-			Reachability & 	\texttt{predicate : src >> dst} & Path from router $src$ to router $dst$ for packets matching $predicate$ \\ \hline
-			Reachability with Ordered Waypoints & \texttt{predicate :\newline src >> W$_1$; $\ldots$;W$_n$ >> dst} & Path from router $src$ to router $dst$ for packets matching $predicate$ such that the path traverses $w \in W_1$ in any order, then $w \in W_2$ in any order after all waypoints in $W_1$ are traversed and so on.\\ \hline
-			Traffic \newline Isolation & \texttt{R1 || R2} & Paths of two reachability policies $R1$ and $R2$ do not share a link in the same direction \\ \hline
-			Link \newline Capacity & \texttt{r$_1$ $\rightarrow$ r$_2$ : capacity}  & The weights of flows traversing the link $r_1 \rightarrow r_2$ do not exceed $capacity$ \\ \hline
-			Traffic \newline Engineering & \texttt{minimize-tot-te},\newline \texttt{minimize-max-te} & TE objectives: minimize total/max link utilization \\
+			Reachability & There is a path from router $src$ to router $dst$ for destination $\lambda$ \\ \hline
+			Reachability with \newline Ordered Waypoints & The path  from $src$ to $dst$ for destination $\lambda$ 
+			traverses some switch in the set $W_1$, \ldots, then some switch in the set $W_k$.\\ \hline
+			Traffic Isolation & Paths of two reachability policies $R1$ and $R2$ do not share  links \\ \hline
+			Traffic Engineering  & Minimize total/max link utilization \\
 		\end{tabular}
 	\end{center}
 	\compactcaption{\genesis path-based policy support.} \label{tab:policysupport} 
 \end{small}
-\end{table*}
+\end{table}
 
 
 %\section{Policy Support} \label{sec:policy}
