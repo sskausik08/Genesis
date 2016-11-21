@@ -13,6 +13,9 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 
 matplotlib.rcParams['text.usetex'] = True
+label_size = 20
+matplotlib.rcParams['xtick.labelsize'] = label_size 
+matplotlib.rcParams['ytick.labelsize'] = label_size 
 
 def adjustFigAspect(fig,aspect=1):
     '''
