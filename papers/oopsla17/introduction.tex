@@ -1,0 +1,171 @@
+\section{Introduction}
+Programming networks to correctly forward flows according to user- and
+application-induced policies is difficult and
+error-prone~\cite{troubleshooting, bgpmisconfig}. At least three
+common characteristics of network policies are to blame: (1) a network
+may need to satisfy several types of policies, including reachability,
+isolation, service chaining, resilience, and traffic engineering; (2)
+the network must provide certain guarantees in the event of failures;
+and (3) most policies are global---i.e., they concern end-to-end
+paths, not individual devices/links.
+
+%(2) SDN tries to make realization centralized like policies, but it is hard
+%to ensure link failures don't impact the controller's ability to update the
+%network to accommodate the failures; a distributed SDN controller doesn't fix
+%this problem. Legacy control planes are preferable from a failure
+%tolerance-perspective, but determining the appropriate distributed
+%realization of policies is hard.
+
+The global nature of network policies is one motivation for
+software-defined networking (SDN). SDN allows paths to be centrally
+computed over a global view of the network. However, it is difficult
+to ensure forwarding paths are correctly computed and installed in the
+presence of failures, even if the SDN controller is
+distributed~\cite{hasdn}.  Traditional control planes that rely on
+distributed protocols to compute paths offer greater fault tolerance,
+but determining the appropriate distributed realization of policies is
+hard.
+
+%(3) Our goal is to automate the process of producing this distributed
+%realization. We want to handle a wide range of policies and leverage the many
+%protocols/mechanisms available in legacy control planes for realizing these
+%policies.
+
+
+%(4) We can view the control plane as a program whose input is set of
+%endpoints and the state of the links in the network and whose output is a set
+%of paths.  Our goal is to synthesize this program.
+
+Our goal is to {\em automate the process of creating a correct
+  distributed realization of policies in a traditional control
+  plane}. We wish to handle a wide range of policies, e.g.,
+reachability, service chaining, and traffic engineering, to meet
+applications' diverse security and compliance requirements. With
+increasing sizes of networks, we must further provide support for
+realizing hierarchical control planes to ensure scalability,
+necessitating the use of multiple intra- and inter-domain routing
+protocols (e.g., OSPF and BGP). Finally, we want to ensure the
+generated control plane satisfies certain failure-tolerance
+properties. Thus, our work contrasts with prior efforts~\cite{netegg,
+  propane, merlin,simple,fattire, netkat, netkatcompiler, sol}, which
+generate SDN- or BGP-specific control planes for a limited range of
+policies (e.g., peering).
+
+%\kausik{Do we need this paragragh?}
+%Although a distributed control plane is composed of a collection of routing
+%processes running on individual switches, we can view the control plane as a
+%single program. The input is a set of endpoints plus the state of network
+%links; the output of this program is a set of paths that conform to the
+%policies encoded in the program. This view inspires us to explore {\em program
+%	synthesis} as a mechanism for generating a policy-compliance control plane.
+
+
+The problem of synthesizing router configurations
+for which the distributed control plane  
+generates policy- compliant paths 
+is computationally hard. 
+%In our setting, the specifications are the policies we want to realize and the programs 
+%are the control plane.
+First, even generating a set of policy-compliant 
+paths for a SDN  is 
+computationally hard (e.g., enforcing isolated
+paths is NP-complete). 
+Second, to infer the concrete
+set of paths induced by network configurations, 
+one has to incorporate
+into synthesis
+complex concepts---e.g., shortest path algorithms---which
+require constraints in complex
+theories---e.g., propositional logic (SAT) 
+and linear rational
+arithmetic (LRA). Even with recent 
+advances in Satisfiability Modulo Theories
+(SMT) solvers, 
+approaches that directly generate configurations  from policies
+do not scale to
+even moderately-sized networks or 
+sets of policies~\cite{synet}.
+
+%(6) We propose a two-phased approach that synthesizes a partially-correct
+%control plane from examples, and then applies a series of transformations to
+%produce a fully policy-compliant control plane.
+
+Instead, we propose \name, a two-phased approach to synthesizing
+configurations.  First, using the tool \genesis~\cite{genesis}, we synthesize a
+concrete set of paths---i.e., the forwarding state---satisfying all
+the specified policies, such as, waypoint, isolation,
+and traffic engineering.
+%a partially-correct control plane from a set of example paths, such
+%as those contained within a sample data plane. 
+Second, we generate
+domain-level split of the routers in the network,
+and corresponding 
+intra- and inter-domain router configurations
+that induce the forwarding
+state synthesized by \genesis. We show that this approach makes synthesis tractable.
+%, and we can
+%perform multiple iterations to eventually produce policy-compliant
+%configurations.
+
+%% We present \name, 
+%% a framework to synthesize router configurations which 
+%% converge to a forwarding state such traffic is
+%% forwarded through the policy-compliant paths. 
+%% \name allows operators to use a combination of 
+%% protocols to impose a hierarchy of domains in their network.
+To elaborate, in \name, each router is mapped to a domain and runs
+OSPF for intra-domain routing, while domains use BGP for inter-domain
+routing. 
+We synthesize OSPF configurations using linear constraint solving to compute
+link weights and 
+a learning-based procedure for extracting more complex OSPF configuration from
+the unsatisfiable cores of the constraints.
+We compute BGP configuration directly from the domain mapping and the paths.
+Finally, we use MCMC sampling to stochastically search for the best way to
+partition the network into multiple domains which satisfy hard
+operator policies on configurations such as  the size of each OSPF
+domain. Further, \name allows operators to optimize two key management
+objectives. The first is maximizing endpoint  resilience, as \name
+requires route filters to induce certain paths, thereby affecting
+failure resilience. The second minimizing the configuration overhead imposed
+by inter-domain routing (BGP and static routes), which helps decrease
+configuration complexity, thus, easing automated
+verification~\cite{batfish, arc, era} and improving readability for
+performing future manual changes.
+
+\name can synthesize OSPF configurations for 200 paths in 200
+seconds for a 40 node ISP topology, and achieve greater than 
+50\% resilience for fat-tree topologies.
+ On average, using MCMC, \name can increase
+endpoint resilience by $1.6\times$ and 
+reduce configuration overhead
+by $0.3\times$
+for a 125-node ISP topology.
+
+
+%% Automatically synthesizing distributed realizations 
+%% of network policies is an
+%% important step towards simplifying 
+%% network management and providing an 
+%% SDN-like interface for programming networks 
+%% running distributed routing protocols. 
+%% Our approach is an important
+%% contribution towards the vision of 
+%% intent-driven networking~\cite{intent}.
+
+\minisection{Contributions} We make the following contributions:
+\begin{itemize}
+	\item \name: a modular framework 
+	for policy enforcement in `traditional' networks
+	by synthesizing router configurations from policy-compliant paths (\S~\ref{sec:architecture}). 
+	\item Algorithms that synthesize OSPF and BGP routing configurations that use
+	constraint solving in Linear rational arithmetic (LRA) and 
+	a procedure to extracts OSPF configurations from 
+	unsatisfiable cores (\S~\ref{sec:config-synthesis}). 
+	\item Stochastic search to find 
+	partitions of the network into multiple routing domains which
+	satisfy policies and optimization objectives on configurations (\S~\ref{sec:synth-dom-ass}).
+	\item An implementation of \name and evaluation of the 
+	intra- and inter-domain configuration synthesis for different
+	topologies and workloads (\S~\ref{sec:evaluation}). 
+\end{itemize}

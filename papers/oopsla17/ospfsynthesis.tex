@@ -1,0 +1,260 @@
+\section{Synthesising Routing Configurations}
+\label{sec:config-synthesis}
+
+In this section, we present algorithms for 
+solving the path-compliance problem when the domain
+assignment function $\Theta$ is given to us.
+Formally, we are given a set of paths $\Pi$,
+a topology $T=(V,L)$,
+a domain-assignment function $\Theta$, 
+and configuration policies $P$,
+and we want to find functions
+$LP$, $W$, and $RF$,  such that
+$C=(\Theta,W,RF,LP,IF,SR)$,
+$\paths^C(PC) = \Pi$, and
+$C$ satisfies $P$.
+%We call this problem the \emph{routing configuration synthesis} problem.
+Before we present our techniques,
+we  show that
+even the simplest variant of this problem is computationally hard.
+\begin{theorem}[Hardness of synthesis]
+\label{thm:ospfsynth}
+If $P$ bounds the number of route filters ($rc\leq C_{rc}$) and $\Theta$ is given, the path-compliance synthesis
+problem is NP-complete.
+\end{theorem}
+\iffull
+\input{route-filters-nphard}
+\else
+The reduction is from the vertex cover problem.
+\fi
+In the next two sections, we first show how to solve the intra-domain synthesis problem---i.e., when there
+is only a single domain---and then how to solve the inter-domain synthesis problem---i.e., when
+there are multiple domains.
+
+\subsection{Synthesising Intra-domain Configurations} \label{sec:intra-synthesis}
+In this section, we present an algorithm for 
+solving the path-compliance problem for 
+single-domain OSPF networks
+---i.e., $|\{\Theta(r) \mid r\in V\}|=1$.
+In this setting, the only metric we can minimize is the number of route filters.
+However, we will show heuristics for picking route filters to also maximize resilience.
+We first show how to solve the problem when
+we are not allowed to use route filters
+and then
+extend our technique to handle route filters.
+
+\begin{figure}[!t]
+	\centering
+	\subfloat[Edge Weights]{
+		\raisebox{0.5cm}{\resizebox {0.5\columnwidth} {!} {
+				\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
+				square/.style={regular polygon,regular polygon sides=4}] 
+				\node[state] at (0,0) (s)  {$s$}; 
+				\node[state] at (1.8,1) (v1)  {$r_1$}; 
+				\node[state] at (3.6, 0)(t) {$t$};
+				\node[state, rectangle] at (5, 0) (d1) {$\lambda$};
+				\path[->] 
+				(s) edge [red] node [black] {1} (v1)
+				edge  node {5} (t)
+				(v1) edge [red] node [black] {2} (t)
+				(t) edge [red, dashed] node {} (d1);
+				\end{tikzpicture}
+			}}}
+			\subfloat[Route filters]{
+				\resizebox {0.5\columnwidth} {!} {
+					\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
+					square/.style={regular polygon,regular polygon sides=4}] 
+					\node[state] at (0,0) (s)  {$s$}; 
+					\node[state] at (2, 1) (v1)  {$r_1$}; 
+					\node[state] at (4, 0)(t) {$t$};
+					\node[state, rectangle] at (5.5, 0.75) (d1) {$\lambda_1$};
+					\node[state, rectangle] at (5.5, -0.75) (d2) {$\lambda_2$};
+					\path[->] 
+					(s) edge [red] node [black] {1} (v1)
+					edge [blue] node [above, black] {1} node [below, black] {$rf((s,t),\lambda_1)$} (t)
+					(v1) edge [red] node [black] {2} (t)
+					(t) edge [red, dashed] node {} (d1)
+					(t) edge [blue, dashed] node {} (d2);
+					\end{tikzpicture}
+				}}
+				\compactcaption{OSPF edge weights and filters such that the
+					the routers forward traffic for destination along
+					the colored paths.}
+				\label{fig:ospfexample}
+\end{figure}
+			
+			
+\subsubsection{Intra-domain Synthesis Without Route Filters} \label{sec:sarc}
+ 
+When no route filters are allowed,
+ OSPF routers use edge weights
+ to choose the
+ shortest weighted path for each pair of endpoints. 
+Our goal is to synthesize the weight function $W$.
+ For example in \Cref{fig:ospfexample}(a), if $\Pi$ 
+ contains the 
+ path $\pi=s\rightarrow r_1 \rightarrow t$ for
+ destination IP $\lambda$, \name will assign
+ edge weights so that $\pi$ has
+ smaller weight than the path $\pi'=s \rightarrow t$---e.g., $W(\pi)=1+2$
+  and $W(\pi')=5$. 
+ 
+The problem of synthesizing the weight function $W$ that
+realizes an input set of paths $\Pi$ is
+a
+variation of the so-called {\em inverse shortest path} 
+problem~\cite{isp}. 
+For a destination IP $\lambda$, we call $\xi_\lambda$ 
+the directed tree of $T$ 
+obtained by only keeping the nodes and edges 
+that are traversed by paths in $\Pi$ for 
+destination IP $\lambda$; the root of the tree
+is the destination router connected to $\lambda$. 
+ This destination tree
+ property is due to the modifications we did to \genesis
+ to support OSPF's destination-based forwarding. We
+ define $\Delta=\{\xi_\lambda\mid \lambda \in \Lambda\}$ to be 
+the set of all destination trees. 
+
+Given a set of input paths $\Pi$, \name 
+generates a set of linear constraints to 
+find proper weights $W(r_1,r_2)$ 
+for all $(r_1, r_2) \in L$.
+The constraints use the variable $W_{r_1}^{r_2}$
+to denote the weight of the edge $(r_1, r_2)$, and the variable
+$D_{r_1}^{r_2}$ to denote the 
+shortest distance from $r_1$ to $r_2$.
+We add the equation $D_{s}^{s} = 0$ 
+for every $s\in S$ to denote that the distance
+from a node to itself is $0$.
+\Cref{eq:dist} guarantees that $D_{s}^{t}$ is smaller or equal to
+the shortest distance from $s$ to $t$.
+\begin{equation} \label{eq:dist}
+\forall s, t. ~\forall r \in N(s).~
+D_s^t \leq W_s^r + D_r^t
+\end{equation}
+
+For each destination tree $\xi_\lambda\in\Delta$, we add equations to ensure 
+that the input paths with destination $d$ are the shortest ones.
+Notice that, if a path $\pi$
+is the shortest path between its endpoints, every 
+subpath of $\pi$ also has to be the shortest path between its endpoints.
+For each tree $\xi_\lambda$, we define the neighbour
+ $N_{\xi_\lambda}(s)$ to denote the 
+next-hop neighbour of router $s$ in the destination tree $\xi_\lambda$---i.e., the parent
+of $s$ in the tree or no node if $s$ is the root of the tree.
+%Since $\xi_\lambda$ is a directed tree, every router $r \in \xi_\lambda$
+%has one next-hop router, therefore $N_{\xi_\lambda}(s)$ is a singleton
+%set (the root of the tree (router connected to $\lambda$) has no next-hop
+%routers).
+
+The following equations ensures that, for any 
+ two nodes $s$ and $t$ in
+$\xi_\lambda$, if $t$ is reachable from $s$, 
+the path $l_0\cdots l_k$ from $s$ to $t$ in $\xi_\lambda$ is the 
+\emph{unique shortest path} from $s$ to $t$ in $T$.
+\begin{multline} \label{eq:uniq1}
+\forall r \in N(s) \setminus N_{\xi_\lambda}(s).~~
+W_{s}^{r}+ D_{r}^{t} > \sum_{\mathclap{\substack{l_i=(r_1,r_2)}}} 
+W_{r_1}^{r_2}
+\end{multline}
+\Cref{eq:uniq1} guarantees that 
+the sum of the weights belonging to a path from $s$ to $t$ in $\xi_\lambda$ 
+is strictly smaller than 
+any path that goes to $t$ via 
+a node $n'$ that is a neighbour of $s$ in $T$ but not 
+the next-hop in $\xi_\lambda$.
+
+\subsubsection{Intra-domain Synthesis with Route Filters} \label{sec:routefilter}
+
+If the system of equations presented Section~\ref{sec:sarc} admits a solution, 
+the values of the $W_s^t$ variables are the weights we are trying to synthesize,
+otherwise the intra-domain synthesis problem cannot be solved without using route filters.
+A route filter  can selectively disable an
+edge for a given destination by  blocking advertisements to a
+particular destination along a link.
+We start by observing that the intra-domain synthesis problem with route filters
+admits a trivial solution in which 
+route filters are used to enforce the exact set of input paths by blocking all other possible paths.
+This can be done by adding a 
+route filter to $RF(d)$ for every link $l$ not in $\xi_d$. 
+However, this solution will place many more filters than necessary.
+Since the problem of optimally placing route filters is computationally hard (Theorem~\ref{thm:ospfsynth}), 
+we propose a non-optimal greedy strategy that works well in practice.
+
+Our algorithm starts by trying to synthesize a solution
+that does not use route filters using the equations proposed in \secref{sec:sarc}. 
+In the case of a failure, the algorithm uses the ``proof of unsatisfiability''---i.e., the unsatisfiable core---generated by 
+the constraint solver 
+to greedily add a small set of route filters. 
+Certain equations are modified to model the added route filters and the approach is repeated until a solution is found.
+We first describe how  
+equations are modified when
+route filters are enabled and then propose a
+technique for choosing route filters. 
+
+\minisection{Equations with route filters}
+%\loris{why do we need to modify \eqref{eq:dist}? Can't we just add $D_s^t(d)\geq D_s^t$ for
+%all $d$}
+We assume we are given a route-filter function $RF$ and 
+use $s\rightarrow_d^* t$ to denote that $s$ can reach $t$
+without using any edge in $RF(d)$.
+We use the variable $D_{r_1}^{r_2}(d)$ to denote the shortest distance from $r_1$ to $r_2$
+using only edges that are not filtered for destination $d$.
+We can revise equation \eqref{eq:dist}   to restrict the values of 
+each variable $D_{r_1}^{r_2}(d)$
+by  ignoring all the filtered edges---i.e., only consider a switch $r\in N(s)$ if
+$(s,r)$ is not in $RF(d)$. 
+In summary, we need to add one modified version of equation \eqref{eq:dist} 
+and equation  \eqref{eq:uniq1} for each destination $d$.
+
+If the encoding without route filters produces $n$ equations, this
+encoding produces $kn$ equations where $k$ is the total number of destinations.  
+To mitigate this problem, we observe that the shortest distance $D_s^t(d)$ between two
+nodes $s$ and $t$ without using edges filtered for $d$ is
+greater or equal to the distance $D_s^t$ obtained without route filters.  
+We use this property to simplify the
+encoding by only computing $D_s^t$ and by replacing each instance of
+$D_s^t(d)$ with $D_s^t$ in the equations.  It is easy to see that 
+if the set of constraints with variables $D_s^t(d)$ admits a solution,
+the corresponding set of constraints with variables $D_s^t$ 
+also admits a solution (because $D_s^t\leq
+D_s^t(d)$).  However, the reverse is not true and the set of
+simplified equations can be unsatisfiable in cases in which the
+original set is satisfiable, causing addition of unnecessary filters.
+Since our algorithm is already greedy and it does not try to compute the optimal 
+number of route filters, this is not a problem.
+
+
+%% We discuss two schemes  to add route filters:
+%% the first scheme 
+\minisection{Adding filters using unsatisfiable cores}
+When the set of linear equations does not admit a solution, we 
+need to add router-filters. We describe how the filters are chosen.
+
+LP-solvers have practically efficient procedures to return an
+unsatisfiable core, also called IIS (Irreducible Inconsistent Subsystem)~\cite{chinneck2007feasibility}. 
+Intuitively, an IIS is a subset of the input constraints such that,
+if all constraints except those in the IIS are removed, the resulting set of
+linear equations is still unsatisfiable. Moreover, the set is irreducible---i.e., removing 
+any one constraint from the IIS produces a satisfiable set of constraints. 
+In our case, an IIS cannot consist of only 
+constraints from \Cref{eq:dist} as these equations
+admit a trivial solution with all variables set to 0. 
+Therefore, an IIS must contain some constraint of the form
+given in  \Cref{eq:uniq1}
+that was added in to reason about some destination tree $\xi_d$.
+\[
+W_s^r + D_r^t  > \sum_{\mathclap{\substack{l_i=(r_1,r_2)}}} 
+		W_{r_1}^{r_2}
+\]		
+
+
+To remove this inequality from the set of constraints, we add the route filter $(s,r)$ to $RF(d)$.
+This route filter removes the given IIS, but the new set of equations may still be unsatisfiable because of other IISs. 
+The procedure is repeated and route filters are added until the resulting set of constraints becomes satisfiable. In each iteration, we choose the filter
+which least affects endpoint resilience, i.e., does not lie on the mincut.
+
+
+
+
