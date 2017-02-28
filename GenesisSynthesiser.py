@@ -4,7 +4,7 @@ from PolicyDatabase import PolicyDatabase
 #from NetworkPredicate import *
 import time
 import random
-import metis
+#import metis
 import networkx as nx
 #from SliceGraphSolver import SliceGraphSolver
 from Tactic import *

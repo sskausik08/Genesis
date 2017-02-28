@@ -1,5 +1,5 @@
 import networkx as nx
-import metis
+#import metis
 import copy
 
 """Policy Database is used to maintain the database of policies incorporated in the network. 
@@ -556,9 +556,12 @@ class PolicyDatabase(object) :
 			nextsw = src
 			while nextsw <> dstSw : 
 				path = topology.getShortestPath(nextsw, dstSw)
-				if path[1] != dag[nextsw] and [path[0], path[1], dst] not in staticRoutes : 
+				if path[1] != dag[nextsw] and [nextsw, dag[nextsw]] not in staticRoutes[dst] : 
 					violationCount += 1 
 					print "Packet class violated by ZCP", pc 
+					print path
+					print dag
+					print staticRoutes[dst]
 					break
 				nextsw = dag[nextsw]
 
@@ -588,7 +591,7 @@ class PolicyDatabase(object) :
 				while nextsw <> dstSw : 
 					zpath = topology.getShortestPath(nextsw, dstSw)
 					zpath2 = topology.getShortestPath(nextsw, tup[2])
-					if topology.getPathDistance(zpath) >= topology.getPathDistance(zpath2) and [zpath[0], zpath[1], dst] not in staticRoutes : 
+					if topology.getPathDistance(zpath) >= topology.getPathDistance(zpath2) and [nextsw, dag[nextsw]] not in staticRoutes[dst] : 
 						violationCount += 1 
 						print "BGP gateway violation by ZCP", pc 
 						break

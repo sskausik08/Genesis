@@ -1,5 +1,5 @@
 import networkx as nx
-import metis
+#import metis
 import time
 from collections import deque
 import math

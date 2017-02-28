@@ -253,9 +253,7 @@ class ZeppelinSynthesiser(object) :
 		self.zepFile.write("\n")
 		self.zepFile.write("Time" + "\t" + str(self.pdb.getPacketClassRange()) + "\t" + str(time.time() - start_t))
 		self.zepFile.write("\n")
-		self.zepFile.write("RouteFilters" + "\t" + str(self.pdb.getPacketClassRange()) + "\t" + str(srCount) + "\t")
-		self.zepFile.write("\n")
-		self.zepFile.write("TRL" + "\t" + str(self.pdb.getPacketClassRange()) + "\t" + str(self.findTotalResilienceLoss()) + "\t" + str(self.worstResilienceLoss))
+		self.zepFile.write("Static Routes" + "\t" + str(self.pdb.getPacketClassRange()) + "\t" + str(srCount) + "\t")
 		self.zepFile.write("\n")
 		return self.staticRouteNames
 
@@ -352,12 +350,12 @@ class ZeppelinSynthesiser(object) :
 					# Static Route constraint
 					foundFlag = False
 					for ind in range(len(staticRoutes)) :
-						if staticRoutes[ind][0] == [fields[1], fields[2], fields[4]] : 
+						if staticRoutes[ind][0] == [int(fields[1]), int(fields[2]), int(fields[4])] : 
 							staticRoutes[ind] = [staticRoutes[ind][0], staticRoutes[ind][1] + 1]
 							foundFlag = True
 							break
 					if not foundFlag :
-						staticRoutes.append([[fields[1], fields[2], fields[4]], 1])
+						staticRoutes.append([[int(fields[1]), int(fields[2]), int(fields[4])], 1])
 
 		sr = None
 		count = 0
@@ -651,8 +649,11 @@ class ZeppelinSynthesiser(object) :
 	# 			nextsw = dag[nextsw]
 
 	def addDestinationDAGConstraints(self, dst, dag, routeFilterMode=True) :
-		""" Adds constraints such that dag weights are what we want them to be with route filtering disabled/enabled """
-		
+		""" Adds constraints such that dag weights are what we want them to be with route filtering disabled/enabled """	
+		for sw in dag :
+			if dag[sw] == None :
+				dstSw = sw
+
 		if not routeFilterMode :
 			for sw in dag : 
 				t = dag[sw]
@@ -666,26 +667,23 @@ class ZeppelinSynthesiser(object) :
 							
 					t = dag[t]
 		else:
-			for sw in dag :
-				t = dag[sw]
-				while t != None :							
-					nextsw = sw
-					totalDist = 0 # Store the distance from sw to t along dag.
-					while nextsw != t : 
-						totalDist += self.ew(nextsw, dag[nextsw])
-						nextsw = dag[nextsw]
+			for sw in dag :	
+				if sw == dstSw : continue					
+				nextsw = sw
+				totalDist = 0 # Store the distance from sw to t along dag.
+				while nextsw != dstSw : 
+					totalDist += self.ew(nextsw, dag[nextsw])
+					nextsw = dag[nextsw]
 
-					self.ilpSolver.addConstr(self.dist(sw, t) <= totalDist)
- 					
- 					if not [sw, dag[sw]] in self.staticRoutes[dst] : 
-						neighbours = self.topology.getSwitchNeighbours(sw)
-						for n in neighbours : 
-							if n != dag[sw] and [sw, n] not in self.routefilters[dst] : 
-								self.ilpSolver.addConstr(totalDist <= self.ew(sw, n) + self.dist(n, t) - 1, "SR-" + str(sw) + "-" 
-									+ str(dag[sw]) + "-" + str(t) + "-" + str(dst) + "-" + str(self.constraintIndex))
-								self.constraintIndex += 1
+				self.ilpSolver.addConstr(self.dist(sw, dstSw) <= totalDist)
 					
-					t = dag[t]	
+				if not [sw, dag[sw]] in self.staticRoutes[dst] : 
+					neighbours = self.topology.getSwitchNeighbours(sw)
+					for n in neighbours : 
+						if n != dag[sw]: 
+							self.ilpSolver.addConstr(totalDist <= self.ew(sw, n) + self.dist(n, dstSw) - 1, "SR-" + str(sw) + "-" 
+								+ str(dag[sw]) + "-" + str(dstSw) + "-" + str(dst) + "-" + str(self.constraintIndex))
+							self.constraintIndex += 1
 
 		self.addBGPExtensionConstraints(dst, dag, routeFilterMode)		
 
@@ -710,7 +708,7 @@ class ZeppelinSynthesiser(object) :
 					if not [src, dag[src]] in self.staticRoutes[dst] : 
 						neighbours = self.topology.getSwitchNeighbours(src)
 						for n in neighbours : 
-							if n != dag[src] and [src, n] not in self.routefilters[dst] : 
+							if n != dag[src] : 
 								self.ilpSolver.addConstr(totalDist <= self.ew(src, n) + self.dist(n, end2) - 1, "SR-" + str(src) + "-" 
 									+ str(dag[src]) + "-" + str(end2) + "-" + str(dst) + "-" + str(self.constraintIndex))
 								self.constraintIndex += 1
@@ -758,8 +756,6 @@ class ZeppelinSynthesiser(object) :
 		if [sw1, sw2] not in self.staticRoutes[dst] :
 			self.staticRoutes[dst].append([sw1, sw2]) 
 			self.inconsistentSRs += 1
-
-		#print "RF",sw1, sw2, dst
 
 	# def addMaxFlowConstraints(self, src, dst, t_res) :
 	# 	swCount = self.topology.getSwitchCount()
@@ -850,16 +846,11 @@ class ZeppelinSynthesiser(object) :
 			# Route filters not used. 
 			return 
 
-		totalRouteFilters = 0
-		setRouteFilters = 0
+		totalStaticRoutes = 0
+		setStaticRoutes = 0
 		for dst in dsts : 
 			dag = self.destinationDAGs[dst]
-			for sw in dag : 
-				if dag[sw] == None : continue
-				neighbours = self.overlay[sw]
-				for n in neighbours : 
-					if n != dag[sw] : 
-						totalRouteFilters += 1
+			totalStaticRoutes += len(dag) - 1 
 						# if self.minimalFilterSolveFlag :
 						# 	if self.rf(sw,n,dst).x >= 0.1 : 
 						# 		self.routefilters[dst].append([sw,n])
@@ -870,11 +861,11 @@ class ZeppelinSynthesiser(object) :
 					# 			self.routefilters[dst].append([sw,n])
 		
 		for dst in dsts : 
-			setRouteFilters += len(self.routefilters[dst])
+			setStaticRoutes += len(self.staticRoutes[dst])
 
-		self.RFCount = setRouteFilters
-		#self.f.write("Ratio of routefilters : " + str(setRouteFilters) + ":" + str(totalRouteFilters) + "\n") 
-		print "Ratio of routefilters : ", setRouteFilters, totalRouteFilters 
+		self.RFCount = setStaticRoutes
+		#self.f.write("Ratio of routefilters : " + str(setStaticRoutes) + ":" + str(totalRouteFilters) + "\n") 
+		print "Ratio of routefilters : ", setStaticRoutes, totalStaticRoutes 
 
 	def printRouteFilterDistribution(self) :
 		swCount = self.topology.getSwitchCount()
