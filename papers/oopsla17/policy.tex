@@ -14,4 +14,23 @@
 	\compactcaption{\genesis path-based policy support.} \label{tab:policysupport} 
 \end{small}
 \end{table}
-
+\begin{table}[!t]
+	\begin{small}
+		\begin{center}
+			\begin{tabular}{m{6.5em}  m{17.7em} } 
+				{\bf Policy} & {\bf Description} \\ 
+				\hline
+				Count  & Number of OSPF domains: $c_1\leq N_D\leq c_2$  \\ \hline
+				Domain Size  & Lower and upper
+				limit of size of domain (number of routers): $l\leq ds\leq u$ \\ \hline
+				BGP \newline Enable & Enable BGP on routers $B$ (hardware constraint) \\ \hline
+				Route-Filters: $rc$ & Lower bound number of filters:
+				$rc > C_{rc}$\\ \hline
+				Static Route: ${sc}$ & Upper bound number of static route rules: $sc < C_{sc}$ \\ \hline
+				BGP Config. Overhead: $bc$ & Upper bound the number of local preference entries and iBGP filters $bc < C_{bc}$ \\ \hline
+				Cost Minimization & Minimize user-defined cost $expr(rc, sc, bc)$
+			\end{tabular}
+		\end{center}
+		\compactcaption{\name configuration policy support.} \label{tab:configpolicysupport} 
+	\end{small}
+\end{table}

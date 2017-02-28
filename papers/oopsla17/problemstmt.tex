@@ -187,7 +187,6 @@ Finally, static routes
 have a higher preference than BGP routes, therefore a static route
 $SR(r, \lambda)$ will be preferred over BGP.
 
-\iffull
 \begin{algorithm} [t]
 	\begin{footnotesize} 
 		\caption{BGP Best Path Selection at router $r$ for dst. $\lambda$}
@@ -230,7 +229,7 @@ $SR(r, \lambda)$ will be preferred over BGP.
 		\end{algorithmic}
 	\end{footnotesize}
 \end{algorithm}
-\fi
+
 
 \minisection{OSPF+BGP+Static Routes} We now describe how routing
 happens in hierarchical domains.  Assume that in domain $d$, traffic 

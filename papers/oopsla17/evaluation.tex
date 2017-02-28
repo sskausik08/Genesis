@@ -1,20 +1,3 @@
-
-\begin{figure*}[!th]
-	\centering
-	\subfloat[Synthesis Time]
-	{\includegraphics[width=0.66\columnwidth]{figures/ospfTime.eps}}
-	\subfloat[Number of Route Filters]
-	{\includegraphics[width=0.66\columnwidth]{figures/ospfRF.eps}}
-	\subfloat[Endpoint Resilience]
-	{\includegraphics[width=0.65\columnwidth]{figures/ospfAvgRes.eps}}
-	\compactcaption{\label{fig:ospfeval}
-		OSPF Synthesis evaluation}
-\end{figure*}
-
-
-
-
-
 \section{Evaluation}
  \label{sec:evaluation}
  
@@ -72,7 +55,17 @@ As the time taken is dependent on the number of iterations of
 the route-filter learning procedure, the number of filters
 shows a similar trend to OSPF synthesis time. On average, 2 route filters
 are required for each path in the Geant topology. 
-
+\begin{figure*}
+	\centering
+	\subfloat[Synthesis Time]
+	{\includegraphics[width=0.33\columnwidth]{figures/ospfTime.eps}}
+	\subfloat[Number of Route Filters]
+	{\includegraphics[width=0.33\columnwidth]{figures/ospfRF.eps}}
+	\subfloat[Endpoint Resilience]
+	{\includegraphics[width=0.32\columnwidth]{figures/ospfAvgRes.eps}}
+	\compactcaption{\label{fig:ospfeval}
+		OSPF Synthesis evaluation}
+\end{figure*}
 \noindent\textbf{Endpoint Resilience.}~~~\name's OSPF synthesis picks
 filters which have the least effect on endpoint resilience, as it  
 is a more important metric than the number of filters. We express this
@@ -92,11 +85,11 @@ However, we are able to achieve more than
 \begin{figure*}[!t]
 	\centering
 	\subfloat[Configuration Overhead]
-	{\includegraphics[width=0.66\columnwidth]{figures/confMCMC.eps}}
+	{\includegraphics[width=0.33\columnwidth]{figures/confMCMC.eps}}
 	\subfloat[Total Loss of Resilience]
-	{\includegraphics[width=0.66\columnwidth]{figures/TRLMCMC.eps}}
+	{\includegraphics[width=0.33\columnwidth]{figures/TRLMCMC.eps}}
 	\subfloat[MCMC Optimizations]
-	{\includegraphics[width=0.66\columnwidth]{figures/ratioMCMC.eps}}
+	{\includegraphics[width=0.33\columnwidth]{figures/ratioMCMC.eps}}
 	\compactcaption{\label{fig:mcmceval}
 	MCMC Evaluation }
 \end{figure*}
