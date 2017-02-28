@@ -36,7 +36,7 @@ class ZeppelinSynthesiser(object) :
 		self.ilpSolver = gb.Model("C3")
 		self.ilpSolver.setParam('OutputFlag', 0)
 
-		self.routefilters = dict()
+		self.staticRoutes = dict()
 		
 		self.sums = []
 		# Resilience 
@@ -47,7 +47,7 @@ class ZeppelinSynthesiser(object) :
 		self.MAX_GUROBI_ITERATIONS = 600
 		self.minimalFilterSolveFlag = minimalFilterSolve
 
-		self.inconsistentRFs = 0
+		self.inconsistentSRs = 0
 
 		# Route Filter Optimizations
 		self.filterDependencies = defaultdict(lambda:defaultdict(lambda:defaultdict(lambda:None)))
@@ -91,12 +91,12 @@ class ZeppelinSynthesiser(object) :
 
 		self.ilpSolver.update()
 
-	def initializeRouteFilters(self) :
-		self.routefilters = dict()
+	def initializeStaticRoutes(self) :
+		self.staticRoutes = dict()
 		for dst in self.pdb.getDestinationSubnets() :
-			self.routefilters[dst] = []
+			self.staticRoutes[dst] = []
 
-		self.routefilters[0] = [] # Default destination val = 0 (Not a s)
+		self.staticRoutes[0] = [] # Default destination val = 0 (Not a s)
 
 	def initializeEndpointResilience(self) : 
 		# Without filters, all sources have maximum resilience = number of source neighbours.
@@ -154,7 +154,7 @@ class ZeppelinSynthesiser(object) :
 		self.disableUnusedEdges()
 		self.initializeSMTVariables()
 		self.initializeEndpointResilience()
-		self.initializeRouteFilters()
+		self.initializeStaticRoutes()
 
 		start_t = time.time()
 		self.addDjikstraShortestPathConstraints()
@@ -165,7 +165,7 @@ class ZeppelinSynthesiser(object) :
 			self.addDestinationDAGConstraints(dst, dag, False)
 
 
-		#print "Solving ILP without routefilters"
+		#print "Solving ILP without static routes"
 		solvetime = time.time()
 		#modelsat = self.z3Solver.check()
 		self.ilpSolver.optimize()
@@ -179,11 +179,8 @@ class ZeppelinSynthesiser(object) :
 				self.routeFilterMode = True 
 				self.minimalFilterSolve()
 			else : 
-				#print "solving ILP with routefilters"
+				#print "solving ILP with static routes"
 				self.routeFilterMode = True
-				#self.detectDiamonds()
-
-				#diamondLoss = self.calculateResilienceLoss()
 
 				#self.findValidCycles()
 				self.ilpSolver = gb.Model("C3")
@@ -233,22 +230,22 @@ class ZeppelinSynthesiser(object) :
 
 		# self.f.close()	
 		#self.pdb.printPaths(self.topology)
-		self.pdb.validateControlPlane(self.topology, self.routefilters, self.t_res)
+		self.pdb.validateControlPlane(self.topology, self.staticRoutes)
 
 		#self.topology.printWeights()
 		#self.printProfilingStats()
 		#self.printRouteFilterDistribution()
 		
-		rfCount = 0
+		srCount = 0
 		# Translate route filters to switch names
-		self.routefilterNames = dict()
-		for subnet in self.routefilters.keys() :
-			rfs = self.routefilters[subnet]
-			rfCount += len(rfs)
-			rfNames = []
-			for rf in rfs : 
-				rfNames.append([self.topology.getSwName(rf[0]), self.topology.getSwName(rf[1])])
-			self.routefilterNames[subnet] = rfNames
+		self.staticRouteNames = dict()
+		for subnet in self.staticRoutes.keys() :
+			srs = self.staticRoutes[subnet]
+			srCount += len(srs)
+			srNames = []
+			for sr in srs : 
+				srNames.append([self.topology.getSwName(sr[0]), self.topology.getSwName(sr[1])])
+			self.staticRouteNames[subnet] = srNames
 
 		
 		self.zepFile = open("ospf-timing", 'a')
@@ -256,11 +253,11 @@ class ZeppelinSynthesiser(object) :
 		self.zepFile.write("\n")
 		self.zepFile.write("Time" + "\t" + str(self.pdb.getPacketClassRange()) + "\t" + str(time.time() - start_t))
 		self.zepFile.write("\n")
-		self.zepFile.write("RouteFilters" + "\t" + str(self.pdb.getPacketClassRange()) + "\t" + str(rfCount) + "\t")
+		self.zepFile.write("RouteFilters" + "\t" + str(self.pdb.getPacketClassRange()) + "\t" + str(srCount) + "\t")
 		self.zepFile.write("\n")
 		self.zepFile.write("TRL" + "\t" + str(self.pdb.getPacketClassRange()) + "\t" + str(self.findTotalResilienceLoss()) + "\t" + str(self.worstResilienceLoss))
 		self.zepFile.write("\n")
-		return self.routefilterNames
+		return self.staticRouteNames
 
 	"""
 	An IIS is a subset of the constraints and variable bounds of the original model. 
@@ -297,7 +294,7 @@ class ZeppelinSynthesiser(object) :
 			#self.plotUnsatCore()
 			# Pick filters greedily?
 			#self.greedyRouteFilter()
-			self.maximizeResilienceRouteFilter()
+			self.minimizeStaticRoutes()
 			return True
 		else :
 			return False
@@ -344,26 +341,33 @@ class ZeppelinSynthesiser(object) :
 
 		self.addRouteFilter(maxRF[0], maxRF[1], maxRF[2])
 
-	def maximizeResilienceRouteFilter(self) :
-		""" Pick route filters based on maximizing filters """
-		mostResilientRF = [0,0,0,100000]
+	def minimizeStaticRoutes(self) :
+		""" Pick static routes greedily """
+		staticRoutes = []
 		for constr in self.ilpSolver.getConstrs() :
 			if constr.getAttr(gb.GRB.Attr.IISConstr) > 0 :
 				name = constr.getAttr(gb.GRB.Attr.ConstrName) 
 				fields = name.split("-")
-				if fields[0] == "RF" :
-					# Route filter constraint
-						loss = self.findResilienceLoss([int(fields[1]), int(fields[2])], int(fields[4]))
-						if loss == 0 : 
-							# No effect on resilience. Pick this
-							self.addRouteFilter(int(fields[1]), int(fields[2]), int(fields[4]))
-							return
-						elif loss < mostResilientRF[3]: 
-							mostResilientRF = [int(fields[1]), int(fields[2]), int(fields[4]), loss]
+				if fields[0] == "SR" :
+					# Static Route constraint
+					foundFlag = False
+					for ind in range(len(staticRoutes)) :
+						if staticRoutes[ind][0] == [fields[1], fields[2], fields[4]] : 
+							staticRoutes[ind] = [staticRoutes[ind][0], staticRoutes[ind][1] + 1]
+							foundFlag = True
+							break
+					if not foundFlag :
+						staticRoutes.append([[fields[1], fields[2], fields[4]], 1])
 
+		sr = None
+		count = 0
+		for ind in range(len(staticRoutes)) : 
+			if staticRoutes[ind][1] > count : 
+				sr = staticRoutes[ind][0]
+				count = staticRoutes[ind][1]
 
-		# All filters are source filters. Choose filter affecting resilience the least
-		self.addRouteFilter(mostResilientRF[0], mostResilientRF[1], mostResilientRF[2])
+		# Pick the best static Route
+		self.addStaticRoute(sr[0], sr[1], sr[2])
 
 	def findResilienceLoss(self, rf, dst) :
 		# Check if rf on mincut to dst
@@ -672,13 +676,14 @@ class ZeppelinSynthesiser(object) :
 						nextsw = dag[nextsw]
 
 					self.ilpSolver.addConstr(self.dist(sw, t) <= totalDist)
- 
-					neighbours = self.topology.getSwitchNeighbours(sw)
-					for n in neighbours : 
-						if n != dag[sw] and [sw, n] not in self.routefilters[dst] : 
-							self.ilpSolver.addConstr(totalDist <= self.ew(sw, n) + self.dist(n, t) - 1, "RF-" + str(sw) + "-" 
-								+ str(n) + "-" + str(t) + "-" + str(dst) + "-" + str(self.constraintIndex))
-							self.constraintIndex += 1
+ 					
+ 					if not [sw, dag[sw]] in self.staticRoutes[dst] : 
+						neighbours = self.topology.getSwitchNeighbours(sw)
+						for n in neighbours : 
+							if n != dag[sw] and [sw, n] not in self.routefilters[dst] : 
+								self.ilpSolver.addConstr(totalDist <= self.ew(sw, n) + self.dist(n, t) - 1, "SR-" + str(sw) + "-" 
+									+ str(dag[sw]) + "-" + str(t) + "-" + str(dst) + "-" + str(self.constraintIndex))
+								self.constraintIndex += 1
 					
 					t = dag[t]	
 
@@ -702,13 +707,13 @@ class ZeppelinSynthesiser(object) :
 						totalDist += self.ew(nextsw, dag[nextsw])
 						nextsw = dag[nextsw]
 
- 
-					neighbours = self.topology.getSwitchNeighbours(src)
-					for n in neighbours : 
-						if n != dag[src] and [src, n] not in self.routefilters[dst] : 
-							self.ilpSolver.addConstr(totalDist <= self.ew(src, n) + self.dist(n, end2) - 1, "RF-" + str(src) + "-" 
-								+ str(n) + "-" + str(end2) + "-" + str(dst) + "-" + str(self.constraintIndex))
-							self.constraintIndex += 1
+					if not [src, dag[src]] in self.staticRoutes[dst] : 
+						neighbours = self.topology.getSwitchNeighbours(src)
+						for n in neighbours : 
+							if n != dag[src] and [src, n] not in self.routefilters[dst] : 
+								self.ilpSolver.addConstr(totalDist <= self.ew(src, n) + self.dist(n, end2) - 1, "SR-" + str(src) + "-" 
+									+ str(dag[src]) + "-" + str(end2) + "-" + str(dst) + "-" + str(self.constraintIndex))
+								self.constraintIndex += 1
 					
 					src = dag[src]
 					
@@ -748,15 +753,11 @@ class ZeppelinSynthesiser(object) :
 
 		self.ilpSolver.setObjective(totalRouteFilters, gb.GRB.MINIMIZE)
 
-	def addRouteFilter(self, sw1, sw2, dst) :
+	def addStaticRoute(self, sw1, sw2, dst) :
 		""" Add rf at sw1 -> sw2 for dst """
-		if [sw1, sw2] not in self.routefilters[dst] :
-			self.routefilters[dst].append([sw1, sw2]) 
-			self.inconsistentRFs += 1
-
-			# Update resilience if source filter.
-			if [sw1, dst] in self.endpoints : 
-				self.endpointResilience[sw1][dst] -= 1
+		if [sw1, sw2] not in self.staticRoutes[dst] :
+			self.staticRoutes[dst].append([sw1, sw2]) 
+			self.inconsistentSRs += 1
 
 		#print "RF",sw1, sw2, dst
 
