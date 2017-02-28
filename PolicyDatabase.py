@@ -545,49 +545,54 @@ class PolicyDatabase(object) :
 	def addBGPExtensions(self, bgpExtensions) :
 		self.bgpExtensions = copy.deepcopy(bgpExtensions)
 
-	def validateControlPlane(self, topology, routefilters, t_res) :
+	def validateControlPlane(self, topology, staticRoutes) :
 		violationCount = 0
 		for pc in range(self.getPacketClassRange()) :
 			src = self.getSourceSwitch(pc)
 			dstSw = self.getDestinationSwitch(pc)
 			dst = self.getDestinationSubnet(pc)
-			zpath = topology.getShortestPath(src, dstSw, routefilters[dst])
 			dag = self.dags[dst]
 			gpath = []
 			nextsw = src
-			while nextsw <> None : 
-				gpath.append(nextsw)
-				nextsw = dag[nextsw] 
+			while nextsw <> dstSw : 
+				path = topology.getShortestPath(nextsw, dstSw)
+				if path[1] != dag[nextsw] and [path[0], path[1], dst] not in staticRoutes : 
+					violationCount += 1 
+					print "Packet class violated by ZCP", pc 
+					break
+				nextsw = dag[nextsw]
 
-			if zpath <> gpath : 
-				if topology.getPathDistance(gpath) == topology.getPathDistance(zpath) :
-					print "Path is not uniquely shortest for PC", pc
-					violationCount += 1
-				else :
-					print "G", gpath, "Z", zpath, "shortest path is", topology.getShortestPath(src,dstSw)
-					print "Not Shortest Path in control plane for class", pc
-					print "Genesis path distance:", topology.getPathDistance(gpath), " Zeppelin: ", topology.getPathDistance(zpath)
-					violationCount += 1
-			if not topology.checkUniquenessShortestPath(zpath, routefilters[dst]) :
-				print "Path is not uniquely shortest for PC", pc
-				print zpath, 
-				violationCount += 1
-			if t_res > 0 :
-				if not topology.checkResilience(src, dstSw, t_res, copy.deepcopy(routefilters[dst])) : 
-					print "Not resilient", pc, self.getSourceSwitch(pc)
-					violationCount += 1
+			# if zpath <> gpath : 
+			# 	if topology.getPathDistance(gpath) == topology.getPathDistance(zpath) :
+			# 		print "Path is not uniquely shortest for PC", pc
+			# 		violationCount += 1
+			# 	else :
+			# 		print "G", gpath, "Z", zpath, "shortest path is", topology.getShortestPath(src,dstSw)
+			# 		print "Not Shortest Path in control plane for class", pc
+			# 		print "Genesis path distance:", topology.getPathDistance(gpath), " Zeppelin: ", topology.getPathDistance(zpath)
+			# 		violationCount += 1
+			# if not topology.checkUniquenessShortestPath(zpath, routefilters[dst]) :
+			# 	print "Path is not uniquely shortest for PC", pc
+			# 	print zpath, 
+			# 	violationCount += 1
+			# if t_res > 0 :
+			# 	if not topology.checkResilience(src, dstSw, t_res, copy.deepcopy(routefilters[dst])) : 
+			# 		print "Not resilient", pc, self.getSourceSwitch(pc)
+			# 		violationCount += 1
 
 
 			for tup in self.bgpExtensions : 
 				if tup[3] != dst : continue
 				if tup[1] != dstSw : continue
-				zpath2 = topology.getShortestPath(src, tup[2], routefilters[dst]) # Find path to other BGP gateway
-				if topology.getPathDistance(gpath) >= topology.getPathDistance(zpath2) : 
-					print "Destination switch isnt closest gateway"
-					print tup
-					print routefilters[dst]
-					print gpath, zpath2
-					violationCount += 1
+				nextsw = src
+				while nextsw <> dstSw : 
+					zpath = topology.getShortestPath(nextsw, dstSw)
+					zpath2 = topology.getShortestPath(nextsw, tup[2])
+					if topology.getPathDistance(zpath) >= topology.getPathDistance(zpath2) and [zpath[0], zpath[1], dst] not in staticRoutes : 
+						violationCount += 1 
+						print "BGP gateway violation by ZCP", pc 
+						break
+				nextsw = dag[nextsw]
 
 		if violationCount > 0 :
 			print "Error: incorrect OSPF configuration"
