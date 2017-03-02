@@ -133,7 +133,6 @@ the shortest distance from $s$ to $t$.
 \forall s, t. ~\forall r \in N(s).~
 D_s^t \leq W_s^r + D_r^t
 \end{equation}
-
 For each destination tree $\xi_\lambda\in\Delta$, we add equations to ensure 
 that the input paths with destination $d$ are the shortest ones.
 Notice that, if a path $\pi$
@@ -142,26 +141,22 @@ subpath of $\pi$ also has to be the shortest path between its endpoints.
 For each tree $\xi_\lambda$, we define the neighbour
  $N_{\xi_\lambda}(s)$ to denote the 
 next-hop neighbour of router $s$ in the destination tree $\xi_\lambda$---i.e., the parent
-of $s$ in the tree or no node if $s$ is the root of the tree.
-%Since $\xi_\lambda$ is a directed tree, every router $r \in \xi_\lambda$
-%has one next-hop router, therefore $N_{\xi_\lambda}(s)$ is a singleton
-%set (the root of the tree (router connected to $\lambda$) has no next-hop
-%routers).
-
-The following equations ensures that, for any 
- two nodes $s$ and $t$ in
-$\xi_\lambda$, if $t$ is reachable from $s$, 
-the path $l_0\cdots l_k$ from $s$ to $t$ in $\xi_\lambda$ is the 
-\emph{unique shortest path} from $s$ to $t$ in $T$.
-\begin{multline} \label{eq:uniq1}
+of $s$ in the tree or no node if $s$ is the root of the tree. We denote the
+root switch of the tree $\xi_\lambda$ by $R_\lambda$.
+The following equations ensures that, for any node $s$ in 
+$\xi_\lambda$, 
+the path $l_0\cdots l_k$ from $s$ to $R_\lambda$ 
+in $\xi_\lambda$ is the 
+\emph{unique shortest path} from $s$ to $R_\lambda$ in $T$.
+\begin{equation} \label{eq:uniq1}
 \forall r \in N(s) \setminus N_{\xi_\lambda}(s).~~
-W_{s}^{r}+ D_{r}^{t} > \sum_{\mathclap{\substack{l_i=(r_1,r_2)}}} 
+W_{s}^{r}+ D_{r}^{R_\lambda} > \sum_{\mathclap{\substack{l_i=(r_1,r_2)}}} 
 W_{r_1}^{r_2}
-\end{multline}
+\end{equation}
 \Cref{eq:uniq1} guarantees that 
-the sum of the weights belonging to a path from $s$ to $t$ in $\xi_\lambda$ 
+the sum of the weights belonging to a path from $s$ to $R_\lambda$ in $\xi_\lambda$ 
 is strictly smaller than 
-any path that goes to $t$ via 
+any path that goes to $R_\lambda$ via 
 a node $n'$ that is a neighbour of $s$ in $T$ but not 
 the next-hop in $\xi_\lambda$.
 
@@ -245,7 +240,7 @@ Therefore, an IIS must contain some constraint of the form
 given in  \Cref{eq:uniq1}
 that was added in to reason about some destination tree $\xi_d$.
 \[
-W_s^r + D_r^t  > \sum_{\mathclap{\substack{l_i=(r_1,r_2)}}} 
+W_s^r + D_r^{R_\lambda}  > \sum_{\mathclap{\substack{l_i=(r_1,r_2)}}} 
 		W_{r_1}^{r_2}
 \]		
 
