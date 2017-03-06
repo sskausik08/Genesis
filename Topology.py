@@ -402,18 +402,17 @@ class Topology(object):
 			i += 1
 		return dist
 
-	def getAllPaths(self, src, dst, routefilters=None) :
+	def getAllPaths(self, src, dst, routefilters=[]) :
 		""" Returns all edge-disjoint paths and costs from src to dst """
 		paths = []
 		path = self.getShortestPath(src, dst, routefilters)
-		while path <> [] :
+		while path != [] :
 			paths.append(path)
 			for i in range(len(path) - 1) : 
 				# Disable all edges from the path
 				routefilters.append([path[i], path[i+1]])
 				# compute next path
 			path = self.getShortestPath(src, dst, routefilters)
-
 		return paths
 
 	def checkResilience(self, src, dst, t_res, routefilters) :

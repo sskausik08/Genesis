@@ -78,17 +78,6 @@ class ZeppelinSynthesiser(object) :
 				# for dst in dsts : 
 				# 	self.distVars[sw1][sw2][dst] = self.ilpSolver.addVar(lb=0.00,vtype=gb.GRB.CONTINUOUS, name="D-" + str(sw1)+"-"+str(sw2)+"-"+str(dst) + " ")
 
-		# for endpt in self.endpoints : 
-		# 	for sw2 in self.topology.getSwitchNeighbours(endpt[0]) : 
-		# 		self.routefiltersVars[endpt[0]][sw2][endpt[1]] = self.ilpSolver.addVar(lb=0.00, ub=1.00, vtype=gb.GRB.CONTINUOUS, name="RF" + "-" + str(endpt[0])+"-"+str(sw2)+"-"+str(endpt[1])+"_")
-
-		for dst in dsts:
-			dag = self.destinationDAGs[dst]
-			for sw1 in dag : 
-				for sw2 in self.topology.getSwitchNeighbours(sw1) : 
-					self.routefiltersVars[sw1][sw2][dst] = self.ilpSolver.addVar(lb=0.00, ub=1.00, vtype=gb.GRB.CONTINUOUS, name="RF" + "-" + str(sw1)+":"+str(sw2)+"-"+str(dst))
-		
-
 		self.ilpSolver.update()
 
 	def initializeStaticRoutes(self) :
@@ -153,7 +142,6 @@ class ZeppelinSynthesiser(object) :
 		#self.overlayConnectivity()	
 		self.disableUnusedEdges()
 		self.initializeSMTVariables()
-		self.initializeEndpointResilience()
 		self.initializeStaticRoutes()
 
 		start_t = time.time()
@@ -232,10 +220,6 @@ class ZeppelinSynthesiser(object) :
 		#self.pdb.printPaths(self.topology)
 		self.pdb.validateControlPlane(self.topology, self.staticRoutes)
 
-		#self.topology.printWeights()
-		#self.printProfilingStats()
-		#self.printRouteFilterDistribution()
-		
 		srCount = 0
 		# Translate route filters to switch names
 		self.staticRouteNames = dict()
@@ -251,12 +235,85 @@ class ZeppelinSynthesiser(object) :
 		self.zepFile = open("ospf-timing", 'a')
 		self.zepFile.write("Topology Switches\t" +  str(swCount))
 		self.zepFile.write("\n")
+		print "Time" + "\t" + str(self.pdb.getPacketClassRange()) + "\t" + str(time.time() - start_t)
 		self.zepFile.write("Time" + "\t" + str(self.pdb.getPacketClassRange()) + "\t" + str(time.time() - start_t))
 		self.zepFile.write("\n")
 		self.zepFile.write("Static Routes" + "\t" + str(self.pdb.getPacketClassRange()) + "\t" + str(srCount) + "\t")
 		self.zepFile.write("\n")
+
+		# Consider the repair problem now.
+		oldDags = copy.deepcopy(self.destinationDAGs)
+
+		changeCount = 4
+		random.shuffle(dsts)
+		for changedDst in dsts : 
+			newDag = self.changeDag(self.destinationDAGs[changedDst])
+			if newDag != self.destinationDAGs[changedDst] : 
+				self.destinationDAGs[changedDst] = newDag 
+				self.pdb.addDestinationDAG(changedDst, newDag)
+				changeCount = changeCount - 1
+
+			if changeCount == 0 : 
+				break
+
+		if changeCount > 0 : 
+			print "Wait, what?"
+			exit(0)
+		
+		self.repair(oldDags, self.destinationDAGs, self.edgeWeightValues)
+
 		return self.staticRouteNames
 
+
+	def changeDag(self, dag) :
+		newDag = copy.deepcopy(dag)
+
+		for sw in newDag : 
+			if newDag[sw] == None :
+				dstSw = sw
+		
+		newpath = []
+		for sw in newDag :
+			if sw != dstSw :
+				paths = self.topology.getAllPaths(sw, dstSw)
+				if len(paths) <= 1 :
+					continue
+				for path in paths : 
+					# Check if path creates a loop. 
+					loopedPath = False
+					for i in range(1, len(path) - 1) :  
+						loopedPath = False
+						if path[i] in newDag : 
+							nextsw = path[i] 
+							while nextsw != None : 
+								if nextsw == sw : 
+									# This path loops back to sw. Dont use
+									loopedPath = True
+									break
+								nextsw = newDag[nextsw]
+
+						if loopedPath : 
+							break
+					if loopedPath : 
+						continue
+
+					newpath = [sw]
+					# Choose this path
+					for i in range(1, len(path)) :
+						if path[i] not in newDag : 
+							newpath.append(path[i])
+						else :
+							newpath.append(path[i])
+							break
+				if len(newpath) > 0 : 
+					break
+			if len(newpath) > 0 : 
+				break			
+
+		for i in range(0, len(newpath) - 1) :
+			newDag[newpath[i]] = newpath[i + 1]
+
+		return newDag
 	"""
 	An IIS is a subset of the constraints and variable bounds of the original model. 
 	If all constraints in the model except those in the IIS are removed, the model is still infeasible. 
@@ -297,48 +354,6 @@ class ZeppelinSynthesiser(object) :
 		else :
 			return False
 
-	def greedyRouteFilter(self) :
-		""" Pick route filters based on greedy counts """
-		maxRF = [0,0,0,0]
-		
-		for constr in self.ilpSolver.getConstrs() :
-			if constr.getAttr(gb.GRB.Attr.IISConstr) > 0 :
-				name = constr.getAttr(gb.GRB.Attr.ConstrName) 
-				fields = name.split("-")
-				if fields[0] == "RF" :
-					# Route filter constraint
-					if int(fields[4]) in self.filterDependencies[int(fields[1])][int(fields[2])] : 
-						self.filterDependencies[int(fields[1])][int(fields[2])][int(fields[4])] += 1
-					else :
-						self.filterDependencies[int(fields[1])][int(fields[2])][int(fields[4])] = 1
-
-					dependencies = self.filterDependencies[int(fields[1])][int(fields[2])][int(fields[4])]
-					if dependencies >= maxRF[3] :
-						maxRF = [int(fields[1]), int(fields[2]), int(fields[4]), dependencies]
-		
-
-		# Find cycles for RF
-		#start_t = time.time()
-		#print "Number of cycles", self.findValidCycleCountFilter(maxRF)
-		#print "time to find cycles is", time.time() - start_t
-		self.addRouteFilter(maxRF[0], maxRF[1], maxRF[2])
-
-	def greedyCycleFilter(self) :
-		maxRF = [0,0,0,0]
-		
-		for constr in self.ilpSolver.getConstrs() :
-			if constr.getAttr(gb.GRB.Attr.IISConstr) > 0 :
-				name = constr.getAttr(gb.GRB.Attr.ConstrName) 
-				fields = name.split("-")
-				if fields[0] == "RF" :
-					rf = [int(fields[1]), int(fields[2]), int(fields[4])]
-					cycles = self.findValidCycleCountFilter(rf)
-					print rf, cycles
-					if cycles > maxRF[3] :
-						maxRF = [rf[0], rf[1], rf[2], cycles]
-
-		self.addRouteFilter(maxRF[0], maxRF[1], maxRF[2])
-
 	def minimizeStaticRoutes(self) :
 		""" Pick static routes greedily """
 		staticRoutes = []
@@ -367,188 +382,19 @@ class ZeppelinSynthesiser(object) :
 		# Pick the best static Route
 		self.addStaticRoute(sr[0], sr[1], sr[2])
 
-	def findResilienceLoss(self, rf, dst) :
-		# Check if rf on mincut to dst
-		pcs = self.pdb.getDestinationSubnetPacketClasses(dst)
-		totalEdgeDisjointPaths = 0
-
-		for pc in pcs : 
-			srcSw = self.pdb.getSourceSwitch(pc)
-			dstSw = self.pdb.getDestinationSwitch(pc)
-
-			mincut = self.findMinCut(srcSw, dstSw, self.routefilters[dst])
-			totalEdgeDisjointPaths += mincut
-
-		rfs = copy.deepcopy(self.routefilters[dst])
-		rfs.append(rf)
-
-		newtotalEdgeDisjointPaths = 0
-
-		for pc in pcs : 
-			srcSw = self.pdb.getSourceSwitch(pc)
-			dstSw = self.pdb.getDestinationSwitch(pc)
-
-			mincut = self.findMinCut(srcSw, dstSw, rfs)
-			newtotalEdgeDisjointPaths += mincut
-
-		return totalEdgeDisjointPaths - newtotalEdgeDisjointPaths # Loss of resilience. Positive or 0.
-
-
-	def findMinCut(self, srcSw, dstSw, routefilters) :
-		# finds the minimum cut from srcSw to dstSw with disabled filters 
-		rfs = copy.deepcopy(routefilters)
-
-		visited = dict()
-		bfstree = dict()
-		queue1 = [srcSw]
-
-		while len(queue1) != 0:
-			sw = queue1.pop(0)
-			visited[sw] = True
-			if sw == dstSw : 
-				# Found shortest path from srcSw to dstSw. Remove and check. 
-				sw1 = dstSw 
-				while sw1 != srcSw:
-					edge = [bfstree[sw1], sw1]
-					rfs.append(edge)
-					sw1 = bfstree[sw1]
-
-				return 1 + self.findMinCut(srcSw, dstSw, rfs)
-			else :
-				neighbours = self.topology.getAllSwitchNeighbours(sw)
-				for n in neighbours :
-					if [sw,n] in rfs : continue # Filtered. Dont explore.
-					elif n in visited : continue # Switch already visited
-					else : 
-						if n not in queue1 : 
-							queue1.append(n)
-							bfstree[n] = sw
-
-		return 0
-
-	def findTotalResilienceLoss(self) :
-		""" Calculate loss of resilience due to route filtering """
-		totalresilienceLoss = 0
-		self.worstResilienceLoss = 0
-
-		for pc in range(self.pdb.getPacketClassRange()) : 
-			srcSw = self.pdb.getSourceSwitch(pc)
-			dstSw = self.pdb.getDestinationSwitch(pc)
-			subnet = self.pdb.getDestinationSubnet(pc)
-
-			bestMincut = self.findMinCut(srcSw, dstSw, [])
-			mincut = self.findMinCut(srcSw, dstSw, self.routefilters[subnet])
-
-			totalresilienceLoss += bestMincut - mincut
-			self.worstResilienceLoss += bestMincut - 1
-
-		return totalresilienceLoss
-
-	def plotUnsatCore(self) :
-		graph = nx.DiGraph()
-		edges = []
-		colors = []
-		dottedEdges = []
-		dottedColors = []
-		for constr in self.ilpSolver.getConstrs() :
-			
-			if constr.getAttr(gb.GRB.Attr.IISConstr) > 0 :
-				name = constr.getAttr(gb.GRB.Attr.ConstrName) 
-				fields = name.split("-")
-				if fields[0] == "RF" :
-					# RF, s, sw', t, dst 
-					dst = int(fields[4])
-					dag = self.destinationDAGs[dst]
-					s = int(fields[1])
-					graph.add_node(s)
-					t = int(fields[3])
-					graph.add_node(t)
-
-					# find a color based on dst
-					color = dst * 45 % 256
-					sw = s
-					while sw != t:
-						graph.add_node(sw)
-						graph.add_edge(sw, dag[sw])
-						# Assign color to edges
-						if (sw, dag[sw]) not in edges : 
-							edges.append((sw, dag[sw]))
-							colors.append(color)
-						else : 
-							ind = edges.index((sw, dag[sw]))
-							colors[ind] = color
-
-						sw = dag[sw]						
-					
-					graph.add_node(int(fields[2]))
-					graph.add_edge(s, int(fields[2])) # s -> sw'
-					# Assign color to dottedEdges
-					if (s, int(fields[2])) not in dottedEdges : 
-						dottedEdges.append((s, int(fields[2])))
-						dottedColors.append(color)
-					else: 
-						ind = dottedEdges.index((s, int(fields[2])))
-						dottedColors[ind] = color
-
-					graph.add_edge(int(fields[2]), t) # sw' -> t
-					# Assign color to dottedEdges
-					if (int(fields[2]), t) not in dottedEdges : 
-						dottedEdges.append((int(fields[2]), t))
-						dottedColors.append(color)
-					else : 
-						ind = dottedEdges.index((int(fields[2]), t))
-						dottedColors[ind] = color
-
-
-		pos = nx.spring_layout(graph)
-		# switch labels
-		switchLabels = dict()
-		for sw in graph.nodes() :
-			switchLabels[sw] = str(sw)
-
-		nx.draw_networkx_nodes(graph, pos, cmap=plt.get_cmap('jet'), node_color = 'g')
-		nx.draw_networkx_edges(graph, pos, edgelist=dottedEdges, edge_color=dottedColors, style="dashed", arrows=True)
-		nx.draw_networkx_edges(graph, pos, edgelist=edges, edge_color=colors, arrows=True)
-		nx.draw_networkx_labels(graph,pos,switchLabels)
-		#nx.draw_networkx_edges(G, pos, edgelist=black_edges, arrows=False)
-		plt.show()
-
-	def minimalFilterSolve(self) :
-		""" Find inconsistent set of equations """
-		self.ilpSolver = gb.Model("C3")
-		self.ilpSolver.setParam('OutputFlag', 0)
-		self.initializeSMTVariables()
-		dsts = self.pdb.getDestinationSubnets()
-
-		# Prompted by Gurobi? 
-		# self.ilpSolver.setParam(gb.GRB.Param.BarHomogeneous, 1) 
-		# self.ilpSolver.setParam(gb.GRB.Param.Method, 2) 
-
-		self.addDjikstraShortestPathConstraints()
-		# Adding constraints with routeFilter variables at source
-		for dst in dsts : 
-			dag = self.destinationDAGs[dst]
-			self.addDestinationDAGConstraintsRF(dst, dag)
-
-		self.addMinimalFilterObjective()
-		solvetime = time.time()
-		self.ilpSolver.optimize()
-		self.z3solveTime += time.time() - solvetime
-
-
 	def constructOverlay(self) :
 		dsts = self.pdb.getDestinationSubnets()
 		swCount = self.topology.getSwitchCount()
 		for sw in range(1, swCount + 1) :
-			self.overlay[sw] = []
+			self.overlay[sw] = self.topology.getSwitchNeighbours(sw)
 
-		for dst in dsts : 
-			dag = self.destinationDAGs[dst]
-			for sw1 in dag :
-				sw2 = dag[sw1] # Edge sw1 -> sw2
-				if sw2 != None : 
-					if sw2 not in self.overlay[sw1] : 
-						self.overlay[sw1].append(sw2)
+		# for dst in dsts : 
+		# 	dag = self.destinationDAGs[dst]
+		# 	for sw1 in dag :
+		# 		sw2 = dag[sw1] # Edge sw1 -> sw2
+		# 		if sw2 != None : 
+		# 			if sw2 not in self.overlay[sw1] : 
+		# 				self.overlay[sw1].append(sw2)
 
 	def disableUnusedEdges(self) : 
 		swCount = self.topology.getSwitchCount()
@@ -627,13 +473,13 @@ class ZeppelinSynthesiser(object) :
 					self.constraintIndex += 1
 
 
-	def addDestinationDAGConstraints(self, dst, dag, routeFilterMode=True) :
-		""" Adds constraints such that dag weights are what we want them to be with route filtering disabled/enabled """	
+	def addDestinationDAGConstraints(self, dst, dag, staticRouteMode=True) :
+		""" Adds constraints such that dag weights are what we want them to be with static routing disabled/enabled """	
 		for sw in dag :
 			if dag[sw] == None :
 				dstSw = sw
 
-		if not routeFilterMode :
+		if not staticRouteMode :
 			for sw in dag : 
 				t = dag[sw]
 				while t != None :				
@@ -660,11 +506,14 @@ class ZeppelinSynthesiser(object) :
 					neighbours = self.topology.getSwitchNeighbours(sw)
 					for n in neighbours : 
 						if n != dag[sw]: 
+							if type(totalDist) == float and type(self.ew(sw, n)) == float and type(self.dist(n, dstSw)) == float :
+								continue
+
 							self.ilpSolver.addConstr(totalDist <= self.ew(sw, n) + self.dist(n, dstSw) - 1, "SR-" + str(sw) + "-" 
 								+ str(dag[sw]) + "-" + str(dstSw) + "-" + str(dst) + "-" + str(self.constraintIndex))
 							self.constraintIndex += 1
 
-		self.addBGPExtensionConstraints(dst, dag, routeFilterMode)		
+		self.addBGPExtensionConstraints(dst, dag, staticRouteMode)		
 
 	def addBGPExtensionConstraints(self, dst, dag, routeFilterMode=True) :
 		# TODO: Change wrt static routes
@@ -737,6 +586,8 @@ class ZeppelinSynthesiser(object) :
 			self.staticRoutes[dst].append([sw1, sw2]) 
 			self.inconsistentSRs += 1
 
+		print "SR", sw1, sw2, dst
+
 
 	def getEdgeWeightModel(self, routeFilterMode=True) : 
 		self.topology.initializeWeights()
@@ -744,10 +595,12 @@ class ZeppelinSynthesiser(object) :
 		dsts = self.pdb.getDestinationSubnets()
 		# self.distances = [[0 for x in range(swCount + 1)] for x in range(swCount + 1)]
 
+		self.edgeWeightValues = [[0 for x in range(swCount + 1)] for x in range(swCount + 1)]
 		for sw in range(1, swCount + 1) :
 			for n in self.topology.getSwitchNeighbours(sw) : 
 				if n not in self.overlay[sw] :
 					self.topology.addWeight(sw, n, float(100000))
+					self.edgeWeightValues[sw][n] = float(100000)
 					#print sw, n, 1000
 				else : 
 				# ew_rat = self.fwdmodel.evaluate(self.ew(sw,n))
@@ -756,6 +609,7 @@ class ZeppelinSynthesiser(object) :
 					# if [sw,n] in self.hiddenEdges : 
 					# 	ew = 1000
 					self.topology.addWeight(sw, n, float(ew))
+					self.edgeWeightValues[sw][n] = float(ew)
 					#print sw, n,  float(ew)
 
 
@@ -781,21 +635,196 @@ class ZeppelinSynthesiser(object) :
 		print "Zeppelin: Time taken to solve constraints are ", self.z3solveTime
 		# print "Number of z3 adds to the solver are ", self.z3numberofadds
 
-	def toSMT2Benchmark(self, f, status="unknown", name="benchmark", logic=""):
-		v = (Ast * 0)()
-		if isinstance(f, Solver):
-			a = f.assertions()
-			if len(a) == 0:
-				f = BoolVal(True)
-			else:
-				f = And(*a)
-			return Z3_benchmark_to_smtlib_string(f.ctx_ref(), name, logic, status, "", 0, v, f.as_ast())
+	def repair(self, oldDags, newDags, edgeWeights) :
+		""" Synthesize a new set of configurations inducing newDags such that
+		the overhead of change from oldDags is minimized"""
+		self.ilpSolver = gb.Model("C3")
+		self.ilpSolver.setParam('OutputFlag', 0)
+
+		# Find affected Switches by the change
+		affectedSwitches = self.affectedSwitches(oldDags, newDags)
+		print "Number of affected Switches", len(affectedSwitches)
+
+		self.removeInvalidStaticRoutes(newDags)
+
+		self.constructOverlay()	
+		#self.overlayConnectivity()	
+		self.disableUnusedEdges()
+		self.initializeRepairVariables(edgeWeights, affectedSwitches)
+
+		self.addDjikstraShortestPathConstraints()
+
+		dsts = self.pdb.getDestinationSubnets()
+		# Adding constraints with static routes enabled
+		for dst in dsts : 
+			dag = self.destinationDAGs[dst]
+			for sw in dag : 
+				if sw in affectedSwitches : 
+					self.addDestinationDAGConstraints(dst, dag)
+					break
+
+		print "Here and solving"
+		solvetime = time.time()
+		self.ilpSolver.optimize()
+		self.z3solveTime += time.time() - solvetime
+
+		status = self.ilpSolver.status
+
+		print "Solved repair"
+
+		if status == gb.GRB.INFEASIBLE :
+			# Perform inconsistency analysis using Gurobi
+			attempts = 1
+			inconsistencyVal = self.findRepairInconsistency(edgeWeights, affectedSwitches)
+			while inconsistencyVal:
+				inconsistencyVal = self.findRepairInconsistency(edgeWeights, affectedSwitches)
+				attempts += 1
+				if attempts > self.MAX_GUROBI_ITERATIONS :
+					break
+			#print "inconsistency attempts", attempts
+			#print "diamond loss", diamondLoss
+
+		print "Time taken for repair is", time.time() - solvetime
+		self.topology.enableAllEdges()
+		# Extract Edge weights for Gurobi	
+		print affectedSwitches	
+		self.getRepairEdgeWeightModel(edgeWeights, affectedSwitches, self.routeFilterMode)	
+		self.pdb.validateControlPlane(self.topology, self.staticRoutes)
 
 
+	def affectedSwitches(self, oldDags, newDags) :
+		""" Find all switches that could be potentially affected 
+		to enforce the config repair"""
+		affectedSwitches = []
+		for dst in oldDags :
+			oldDag = oldDags[dst]
+			newDag = newDags[dst]
+
+			if oldDag != newDag : 
+				# Change for paths to dst 
+				for sw in newDag : 
+					if sw not in oldDag and sw not in affectedSwitches:
+						# New switch. 
+						affectedSwitches.append(sw)
+
+					if sw in oldDag and newDag[sw] not in oldDag and sw not in affectedSwitches:
+						# Switch where the new path diverges 
+						affectedSwitches.append(sw)
+
+		return affectedSwitches
+
+	def initializeRepairVariables(self, edgeWeights, affectedSwitches) : 
+		swCount = self.topology.getSwitchCount()
+		self.edgeWeights = [[0 for x in range(swCount + 1)] for x in range(swCount + 1)]
+		self.grbedgeWeights = [[0 for x in range(swCount + 1)] for x in range(swCount + 1)]
+		self.distVars = [[[0 for x in range(swCount + 1)] for x in range(swCount + 1)] for x in range(swCount + 1)] 
+		
+		for sw1 in range(1,swCount+1):
+			if sw1 in affectedSwitches: 
+				for sw2 in self.topology.getSwitchNeighbours(sw1) :
+					self.grbedgeWeights[sw1][sw2] = self.ilpSolver.addVar(lb=0.00, ub=10000, vtype=gb.GRB.CONTINUOUS, name="E-" + str(sw1)+"-"+str(sw2) + "_")
+					self.edgeWeights[sw1][sw2] = edgeWeights[sw1][sw2] + self.grbedgeWeights[sw1][sw2]
+			else :
+				for sw2 in self.topology.getSwitchNeighbours(sw1) :
+					self.edgeWeights[sw1][sw2] = edgeWeights[sw1][sw2]
+
+		for sw1 in range(1,swCount+1):
+			for sw2 in range(1, swCount + 1) :
+				# dst = 0 is the default value 
+				self.distVars[sw1][sw2][0] = self.ilpSolver.addVar(lb=0.00, vtype=gb.GRB.CONTINUOUS, name="D-" + str(sw1)+"-"+str(sw2) + "_")
+
+		self.ilpSolver.update()
+
+	def removeInvalidStaticRoutes(self, newDags) :
+		""" Remove the static routes which are on paths no longer valid """
+
+		dsts = self.pdb.getDestinationSubnets()
+		for dst in dsts : 
+			dag = newDags[dst]
+			staticRoutes = self.staticRoutes[dst]
+			invalidSR = []
+			for sr in staticRoutes :
+				if sr[0] in dag and sr[1] == dag[sr[0]] : 
+					# Static route still valid 
+					continue
+				else : 
+					invalidSR.append(sr)
+
+			# Remove invalid static routes
+			for sr in invalidSR : 
+				self.staticRoutes[dst].remove(sr)
 
 
+	def findRepairInconsistency(self, edgeWeights, affectedSwitches) :
+		""" Find inconsistent set of equations """
+		self.ilpSolver = gb.Model("C3")
+		self.ilpSolver.setParam('OutputFlag', 0)
+		self.initializeRepairVariables(edgeWeights, affectedSwitches)
+		dsts = self.pdb.getDestinationSubnets()
+
+		self.addDjikstraShortestPathConstraints()
+		# Adding constraints with routeFilter variables at source
+		for dst in dsts : 
+			dag = self.destinationDAGs[dst]
+			for sw in dag : 
+				if sw in affectedSwitches :
+					self.addDestinationDAGConstraints(dst, dag)
+					break
+
+		solvetime = time.time()
+		self.ilpSolver.optimize()
+		self.z3solveTime += time.time() - solvetime
+
+		status = self.ilpSolver.status
+		if status == gb.GRB.INFEASIBLE :
+			solvetime = time.time()
+			self.ilpSolver.computeIIS()
+			self.z3solveTime += time.time() - solvetime
+			self.minimizeStaticRoutes()
+			return True
+		else :
+			return False
+
+	def getRepairEdgeWeightModel(self, oldEdgeWeights, affectedSwitches, routeFilterMode=True) : 
+		self.topology.initializeWeights()
+		swCount = self.topology.getSwitchCount()
+		dsts = self.pdb.getDestinationSubnets()
+		# self.distances = [[0 for x in range(swCount + 1)] for x in range(swCount + 1)]
+
+		self.edgeWeightValues = [[0 for x in range(swCount + 1)] for x in range(swCount + 1)]
+		for sw in range(1, swCount + 1) :
+			for n in self.topology.getSwitchNeighbours(sw) : 
+				if n not in self.overlay[sw] :
+					self.topology.addWeight(sw, n, float(100000))
+					self.edgeWeightValues[sw][n] = float(100000)
+					#print sw, n, 1000
+		
+		for sw1 in range(1,swCount+1):
+			if sw1 in affectedSwitches: 
+				for sw2 in self.topology.getSwitchNeighbours(sw1) :
+					if sw2 not in self.overlay[sw1]: continue
+					self.topology.addWeight(sw1, sw2, self.grbedgeWeights[sw1][sw2].x + oldEdgeWeights[sw1][sw2])
+			else :
+				for sw2 in self.topology.getSwitchNeighbours(sw1) :
+					self.topology.addWeight(sw1, sw2, oldEdgeWeights[sw1][sw2])
+					#print sw, n,  float(ew)
 
 
+		if not routeFilterMode :
+			# Route filters not used. 
+			return 
+
+		totalStaticRoutes = 0
+		setStaticRoutes = 0
+		for dst in dsts : 
+			dag = self.destinationDAGs[dst]
+			totalStaticRoutes += len(dag) - 1 
+		
+		for dst in dsts : 
+			setStaticRoutes += len(self.staticRoutes[dst])
+
+		self.SRCount = setStaticRoutes
+		print "Ratio of Static Routes : ", setStaticRoutes, totalStaticRoutes 
 # nuZ3
 # maxSAT
 # US Backbone, RocketFuelS
