@@ -49,13 +49,8 @@ class ZeppelinSynthesiser(object) :
 
 		self.inconsistentSRs = 0
 
-		# Route Filter Optimizations
-		self.filterDependencies = defaultdict(lambda:defaultdict(lambda:defaultdict(lambda:None)))
-
-		# Endpoint resilience
-		self.endpointResilience = defaultdict(lambda:defaultdict(lambda:None))
-		self.resilienceLoss = 0
-
+		# Gurobi Constraints
+		self.distanceConstraints = defaultdict(lambda:defaultdict(lambda:defaultdict(lambda:None)))
 
 	def initializeSMTVariables(self) :
 		swCount = self.topology.getSwitchCount()
@@ -197,15 +192,17 @@ class ZeppelinSynthesiser(object) :
 
 				status = self.ilpSolver.status
 
-				if status == gb.GRB.INFEASIBLE :
+				while status == gb.GRB.INFEASIBLE :
 					# Perform inconsistency analysis using Gurobi
 					attempts = 1
-					inconsistencyVal = self.findInconsistency()
-					while inconsistencyVal:
-						inconsistencyVal = self.findInconsistency()
-						attempts += 1
-						if attempts > self.MAX_GUROBI_ITERATIONS :
-							break
+					self.ilpSolver.computeIIS()
+					self.minimizeStaticRoutes()
+					
+					solvetime = time.time()
+					self.ilpSolver.optimize()
+					self.z3solveTime += time.time() - solvetime
+
+					status = self.ilpSolver.status
 					#print "inconsistency attempts", attempts
 					#print "diamond loss", diamondLoss
 
@@ -241,7 +238,9 @@ class ZeppelinSynthesiser(object) :
 		self.zepFile.write("Static Routes" + "\t" + str(self.pdb.getPacketClassRange()) + "\t" + str(srCount) + "\t")
 		self.zepFile.write("\n")
 
-		# Consider the repair problem now.
+
+	def synthesizeRepair(self) :
+		# Consider the repair problem now. #Experimental code
 		oldDags = copy.deepcopy(self.destinationDAGs)
 
 		changeCount = 4
@@ -321,39 +320,8 @@ class ZeppelinSynthesiser(object) :
 	"""
 	def findInconsistency(self) :
 		""" Find inconsistent set of equations """
-		self.ilpSolver = gb.Model("C3")
-		self.ilpSolver.setParam('OutputFlag', 0)
-		self.initializeSMTVariables()
-		dsts = self.pdb.getDestinationSubnets()
-
-		# Prompted by Gurobi? 
-		# self.ilpSolver.setParam(gb.GRB.Param.BarHomogeneous, 1) 
-		# self.ilpSolver.setParam(gb.GRB.Param.Method, 2) 
-
-		self.addDjikstraShortestPathConstraints()
-		# Adding constraints with routeFilter variables at source
-		for dst in dsts : 
-			dag = self.destinationDAGs[dst]
-			self.addDestinationDAGConstraints(dst, dag)
-
-		solvetime = time.time()
-		self.ilpSolver.optimize()
-		self.z3solveTime += time.time() - solvetime
-
-		status = self.ilpSolver.status
-		if status == gb.GRB.INFEASIBLE :
-			solvetime = time.time()
-			self.ilpSolver.computeIIS()
-			self.z3solveTime += time.time() - solvetime
-
-			#self.plotUnsatCore()
-			# Pick filters greedily?
-			#self.greedyRouteFilter()
-			self.minimizeStaticRoutes()
-			return True
-		else :
-			return False
-
+		pass
+			
 	def minimizeStaticRoutes(self) :
 		""" Pick static routes greedily """
 		staticRoutes = []
@@ -504,13 +472,15 @@ class ZeppelinSynthesiser(object) :
 					
 				if not [sw, dag[sw]] in self.staticRoutes[dst] : 
 					neighbours = self.topology.getSwitchNeighbours(sw)
+					self.distanceConstraints[sw][dag[sw]][dst] = []
 					for n in neighbours : 
 						if n != dag[sw]: 
 							if type(totalDist) == float and type(self.ew(sw, n)) == float and type(self.dist(n, dstSw)) == float :
 								continue
 
-							self.ilpSolver.addConstr(totalDist <= self.ew(sw, n) + self.dist(n, dstSw) - 1, "SR-" + str(sw) + "-" 
+							distconstr = self.ilpSolver.addConstr(totalDist <= self.ew(sw, n) + self.dist(n, dstSw) - 1, "SR-" + str(sw) + "-" 
 								+ str(dag[sw]) + "-" + str(dstSw) + "-" + str(dst) + "-" + str(self.constraintIndex))
+							self.distanceConstraints[sw][dag[sw]][dst].append(distconstr)
 							self.constraintIndex += 1
 
 		self.addBGPExtensionConstraints(dst, dag, staticRouteMode)		
@@ -586,7 +556,13 @@ class ZeppelinSynthesiser(object) :
 			self.staticRoutes[dst].append([sw1, sw2]) 
 			self.inconsistentSRs += 1
 
-		print "SR", sw1, sw2, dst
+		# Delete distance constraints from model
+		distconstrs = self.distanceConstraints[sw1][sw2][dst]
+		for dconstr in distconstrs : 
+			self.ilpSolver.remove(dconstr)
+
+		self.ilpSolver.update()
+		#print "SR", sw1, sw2, dst
 
 
 	def getEdgeWeightModel(self, routeFilterMode=True) : 
@@ -780,10 +756,39 @@ class ZeppelinSynthesiser(object) :
 			solvetime = time.time()
 			self.ilpSolver.computeIIS()
 			self.z3solveTime += time.time() - solvetime
-			self.minimizeStaticRoutes()
+			self.minimizeRepairStaticRoutes(affectedSwitches)
 			return True
 		else :
 			return False
+
+	def minimizeRepairStaticRoutes(self, affectedSwitches) :
+		""" Pick static routes greedily from affectedSwitches """
+		staticRoutes = []
+		for constr in self.ilpSolver.getConstrs() :
+			if constr.getAttr(gb.GRB.Attr.IISConstr) > 0 :
+				name = constr.getAttr(gb.GRB.Attr.ConstrName) 
+				fields = name.split("-")
+				if fields[0] == "SR" :
+					# Static Route constraint
+					#if fields[1] not in affectedSwitches : continue # Dont consider static routes
+					foundFlag = False
+					for ind in range(len(staticRoutes)) :
+						if staticRoutes[ind][0] == [int(fields[1]), int(fields[2]), int(fields[4])] : 
+							staticRoutes[ind] = [staticRoutes[ind][0], staticRoutes[ind][1] + 1]
+							foundFlag = True
+							break
+					if not foundFlag :
+						staticRoutes.append([[int(fields[1]), int(fields[2]), int(fields[4])], 1])
+
+		sr = None
+		count = 0
+		for ind in range(len(staticRoutes)) : 
+			if staticRoutes[ind][1] > count : 
+				sr = staticRoutes[ind][0]
+				count = staticRoutes[ind][1]
+
+		# Pick the best static Route
+		self.addStaticRoute(sr[0], sr[1], sr[2])
 
 	def getRepairEdgeWeightModel(self, oldEdgeWeights, affectedSwitches, routeFilterMode=True) : 
 		self.topology.initializeWeights()
