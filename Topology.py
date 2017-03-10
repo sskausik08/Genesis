@@ -343,9 +343,10 @@ class Topology(object):
 			neighbours = self.getSwitchNeighbours(minsw)
 
 			for n in neighbours :
-				# Route filter present for edge, do not consider the edge.
-				if [minsw, n] in routefilters : continue 
-				if not visited[n] :
+				# Route filter present for edge, do not consider the edges
+				if [minsw, n] in routefilters : 
+					continue 
+				elif not visited[n] :
 					alt = dist[minsw] + float(self.edgeWeights[minsw][n])
 					if alt < dist[n] : 
 						dist[n] = alt

@@ -20,6 +20,7 @@ class ZeppelinInputGenerator(object) :
 		self.destinationDAGs = dict()
 		self.destinationSwitches = dict()
 		self.paths = dict()
+		self.backupPaths = dict()
 
 		destinationSubnets = subnets
 
@@ -107,6 +108,49 @@ class ZeppelinInputGenerator(object) :
 
 				currpc += 1
 
+		currpc = 0
+		while currpc < pcRange : 
+			dst =  currpc % destinationSubnets
+			backupPath = self.getBackupPath(currpc, dst)
+			if len(backupPath) > 0 :
+				self.backupPaths[dst] = [backupPath]
+				break
+			currpc += 1
+
+
+	def getBackupPath(self, pc, dst): 
+		swCount = self.topology.getSwitchCount()
+
+		# Find backup path for pc=0
+		origPath = self.paths[pc] 
+		startSw = origPath[0]
+		dstSw = origPath[len(origPath) - 1]
+		dag = self.destinationDAGs[dst]
+		visited = dict()
+		prev = dict()
+		# Do a BFS from startSw to dstSw which does not intersect dag
+		swQueue = [startSw]
+		prev[startSw] = None
+		while len(swQueue) > 0 :
+			currSw = swQueue.pop(0)
+			visited[currSw] = True
+			neighbours = self.topology.getSwitchNeighbours(currSw)
+			for n in neighbours : 
+				if n == dstSw : 
+					# Reached destination. Extract path
+					backupPath = [dstSw]
+					while currSw != None:
+						backupPath.append(currSw)
+						currSw = prev[currSw]
+					backupPath.reverse()
+					return backupPath
+				elif n in visited or n in dag : 
+					continue
+				elif n not in swQueue : 
+					prev[n] = currSw
+					swQueue.append(n)
+
+		return []
 
 	def getDestinationDAGs(self) :
 		for dst in self.destinationDAGs : 
@@ -120,6 +164,9 @@ class ZeppelinInputGenerator(object) :
 
 	def getPaths(self) :
 		return self.paths
+
+	def getBackupPaths(self) :
+		return self.backupPaths
 
 
 

@@ -1261,7 +1261,7 @@ class OuterZeppelinSynthesiser(object) :
 				pdb.addDestinationDAG(dst, dags[dst])
 
 			zepSynthesiser = ZeppelinSynthesiser(topo, pdb)
-			routeFilterNames = zepSynthesiser.enforceDAGs(dags, endpoints, bgpExtensions)
+			routeFilterNames = zepSynthesiser.enforceDAGs(dags=dags, endpoints=endpoints, bgpExtensions=bgpExtensions)
 
 			for dst in routeFilterNames : 
 				RFCount += len(routeFilterNames[dst])

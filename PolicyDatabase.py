@@ -545,7 +545,7 @@ class PolicyDatabase(object) :
 	def addBGPExtensions(self, bgpExtensions) :
 		self.bgpExtensions = copy.deepcopy(bgpExtensions)
 
-	def validateControlPlane(self, topology, staticRoutes) :
+	def validateControlPlane(self, topology, staticRoutes, backups=[]) :
 		violationCount = 0
 		for pc in range(self.getPacketClassRange()) :
 			src = self.getSourceSwitch(pc)
@@ -577,6 +577,20 @@ class PolicyDatabase(object) :
 						print "BGP gateway violation by ZCP", pc 
 						break
 				nextsw = dag[nextsw]
+
+		# Validate backup paths
+		for dst in backups : 
+			backupPaths = backups[dst]
+			dag = self.dags[dst]
+			for backupPath in backupPaths : 
+				path = topology.getShortestPath(backupPath[0], backupPath[len(backupPath) - 1])
+				for i in range(len(path) - 1) : 
+					nextPath = topology.getShortestPath(backupPath[0], backupPath[len(backupPath) - 1], [[path[i], path[i+1]]])
+					if nextPath != backupPath : 
+						print "Backup path violated" 
+						print dag, backupPath, nextPath
+						violationCount += 1
+						break
 
 		if violationCount > 0 :
 			print "Error: incorrect OSPF configuration"

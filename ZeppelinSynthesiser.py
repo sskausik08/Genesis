@@ -109,7 +109,7 @@ class ZeppelinSynthesiser(object) :
 			return 0.0
 		return self.distVars[sw1][sw2][dst]
 
-	def enforceDAGs(self, dags, endpoints, bgpExtensions=None):
+	def enforceDAGs(self, dags, endpoints, backups=None, bgpExtensions=None):
 		""" Enforce the input destination dags """
 		start_t = time.time()
 		self.overlay = dict()
@@ -147,6 +147,11 @@ class ZeppelinSynthesiser(object) :
 			dag = self.destinationDAGs[dst]
 			self.addDestinationDAGConstraints(dst, dag, False)
 
+		for dst in backups : 
+			backupPaths = backups[dst]
+			dag = self.destinationDAGs[dst]
+			for backupPath in backupPaths : 
+				self.addBackupPathConstraints(dst, dag, backupPath, False) 
 
 		#print "Solving ILP without static routes"
 		solvetime = time.time()
@@ -203,9 +208,6 @@ class ZeppelinSynthesiser(object) :
 					self.z3solveTime += time.time() - solvetime
 
 					status = self.ilpSolver.status
-					#print "inconsistency attempts", attempts
-					#print "diamond loss", diamondLoss
-
 			
 		# self.f.write(str(len(endpoints)) + "," + str(time.time() - start_t)+"\n")
 		# Enable Topology Edges
@@ -215,7 +217,7 @@ class ZeppelinSynthesiser(object) :
 
 		# self.f.close()	
 		#self.pdb.printPaths(self.topology)
-		self.pdb.validateControlPlane(self.topology, self.staticRoutes)
+		self.pdb.validateControlPlane(self.topology, self.staticRoutes, backups)
 
 		srCount = 0
 		# Translate route filters to switch names
@@ -428,13 +430,6 @@ class ZeppelinSynthesiser(object) :
 					continue
 				if s == t : 
 					continue
-				# if not self.topology.isConnected(s, t) :
-				# 	continue # s, t is not connected in overlay, distance(s, t) does not matter
-
-				# neighbours = self.topology.getSwitchNeighbours(s)
-				# for n in neighbours :
-				# 	if [s, n] not in self.routefilters[dst] :  
-				# 		self.ilpSolver.addConstr(self.dist(s, t, dst) <= self.ew(s, n) + self.dist(n, t, dst))
 
 				for sw in self.topology.getSwitchNeighbours(s) :
 					self.ilpSolver.addConstr(self.dist(s, t) <= self.ew(s, sw) + self.dist(sw, t), "D-" + str(self.constraintIndex) + " ")	
@@ -484,6 +479,27 @@ class ZeppelinSynthesiser(object) :
 							self.constraintIndex += 1
 
 		self.addBGPExtensionConstraints(dst, dag, staticRouteMode)		
+
+	def addBackupPathConstraints(self, dst, dag, backupPath, staticRouteMode) :
+		""" Adds constraints such backup path is activated when the main path fails"""	
+		for sw in dag :
+			if dag[sw] == None :
+				dstSw = sw
+
+		if not staticRouteMode :
+			print "Adding backup constraints"
+			startSw = backupPath[0]
+			origSw = dag[startSw]
+			backupSw = backupPath[1]
+
+			neighbours = self.topology.getSwitchNeighbours(origSw)
+			for n in neighbours : 
+				if n != dag[origSw] : 
+					self.ilpSolver.addConstr(self.ew(startSw, backupSw) + self.dist(backupSw, dstSw) 
+						<= self.ew(startSw, origSw) + self.ew(origSw, n) + self.dist(n, dstSw) - 1)
+		else:
+			print "Not implemented yet."
+			exit(0)
 
 	def addBGPExtensionConstraints(self, dst, dag, routeFilterMode=True) :
 		# TODO: Change wrt static routes

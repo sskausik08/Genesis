@@ -68,7 +68,7 @@ class Zeppelin(object):
 		if self.ospfFlag : 
 			# Synthesize a single OSPF domain.
 			self.zepSynthesiser = ZeppelinSynthesiser(self.topology, self.policyDatabase)
-			self.zepSynthesiser.enforceDAGs(self.zepInput.getDestinationDAGs(), self.zepInput.getEndpoints())
+			self.zepSynthesiser.enforceDAGs(dags=self.zepInput.getDestinationDAGs(), endpoints=self.zepInput.getEndpoints(), backups=self.zepInput.getBackupPaths())
 
 		else : 
 			self.outerZepSynthesizer = OuterZeppelinSynthesiser(topology=self.topology, pdb=self.policyDatabase, timeout=self.timeout, numDomains=self.numDomains, configOpt=self.configOpt, rfOpt=self.rfOpt)
