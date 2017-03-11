@@ -487,16 +487,32 @@ class ZeppelinSynthesiser(object) :
 				dstSw = sw
 
 		if not staticRouteMode :
-			print "Adding backup constraints"
+			# print "Adding backup constraints"
 			startSw = backupPath[0]
 			origSw = dag[startSw]
 			backupSw = backupPath[1]
 
+			# Ensure backup path is shorter than the other switches at startSw
+			neighbours = self.topology.getSwitchNeighbours(startSw)
+			for n in neighbours : 
+				if n != origSw and n != backupSw :
+					self.ilpSolver.addConstr(self.ew(startSw, backupSw) + self.dist(backupSw, dstSw)  
+						<= self.ew(startSw, n) + self.dist(n, dstSw) - 1)
+
+			# Ensure backup path is shorter than the other paths starting at origSw
 			neighbours = self.topology.getSwitchNeighbours(origSw)
 			for n in neighbours : 
 				if n != dag[origSw] : 
 					self.ilpSolver.addConstr(self.ew(startSw, backupSw) + self.dist(backupSw, dstSw) 
 						<= self.ew(startSw, origSw) + self.ew(origSw, n) + self.dist(n, dstSw) - 1)
+
+			# Create a dag from backupSw to dstSw and add shortest path constraints
+			backupDag = dict()
+			for i in range(1, len(backupPath) - 1):
+				backupDag[backupPath[i]] = backupPath[i + 1]
+			backupDag[dstSw] = None
+
+			self.addDestinationDAGConstraints(dst, backupDag, staticRouteMode)
 		else:
 			print "Not implemented yet."
 			exit(0)
