@@ -108,13 +108,16 @@ class ZeppelinInputGenerator(object) :
 
 				currpc += 1
 
+		
 		currpc = 0
 		while currpc < pcRange : 
 			dst =  currpc % destinationSubnets
 			backupPath = self.getBackupPath(currpc, dst)
 			if len(backupPath) > 0 :
-				self.backupPaths[dst] = [backupPath]
-				break
+				if dst not in self.backupPaths : 
+					self.backupPaths[dst] = [backupPath]	
+				else : 
+					self.backupPaths[dst].append(backupPath)		
 			currpc += 1
 
 
@@ -143,6 +146,9 @@ class ZeppelinInputGenerator(object) :
 						backupPath.append(currSw)
 						currSw = prev[currSw]
 					backupPath.reverse()
+					if len(backupPath) == 2 and dag[backupPath[0]] == backupPath[1]: 
+						# [startSw, dstSw] dont accept
+						continue
 					return backupPath
 				elif n in visited or n in dag : 
 					continue

@@ -363,6 +363,27 @@ class Topology(object):
 		path.reverse()
 		return path
 
+	def getShortestPathStaticRoutes(self, src, dst, staticRoutes) :
+		nextsw = src
+		path = [src]
+		while nextsw != dst :
+			staticnexthop = False 
+			for sr in staticRoutes : 
+				if sr[0] == nextsw : 
+					nextsw = sr[1]
+					staticnexthop = True
+					break
+
+			if not staticnexthop :
+				spath = self.getShortestPath(nextsw, dst) 
+				if len(spath) == 0 : 
+					return []
+				nextsw = spath[1]
+
+			path.append(nextsw)
+			
+		return path
+
 	def checkUniquenessShortestPath(self, spath, routefilters) :
 		""" Check if there exists a path different from spath with the same weight """
 		spathWeight = 0

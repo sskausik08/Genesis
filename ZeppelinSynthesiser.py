@@ -51,6 +51,7 @@ class ZeppelinSynthesiser(object) :
 
 		# Gurobi Constraints
 		self.distanceConstraints = defaultdict(lambda:defaultdict(lambda:defaultdict(lambda:None)))
+		self.backupPathConstraints = defaultdict(lambda:defaultdict(lambda:None))
 
 	def initializeSMTVariables(self) :
 		swCount = self.topology.getSwitchCount()
@@ -186,6 +187,12 @@ class ZeppelinSynthesiser(object) :
 					dag = self.destinationDAGs[dst]
 					self.addDestinationDAGConstraints(dst, dag)
 
+				for dst in backups : 
+					backupPaths = backups[dst]
+					dag = self.destinationDAGs[dst]
+					for backupPath in backupPaths : 
+						self.addBackupPathConstraints(dst, dag, backupPath, True) 
+
 				# if self.t_res > 0 :
 				# 	t_res = self.t_res
 				# 	for endpt in self.endpoints : 
@@ -319,11 +326,7 @@ class ZeppelinSynthesiser(object) :
 	An IIS is a subset of the constraints and variable bounds of the original model. 
 	If all constraints in the model except those in the IIS are removed, the model is still infeasible. 
 	However, further removing any one member of the IIS produces a feasible result.
-	"""
-	def findInconsistency(self) :
-		""" Find inconsistent set of equations """
-		pass
-			
+	"""	
 	def minimizeStaticRoutes(self) :
 		""" Pick static routes greedily """
 		staticRoutes = []
@@ -341,6 +344,10 @@ class ZeppelinSynthesiser(object) :
 							break
 					if not foundFlag :
 						staticRoutes.append([[int(fields[1]), int(fields[2]), int(fields[4])], 1])
+
+		if len(staticRoutes) == 0 : 
+			print "INFEASIBLE forever"
+			exit(0)
 
 		sr = None
 		count = 0
@@ -486,36 +493,41 @@ class ZeppelinSynthesiser(object) :
 			if dag[sw] == None :
 				dstSw = sw
 
-		if not staticRouteMode :
-			# print "Adding backup constraints"
-			startSw = backupPath[0]
-			origSw = dag[startSw]
-			backupSw = backupPath[1]
+		startSw = backupPath[0]
+		origSw = dag[startSw]
+		backupSw = backupPath[1]
 
-			# Ensure backup path is shorter than the other switches at startSw
-			neighbours = self.topology.getSwitchNeighbours(startSw)
-			for n in neighbours : 
-				if n != origSw and n != backupSw :
-					self.ilpSolver.addConstr(self.ew(startSw, backupSw) + self.dist(backupSw, dstSw)  
-						<= self.ew(startSw, n) + self.dist(n, dstSw) - 1)
+		# Ensure backup path is shorter than the other switches at startSw
+		backupDist = 0
+		for i in range(len(backupPath) - 1) : 
+			backupDist += self.ew(backupPath[i], backupPath[i + 1])
 
+		neighbours = self.topology.getSwitchNeighbours(startSw)
+		for n in neighbours : 
+			if n != origSw and n != backupSw :
+				self.ilpSolver.addConstr(backupDist  
+					<= self.ew(startSw, n) + self.dist(n, dstSw) - 1)
+
+		origDist = self.ew(startSw, origSw)
+		while origSw != dstSw : 
 			# Ensure backup path is shorter than the other paths starting at origSw
 			neighbours = self.topology.getSwitchNeighbours(origSw)
 			for n in neighbours : 
 				if n != dag[origSw] : 
-					self.ilpSolver.addConstr(self.ew(startSw, backupSw) + self.dist(backupSw, dstSw) 
-						<= self.ew(startSw, origSw) + self.ew(origSw, n) + self.dist(n, dstSw) - 1)
+					self.ilpSolver.addConstr(backupDist 
+						<= origDist + self.ew(origSw, n) + self.dist(n, dstSw) - 1)
 
-			# Create a dag from backupSw to dstSw and add shortest path constraints
-			backupDag = dict()
-			for i in range(1, len(backupPath) - 1):
-				backupDag[backupPath[i]] = backupPath[i + 1]
-			backupDag[dstSw] = None
+			origDist += self.ew(origSw, dag[origSw])
+			origSw = dag[origSw]
 
-			self.addDestinationDAGConstraints(dst, backupDag, staticRouteMode)
-		else:
-			print "Not implemented yet."
-			exit(0)
+		# Create a dag from backupSw to dstSw and add shortest path constraints
+		backupDag = dict()
+		for i in range(1, len(backupPath) - 1):
+			backupDag[backupPath[i]] = backupPath[i + 1]
+		backupDag[dstSw] = None
+
+		self.addDestinationDAGConstraints(dst, backupDag, staticRouteMode)
+		
 
 	def addBGPExtensionConstraints(self, dst, dag, routeFilterMode=True) :
 		# TODO: Change wrt static routes

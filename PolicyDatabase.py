@@ -583,12 +583,12 @@ class PolicyDatabase(object) :
 			backupPaths = backups[dst]
 			dag = self.dags[dst]
 			for backupPath in backupPaths : 
-				path = topology.getShortestPath(backupPath[0], backupPath[len(backupPath) - 1])
+				path = topology.getShortestPathStaticRoutes(backupPath[0], backupPath[len(backupPath) - 1], staticRoutes[dst])
 				for i in range(len(path) - 1) : 
 					nextPath = topology.getShortestPath(backupPath[0], backupPath[len(backupPath) - 1], [[path[i], path[i+1]]])
-					if nextPath != backupPath : 
+					if nextPath[1] != backupPath[1] : 
 						print "Backup path violated" 
-						print dag, backupPath, nextPath
+						print dag, backupPath, nextPath, staticRoutes[dst]
 						violationCount += 1
 						break
 
