@@ -14,7 +14,7 @@ from collections import defaultdict
 #import matplotlib.pyplot as plt
 
 class ZeppelinSynthesiser(object) :
-	def __init__(self, topology, pdb, minimalFilterSolve=False) :
+	def __init__(self, topology, pdb, backup=False) :
 		self.topology = topology
 		self.pdb = pdb
 
@@ -45,9 +45,11 @@ class ZeppelinSynthesiser(object) :
 
 		# Constants
 		self.MAX_GUROBI_ITERATIONS = 600
-		self.minimalFilterSolveFlag = minimalFilterSolve
+		self.backupFlag = backup
+		self.maximalBackupFlag = False # maximalBackup
 
 		self.inconsistentSRs = 0
+		self.inconsistentBPs = 0
 
 		# Gurobi Constraints
 		self.distanceConstraints = defaultdict(lambda:defaultdict(lambda:defaultdict(lambda:None)))
@@ -58,8 +60,6 @@ class ZeppelinSynthesiser(object) :
 
 		self.edgeWeights = [[0 for x in range(swCount + 1)] for x in range(swCount + 1)]
 		self.distVars = [[[0 for x in range(swCount + 1)] for x in range(swCount + 1)] for x in range(swCount + 1)] 
-		self.routefiltersVars = defaultdict(lambda:defaultdict(lambda:defaultdict(lambda:None)))
-		self.maxFlowVars = defaultdict(lambda:defaultdict(lambda:None))
 
 		dsts = self.pdb.getDestinationSubnets()
 
@@ -74,6 +74,13 @@ class ZeppelinSynthesiser(object) :
 				# for dst in dsts : 
 				# 	self.distVars[sw1][sw2][dst] = self.ilpSolver.addVar(lb=0.00,vtype=gb.GRB.CONTINUOUS, name="D-" + str(sw1)+"-"+str(sw2)+"-"+str(dst) + " ")
 
+		self.backupPathVars = defaultdict(lambda:defaultdict(lambda:None))
+		self.bpVarSum = 0
+		for dst in self.backupPaths : 
+			backupPaths = self.backupPaths[dst]
+			for backupPath in backupPaths : 
+				self.backupPathVars[backupPath[0]][dst] = self.ilpSolver.addVar(vtype=gb.GRB.BINARY, name="B-" + str(backupPath[0])+"-"+str(dst) + "_")
+				self.bpVarSum += self.backupPathVars[backupPath[0]][dst]
 		self.ilpSolver.update()
 
 	def initializeStaticRoutes(self) :
@@ -82,6 +89,12 @@ class ZeppelinSynthesiser(object) :
 			self.staticRoutes[dst] = []
 
 		self.staticRoutes[0] = [] # Default destination val = 0 (Not a s)
+
+		# Gurobi Constraints
+		self.distanceConstraints = defaultdict(lambda:defaultdict(lambda:defaultdict(lambda:None)))
+		self.backupPathConstraints = defaultdict(lambda:defaultdict(lambda:None))
+		self.inconsistentSRs = 0
+		self.inconsistentBPs = 0
 
 	def initializeEndpointResilience(self) : 
 		# Without filters, all sources have maximum resilience = number of source neighbours.
@@ -110,11 +123,18 @@ class ZeppelinSynthesiser(object) :
 			return 0.0
 		return self.distVars[sw1][sw2][dst]
 
+	def bp(self, sw, dst) : 
+		return self.backupPathVars[sw][dst]
+
 	def enforceDAGs(self, dags, endpoints, backups=None, bgpExtensions=None):
 		""" Enforce the input destination dags """
 		start_t = time.time()
 		self.overlay = dict()
 		self.destinationDAGs = copy.deepcopy(dags)
+		if self.backupFlag : 
+			self.backupPaths = copy.deepcopy(backups)
+		else : 
+			self.backupPaths = dict()
 		self.spGraphs = []
 		self.bgpExtensions = []
 		if bgpExtensions != None : 
@@ -143,16 +163,18 @@ class ZeppelinSynthesiser(object) :
 		start_t = time.time()
 		self.addDjikstraShortestPathConstraints()
 
-		# Adding constraints without routeFilters
+		# Adding constraints without static routes
 		for dst in dsts : 
 			dag = self.destinationDAGs[dst]
 			self.addDestinationDAGConstraints(dst, dag, False)
 
-		for dst in backups : 
-			backupPaths = backups[dst]
-			dag = self.destinationDAGs[dst]
-			for backupPath in backupPaths : 
-				self.addBackupPathConstraints(dst, dag, backupPath, False) 
+		# Add constraints for backup paths
+		if self.backupFlag : 
+			for dst in self.backupPaths : 
+				backupPaths = self.backupPaths[dst]
+				dag = self.destinationDAGs[dst]
+				for backupPath in backupPaths : 
+					self.addBackupPathConstraints(dst, dag, backupPath, False) 
 
 		#print "Solving ILP without static routes"
 		solvetime = time.time()
@@ -160,22 +182,26 @@ class ZeppelinSynthesiser(object) :
 		self.ilpSolver.optimize()
 		self.z3solveTime += time.time() - solvetime
 	
-		self.routeFilterMode = False
+		self.staticRouteMode = False
 		status = self.ilpSolver.status
 
 		if status == gb.GRB.INFEASIBLE :
-			if self.minimalFilterSolveFlag :
-				self.routeFilterMode = True 
-				self.minimalFilterSolve()
+			if self.maximalBackupFlag :
+				self.maximalBackup()
+				self.topology.enableAllEdges()
+				# Extract Edge weights for Gurobi		
+				self.getEdgeWeightModel(self.staticRouteMode)	
+				self.pdb.validateControlPlane(self.topology, self.staticRoutes, self.backupPaths)
+
 			else : 
 				#print "solving ILP with static routes"
-				self.routeFilterMode = True
+				self.staticRouteMode = True
 
 				#self.findValidCycles()
 				self.ilpSolver = gb.Model("C3")
 				self.ilpSolver.setParam('OutputFlag', 0)
 				self.initializeSMTVariables()
-
+				self.initializeStaticRoutes()
 				self.addDjikstraShortestPathConstraints()
 
 				# Prompted by Gurobi? 
@@ -187,16 +213,12 @@ class ZeppelinSynthesiser(object) :
 					dag = self.destinationDAGs[dst]
 					self.addDestinationDAGConstraints(dst, dag)
 
-				for dst in backups : 
-					backupPaths = backups[dst]
-					dag = self.destinationDAGs[dst]
-					for backupPath in backupPaths : 
-						self.addBackupPathConstraints(dst, dag, backupPath, True) 
-
-				# if self.t_res > 0 :
-				# 	t_res = self.t_res
-				# 	for endpt in self.endpoints : 
-				# 		self.addResilienceConstraints(endpt[0], endpt[1], t_res)  # Add t-resilience
+				if self.backupFlag : 
+					for dst in self.backupPaths : 
+						backupPaths = self.backupPaths[dst]
+						dag = self.destinationDAGs[dst]
+						for backupPath in backupPaths : 
+							self.addBackupPathConstraints(dst, dag, backupPath, True) 
 
 				solvetime = time.time()
 				self.ilpSolver.optimize()
@@ -208,24 +230,24 @@ class ZeppelinSynthesiser(object) :
 					# Perform inconsistency analysis using Gurobi
 					attempts = 1
 					self.ilpSolver.computeIIS()
-					self.minimizeStaticRoutes()
+					self.repairInconsistency()
 					
 					solvetime = time.time()
 					self.ilpSolver.optimize()
 					self.z3solveTime += time.time() - solvetime
 
 					status = self.ilpSolver.status
-			
+		
 		# self.f.write(str(len(endpoints)) + "," + str(time.time() - start_t)+"\n")
 		# Enable Topology Edges
 		self.topology.enableAllEdges()
 		# Extract Edge weights for Gurobi		
-		self.getEdgeWeightModel(self.routeFilterMode)	
+		self.getEdgeWeightModel(self.staticRouteMode)	
 
 		# self.f.close()	
 		#self.pdb.printPaths(self.topology)
-		self.pdb.validateControlPlane(self.topology, self.staticRoutes, backups)
-
+		self.pdb.validateControlPlane(self.topology, self.staticRoutes, self.backupPaths)
+		
 		srCount = 0
 		# Translate route filters to switch names
 		self.staticRouteNames = dict()
@@ -238,14 +260,17 @@ class ZeppelinSynthesiser(object) :
 			self.staticRouteNames[subnet] = srNames
 
 		
-		self.zepFile = open("ospf-timing", 'a')
-		self.zepFile.write("Topology Switches\t" +  str(swCount))
-		self.zepFile.write("\n")
-		print "Time" + "\t" + str(self.pdb.getPacketClassRange()) + "\t" + str(time.time() - start_t)
-		self.zepFile.write("Time" + "\t" + str(self.pdb.getPacketClassRange()) + "\t" + str(time.time() - start_t))
-		self.zepFile.write("\n")
-		self.zepFile.write("Static Routes" + "\t" + str(self.pdb.getPacketClassRange()) + "\t" + str(srCount) + "\t")
-		self.zepFile.write("\n")
+		# self.zepFile = open("ospf-timing", 'a')
+		# self.zepFile.write("Topology Switches\t" +  str(swCount))
+		# self.zepFile.write("\n")
+		print "Time1" + "\t" + str(self.pdb.getPacketClassRange()) + "\t" + str(time.time() - start_t)
+		# self.zepFile.write("Time" + "\t" + str(self.pdb.getPacketClassRange()) + "\t" + str(time.time() - start_t))
+		# self.zepFile.write("\n")
+		# self.zepFile.write("Static Routes" + "\t" + str(self.pdb.getPacketClassRange()) + "\t" + str(srCount) + "\t")
+		# self.zepFile.write("\n")
+
+		exit(0)
+		#return self.staticRouteNames
 
 
 	def synthesizeRepair(self) :
@@ -270,7 +295,7 @@ class ZeppelinSynthesiser(object) :
 		
 		self.repair(oldDags, self.destinationDAGs, self.edgeWeightValues)
 
-		return self.staticRouteNames
+		
 
 
 	def changeDag(self, dag) :
@@ -327,8 +352,8 @@ class ZeppelinSynthesiser(object) :
 	If all constraints in the model except those in the IIS are removed, the model is still infeasible. 
 	However, further removing any one member of the IIS produces a feasible result.
 	"""	
-	def minimizeStaticRoutes(self) :
-		""" Pick static routes greedily """
+	def repairInconsistency(self) :
+		""" Pick static routes/ remove backup paths greedily """
 		staticRoutes = []
 		for constr in self.ilpSolver.getConstrs() :
 			if constr.getAttr(gb.GRB.Attr.IISConstr) > 0 :
@@ -337,27 +362,68 @@ class ZeppelinSynthesiser(object) :
 				if fields[0] == "SR" :
 					# Static Route constraint
 					foundFlag = False
-					for ind in range(len(staticRoutes)) :
-						if staticRoutes[ind][0] == [int(fields[1]), int(fields[2]), int(fields[4])] : 
-							staticRoutes[ind] = [staticRoutes[ind][0], staticRoutes[ind][1] + 1]
+					for index in range(len(staticRoutes)) :
+						if staticRoutes[index][0] == [int(fields[1]), int(fields[2]), int(fields[4])] : 
+							staticRoutes[index] = [staticRoutes[index][0], staticRoutes[index][1] + 1]
 							foundFlag = True
 							break
 					if not foundFlag :
-						staticRoutes.append([[int(fields[1]), int(fields[2]), int(fields[4])], 1])
+						if [int(fields[1]), int(fields[2])] not in self.staticRoutes[int(fields[4])] : 
+							staticRoutes.append([[int(fields[1]), int(fields[2]), int(fields[4])], 1])
+						else :
+							print "THis should not be happening."
+							print int(fields[1]),int(fields[2]),int(fields[4])
+							print self.distanceConstraints[int(fields[1])][int(fields[2])][int(fields[4])]
 
-		if len(staticRoutes) == 0 : 
-			print "INFEASIBLE forever"
+		backupPaths = []
+		for constr in self.ilpSolver.getConstrs() :
+			if constr.getAttr(gb.GRB.Attr.IISConstr) > 0 :
+				name = constr.getAttr(gb.GRB.Attr.ConstrName) 
+				fields = name.split("-")
+				if fields[0] == "BP" :
+					# backup path constraint
+					foundFlag = False
+					for index in range(len(backupPaths)) :
+						if backupPaths[index][0] == [int(fields[1]), int(fields[2])] : 
+							backupPaths[index] = [backupPaths[index][0], backupPaths[index][1] + 1]
+							foundFlag = True
+							break
+					if not foundFlag :
+						backupPaths.append([[int(fields[1]), int(fields[2])], 1])
+
+		if len(staticRoutes) == 0 and len(backupPaths) == 0: 
+			print "INFEASIBLE forever, should never ever ever happen at all!"
+
+			print self.staticRoutes
+			print self.backupPaths
+			for constr in self.ilpSolver.getConstrs() :
+				if constr.getAttr(gb.GRB.Attr.IISConstr) > 0 :
+					print constr 
+
 			exit(0)
 
-		sr = None
-		count = 0
-		for ind in range(len(staticRoutes)) : 
-			if staticRoutes[ind][1] > count : 
-				sr = staticRoutes[ind][0]
-				count = staticRoutes[ind][1]
+		if len(staticRoutes) > 0 : 
+			sr = None
+			count = 0
+			for ind in range(len(staticRoutes)) : 
+				if staticRoutes[ind][1] > count : 
+					sr = staticRoutes[ind][0]
+					count = staticRoutes[ind][1]
 
-		# Pick the best static Route
-		self.addStaticRoute(sr[0], sr[1], sr[2])
+			# Pick the best static Route
+			self.addStaticRoute(sr[0], sr[1], sr[2])
+
+		elif len(backupPaths) > 0 : 
+			bp = None
+			count = 0
+			for ind in range(len(backupPaths)) : 
+				if backupPaths[ind][1] > count : 
+					bp = backupPaths[ind][0]
+					count = backupPaths[ind][1]
+
+			# Pick the best static Route
+			self.removeBackupPath(bp[0], bp[1])
+
 
 	def constructOverlay(self) :
 		dsts = self.pdb.getDestinationSubnets()
@@ -474,6 +540,8 @@ class ZeppelinSynthesiser(object) :
 					
 				if not [sw, dag[sw]] in self.staticRoutes[dst] : 
 					neighbours = self.topology.getSwitchNeighbours(sw)
+					if self.distanceConstraints[sw][dag[sw]][dst] == None : 
+						self.distanceConstraints[sw][dag[sw]][dst] = []
 					self.distanceConstraints[sw][dag[sw]][dst] = []
 					for n in neighbours : 
 						if n != dag[sw]: 
@@ -485,7 +553,7 @@ class ZeppelinSynthesiser(object) :
 							self.distanceConstraints[sw][dag[sw]][dst].append(distconstr)
 							self.constraintIndex += 1
 
-		self.addBGPExtensionConstraints(dst, dag, staticRouteMode)		
+		self.addBGPExtensionConstraints(dst, dag, staticRouteMode)
 
 	def addBackupPathConstraints(self, dst, dag, backupPath, staticRouteMode) :
 		""" Adds constraints such backup path is activated when the main path fails"""	
@@ -502,11 +570,16 @@ class ZeppelinSynthesiser(object) :
 		for i in range(len(backupPath) - 1) : 
 			backupDist += self.ew(backupPath[i], backupPath[i + 1])
 
+		self.backupPathConstraints[backupPath[0]][dst] = []
 		neighbours = self.topology.getSwitchNeighbours(startSw)
 		for n in neighbours : 
 			if n != origSw and n != backupSw :
-				self.ilpSolver.addConstr(backupDist  
-					<= self.ew(startSw, n) + self.dist(n, dstSw) - 1)
+				constr = self.ilpSolver.addConstr(backupDist  
+					<= self.ew(startSw, n) + self.dist(n, dstSw) - 1, 
+					"BP-" + str(backupPath[0]) + "-" + str(dst) + "-" + str(self.constraintIndex))
+				self.backupPathConstraints[backupPath[0]][dst].append(constr)
+				self.constraintIndex += 1
+
 
 		origDist = self.ew(startSw, origSw)
 		while origSw != dstSw : 
@@ -514,8 +587,11 @@ class ZeppelinSynthesiser(object) :
 			neighbours = self.topology.getSwitchNeighbours(origSw)
 			for n in neighbours : 
 				if n != dag[origSw] : 
-					self.ilpSolver.addConstr(backupDist 
-						<= origDist + self.ew(origSw, n) + self.dist(n, dstSw) - 1)
+					constr = self.ilpSolver.addConstr(backupDist 
+						<= origDist + self.ew(origSw, n) + self.dist(n, dstSw) - 1, 
+						"BP-" + str(backupPath[0]) + "-" + str(dst) + "-" + str(self.constraintIndex))
+					self.backupPathConstraints[backupPath[0]][dst].append(constr)
+					self.constraintIndex += 1
 
 			origDist += self.ew(origSw, dag[origSw])
 			origSw = dag[origSw]
@@ -526,17 +602,190 @@ class ZeppelinSynthesiser(object) :
 			backupDag[backupPath[i]] = backupPath[i + 1]
 		backupDag[dstSw] = None
 
-		self.addDestinationDAGConstraints(dst, backupDag, staticRouteMode)
-		
+		if not staticRouteMode :
+			for sw in backupDag : 
+				t = backupDag[sw]
+				while t != None :				
+					constr = self.ilpSolver.addConstr(self.dist(sw, t) == self.ew(sw, backupDag[sw]) + self.dist(backupDag[sw], t))
+					self.backupPathConstraints[backupPath[0]][dst].append(constr)
 
-	def addBGPExtensionConstraints(self, dst, dag, routeFilterMode=True) :
+					neighbours = self.topology.getSwitchNeighbours(sw)
+					for n in neighbours : 
+						if n != backupDag[sw] : 
+							constr = self.ilpSolver.addConstr(self.dist(sw, t) <= self.ew(sw, n) + self.dist(n, t) - 1)
+							self.backupPathConstraints[backupPath[0]][dst].append(constr)
+
+					t = backupDag[t]
+		else:
+			for sw in backupDag :	
+				if sw == dstSw : continue					
+				nextsw = sw
+				totalDist = 0 # Store the distance from sw to t along backupDag.
+				while nextsw != dstSw : 
+					totalDist += self.ew(nextsw, backupDag[nextsw])
+					nextsw = backupDag[nextsw]
+
+				constr = self.ilpSolver.addConstr(self.dist(sw, dstSw) <= totalDist)
+				self.backupPathConstraints[backupPath[0]][dst].append(constr)
+
+				if not [sw, backupDag[sw]] in self.staticRoutes[dst] : 
+					neighbours = self.topology.getSwitchNeighbours(sw)
+					if self.distanceConstraints[sw][backupDag[sw]][dst] == None : 
+						self.distanceConstraints[sw][backupDag[sw]][dst] = []
+					for n in neighbours : 
+						if n != backupDag[sw]: 
+							distconstr = self.ilpSolver.addConstr(totalDist <= self.ew(sw, n) + self.dist(n, dstSw) - 1, 
+							"SR-" + str(sw) + "-"+ str(backupDag[sw]) + "-" + str(dstSw) + "-" + str(dst) + "-" + str(self.constraintIndex))
+
+							self.distanceConstraints[sw][backupDag[sw]][dst].append(distconstr)
+							self.constraintIndex += 1
+
+
+	def addMaximalBackupPathConstraints(self, dst, dag, backupPath, staticRouteMode) :
+		""" Adds constraints such backup path is activated when the main path fails"""	
+		for sw in dag :
+			if dag[sw] == None :
+				dstSw = sw
+
+		startSw = backupPath[0]
+		origSw = dag[startSw]
+		backupSw = backupPath[1]
+
+		bpVar = self.bp(backupPath[0], dst)
+
+		# Ensure backup path is shorter than the other switches at startSw
+		backupDist = 0
+		for i in range(len(backupPath) - 1) : 
+			backupDist += self.ew(backupPath[i], backupPath[i + 1])
+
+		self.backupPathConstraints[backupPath[0]][dst] = []
+		neighbours = self.topology.getSwitchNeighbours(startSw)
+		for n in neighbours : 
+			if n != origSw and n != backupSw :
+				constr = self.ilpSolver.addConstr(backupDist  
+					<= self.ew(startSw, n) + self.dist(n, dstSw) - 1 + 1000000 * bpVar, 
+					"BP-" + str(backupPath[0]) + "-" + str(dst) + "-" + str(self.constraintIndex))
+
+				self.constraintIndex += 1
+
+
+		origDist = self.ew(startSw, origSw)
+		while origSw != dstSw : 
+			# Ensure backup path is shorter than the other paths starting at origSw
+			neighbours = self.topology.getSwitchNeighbours(origSw)
+			for n in neighbours : 
+				if n != dag[origSw] : 
+					constr = self.ilpSolver.addConstr(backupDist 
+						<= origDist + self.ew(origSw, n) + self.dist(n, dstSw) - 1 + 1000000 * bpVar, 
+						"BP-" + str(backupPath[0]) + "-" + str(dst) + "-" + str(self.constraintIndex))
+	
+					self.constraintIndex += 1
+
+			origDist += self.ew(origSw, dag[origSw])
+			origSw = dag[origSw]
+
+		# Create a dag from backupSw to dstSw and add shortest path constraints
+		backupDag = dict()
+		for i in range(1, len(backupPath) - 1):
+			backupDag[backupPath[i]] = backupPath[i + 1]
+		backupDag[dstSw] = None
+
+		if not staticRouteMode :
+			for sw in backupDag : 
+				t = backupDag[sw]
+				while t != None :				
+					constr = self.ilpSolver.addConstr(self.dist(sw, t) == self.ew(sw, backupDag[sw]) + self.dist(backupDag[sw], t))
+	
+					neighbours = self.topology.getSwitchNeighbours(sw)
+					for n in neighbours : 
+						if n != backupDag[sw] : 
+							constr = self.ilpSolver.addConstr(self.dist(sw, t) <= self.ew(sw, n) + self.dist(n, t) - 1)
+			
+
+					t = backupDag[t]
+		else:
+			for sw in backupDag :	
+				if sw == dstSw : continue					
+				nextsw = sw
+				totalDist = 0 # Store the distance from sw to t along backupDag.
+				while nextsw != dstSw : 
+					totalDist += self.ew(nextsw, backupDag[nextsw])
+					nextsw = backupDag[nextsw]
+
+				constr = self.ilpSolver.addConstr(self.dist(sw, dstSw) <= totalDist)
+
+
+				if not [sw, backupDag[sw]] in self.staticRoutes[dst] : 
+					neighbours = self.topology.getSwitchNeighbours(sw)
+					if self.distanceConstraints[sw][backupDag[sw]][dst] == None : 
+						self.distanceConstraints[sw][backupDag[sw]][dst] = []
+					for n in neighbours : 
+						if n != backupDag[sw]: 
+							distconstr = self.ilpSolver.addConstr(totalDist <= self.ew(sw, n) + self.dist(n, dstSw) - 1, 
+							"SR-" + str(sw) + "-"+ str(backupDag[sw]) + "-" + str(dstSw) + "-" + str(dst) + "-" + str(self.constraintIndex))
+
+							self.distanceConstraints[sw][backupDag[sw]][dst].append(distconstr)
+							self.constraintIndex += 1
+
+	def addMaximalBackupObjective(self) : 
+		self.ilpSolver.setObjective(self.bpVarSum, gb.GRB.MINIMIZE)
+		self.ilpSolver.update()
+
+	def maximalBackup(self) : 
+		print "Solving maximal backup"
+		swCount = self.topology.getSwitchCount()
+		dsts = self.pdb.getDestinationSubnets()
+		
+		self.ilpSolver = gb.Model("C3")
+		self.ilpSolver.setParam('OutputFlag', 0)
+		self.initializeSMTVariables()
+		self.initializeStaticRoutes()
+
+		self.addDjikstraShortestPathConstraints()
+
+		# Prompted by Gurobi? 
+		# self.ilpSolver.setParam(gb.GRB.Param.BarHomogeneous, 1) 
+		# self.ilpSolver.setParam(gb.GRB.Param.Method, 2) 
+
+		# Adding constraints 
+		for dst in dsts : 
+			dag = self.destinationDAGs[dst]
+			self.addDestinationDAGConstraints(dst, dag)
+
+		for dst in self.backupPaths : 
+			backupPaths = self.backupPaths[dst]
+			dag = self.destinationDAGs[dst]
+			for backupPath in backupPaths : 
+				self.addMaximalBackupPathConstraints(dst, dag, backupPath, True) 
+
+		self.addMaximalBackupObjective()
+
+		solvetime = time.time()
+		self.ilpSolver.optimize()
+		self.z3solveTime += time.time() - solvetime
+
+		status = self.ilpSolver.status
+
+		while status == gb.GRB.INFEASIBLE :
+			# Perform inconsistency analysis using Gurobi
+			attempts = 1
+			self.ilpSolver.computeIIS()
+			self.repairInconsistency()
+			
+			solvetime = time.time()
+			self.ilpSolver.optimize()
+			self.z3solveTime += time.time() - solvetime
+
+			status = self.ilpSolver.status
+
+	def addBGPExtensionConstraints(self, dst, dag, staticRouteMode=True) :
 		# TODO: Change wrt static routes
 		for tup in self.bgpExtensions: 
 			if tup[3] != dst : continue
 			src = tup[0]
 			end1 = tup[1]
 			end2 = tup[2]
-			if not routeFilterMode :
+			if not staticRouteMode :
 				while src != None:
 					self.ilpSolver.addConstr(self.dist(src, end1) <= self.dist(src, end2) - 1)
 					src = dag[src]
@@ -602,14 +851,31 @@ class ZeppelinSynthesiser(object) :
 
 		# Delete distance constraints from model
 		distconstrs = self.distanceConstraints[sw1][sw2][dst]
+		#print "SR", sw1, sw2, dst, len(distconstrs)
 		for dconstr in distconstrs : 
 			self.ilpSolver.remove(dconstr)
 
 		self.ilpSolver.update()
-		#print "SR", sw1, sw2, dst
+		
 
+	def removeBackupPath(self, src, dst) :
+		""" Add rf at sw1 -> sw2 for dst """
+		for backupPath in self.backupPaths[dst] :
+			if src == backupPath[0] :
+				# Backup path exists. Remove constraints from model
+				print "Removing backupPath", backupPath, dst
+				backupConstrs = self.backupPathConstraints[src][dst]
+				if backupConstrs == None : continue
+				for bpconstr in backupConstrs : 
+					self.ilpSolver.remove(bpconstr)
 
-	def getEdgeWeightModel(self, routeFilterMode=True) : 
+				self.ilpSolver.update()
+				
+				self.backupPaths[dst].remove(backupPath)
+				self.inconsistentBPs += 1
+				return
+
+	def getEdgeWeightModel(self, staticRouteMode=True) : 
 		self.topology.initializeWeights()
 		swCount = self.topology.getSwitchCount()
 		dsts = self.pdb.getDestinationSubnets()
@@ -633,7 +899,7 @@ class ZeppelinSynthesiser(object) :
 					#print sw, n,  float(ew)
 
 
-		if not routeFilterMode :
+		if not staticRouteMode :
 			# Route filters not used. 
 			return 
 
@@ -642,12 +908,33 @@ class ZeppelinSynthesiser(object) :
 		for dst in dsts : 
 			dag = self.destinationDAGs[dst]
 			totalStaticRoutes += len(dag) - 1 
-		
+
+			if dst in self.backupPaths : 
+				backupPaths = self.backupPaths[dst]
+				for backupPath in backupPaths : 
+					totalStaticRoutes += len(backupPath) - 2  # Cant have a SR on first hop
+			
 		for dst in dsts : 
 			setStaticRoutes += len(self.staticRoutes[dst])
 
 		self.SRCount = setStaticRoutes
 		print "Ratio of Static Routes : ", setStaticRoutes, totalStaticRoutes 
+
+		if self.maximalBackupFlag : 
+			for dst in self.backupPaths : 
+				backupPaths = self.backupPaths[dst]
+				for backupPath in backupPaths : 
+					bp = self.backupPathVars[backupPath[0]][dst].x
+					if bp == 1 : 
+						# Backup path not enforced. 
+						self.removeBackupPath(backupPath[0], dst)
+
+		totalBackupPaths = 0
+		for dst in self.backupPaths : 
+			totalBackupPaths += len(self.backupPaths[dst])
+
+		print "Ratio of backup paths : ", totalBackupPaths - self.inconsistentBPs, totalBackupPaths
+
 
 	# Profiling Statistics : 
 	def printProfilingStats(self) :
@@ -708,7 +995,7 @@ class ZeppelinSynthesiser(object) :
 		self.topology.enableAllEdges()
 		# Extract Edge weights for Gurobi	
 		print affectedSwitches	
-		self.getRepairEdgeWeightModel(edgeWeights, affectedSwitches, self.routeFilterMode)	
+		self.getRepairEdgeWeightModel(edgeWeights, affectedSwitches, self.staticRouteMode)	
 		self.pdb.validateControlPlane(self.topology, self.staticRoutes)
 
 
@@ -834,7 +1121,7 @@ class ZeppelinSynthesiser(object) :
 		# Pick the best static Route
 		self.addStaticRoute(sr[0], sr[1], sr[2])
 
-	def getRepairEdgeWeightModel(self, oldEdgeWeights, affectedSwitches, routeFilterMode=True) : 
+	def getRepairEdgeWeightModel(self, oldEdgeWeights, affectedSwitches, staticRouteMode=True) : 
 		self.topology.initializeWeights()
 		swCount = self.topology.getSwitchCount()
 		dsts = self.pdb.getDestinationSubnets()
@@ -859,7 +1146,7 @@ class ZeppelinSynthesiser(object) :
 					#print sw, n,  float(ew)
 
 
-		if not routeFilterMode :
+		if not staticRouteMode :
 			# Route filters not used. 
 			return 
 

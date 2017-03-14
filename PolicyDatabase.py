@@ -554,7 +554,7 @@ class PolicyDatabase(object) :
 			dag = self.dags[dst]
 			gpath = []
 			nextsw = src
-			while nextsw <> dstSw : 
+			while nextsw != dstSw : 
 				path = topology.getShortestPath(nextsw, dstSw)
 				if path[1] != dag[nextsw] and [nextsw, dag[nextsw]] not in staticRoutes[dst] : 
 					violationCount += 1 
@@ -569,7 +569,7 @@ class PolicyDatabase(object) :
 				if tup[3] != dst : continue
 				if tup[1] != dstSw : continue
 				nextsw = src
-				while nextsw <> dstSw : 
+				while nextsw != dstSw : 
 					zpath = topology.getShortestPath(nextsw, dstSw)
 					zpath2 = topology.getShortestPath(nextsw, tup[2])
 					if topology.getPathDistance(zpath) >= topology.getPathDistance(zpath2) and [nextsw, dag[nextsw]] not in staticRoutes[dst] : 
@@ -595,7 +595,6 @@ class PolicyDatabase(object) :
 		if violationCount > 0 :
 			print "Error: incorrect OSPF configuration"
 			print "Number of Violations is", violationCount
-			exit(0)
 
 	def addTrafficEngineeringObjective(self, minavg=False, minmax=False) :
 		""" Add a traffic engineering objective """
