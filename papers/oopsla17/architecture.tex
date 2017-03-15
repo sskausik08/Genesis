@@ -77,10 +77,10 @@ To guarantee that the generate paths can be enforced using destination-based
 forwarding we add
 the following constraint for every pair of packet classes $pc_1$ and $pc_2$ that belong to the same 
  destination subnet:
- \begin{multline}
+ \begin{equation}
  \forall r. Reach^*(r, pc_1) \wedge Reach^*(r, pc_2) 
  \implies \\ \bigwedge_{n \in N(r)} Fwd(r, n, pc_1) \Leftrightarrow Fwd(r, n, pc_2)
- \end{multline}
+ \end{equation}
 Intuitively, 
  if a router $r$ is reachable for both packet classes, 
  then the next router $n$ in the path must be the same for both classes
