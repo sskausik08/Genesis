@@ -510,64 +510,37 @@ class Topology(object):
 				isDisabled = False
 		return isDisabled
 
-	def isConnected(self, src, dst, mid=None) :
-		""" Is there a path from src to dst which passes through mid """
-		if src == dst and sw <> None : return False # Weird case, shouldnt arise. 
+	def findMinCut(self, srcSw, dstSw, disabledEdges=[]) :
+		# finds the minimum cut from srcSw to dstSw with disabled filters 
+		dEdges = copy.deepcopy(disabledEdges)
 
 		visited = dict()
-		for sw in range(1, self.getSwitchCount()+1) :
-			visited[sw] = False
+		bfstree = dict()
+		queue1 = [srcSw]
 
-		if mid <> None : 
-			# BFS from src to mid and then bfs from mid to dst
-			swQueue1 = [src]
-			swQueue2 = []
-			midReach = False
-			while len(swQueue1) > 0 and not midReach:
-				for sw in swQueue1 : 
-					visited[sw] = True
-					neighbours = self.getSwitchNeighbours(sw)
-					for n in neighbours : 
-						if n == mid : midReach = True
-						elif n not in swQueue2 and not visited[n]: swQueue2.append(n)
-				swQueue1 = swQueue2 
-				swQueue2 = []
+		while len(queue1) != 0:
+			sw = queue1.pop(0)
+			visited[sw] = True
+			if sw == dstSw : 
+				# Found shortest path from srcSw to dstSw. Remove and check. 
+				sw1 = dstSw 
+				while sw1 != srcSw:
+					edge = [bfstree[sw1], sw1]
+					dEdges.append(edge)
+					sw1 = bfstree[sw1]
 
-			if not midReach : return False # src -> mid not connected.
+				return 1 + self.findMinCut(srcSw, dstSw, dEdges)
+			else :
+				neighbours = self.getAllSwitchNeighbours(sw)
+				for n in neighbours :
+					if [sw,n] in dEdges : continue # Filtered. Dont explore.
+					elif n in visited : continue # Switch already visited
+					else : 
+						if n not in queue1 : 
+							queue1.append(n)
+							bfstree[n] = sw
 
-			for sw in range(1, self.getSwitchCount() + 1) :
-				visited[sw] = False
-
-			# BFS from mid to dst
-			swQueue1 = [mid]
-			swQueue2 = []
-			dstReach = False
-			while len(swQueue1) > 0 and not dstReach:
-				for sw in swQueue1 : 
-					visited[sw] = True
-					neighbours = self.getSwitchNeighbours(sw)
-					for n in neighbours : 
-						if n == dst : dstReach = False
-						elif n not in swQueue2 and not visited[n]: swQueue2.append(n)
-				swQueue1 = swQueue2 
-				swQueue2 = []
-			return dstReach
-		else : 
-			# BFS from src to dst
-			swQueue1 = [src]
-			swQueue2 = []
-			dstReach = False
-			while len(swQueue1) > 0 and not dstReach:
-				for sw in swQueue1 : 
-					visited[sw] = True
-					neighbours = self.getSwitchNeighbours(sw)
-					for n in neighbours : 
-						if n == mid : dstReach = True
-						elif n not in swQueue2 and not visited[n]: swQueue2.append(n)
-				swQueue1 = swQueue2 
-				swQueue2 = []
-
-			return dstReach
+		return 0
 		
 
 

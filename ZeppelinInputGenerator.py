@@ -108,7 +108,6 @@ class ZeppelinInputGenerator(object) :
 
 				currpc += 1
 
-		
 		currpc = 0
 		while currpc < pcRange : 
 			dst =  currpc % destinationSubnets

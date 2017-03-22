@@ -400,7 +400,6 @@ class PolicyDatabase(object) :
 			return self.sliceEndpointTable[pc][3]
 		else : 
 			raise LookupError(str(pc) + " is not a valid packet class flow number.")
-		
 
 	def createRelationalClassGraph(self, relClass) :
 		""" Creation of a Graph of edges of each packet class in the relational Class to leverage policy interactions to 
