@@ -28,6 +28,7 @@ class Genesis(object):
 		WeakIsolationFlag = False
 		useILPFlag = False
 		generateControlPlaneFlag = False
+		generateOSPFControlPlaneFlag = False
 		repairMode = False
 		tactic = ""
 
@@ -51,6 +52,8 @@ class Genesis(object):
 				repairMode = True
 			if arg == "-c3" :
 				generateControlPlaneFlag = True
+			if arg == "-ospf" :
+				generateOSPFControlPlaneFlag = True
 			no += 1
 
 		if not (gplargFlag and topoargFlag) : 
@@ -61,9 +64,11 @@ class Genesis(object):
 		self.topology = Topology()
 		self.policyDatabase = PolicyDatabase()
 		if not useILPFlag : 
-			self.genesisSynthesiser = GenesisSynthesiser(topo=self.topology, pdb=self.policyDatabase, DC=DCFlag, TopoSlicing=TopoSlicingFlag, useTactic=UseTacticFlag, tactic=tactic, noOptimizations=NoOptimizationsFlag, weakIsolation=WeakIsolationFlag, repairMode=repairMode, controlPlane=generateControlPlaneFlag)
-		else : #ignore
-			self.genesisSynthesiser = GenesisILPSynthesiser(topo=self.topology, DC=DCFlag, TopoSlicing=TopoSlicingFlag, useTactic=UseTacticFlag, noOptimizations=NoOptimizationsFlag, weakIsolation=WeakIsolationFlag)
+			self.genesisSynthesiser = GenesisSynthesiser(topo=self.topology, pdb=self.policyDatabase, DC=DCFlag, 
+				TopoSlicing=TopoSlicingFlag, useTactic=UseTacticFlag, tactic=tactic, noOptimizations=NoOptimizationsFlag, 
+				weakIsolation=WeakIsolationFlag, repairMode=repairMode, 
+				controlPlane=generateControlPlaneFlag, ospfOnly=generateOSPFControlPlaneFlag)
+			
 		self.gplparser = GPLInterpreter(self.gplfile, self.topofile, self.genesisSynthesiser, self.topology)
 		
 	def run(self):

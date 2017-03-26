@@ -41,7 +41,7 @@ class ZeppelinSynthesiser(object) :
 		self.sums = []
 		# Resilience 
 		self.SRCount = 0
-		self.t_res = 0
+		self.waypoints = dict()
 
 		# Constants
 		self.MAX_GUROBI_ITERATIONS = 600
@@ -77,13 +77,13 @@ class ZeppelinSynthesiser(object) :
 				# for dst in dsts : 
 				# 	self.distVars[sw1][sw2][dst] = self.ilpSolver.addVar(lb=0.00,vtype=gb.GRB.CONTINUOUS, name="D-" + str(sw1)+"-"+str(sw2)+"-"+str(dst) + " ")
 
-		self.backupPathVars = defaultdict(lambda:defaultdict(lambda:None))
-		self.bpVarSum = 0
-		for dst in self.backupPaths : 
-			backupPaths = self.backupPaths[dst]
-			for backupPath in backupPaths : 
-				self.backupPathVars[backupPath[0]][dst] = self.ilpSolver.addVar(vtype=gb.GRB.BINARY, name="B-" + str(backupPath[0])+"-"+str(dst) + "_")
-				self.bpVarSum += self.backupPathVars[backupPath[0]][dst]
+		# self.backupPathVars = defaultdict(lambda:defaultdict(lambda:None))
+		# self.bpVarSum = 0
+		# for dst in self.backupPaths : 
+		# 	backupPaths = self.backupPaths[dst]
+		# 	for backupPath in backupPaths : 
+		# 		self.backupPathVars[backupPath[0]][dst] = self.ilpSolver.addVar(vtype=gb.GRB.BINARY, name="B-" + str(backupPath[0])+"-"+str(dst) + "_")
+		# 		self.bpVarSum += self.backupPathVars[backupPath[0]][dst]
 		self.ilpSolver.update()
 
 	def initializeStaticRoutes(self) :
@@ -95,6 +95,7 @@ class ZeppelinSynthesiser(object) :
 
 		# Gurobi Constraints
 		self.distanceConstraints = defaultdict(lambda:defaultdict(lambda:defaultdict(lambda:None)))
+		self.waypointResilienceConstraints = defaultdict(lambda:defaultdict(lambda:None))
 		self.backupPathConstraints = defaultdict(lambda:defaultdict(lambda:None))
 		self.inconsistentSRs = 0
 		self.inconsistentBPs = 0
@@ -111,11 +112,8 @@ class ZeppelinSynthesiser(object) :
 		if sw2 not in neighbours : 
 			raise LookupError("Weight for non-neighbours referred!")
 		else : 
-			if sw1 < sw2 : 
-				return self.edgeWeights[sw1][sw2]
-			else : 
-				return self.edgeWeights[sw2][sw1]
-
+			return self.edgeWeights[sw1][sw2]
+	
 	def rf(self, sw1, sw2, dst) :
 		neighbours = self.topology.getSwitchNeighbours(sw1)
 		if sw2 not in neighbours : 
@@ -226,15 +224,13 @@ class ZeppelinSynthesiser(object) :
 						for backupPath in backupPaths : 
 							self.addBackupPathConstraints(dst, dag, backupPath, True) 
 
-				# self.ilpSolver.setObjective(self.distSum, gb.GRB.MAXIMIZE)
-				# self.ilpSolver.update()
+				self.enforceResilience()
 
 				solvetime = time.time()
 				self.ilpSolver.optimize()
 				self.z3solveTime += time.time() - solvetime
 
 				status = self.ilpSolver.status
-				print status
 
 				while status == gb.GRB.INFEASIBLE or status == gb.GRB.INF_OR_UNBD  :
 					# Perform inconsistency analysis using Gurobi
@@ -256,7 +252,8 @@ class ZeppelinSynthesiser(object) :
 		# self.f.close()	
 		#self.pdb.printPaths(self.topology)
 		self.pdb.validateControlPlane(self.topology, self.staticRoutes, self.backupPaths)
-		
+		self.pdb.validateControlPlaneResilience(self.topology, self.staticRoutes, self.waypoints)
+
 		srCount = 0
 		# Translate route filters to switch names
 		self.staticRouteNames = dict()
@@ -282,80 +279,80 @@ class ZeppelinSynthesiser(object) :
 		#return self.staticRouteNames
 
 
-	def synthesizeRepair(self) :
-		# Consider the repair problem now. #Experimental code
-		oldDags = copy.deepcopy(self.destinationDAGs)
+	# def synthesizeRepair(self) :
+	# 	# Consider the repair problem now. #Experimental code
+	# 	oldDags = copy.deepcopy(self.destinationDAGs)
 
-		changeCount = 4
-		random.shuffle(dsts)
-		for changedDst in dsts : 
-			newDag = self.changeDag(self.destinationDAGs[changedDst])
-			if newDag != self.destinationDAGs[changedDst] : 
-				self.destinationDAGs[changedDst] = newDag 
-				self.pdb.addDestinationDAG(changedDst, newDag)
-				changeCount = changeCount - 1
+	# 	changeCount = 4
+	# 	random.shuffle(dsts)
+	# 	for changedDst in dsts : 
+	# 		newDag = self.changeDag(self.destinationDAGs[changedDst])
+	# 		if newDag != self.destinationDAGs[changedDst] : 
+	# 			self.destinationDAGs[changedDst] = newDag 
+	# 			self.pdb.addDestinationDAG(changedDst, newDag)
+	# 			changeCount = changeCount - 1
 
-			if changeCount == 0 : 
-				break
+	# 		if changeCount == 0 : 
+	# 			break
 
-		if changeCount > 0 : 
-			print "Wait, what?"
-			exit(0)
+	# 	if changeCount > 0 : 
+	# 		print "Wait, what?"
+	# 		exit(0)
 		
-		self.repair(oldDags, self.destinationDAGs, self.edgeWeightValues)
+	# 	self.repair(oldDags, self.destinationDAGs, self.edgeWeightValues)
 
 		
 
 
-	def changeDag(self, dag) :
-		newDag = copy.deepcopy(dag)
+	# def changeDag(self, dag) :
+	# 	newDag = copy.deepcopy(dag)
 
-		for sw in newDag : 
-			if newDag[sw] == None :
-				dstSw = sw
+	# 	for sw in newDag : 
+	# 		if newDag[sw] == None :
+	# 			dstSw = sw
 		
-		newpath = []
-		for sw in newDag :
-			if sw != dstSw :
-				paths = self.topology.getAllPaths(sw, dstSw)
-				if len(paths) <= 1 :
-					continue
-				for path in paths : 
-					# Check if path creates a loop. 
-					loopedPath = False
-					for i in range(1, len(path) - 1) :  
-						loopedPath = False
-						if path[i] in newDag : 
-							nextsw = path[i] 
-							while nextsw != None : 
-								if nextsw == sw : 
-									# This path loops back to sw. Dont use
-									loopedPath = True
-									break
-								nextsw = newDag[nextsw]
+	# 	newpath = []
+	# 	for sw in newDag :
+	# 		if sw != dstSw :
+	# 			paths = self.topology.getAllPaths(sw, dstSw)
+	# 			if len(paths) <= 1 :
+	# 				continue
+	# 			for path in paths : 
+	# 				# Check if path creates a loop. 
+	# 				loopedPath = False
+	# 				for i in range(1, len(path) - 1) :  
+	# 					loopedPath = False
+	# 					if path[i] in newDag : 
+	# 						nextsw = path[i] 
+	# 						while nextsw != None : 
+	# 							if nextsw == sw : 
+	# 								# This path loops back to sw. Dont use
+	# 								loopedPath = True
+	# 								break
+	# 							nextsw = newDag[nextsw]
 
-						if loopedPath : 
-							break
-					if loopedPath : 
-						continue
+	# 					if loopedPath : 
+	# 						break
+	# 				if loopedPath : 
+	# 					continue
 
-					newpath = [sw]
-					# Choose this path
-					for i in range(1, len(path)) :
-						if path[i] not in newDag : 
-							newpath.append(path[i])
-						else :
-							newpath.append(path[i])
-							break
-				if len(newpath) > 0 : 
-					break
-			if len(newpath) > 0 : 
-				break			
+	# 				newpath = [sw]
+	# 				# Choose this path
+	# 				for i in range(1, len(path)) :
+	# 					if path[i] not in newDag : 
+	# 						newpath.append(path[i])
+	# 					else :
+	# 						newpath.append(path[i])
+	# 						break
+	# 			if len(newpath) > 0 : 
+	# 				break
+	# 		if len(newpath) > 0 : 
+	# 			break			
 
-		for i in range(0, len(newpath) - 1) :
-			newDag[newpath[i]] = newpath[i + 1]
+	# 	for i in range(0, len(newpath) - 1) :
+	# 		newDag[newpath[i]] = newpath[i + 1]
 
-		return newDag
+	# 	return newDag
 	"""
 	An IIS is a subset of the constraints and variable bounds of the original model. 
 	If all constraints in the model except those in the IIS are removed, the model is still infeasible. 
@@ -381,27 +378,25 @@ class ZeppelinSynthesiser(object) :
 							# Compute score for static route
 							staticRoutes.append([[int(fields[1]), int(fields[2]), int(fields[4])], 1])
 
-		backupPaths = []
+		waypointPaths = []
 		for constr in self.ilpSolver.getConstrs() :
 			if constr.getAttr(gb.GRB.Attr.IISConstr) > 0 :
 				name = constr.getAttr(gb.GRB.Attr.ConstrName) 
 				fields = name.split("-")
-				if fields[0] == "BP" :
+				if fields[0] == "WD" :
 					# backup path constraint
 					foundFlag = False
-					for index in range(len(backupPaths)) :
-						if backupPaths[index][0] == [int(fields[1]), int(fields[2])] : 
-							backupPaths[index] = [backupPaths[index][0], backupPaths[index][1] + 1]
+					for index in range(len(waypointPaths)) :
+						if waypointPaths[index][0] == [int(fields[1]), int(fields[2])] : 
+							waypointPaths[index] = [waypointPaths[index][0], waypointPaths[index][1] + 1]
 							foundFlag = True
 							break
 					if not foundFlag :
-						backupPaths.append([[int(fields[1]), int(fields[2])], 1])
+						waypointPaths.append([[int(fields[1]), int(fields[2])], 1])
 
-		if len(staticRoutes) == 0 and len(backupPaths) == 0: 
+		if len(staticRoutes) == 0 and len(waypointPaths) == 0: 
 			print "INFEASIBLE forever, should never ever ever happen at all!"
 
-			print self.staticRoutes
-			print self.backupPaths
 			for constr in self.ilpSolver.getConstrs() :
 				if constr.getAttr(gb.GRB.Attr.IISConstr) > 0 :
 					print constr 
@@ -418,7 +413,7 @@ class ZeppelinSynthesiser(object) :
 				if dstSw == sr[0][1] :
 					# Pick this static route! 
 					self.addStaticRoute(sr[0][0], sr[0][1], sr[0][2])
-					print "Picked the static route at dst switch!"
+					#print "Picked the static route at dst switch!"
 					return
 
 			# Check if a static route starts at a switch with no backup paths
@@ -432,7 +427,7 @@ class ZeppelinSynthesiser(object) :
 				if mincut == 1 : 
 					# No backup path at sw1. Pick this static route.
 					self.addStaticRoute(sr[0][0], sr[0][1], sr[0][2])
-					print "Picked the static route at switch with no backup paths!"
+					#print "Picked the static route at switch with no backup paths!"
 					return
 
 			# Check if a static route ends at a switch with no back up paths'
@@ -483,16 +478,16 @@ class ZeppelinSynthesiser(object) :
 			# Pick the best static Route
 			self.addStaticRoute(sr[0], sr[1], sr[2])
 
-		elif len(backupPaths) > 0 : 
+		elif len(waypointPaths) > 0 : 
 			bp = None
 			count = 0
-			for ind in range(len(backupPaths)) : 
-				if backupPaths[ind][1] > count : 
-					bp = backupPaths[ind][0]
-					count = backupPaths[ind][1]
+			for ind in range(len(waypointPaths)) : 
+				if waypointPaths[ind][1] > count : 
+					bp = waypointPaths[ind][0]
+					count = waypointPaths[ind][1]
 
 			# Pick the best static Route
-			self.removeBackupPath(bp[0], bp[1])
+			self.removeWaypointPath(bp[0], bp[1])
 
 	def removeViolations(self) : 
 		self.staticRoutesAdded = 0
@@ -580,7 +575,7 @@ class ZeppelinSynthesiser(object) :
 				swQueue2 = []
 			explored[sw] = True
 
-	# These constraints are solved fast, does exponentially increase synthesis time.
+	# These constraints are solved fast.
 	def addDjikstraShortestPathConstraints(self) :
 		swCount = self.topology.getSwitchCount()
 
@@ -928,7 +923,6 @@ class ZeppelinSynthesiser(object) :
 		self.ilpSolver.update()
 	
 	def removeBackupPath(self, src, dst) :
-		""" Add rf at sw1 -> sw2 for dst """
 		for backupPath in self.backupPaths[dst] :
 			if src == backupPath[0] :
 				# Backup path exists. Remove constraints from model
@@ -943,6 +937,17 @@ class ZeppelinSynthesiser(object) :
 				self.backupPaths[dst].remove(backupPath)
 				self.inconsistentBPs += 1
 				return
+
+	def removeWaypointPath(self, sw, dst) :
+		""" Remove the waypoint resilient path"""
+		#print "Removing waypoint path at", sw, dst
+		waypointConstrs = self.waypointResilienceConstraints[sw][dst]
+		if waypointConstrs == None : return
+		for wconstr in waypointConstrs : 
+			self.ilpSolver.remove(wconstr)
+
+		self.ilpSolver.update()
+		return
 
 	def getEdgeWeightModel(self, staticRouteMode=True) : 
 		self.topology.initializeWeights()
@@ -967,19 +972,16 @@ class ZeppelinSynthesiser(object) :
 					self.edgeWeightValues[sw][n] = float(ew)
 					#print "EW ", sw, n,  float(ew)
 
+		dst = self.pdb.getDestinationSubnet(0)
+		for sw1 in range(1, swCount + 1) :
+			for sw2 in range(1, swCount + 1) :
+				if sw1 == sw2 : continue
 
-		# for sw1 in range(1, swCount + 1) :
-		# 	for sw2 in range(1, swCount + 1) :
-		# 		if sw1 == sw2 : continue
-
-		# 		dist = self.dist(sw1, sw2).x
+				dist = self.dist(sw1, sw2).x
+				wdist = self.wdist(sw1, sw2, dst).x
 				
-		# 		actualDist = self.topology.getPathDistance(self.topology.getShortestPath(sw1, sw2))
-		# 		if dist != actualDist : 
-		# 			print "D* ", sw1, sw2, dist, self.topology.getShortestPath(sw1, sw2), self.topology.getPathDistance(self.topology.getShortestPath(sw1, sw2))
-		# 		else : 
-		# 			print "D ", sw1, sw2, dist
- 
+				#print "D ", sw1, sw2, dist, wdist
+
 		if not staticRouteMode :
 			# Route filters not used. 
 			return 
@@ -1031,6 +1033,185 @@ class ZeppelinSynthesiser(object) :
 		#print "Time taken to add constraints are ", self.z3addTime
 		print "Zeppelin: Time taken to solve constraints are ", self.z3solveTime
 		# print "Number of z3 adds to the solver are ", self.z3numberofadds
+
+	# Backup Functions
+
+	def initializeBackupVariables(self, dst, path, waypoints) : 
+		swCount = self.topology.getSwitchCount()
+		#self.backupDistVars = defaultdict(lambda:defaultdict(lambda:defaultdict(lambda:None)))
+	
+		# for sw1 in range(1,swCount+1):
+		# 	for sw2 in range(1, swCount + 1) :
+		# 		for index in range(len(path) - 1): 
+		# 			l1 = path[index]
+		# 			l2 = path[index + 1]
+		# 			if l1 > l2 :
+		# 				l = str(l2) + "-" + str(l1)
+		# 			else : 
+		# 				l = str(l1) + "-" + str(l2)
+
+		# 			self.backupDistVars[sw1][sw2][l] = self.ilpSolver.addVar(lb=1.00, vtype=gb.GRB.CONTINUOUS, 
+		# 				name="BD-" + str(sw1)+"-"+str(sw2) + "-" + l + "_")
+
+		self.ilpSolver.update()
+
+		self.waypointDistVars = defaultdict(lambda:defaultdict(lambda:defaultdict(lambda:None)))
+		for sw1 in range(1,swCount+1):
+			for sw2 in range(1, swCount + 1) :
+				self.waypointDistVars[sw1][sw2][dst] = self.ilpSolver.addVar(lb=1.00, vtype=gb.GRB.CONTINUOUS, 
+					name="WD-" + str(sw1)+"-"+str(sw2) + "-" + str(dst) + "_")
+
+		self.ilpSolver.update()
+
+	def bdist(self, sw1, sw2, l) : 
+		if sw1 == sw2 : 
+			return 0.0
+		return self.backupDistVars[sw1][sw2][l]
+
+	def wdist(self, sw1, sw2, dst) : 
+		if sw1 == sw2 : 
+			return 0.0
+		return self.waypointDistVars[sw1][sw2][dst]
+
+	def addBackupDjikstraShortestPathConstraints(self, l1, l2) :
+		swCount = self.topology.getSwitchCount()
+
+		if l1 > l2 :
+			l = str(l2) + "-" + str(l1)
+		else : 
+			l = str(l1) + "-" + str(l2)
+
+		for s in range(1, swCount + 1):
+			if self.topology.isSwitchDisabled(s) :
+				continue
+			for t in range(1, swCount + 1) :
+				if self.topology.isSwitchDisabled(t) :
+					continue
+				if s == t : 
+					continue
+
+				for sw in self.topology.getSwitchNeighbours(s) :
+					if s == l1 and sw == l2 : continue
+					if s == l2 and sw == l1 : continue
+					self.ilpSolver.addConstr(self.bdist(s, t, l) <= self.ew(s, sw) + self.bdist(sw, t, l), "BD-" + str(self.constraintIndex) + " ")	
+					self.constraintIndex += 1
+
+				self.ilpSolver.addConstr(self.bdist(s, t, l) >= self.dist(s, t), "BD-" + str(self.constraintIndex) + " ")	
+				self.constraintIndex += 1
+
+	def addWaypointDjikstraShortestPathConstraints(self, dst, waypoints) :
+		swCount = self.topology.getSwitchCount()
+
+		for s in range(1, swCount + 1):
+			if self.topology.isSwitchDisabled(s) or s in waypoints:
+				continue
+			for t in range(1, swCount + 1) :
+				if self.topology.isSwitchDisabled(t) or t in waypoints:
+					continue
+				if s == t : 
+					continue
+
+				for sw in self.topology.getSwitchNeighbours(s) :
+					if sw in waypoints : continue
+					self.ilpSolver.addConstr(self. wdist(s, t, dst) <= self.ew(s, sw) + self. wdist(sw, t, dst), 
+						"D-" + str(s) + "-" + str(t) + "-" + str(sw) + "_")	
+					self.constraintIndex += 1
+
+				self.ilpSolver.addConstr(self. wdist(s, t, dst) >= self.dist(s, t), "D-" + str(self.constraintIndex) + " ")	
+				self.constraintIndex += 1
+
+	def addWaypointResilienceConstraints(self, dst, dag, waypoint) : 
+		# Add constraints to ensure path after one link failure goes through atleast one waypoint.
+		for sw in dag : 
+			if dag[sw] == None : 
+				dstSw = sw
+				break	
+
+		#print dstSw, dag
+		# Ensure backup paths dont go come back to the dag.
+		for sw in dag : 
+			if sw == dstSw : continue 
+
+			disabledEdges = []
+			for sw1 in dag :
+				neighbours = self.topology.getSwitchNeighbours(sw1)
+				for n in neighbours : 
+					disabledEdges.append([n, sw1])
+			
+			path2Waypoint = self.topology.getBFSPath(sw, waypoint, disabledEdges)
+			# Path to waypoint does not exist. 
+			if path2Waypoint == [] : continue
+
+			# Disable all upstream edges of sw
+			upstreamEdges = []
+			for sw1 in dag : 
+				sw2 = sw1
+				while sw2 != None:
+					if sw2 == sw : # sw1 is a downstream switch. Disable edges into sw1
+						neighbours = self.topology.getSwitchNeighbours(sw2)
+						for n in neighbours : 
+							upstreamEdges.append([n, sw2])
+						break
+					sw2 = dag[sw2]
+
+			# Disable all edges coming to path2Waypoint switches
+			for sw1 in path2Waypoint : 
+				neighbours = self.topology.getSwitchNeighbours(sw1)
+				for n in neighbours : 
+					upstreamEdges.append([n, sw1])
+
+			path2Dst = self.topology.getBFSPath(waypoint, dstSw, upstreamEdges)
+			# Path to dst from waypoint does not exist. 
+			if path2Dst == [] : continue
+
+			for sw1 in path2Dst : 
+				if sw1 in dag : 
+					t = sw1 
+					break
+
+			pathDist = 0
+			for index in range(len(path2Waypoint) - 1) :
+				pathDist += self.ew(path2Waypoint[index], path2Waypoint[index+1])
+
+			for index in range(len(path2Dst) - 1) :
+				if path2Dst[index] == t : 
+					while t != dstSw : 
+						pathDist += self.ew(t, dag[t])
+						t = dag[t]
+					break
+				pathDist += self.ew(path2Dst[index], path2Dst[index+1])
+
+			#print sw, dstSw, waypoint, path2Waypoint, path2Dst
+			# Path distance must be smaller than non waypoint distance
+			wconstr = self.ilpSolver.addConstr(pathDist <= self.wdist(sw, dstSw, dst) - 1, 
+				"WD-" + str(sw) + "-" + str(dst))
+
+			if self.waypointResilienceConstraints[sw][dst] == None : 
+				self.waypointResilienceConstraints[sw][dst] = []
+			self.waypointResilienceConstraints[sw][dst].append(wconstr)
+
+	def enforceResilience(self) : 
+		swCount = self.topology.getSwitchCount()
+		pc = 0
+		dst = self.pdb.getDestinationSubnet(pc)
+		path = self.pdb.getPath(pc)
+		dag = self.destinationDAGs[dst]
+
+		while True:
+			waypoint = random.randint(1, swCount)
+			if waypoint not in dag : 
+				break
+
+		waypoints = [waypoint, path[int((len(path) - 1)/2)]]
+
+		self.waypoints[dst] = waypoints
+		self.initializeBackupVariables(dst, path, waypoints) 
+
+		self.addWaypointDjikstraShortestPathConstraints(dst, waypoints)
+
+		self.addWaypointResilienceConstraints(dst, dag, waypoint)
+	
+		# Repair Functions
 
 	def repair(self, oldDags, newDags, edgeWeights) :
 		""" Synthesize a new set of configurations inducing newDags such that
@@ -1234,7 +1415,6 @@ class ZeppelinSynthesiser(object) :
 				for sw2 in self.topology.getSwitchNeighbours(sw1) :
 					self.topology.addWeight(sw1, sw2, oldEdgeWeights[sw1][sw2])
 					#print sw, n,  float(ew)
-
 
 		if not staticRouteMode :
 			# Route filters not used. 

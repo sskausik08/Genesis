@@ -542,7 +542,34 @@ class Topology(object):
 
 		return 0
 		
+	def getBFSPath(self, srcSw, dstSw, disabledEdges=[]):
+		bfstree = dict()
+		visited = dict()
 
+		swQueue = deque([srcSw])
+		while len(swQueue) > 0 :
+			sw = swQueue.popleft()
+			visited[sw] = True
+			
+			if sw == dstSw :
+				path = [dstSw]
+				nextsw = bfstree[dstSw]
+				while nextsw <> srcSw :
+					path.append(nextsw)
+					nextsw = bfstree[nextsw]
+				path.append(srcSw)
+				# Reverse path.
+				path.reverse()
+
+				return path
+
+			neighbours = self.getSwitchNeighbours(sw)
+			for n in neighbours : 
+				if n not in visited and [sw, n] not in disabledEdges :
+					bfstree[n] = sw
+					swQueue.append(n)
+
+		return []
 
 	def checkTopologyContinuity(self) : 
 		""" Check if all switches in the topology are connected"""

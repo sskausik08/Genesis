@@ -15,7 +15,7 @@ from collections import defaultdict
 
 
 class GenesisSynthesiser(object) :
-	def __init__(self, topo, pdb, DC=True, TopoSlicing=False, pclist=None, useTactic=False, tactic="", noOptimizations=False, BridgeSlicing=True, weakIsolation=False, repairMode=False, controlPlane=False) :
+	def __init__(self, topo, pdb, DC=True, TopoSlicing=False, pclist=None, useTactic=False, tactic="", noOptimizations=False, BridgeSlicing=True, weakIsolation=False, repairMode=False, controlPlane=False, ospfOnly=False) :
 		self.topology = topo
 
 		# Network Forwarding Function
@@ -31,6 +31,8 @@ class GenesisSynthesiser(object) :
 		
 		self.z3Solver = Solver()
 		self.z3Solver.set(unsat_core=True)
+		self.z3Solver.set(':smt.phase_selection', 5)
+		self.z3Solver.set(':smt.random_seed', random.randint(1, 1000))
 		#self.z3Solver = Optimize()
 		
 		# #self.z3Solver.set("sat.phase", "always-false")
@@ -107,6 +109,7 @@ class GenesisSynthesiser(object) :
 
 		# Generate Control Plane
 		self.controlPlaneMode = controlPlane
+		self.ospfOnlyMode = ospfOnly
 		self.destinationDAGs = dict()
 
 		# SMT Variables
@@ -276,28 +279,69 @@ class GenesisSynthesiser(object) :
 		# Control plane synthesis: outside scope of POPL17 Genesis paper.
 		if self.controlPlaneMode : 
 			from OuterZeppelinSynthesiser import OuterZeppelinSynthesiser
+			from ZeppelinSynthesiser import ZeppelinSynthesiser
 			
-			self.endpoints = []
-			paths = dict()
-			policyDatabase = PolicyDatabase()
-			for pc in range(self.pdb.getPacketClassRange()) : 
-				endpt = [self.pdb.getSourceSwitch(pc), self.pdb.getDestinationSwitch(pc)]
-				if endpt not in self.endpoints : 
-					self.endpoints.append(endpt)
-				
-				pc1 = policyDatabase.addReachabilityPolicy(self.pdb.getDestinationSwitch(pc), self.pdb.getSourceSwitch(pc), self.pdb.getDestinationSwitch(pc))
-				policyDatabase.addPath(pc1, self.pdb.getPath(pc))
-				paths[pc1] = self.pdb.getPath(pc)
+			if not self.ospfOnlyMode : 
+				self.endpoints = []
+				paths = dict()
+				policyDatabase = PolicyDatabase()
+				for pc in range(self.pdb.getPacketClassRange()) : 
+					endpt = [self.pdb.getSourceSwitch(pc), self.pdb.getDestinationSwitch(pc)]
+					if endpt not in self.endpoints : 
+						self.endpoints.append(endpt)
+					
+					pc1 = policyDatabase.addReachabilityPolicy(self.pdb.getDestinationSwitch(pc), self.pdb.getSourceSwitch(pc), self.pdb.getDestinationSwitch(pc))
+					policyDatabase.addPath(pc1, self.pdb.getPath(pc))
+					paths[pc1] = self.pdb.getPath(pc)
 
 
-			dsts = self.pdb.getDestinations()
-			for dst in dsts : 
-				policyDatabase.addDestinationDAG(dst, self.destinationDAGs[dst])
+				dsts = self.pdb.getDestinations()
+				for dst in dsts : 
+					policyDatabase.addDestinationDAG(dst, self.destinationDAGs[dst])
 
-			
-			self.outerZepSynthesizer = OuterZeppelinSynthesiser(topology=self.topology, pdb=policyDatabase, timeout=600, numDomains=4, rfOpt=False, configOpt=False)
+				self.outerZepSynthesizer = OuterZeppelinSynthesiser(topology=self.topology, pdb=policyDatabase, timeout=600, numDomains=4, rfOpt=False, configOpt=False)
+				self.outerZepSynthesizer.enforceDAGs(policyDatabase.getDestinationDAGs(), paths, self.endpoints)
+			else : 
+				# Only OSPF Synthesis. Use odd pcs as backup paths.
+				self.endpoints = []
+				paths = dict()
+				policyDatabase = PolicyDatabase()
+				newpc = 0
+				dags = dict()
+				backups = dict()
+				for pc in range(0, self.pdb.getPacketClassRange(), 2) : 
+					dst = newpc
+					path = self.pdb.getPath(pc)
+					endpt = [self.pdb.getSourceSwitch(pc), self.pdb.getDestinationSwitch(pc)]
+					if endpt not in self.endpoints : 
+						self.endpoints.append(endpt)
+					
+					if dst not in dags : 
+						dags[dst] = dict()
+					dag = dags[dst] 
 
-			self.outerZepSynthesizer.enforceDAGs(policyDatabase.getDestinationDAGs(), paths, self.endpoints)
+					for index in range(len(path) - 1):
+						dag[path[index]] = path[index + 1]
+					dag[path[len(path) - 1]] = None
+
+					dags[dst] = dag
+
+					if dst in backups : 
+						backups[dst].append(self.pdb.getPath(pc + 1))
+					else : 
+						backups[dst] = [self.pdb.getPath(pc + 1)]
+
+					pc1 = policyDatabase.addReachabilityPolicy(dst, self.pdb.getSourceSwitch(pc), self.pdb.getDestinationSwitch(pc))
+					newpc += 1
+
+				dsts = policyDatabase.getDestinationSubnets()
+				for dst in dsts : 
+					policyDatabase.addDestinationDAG(dst, dags[dst])
+
+				self.zepSynthesiser = ZeppelinSynthesiser(topology=self.topology, pdb=policyDatabase, backup=True)
+				self.zepSynthesiser.enforceDAGs(dags=policyDatabase.getDestinationDAGs(), endpoints=self.endpoints, backups=backups)
+
+
 	
 		self.pdb.writeForwardingRulesToFile(self.topology)
 		self.printProfilingStats()
@@ -1844,13 +1888,13 @@ class GenesisSynthesiser(object) :
 	# Do a BFS on the Fwd relation to find the shortest path from src to dst 
 	def getBFSModelPath(self, pc):
 		src = self.pdb.getSourceSwitch(pc)
-		dst = self.pdb.getDestinationSwitch(pc)
+		dstSw = self.pdb.getDestinationSwitch(pc)
 
 		dag = None
 		if self.controlPlaneMode :
 			# Create Destination DAGs
-			if dst in self.destinationDAGs : 
-				dag = self.destinationDAGs[dst]
+			if dstSw in self.destinationDAGs : 
+				dag = self.destinationDAGs[dstSw]
 
 		bfstree = dict()
 		visited = dict()
@@ -1860,7 +1904,7 @@ class GenesisSynthesiser(object) :
 			sw = swQueue.popleft()
 			visited[sw] = True
 			if self.controlPlaneMode and dag <> None : 
-				if sw in dag and sw <> dst and is_true(self.fwdmodel.evaluate(self.Fwd(sw,dag[sw],pc))): 
+				if sw in dag and sw <> dstSw and is_true(self.fwdmodel.evaluate(self.Fwd(sw,dag[sw],pc))): 
 					# Continue path along the dag
 					path = []
 					nextsw = sw
@@ -1884,12 +1928,12 @@ class GenesisSynthesiser(object) :
 						sw2 = path[i + 1]
 						if path[i] not in dag :
 							dag[path[i]] = path[i+1]
-						self.destinationDAGs[dst] = dag
+						self.destinationDAGs[dstSw] = dag
 					return path
 
-			if sw == dst :
-				path = [dst]
-				nextsw = bfstree[dst]
+			if sw == dstSw :
+				path = [dstSw]
+				nextsw = bfstree[dstSw]
 				while nextsw <> src :
 					path.append(nextsw)
 					nextsw = bfstree[nextsw]
@@ -1903,8 +1947,8 @@ class GenesisSynthesiser(object) :
 					for i in range(len(path) - 1) : 
 						assert False
 						dag[path[i]] = path[i+1]
-					dag[dst] = None
-					self.destinationDAGs[dst] = dag
+					dag[dstSw] = None
+					self.destinationDAGs[dstSw] = dag
 				return path
 
 			neighbours = self.topology.getSwitchNeighbours(sw)
@@ -2103,6 +2147,7 @@ class GenesisSynthesiser(object) :
 		self.tactics[pc] = tactic
 	
 	def addDestinationTreeConstraints(self, pc1, pc2) : 
+		return
 		""" If pc1 and pc2 have the same destination, then
 		the paths must not form a cycle. """ 
 		dst1 = self.pdb.getDestinationSwitch(pc1)
@@ -2110,12 +2155,12 @@ class GenesisSynthesiser(object) :
 		if dst1 <> dst2 : 
 			return 
 
-		src1 = self.pdb.getSourceSwitch(pc1)
-		src2 = self.pdb.getSourceSwitch(pc2)
-		if src1 == src2 : 
-			print "Error: In C3 mode, cannot have two packet classes with same source and destination."
-			print "Packet Classes:", pc1, pc2
-			exit(0)
+		if not pc1 % 2 == 0 or not pc2 == pc1 + 1 : return
+		
+		# if src1 == src2 : 
+		# 	print "Error: In C3 mode, cannot have two packet classes with same source and destination."
+		# 	print "Packet Classes:", pc1, pc2
+		# 	exit(0)
 
 		# If pc1 and pc2 intersect (are reachable at a switch), 
 		# then both are forwarded to the same switch. 

@@ -595,6 +595,34 @@ class PolicyDatabase(object) :
 			print "Error: incorrect OSPF configuration"
 			print "Number of Violations is", violationCount
 
+	def validateControlPlaneResilience(self, topology, staticRoutes, waypoints): 
+		pc = 0
+		dst = self.getDestinationSubnet(pc)
+		path = self.paths[pc]
+		srcSw = path[0]
+		dstSw = path[len(path) - 1]
+		#print path, waypoints, staticRoutes[dst]
+
+		traverseWaypointResilience = True
+		for index in range(len(path) - 1) :
+			zpath = topology.getShortestPath(srcSw, dstSw, [[path[index], path[index+1]]])
+			
+			traverseWaypoint = False
+			if dst not in waypoints : traverseWaypoint = True
+			else :
+				for w in waypoints[dst] : 
+					if w in zpath : 
+						traverseWaypoint = True
+
+			if not traverseWaypoint : 
+				print path[index], path[index+1], zpath 
+				print "AD", topology.getPathDistance(zpath)
+				print "SR", staticRoutes[dst]
+			traverseWaypointResilience = traverseWaypointResilience & traverseWaypoint
+
+		if not traverseWaypointResilience : 
+			print "Violation, did not traverse waypoints under failures"
+
 	def addTrafficEngineeringObjective(self, minavg=False, minmax=False) :
 		""" Add a traffic engineering objective """
 		if minavg : 
