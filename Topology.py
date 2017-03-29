@@ -363,26 +363,57 @@ class Topology(object):
 		path.reverse()
 		return path
 
-	def getShortestPathStaticRoutes(self, src, dst, staticRoutes) :
-		nextsw = src
-		path = [src]
-		while nextsw != dst :
+	def getShortestPathStaticRoutes(self, srcSw, dstSw, staticRoutes, disabledEdges=[]) :
+		nextsw = srcSw
+		path = [srcSw]
+		while nextsw != dstSw :
 			staticnexthop = False 
 			for sr in staticRoutes : 
-				if sr[0] == nextsw : 
+				if sr[0] == nextsw and sr not in disabledEdges : 
 					nextsw = sr[1]
 					staticnexthop = True
 					break
 
 			if not staticnexthop :
-				spath = self.getShortestPath(nextsw, dst) 
+				spath = self.getShortestPath(nextsw, dstSw, disabledEdges) 
 				if len(spath) == 0 : 
+					print "no path found"
 					return []
 				nextsw = spath[1]
 
-			path.append(nextsw)
+			if nextsw in path : 
+				# Static route causes loop under failure
+				print "Looping path"
+				return []
 			
+			path.append(nextsw)
+		
 		return path
+
+	def checkRoutingLoop(self, srcSw, dstSw, staticRoutes, disabledEdges=[]) :
+		nextsw = srcSw
+		path = [srcSw]
+		while nextsw != dstSw :
+			staticnexthop = False 
+			for sr in staticRoutes : 
+				if sr[0] == nextsw and sr not in disabledEdges : 
+					nextsw = sr[1]
+					staticnexthop = True
+					break
+
+			if not staticnexthop :
+				spath = self.getShortestPath(nextsw, dstSw, disabledEdges) 
+				if len(spath) == 0 :
+					return True
+				nextsw = spath[1]
+
+			if nextsw in path : 
+				# Static route causes loop under failure
+				return False
+			
+			path.append(nextsw)
+		
+		return True
 
 	def checkUniquenessShortestPath(self, spath, routefilters) :
 		""" Check if there exists a path different from spath with the same weight """
@@ -546,11 +577,13 @@ class Topology(object):
 		bfstree = dict()
 		visited = dict()
 
+		if srcSw == dstSw : 
+			return [srcSw]
+
 		swQueue = deque([srcSw])
 		while len(swQueue) > 0 :
 			sw = swQueue.popleft()
 			visited[sw] = True
-			
 			if sw == dstSw :
 				path = [dstSw]
 				nextsw = bfstree[dstSw]

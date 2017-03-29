@@ -582,7 +582,7 @@ class PolicyDatabase(object) :
 			backupPaths = backups[dst]
 			dag = self.dags[dst]
 			for backupPath in backupPaths : 
-				path = topology.getShortestPathStaticRoutes(backupPath[0], backupPath[len(backupPath) - 1], staticRoutes[dst])
+				path = topology.getShortestPathStaticRoutes(backupPath[0], backupPath[len(backupPath) - 1], staticRoutes[dst], [])
 				for i in range(len(path) - 1) : 
 					nextPath = topology.getShortestPath(backupPath[0], backupPath[len(backupPath) - 1], [[path[i], path[i+1]]])
 					if nextPath[1] != backupPath[1] : 
@@ -595,33 +595,74 @@ class PolicyDatabase(object) :
 			print "Error: incorrect OSPF configuration"
 			print "Number of Violations is", violationCount
 
-	def validateControlPlaneResilience(self, topology, staticRoutes, waypoints): 
-		pc = 0
-		dst = self.getDestinationSubnet(pc)
-		path = self.paths[pc]
-		srcSw = path[0]
-		dstSw = path[len(path) - 1]
-		#print path, waypoints, staticRoutes[dst]
+	def validateControlPlaneResilience(self, topology, staticRoutes): 
+		for pc in range(self.getPacketClassRange()) :
+			dst = self.getDestinationSubnet(pc)
+			path = self.paths[pc]
+			srcSw = path[0]
+			dstSw = path[len(path) - 1]
 
-		traverseWaypointResilience = True
-		for index in range(len(path) - 1) :
-			zpath = topology.getShortestPath(srcSw, dstSw, [[path[index], path[index+1]]])
-			
+			routingLoopAbsence = True
+			for index in range(len(path) - 1) :
+				rla = topology.checkRoutingLoop(srcSw, dstSw, staticRoutes[dst], [[path[index], path[index+1]]])
+				if not rla : 
+					print "RV", dst, path, path[index], path[index+1], staticRoutes[dst]
+				routingLoopAbsence = routingLoopAbsence & rla
+
+			if not routingLoopAbsence : 
+				print "Violation, routing loop found" 
+
+	def validateControlPlaneWaypointCompliance(self, topology, staticRoutes, waypoints): 
+		print staticRoutes
+		# Waypoint Compliance
+		for pc in range(self.getPacketClassRange()) :
+			if pc not in waypoints : continue
+			dst = self.getDestinationSubnet(pc)
+			path = self.paths[pc]
+			srcSw = path[0]
+			dstSw = path[len(path) - 1]
+			zpath = topology.getShortestPathStaticRoutes(srcSw, dstSw, staticRoutes[dst]) # Actual Path
+
 			traverseWaypoint = False
-			if dst not in waypoints : traverseWaypoint = True
+			if pc not in waypoints : traverseWaypoint = True
 			else :
-				for w in waypoints[dst] : 
+				for w in waypoints[pc] : 
 					if w in zpath : 
+						print pc, zpath, waypoints[pc]
 						traverseWaypoint = True
 
 			if not traverseWaypoint : 
-				print path[index], path[index+1], zpath 
-				print "AD", topology.getPathDistance(zpath)
-				print "SR", staticRoutes[dst]
-			traverseWaypointResilience = traverseWaypointResilience & traverseWaypoint
+				print "Packet Class", pc ,"did not traverse waypoint"
+				print zpath,  waypoints[pc]
 
-		if not traverseWaypointResilience : 
-			print "Violation, did not traverse waypoints under failures"
+		return
+		for pc in range(self.getPacketClassRange()) :
+			if pc not in waypoints : continue
+			dst = self.getDestinationSubnet(pc)
+			path = self.paths[pc]
+			srcSw = path[0]
+			dstSw = path[len(path) - 1]
+			path = topology.getShortestPathStaticRoutes(srcSw, dstSw, staticRoutes[dst]) # Actual Path
+
+			traverseWaypointResilience = True
+			for index in range(len(path) - 1) :
+				zpath = topology.getShortestPathStaticRoutes(srcSw, dstSw, staticRoutes[dst], [[path[index], path[index+1]]])
+				traverseWaypoint = False
+				if pc not in waypoints : traverseWaypoint = True
+				else :
+					for w in waypoints[pc] : 
+						if w in zpath : 
+							traverseWaypoint = True
+
+				if not traverseWaypoint : 
+					print path, waypoints
+					print path[index], path[index+1], zpath 
+					print "AD", topology.getPathDistance(zpath)
+					print "SR", staticRoutes[dst]
+				traverseWaypointResilience = traverseWaypointResilience & traverseWaypoint
+
+			if not traverseWaypointResilience : 
+				print "Violation, did not traverse waypoints under failures", pc
 
 	def addTrafficEngineeringObjective(self, minavg=False, minmax=False) :
 		""" Add a traffic engineering objective """
