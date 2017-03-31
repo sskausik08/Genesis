@@ -13,6 +13,12 @@ import copy
 from collections import defaultdict
 #import matplotlib.pyplot as plt
 
+from enum import Enum
+class SRType(Enum):
+	SR = 0
+	W = 1
+	RLA = 2
+
 class ZeppelinSynthesiser(object) :
 	def __init__(self, topology, pdb, backup=False) :
 		self.topology = topology
@@ -92,6 +98,7 @@ class ZeppelinSynthesiser(object) :
 		self.distanceConstraints = defaultdict(lambda:defaultdict(lambda:defaultdict(lambda:None)))
 		self.waypointResilienceConstraints =  defaultdict(lambda:defaultdict(lambda:defaultdict(lambda:None)))
 		self.waypointDistanceConstraints = defaultdict(lambda:defaultdict(lambda:defaultdict(lambda:None)))
+		self.routingLoopAvoidanceConstraints = defaultdict(lambda:defaultdict(lambda:defaultdict(lambda:None)))
 		self.backupPathConstraints = defaultdict(lambda:defaultdict(lambda:None))
 		self.inconsistentSRs = 0
 		self.inconsistentBPs = 0
@@ -342,160 +349,6 @@ class ZeppelinSynthesiser(object) :
 	# 		newDag[newpath[i]] = newpath[i + 1]
 
 	# 	return newDag
-	"""
-	An IIS is a subset of the constraints and variable bounds of the original model. 
-	If all constraints in the model except those in the IIS are removed, the model is still infeasible. 
-	However, further removing any one member of the IIS produces a feasible result.
-	"""	
-	def repairInconsistency(self) :
-		""" Pick static routes/ remove backup paths greedily """
-		# for constr in self.ilpSolver.getConstrs() :
-		# 	if constr.getAttr(gb.GRB.Attr.IISConstr) > 0 :
-		# 		print constr.getAttr(gb.GRB.Attr.ConstrName) 
-
-		staticRoutes = []
-		for constr in self.ilpSolver.getConstrs() :
-			if constr.getAttr(gb.GRB.Attr.IISConstr) > 0 :
-				name = constr.getAttr(gb.GRB.Attr.ConstrName) 
-				fields = name.split("-")
-				if fields[0] == "SR" :
-					# Static Route constraint
-					foundFlag = False
-					for index in range(len(staticRoutes)) :
-						if staticRoutes[index][0] == [int(fields[1]), int(fields[2]), int(fields[4])] : 
-							staticRoutes[index] = [staticRoutes[index][0], staticRoutes[index][1] + 1]
-							foundFlag = True
-							break
-					if not foundFlag :
-						if [int(fields[1]), int(fields[2])] not in self.staticRoutes[int(fields[4])] : 
-							# Compute score for static route
-							staticRoutes.append([[int(fields[1]), int(fields[2]), int(fields[4])], 1])
-	
-		waypointPaths = []
-		for constr in self.ilpSolver.getConstrs() :
-			if constr.getAttr(gb.GRB.Attr.IISConstr) > 0 :
-				name = constr.getAttr(gb.GRB.Attr.ConstrName) 
-				fields = name.split("-")
-				if fields[0] == "WD" :
-					# backup path constraint
-					# Static Route constraint
-					foundFlag = False
-					for index in range(len(staticRoutes)) :
-						if staticRoutes[index][0] == [int(fields[1]), int(fields[2]), int(fields[3]), int(fields[4]), int(fields[5])] : 
-							staticRoutes[index] = [staticRoutes[index][0], staticRoutes[index][1] + 1]
-							foundFlag = True
-							break
-					if not foundFlag :
-						if [int(fields[1]), int(fields[2])] not in self.staticRoutes[int(fields[3])] : 
-							# Compute score for static route
-							staticRoutes.append([[int(fields[1]), int(fields[2]), int(fields[3]), int(fields[4]), int(fields[5])], 1])
-
-		if len(staticRoutes) == 0 and len(waypointPaths) == 0: 
-			print "INFEASIBLE forever, should never ever ever happen at all!"
-
-			for constr in self.ilpSolver.getConstrs() :
-				if constr.getAttr(gb.GRB.Attr.IISConstr) > 0 :
-					print constr 
-
-			print self.waypointPaths
-			exit(0)
-
-		if len(staticRoutes) > 0 : 
-			# Check if there is a static route leadint to dstSw
-			# for sr in staticRoutes : 
-			# 	dag = self.destinationDAGs[sr[0][2]]
-			# 	for sw in dag :
-			# 		if dag[sw] == None : 
-			# 			dstSw = sw
-			# 	if dstSw == sr[0][1] :
-			# 		# Pick this static route! 
-			# 		self.addStaticRoute(sr[0][0], sr[0][1], sr[0][2])
-			# 		#print "Picked the static route at dst switch!"
-			# 		return
-
-			# # Check if a static route starts at a switch with no backup paths
-			# for sr in staticRoutes : 
-			# 	sw1 = sr[0][0]
-			# 	dag = self.destinationDAGs[sr[0][2]]
-			# 	for sw in dag :
-			# 		if dag[sw] == None : 
-			# 			dstSw = sw
-			# 	mincut = self.topology.findMinCut(sw1, dstSw)
-			# 	if mincut == 1 : 
-			# 		# No backup path at sw1. Pick this static route.
-			# 		self.addStaticRoute(sr[0][0], sr[0][1], sr[0][2])
-			# 		#print "Picked the static route at switch with no backup paths!"
-			# 		return
-
-			# # Check if a static route ends at a switch with no back up paths'
-			# nonResilientStaticRoutes = []
-			# for sr in staticRoutes : 
-			# 	sw2 = sr[0][1]
-			# 	dag = self.destinationDAGs[sr[0][2]]
-			# 	for sw in dag :
-			# 		if dag[sw] == None : 
-			# 			dstSw = sw
-			# 	mincut = self.topology.findMinCut(sw2, dstSw)
-			# 	if mincut == 1 : 
-			# 		nonResilientStaticRoutes.append(sr)
-
-			# if len(nonResilientStaticRoutes) == len(staticRoutes) :
-			# 	print "No option than to lose some resilience!"
-			# else :
-			# 	# Choose from resilient filters. 
-			# 	for sr in nonResilientStaticRoutes :
-			# 		staticRoutes.remove(sr)
-
-			# Check if a static route is at the source. Try to remove those.
-			# sourceStaticRoutes = []
-			# for sr in staticRoutes : 
-			# 	sw1 = sr[0][0]
-			# 	dst = sr[0][2]
-			# 	if [sw1, dst] in self.endpoints : 
-			# 		# Source SR
-			# 		sourceStaticRoutes.append(sr)
-			
-			# if len(sourceStaticRoutes) == len(staticRoutes) :
-			# 	self.sourceSRs += 1
-			# 	print "No option than to add static routes at source", self.sourceSRs
-				
-			# else :
-			# 	# Choose from resilient filters. 
-			# 	for sr in sourceStaticRoutes :
-			# 		staticRoutes.remove(sr)
-
-
-			sr = None
-			count = 0
-			for ind in range(len(staticRoutes)) : 
-				if staticRoutes[ind][1] > count : 
-					sr = staticRoutes[ind][0]
-					count = staticRoutes[ind][1]
-
-			# Pick the best static Route
-			if len(sr) > 3:
-				self.addStaticRoute(sr[0], sr[1], sr[2], sr[3], sr[4])
-			else : 
-				self.addStaticRoute(sr[0], sr[1], sr[2])
-
-		elif len(waypointPaths) > 0 : 
-			print "===========IIS============="
-			print waypointPaths
-			for constr in self.ilpSolver.getConstrs() :
-				if constr.getAttr(gb.GRB.Attr.IISConstr) > 0 :
-					print constr 
-
-			print self.waypointPaths
-			exit(0)
-			wp = None
-			count = 0
-			for ind in range(len(waypointPaths)) : 
-				if waypointPaths[ind][1] > count : 
-					wp = waypointPaths[ind][0]
-					count = waypointPaths[ind][1]
-
-			# Pick the best static Route
-			self.removeWaypointPath(wp[0], wp[1], wp[2])
 
 	def removeViolations(self) : 
 		self.staticRoutesAdded = 0
@@ -827,98 +680,7 @@ class ZeppelinSynthesiser(object) :
 									+ str(dag[src]) + "-" + str(end2) + "-" + str(dst) + "-" + str(self.constraintIndex))
 								self.constraintIndex += 1
 					
-					src = dag[src]
-					
-
-	def addDestinationDAGConstraintsRF(self, dst, dag) :
-		""" Adds constraints such that dag weights are what we want them to be with route filtering disabled/enabled """
-		
-		for sw in dag : 
-			t = dag[sw]
-			while t != None :			
-				nextsw = sw
-				totalDist = 0 # Store the distance from sw to t along dag.
-				while nextsw != t : 
-					totalDist += self.ew(nextsw, dag[nextsw])
-					nextsw = dag[nextsw]
-
-				self.ilpSolver.addConstr(self.dist(sw, t) <= totalDist)
-
-				# Route filtering equations
-				neighbours = self.topology.getSwitchNeighbours(sw)
-				for n in neighbours : 
-					if n != dag[sw] : 
-						self.ilpSolver.addConstr(totalDist <= 10*self.rf(sw,n,dst) + self.ew(sw, n) + self.dist(n, t) - 1, "C-" + str(dst) + "-" + str(self.constraintIndex))
-						self.constraintIndex += 1
-				
-				t = dag[t]			
-
-	def addStaticRoute(self, sw1, sw2, dst, pc=None, pathID=None) :
-		""" Add rf at sw1 -> sw2 for dst """
-		if [sw1, sw2] not in self.staticRoutes[dst] :
-			self.staticRoutes[dst].append([sw1, sw2]) 
-			self.inconsistentSRs += 1
-
-		print "SR", sw1, sw2, dst
-		# Delete distance constraints from model
-		distconstrs = self.distanceConstraints[sw1][sw2][dst]
-		if distconstrs != None : 
-			for dconstr in distconstrs : 
-				self.ilpSolver.remove(dconstr)
-
-		if pc != None :
-			for pid in range(len(self.waypointPaths[dst])) : 
-				wconstrs = self.waypointResilienceConstraints[sw1][dst][pid]
-				if wconstrs != None : 
-					#print "SR", sw1, sw2, dst
-					for wconstr in wconstrs : 
-						self.ilpSolver.remove(wconstr)
-
-			# Can remove waypoint distance constraints. 
-			neighbours = self.topology.getSwitchNeighbours(sw1)
-			for n in neighbours : 
-				if n == sw2 : continue
-				wdconstrs = self.waypointDistanceConstraints[sw1][n][pc]
-				if wdconstrs != None :
-					for wdconstr in wdconstrs : 
-						self.ilpSolver.remove(wdconstr)
-
-			currpath = self.waypointPaths[dst][pathID]
-			dag = dict()
-			for index in range(len(currpath) - 1) : 
-				dag[currpath[index]] = currpath[index + 1] 
-			dag[currpath[len(currpath) - 1]] = None
-
-			self.addRoutingLoopAvoidanceConstraints(dst, dag, [sw1, sw2], False)
-
-		self.ilpSolver.update()
-	
-	# def removeBackupPath(self, src, dst) :
-	# 	for backupPath in self.backupPaths[dst] :
-	# 		if src == backupPath[0] :
-	# 			# Backup path exists. Remove constraints from model
-	# 			print "Removing backupPath", backupPath, dst
-	# 			backupConstrs = self.backupPathConstraints[src][dst]
-	# 			if backupConstrs == None : continue
-	# 			for bpconstr in backupConstrs : 
-	# 				self.ilpSolver.remove(bpconstr)
-
-	# 			self.ilpSolver.update()
-				
-	# 			self.backupPaths[dst].remove(backupPath)
-	# 			self.inconsistentBPs += 1
-	# 			return
-
-	def removeWaypointPath(self, sw, dst, index) :
-		""" Remove the waypoint resilient path"""
-		print "Removing waypoint path at", sw, dst
-		waypointConstrs = self.waypointResilienceConstraints[sw][dst][index]
-		if waypointConstrs == None : return
-		for wconstr in waypointConstrs : 
-			self.ilpSolver.remove(wconstr)
-
-		self.ilpSolver.update()
-		return
+					src = dag[src]			
 
 	def getEdgeWeightModel(self, staticRouteMode=True) : 
 		self.zepOutputFile = open("zeppelin-output", 'w')
@@ -976,7 +738,7 @@ class ZeppelinSynthesiser(object) :
 			totEdges += len(self.topology.getSwitchNeighbours(sw))
 
 		self.SRCount = setStaticRoutes
-		print "Ratio of Static Routes : ", setStaticRoutes, totEdges 
+		print "Ratio of Static Routes : ", setStaticRoutes, len(dsts)*totEdges 
 		#print "Edges used", len(self.edges), totEdges
 
 
@@ -986,64 +748,279 @@ class ZeppelinSynthesiser(object) :
 		print "Zeppelin: Time taken to solve constraints are ", self.z3solveTime
 		# print "Number of z3 adds to the solver are ", self.z3numberofadds
 
-	# Routing loop avoidance
-	def addRoutingLoopAvoidanceConstraints(self, dst, dag, sr, resilience=False) :
-		# If sr is added for dst, ensure that a link failure on dag does not cause a loop
-		print dag, sr
-		for sw in dag :
-			if dag[sw] == None :
-				dstSw = sw
-				break
 
+	"""
+	An IIS is a subset of the constraints and variable bounds of the original model. 
+	If all constraints in the model except those in the IIS are removed, the model is still infeasible. 
+	However, further removing any one member of the IIS produces a feasible result.
+	"""	
+	def repairInconsistency(self) :
+		""" Pick static routes/ remove backup paths greedily """
+		# for constr in self.ilpSolver.getConstrs() :
+		# 	if constr.getAttr(gb.GRB.Attr.IISConstr) > 0 :
+		# 		print constr.getAttr(gb.GRB.Attr.ConstrName) 
+
+		staticRoutes = []
+		for constr in self.ilpSolver.getConstrs() :
+			if constr.getAttr(gb.GRB.Attr.IISConstr) > 0 :
+				name = constr.getAttr(gb.GRB.Attr.ConstrName) 
+				fields = name.split("-")
+				if fields[0] == "SR" :
+					# Static Route constraint
+					foundFlag = False
+					for index in range(len(staticRoutes)) :
+						if staticRoutes[index][0] == [SRType.SR, int(fields[1]), int(fields[2]), int(fields[4])] : 
+							staticRoutes[index] = [staticRoutes[index][0], staticRoutes[index][1] + 1]
+							foundFlag = True
+							break
+					if not foundFlag :
+						if [int(fields[1]), int(fields[2])] not in self.staticRoutes[int(fields[4])] : 
+							# Compute score for static route
+							staticRoutes.append([[SRType.SR, int(fields[1]), int(fields[2]), int(fields[4])], 1])
+	
+				elif fields[0] == "WD" :
+					# waypoint path distance constraint
+					foundFlag = False
+					for index in range(len(staticRoutes)) :
+						if staticRoutes[index][0] == [SRType.W, int(fields[1]), int(fields[2]), int(fields[3]), int(fields[4]), int(fields[5])] : 
+							staticRoutes[index] = [staticRoutes[index][0], staticRoutes[index][1] + 1]
+							foundFlag = True
+							break
+					if not foundFlag :
+						if [int(fields[1]), int(fields[2])] not in self.staticRoutes[int(fields[3])] : 
+							# Compute score for static route
+							staticRoutes.append([[SRType.W, int(fields[1]), int(fields[2]), int(fields[3]), int(fields[4]), int(fields[5])], 1])
+
+				elif fields[0] == "RLA" : 
+					# Routing loop avoidance constraint
+					foundFlag = False
+					for index in range(len(staticRoutes)) :
+						if staticRoutes[index][0] == [SRType.RLA, int(fields[1]), int(fields[2]), int(fields[3]), int(fields[4])] : 
+							staticRoutes[index] = [staticRoutes[index][0], staticRoutes[index][1] + 1]
+							foundFlag = True
+							break
+					if not foundFlag :
+						if [int(fields[1]), int(fields[2])] not in self.staticRoutes[int(fields[3])] : 
+							# Compute score for static route
+							staticRoutes.append([[SRType.RLA, int(fields[1]), int(fields[2]), int(fields[3]), int(fields[4])], 1])
+
+		if len(staticRoutes) > 0 : 
+			# Check if there is a static route leadint to dstSw
+			chosenSR = None
+			for sr in staticRoutes : 
+				dag = self.destinationDAGs[sr[0][3]]
+				for sw in dag :
+					if dag[sw] == None : 
+						dstSw = sw
+				if dstSw == sr[0][2] :
+					# Pick this static route! 
+					chosenSR = sr
+					break
+
+			if chosenSR == None : 
+				# Check if a static route starts at a switch with no backup paths
+				for sr in staticRoutes : 
+					sw1 = sr[0][1]
+					dag = self.destinationDAGs[sr[0][3]]
+					for sw in dag :
+						if dag[sw] == None : 
+							dstSw = sw
+					mincut = self.topology.findMinCut(sw1, dstSw)
+					if mincut == 1 : 
+						# No backup path at sw1. Pick this static route.
+						chosenSR = sr
+						#print "Picked the static route at switch with no backup paths!"
+						break
+
+			if chosenSR == None : 
+				# Check if a static route ends at a switch with no back up paths'
+				nonResilientStaticRoutes = []
+				for sr in staticRoutes : 
+					sw2 = sr[0][2]
+					dag = self.destinationDAGs[sr[0][3]]
+					for sw in dag :
+						if dag[sw] == None : 
+							dstSw = sw
+					mincut = self.topology.findMinCut(sw2, dstSw)
+					if mincut == 1 : 
+						nonResilientStaticRoutes.append(sr)
+
+				if len(nonResilientStaticRoutes) == len(staticRoutes) :
+					print "No option than to lose some resilience!"
+				else :
+					# Choose from resilient filters. 
+					for sr in nonResilientStaticRoutes :
+						staticRoutes.remove(sr)
+
+				# Check if a static route is at the source. Try to remove those.
+				sourceStaticRoutes = []
+				for sr in staticRoutes : 
+					sw1 = sr[0][1]
+					dst = sr[0][3]
+					if [sw1, dst] in self.endpoints : 
+						# Source SR
+						sourceStaticRoutes.append(sr)
+				
+				if len(sourceStaticRoutes) == len(staticRoutes) :
+					self.sourceSRs += 1
+					print "No option than to add static routes at source", self.sourceSRs
+					
+				else :
+					# Choose from resilient filters. 
+					for sr in sourceStaticRoutes :
+						staticRoutes.remove(sr)
+
+				count = 0
+				for ind in range(len(staticRoutes)) : 
+					if staticRoutes[ind][1] > count : 
+						chosenSR = staticRoutes[ind][0]
+						count = staticRoutes[ind][1]
+			
+			# Pick the best static Route
+			if chosenSR[0] == SRType.SR : 
+				self.addStaticRoute(type=chosenSR[0], sw1=chosenSR[1], sw2=chosenSR[2], dst=chosenSR[3]) # type, sw1, sw2, dst
+ 			elif chosenSR[0] == SRType.W : 
+				self.addStaticRoute(type=chosenSR[0], sw1=chosenSR[1], sw2=chosenSR[2], dst=chosenSR[3], pc=chosenSR[4], pathID=chosenSR[5])
+			elif chosenSR[0] == SRType.RLA : 
+				self.addStaticRoute(type=chosenSR[0], sw1=chosenSR[1], sw2=chosenSR[2], dst=chosenSR[3], pathID=chosenSR[4])
+
+		else : 
+			print "===========?IIS?============="
+			print waypointPaths
+			for constr in self.ilpSolver.getConstrs() :
+				if constr.getAttr(gb.GRB.Attr.IISConstr) > 0 :
+					print constr 
+			exit(0)
+
+
+	def addStaticRoute(self, type, sw1, sw2, dst, pc=None, pathID=None) :
+		""" Add rf at sw1 -> sw2 for dst """
+		# Type = SR, W, RLA
+		if [sw1, sw2] not in self.staticRoutes[dst] :
+			self.staticRoutes[dst].append([sw1, sw2]) 
+			self.inconsistentSRs += 1
+
+		if type == SRType.SR : 
+			# Delete distance constraints from model
+			# Normal Path is input
+			distconstrs = self.distanceConstraints[sw1][sw2][dst]
+			if distconstrs != None : 
+				for dconstr in distconstrs : 
+					self.ilpSolver.remove(dconstr)
+
+			#dag = self.destinationDAGs[dst]
+			#self.addRoutingLoopAvoidanceConstraints(dst, dag, [sw1, sw2], False)
+
+		elif type == SRType.W : 
+			print "W", sw1, sw2, dst
+			for pid in range(len(self.waypointPaths[dst])) : 
+				wconstrs = self.waypointResilienceConstraints[sw1][dst][pid]
+				if wconstrs != None : 
+					#print "SR", sw1, sw2, dst
+					for wconstr in wconstrs : 
+						self.ilpSolver.remove(wconstr)
+
+			# Can remove waypoint distance constraints. 
+			neighbours = self.topology.getSwitchNeighbours(sw1)
+			for n in neighbours : 
+				if n == sw2 : continue
+				wdconstrs = self.waypointDistanceConstraints[sw1][n][pc]
+				if wdconstrs != None :
+					for wdconstr in wdconstrs : 
+						self.ilpSolver.remove(wdconstr)
+
+			currpath = self.waypointPaths[dst][pathID]
+
+			self.addRoutingLoopAvoidanceConstraints(dst, currpath, [sw1, sw2], False)
+
+		elif type == SRType.RLA : 
+			print "RLA", sw1, sw2, dst
+			rlaconstrs = self.routingLoopAvoidanceConstraints[sw1][sw2][pathID]
+			if rlaconstrs != None : 
+				#print "SR", sw1, sw2, dst
+				for rlaconstr in rlaconstrs : 
+					self.ilpSolver.remove(rlaconstr)
+
+		self.ilpSolver.update()
+	
+	# def removeBackupPath(self, src, dst) :
+	# 	for backupPath in self.backupPaths[dst] :
+	# 		if src == backupPath[0] :
+	# 			# Backup path exists. Remove constraints from model
+	# 			print "Removing backupPath", backupPath, dst
+	# 			backupConstrs = self.backupPathConstraints[src][dst]
+	# 			if backupConstrs == None : continue
+	# 			for bpconstr in backupConstrs : 
+	# 				self.ilpSolver.remove(bpconstr)
+
+	# 			self.ilpSolver.update()
+				
+	# 			self.backupPaths[dst].remove(backupPath)
+	# 			self.inconsistentBPs += 1
+	# 			return
+
+	# Routing loop avoidance
+	def addRoutingLoopAvoidanceConstraints(self, dst, path, sr, resilience=False) :
+		# If sr is added for dst, ensure that a link failure on dag does not cause a loop
+		dstSw = path[len(path) - 1]
 		if sr[1] == dstSw :
 			# No need for routing loop avoidance
 			return
 
-		pathDist = 0
-		sw = sr[1]
-		while sw != dstSw:
-			pathDist += self.ew(sw, dag[sw])
-			sw = dag[sw]
+		if path not in self.waypointPaths[dst] : 
+			self.waypointPaths.append(path)
+		pathID = self.waypointPaths[dst].index(path)
 
-		self.ilpSolver.addConstr(pathDist <= self.dist(sr[1], sr[0]) + self.dist(sr[0], dstSw) - 1)
+		start = path.index(sr[1])
+		pathDist = 0
+		for index in range(start, len(path) - 1) : 
+			pathDist += self.ew(path[index], path[index + 1])
+		
+		rlaconstr = self.ilpSolver.addConstr(pathDist <= self.dist(sr[1], sr[0]) + self.dist(sr[0], dstSw) - 1, 
+			"RLA-" + str(sr[1]) + "-" + str(path[start + 1]) + "-" + str(dst) + "-" + str(pathID)  )
+
+		if self.routingLoopAvoidanceConstraints[sr[1]][path[start + 1]][dst] == None:
+			self.routingLoopAvoidanceConstraints[sr[1]][path[start + 1]][dst] = []
+
+		self.routingLoopAvoidanceConstraints[sr[1]][path[start + 1]][dst].append(rlaconstr)
 
 		if not resilience : 
 			return
 
-		upstreamSwitches = []
-		for sw1 in dag :
-			if sw1 == sr[1] : continue  
-			sw2 = sw1
-			while sw2 != None:
-				if sw2 == sr[1] : # sw1 is a upstream switch of sr[1].
-					upstreamSwitches.append(sw1)
-					break
-				sw2 = dag[sw2]
+		# upstreamSwitches = []
+		# for sw1 in dag :
+		# 	if sw1 == sr[1] : continue  
+		# 	sw2 = sw1
+		# 	while sw2 != None:
+		# 		if sw2 == sr[1] : # sw1 is a upstream switch of sr[1].
+		# 			upstreamSwitches.append(sw1)
+		# 			break
+		# 		sw2 = dag[sw2]
 
-		# Find a path from sr[1] tp dstSw which is edge-disjoint to dag
-		dagEdges = []
-		for sw in dag : 
-			if sw == dstSw : continue
-			dagEdges.append([sw, dag[sw]])
-			neighbours = self.topology.getSwitchNeighbours(sw)
-			for n in neighbours : 
-				dagEdges.append([n, sw])
+		# # Find a path from sr[1] tp dstSw which is edge-disjoint to dag
+		# dagEdges = []
+		# for sw in dag : 
+		# 	if sw == dstSw : continue
+		# 	dagEdges.append([sw, dag[sw]])
+		# 	neighbours = self.topology.getSwitchNeighbours(sw)
+		# 	for n in neighbours : 
+		# 		dagEdges.append([n, sw])
 
-		backupPath = self.topology.getBFSPath(sr[1], dstSw, dagEdges)
-		if backupPath == [] : 
-			# No path  
-			print "No alternate path", dst, sr 
-			return
+		# backupPath = self.topology.getBFSPath(sr[1], dstSw, dagEdges)
+		# if backupPath == [] : 
+		# 	# No path  
+		# 	print "No alternate path", dst, sr 
+		# 	return
 
-		print dst, backupPath, sr, dag
-		bpDist = 0
-		for index in range(len(backupPath) - 1):
-			bpDist += self.ew(backupPath[index], backupPath[index + 1])
+		# print dst, backupPath, sr, dag
+		# bpDist = 0
+		# for index in range(len(backupPath) - 1):
+		# 	bpDist += self.ew(backupPath[index], backupPath[index + 1])
 		
-		for usw in upstreamSwitches :
-			# Ensure backup path is shorter than the distance from upstream switches
-			self.ilpSolver.addConstr(bpDist <=  self.dist(sr[1], usw) + self.dist(usw, dstSw) - 1, 
-				"RLA-" + str(sr[1]) + "-" + str(usw) + "-" + str(dstSw) + "-" + str(dst))
+		# for usw in upstreamSwitches :
+		# 	# Ensure backup path is shorter than the distance from upstream switches
+		# 	self.ilpSolver.addConstr(bpDist <=  self.dist(sr[1], usw) + self.dist(usw, dstSw) - 1, 
+		# 		"RLA-" + str(sr[1]) + "-" + str(usw) + "-" + str(dstSw) + "-" + str(dst))
 
 	# Backup Functions
 
