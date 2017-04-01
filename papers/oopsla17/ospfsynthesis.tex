@@ -255,6 +255,15 @@ The procedure is repeated and static routes are added until the resulting set of
 constraints becomes satisfiable. In each iteration, we can have multiple 
 choices of static routes to pick, we pick the route which affects the IIS the most. 
 
-
-
+\subsubsection{Routing Loop Avoidance Constraints}
+A static route $sr_1 \rightarrow sr_2$ for destination $\lambda$ 
+can cause a routing loop if the edge weights are not configured taking into
+account the static nature of the route. To prevent a routing loop, the shortest
+path from $sr_2$ to $R_\lambda$ must not traverse through $sr_1$ 
+(otherwise a routing loop is formed). 
+This is expressed by the following constraint: 
+\[
+D^{sr_1}_{sr_2} + D_{sr_2}^{R_\lambda}  > \sum_{\mathclap{\substack{l_i=(r_1,r_2)}}} 
+		W_{r_1}^{r_2}
+\]		
 
