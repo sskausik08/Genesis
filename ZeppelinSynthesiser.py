@@ -951,7 +951,6 @@ class ZeppelinSynthesiser(object) :
 		if type == SRType.RLA : 
 			print "RLA", sw1, sw2, dst
 	
-
 		if type == SRType.RLAR : 
 			print "RLAR", sw1, sw2, dst
 
@@ -960,13 +959,11 @@ class ZeppelinSynthesiser(object) :
 		else : 
 			self.addRoutingLoopAvoidanceConstraints(dst, currpath, [sw1, sw2], False)
 
-
-		for pid in range(len(self.waypointPaths[dst])) : 
-			rlaconstrs = self.routingLoopAvoidanceConstraints[sw1][sw2][pathID]
-			if rlaconstrs != None : 
-				#print "SR", sw1, sw2, dst
-				for rlaconstr in rlaconstrs : 
-					self.ilpSolver.remove(rlaconstr)
+		rlaconstrs = self.routingLoopAvoidanceConstraints[sw1][sw2][dst]
+		if rlaconstrs != None : 
+			#print "SR", sw1, sw2, dst
+			for rlaconstr in rlaconstrs : 
+				self.ilpSolver.remove(rlaconstr)
 
 		self.ilpSolver.update()
 	
