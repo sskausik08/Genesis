@@ -636,6 +636,7 @@ class PolicyDatabase(object) :
 				print zpath,  waypoints[pc]
 
 		return
+
 		for pc in range(self.getPacketClassRange()) :
 			if pc not in waypoints : continue
 			dst = self.getDestinationSubnet(pc)

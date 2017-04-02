@@ -383,6 +383,7 @@ class Topology(object):
 
 			if nextsw in path : 
 				# Static route causes loop under failure
+				print path, nextsw
 				print "Looping path"
 				return []
 			

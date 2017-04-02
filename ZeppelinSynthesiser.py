@@ -18,6 +18,7 @@ class SRType(Enum):
 	SR = 0
 	W = 1
 	RLA = 2
+	RLAR = 3
 
 class ZeppelinSynthesiser(object) :
 	def __init__(self, topology, pdb, backup=False) :
@@ -73,7 +74,7 @@ class ZeppelinSynthesiser(object) :
 
 		for sw1 in range(1,swCount+1):
 			for sw2 in self.topology.getSwitchNeighbours(sw1) :
-				self.edgeWeights[sw1][sw2] = self.ilpSolver.addVar(lb=1.00, ub=1000, vtype=gb.GRB.CONTINUOUS, name="E-" + str(sw1)+"-"+str(sw2) + "_")
+				self.edgeWeights[sw1][sw2] = self.ilpSolver.addVar(lb=1.00, ub=100, vtype=gb.GRB.CONTINUOUS, name="E-" + str(sw1)+"-"+str(sw2) + "_")
 
 		self.distSum = 0
 		for sw1 in range(1,swCount+1):
@@ -702,9 +703,9 @@ class ZeppelinSynthesiser(object) :
 					ew = self.ew(sw, n).x
 					# if [sw,n] in self.hiddenEdges : 
 					# 	ew = 1000
-					self.topology.addWeight(sw, n, float(ew))
-					self.edgeWeightValues[sw][n] = float(ew)
-					self.zepOutputFile.write("EW " + str(sw) + " " + str(n) + " " + str(float(ew)) + "\n")
+					self.topology.addWeight(sw, n, int(10*float(ew)))
+					self.edgeWeightValues[sw][n] = int(10*float(ew))
+					self.zepOutputFile.write("EW " + str(sw) + " " + str(n) + " " + str(int(10*float(ew))) + "\n")
 
 		dst = self.pdb.getDestinationSubnet(0)
 		for sw1 in range(1, swCount + 1) :
@@ -804,6 +805,19 @@ class ZeppelinSynthesiser(object) :
 							# Compute score for static route
 							staticRoutes.append([[SRType.RLA, int(fields[1]), int(fields[2]), int(fields[3]), int(fields[4])], 1])
 
+				elif fields[0] == "RLAR" : 
+					# resilience Routing loop avoidance constraint
+					foundFlag = False
+					for index in range(len(staticRoutes)) :
+						if staticRoutes[index][0] == [SRType.RLAR, int(fields[1]), int(fields[2]), int(fields[3]), int(fields[4])] : 
+							staticRoutes[index] = [staticRoutes[index][0], staticRoutes[index][1] + 1]
+							foundFlag = True
+							break
+					if not foundFlag :
+						if [int(fields[1]), int(fields[2])] not in self.staticRoutes[int(fields[3])] : 
+							# Compute score for static route
+							staticRoutes.append([[SRType.RLAR, int(fields[1]), int(fields[2]), int(fields[3]), int(fields[4])], 1])
+
 		if len(staticRoutes) > 0 : 
 			# Check if there is a static route leadint to dstSw
 			chosenSR = None
@@ -876,17 +890,17 @@ class ZeppelinSynthesiser(object) :
 						chosenSR = staticRoutes[ind][0]
 						count = staticRoutes[ind][1]
 			
+
 			# Pick the best static Route
 			if chosenSR[0] == SRType.SR : 
 				self.addStaticRoute(type=chosenSR[0], sw1=chosenSR[1], sw2=chosenSR[2], dst=chosenSR[3]) # type, sw1, sw2, dst
  			elif chosenSR[0] == SRType.W : 
 				self.addStaticRoute(type=chosenSR[0], sw1=chosenSR[1], sw2=chosenSR[2], dst=chosenSR[3], pc=chosenSR[4], pathID=chosenSR[5])
-			elif chosenSR[0] == SRType.RLA : 
+			elif chosenSR[0] == SRType.RLA or chosenSR[0] == SRType.RLAR: 
 				self.addStaticRoute(type=chosenSR[0], sw1=chosenSR[1], sw2=chosenSR[2], dst=chosenSR[3], pathID=chosenSR[4])
 
 		else : 
 			print "===========?IIS?============="
-			print waypointPaths
 			for constr in self.ilpSolver.getConstrs() :
 				if constr.getAttr(gb.GRB.Attr.IISConstr) > 0 :
 					print constr 
@@ -903,38 +917,51 @@ class ZeppelinSynthesiser(object) :
 		if type == SRType.SR : 
 			# Delete distance constraints from model
 			# Normal Path is input
-			distconstrs = self.distanceConstraints[sw1][sw2][dst]
-			if distconstrs != None : 
-				for dconstr in distconstrs : 
-					self.ilpSolver.remove(dconstr)
+			print "SR", sw1, sw2, dst
+		
+		distconstrs = self.distanceConstraints[sw1][sw2][dst]
+		if distconstrs != None : 
+			for dconstr in distconstrs : 
+				self.ilpSolver.remove(dconstr)
 
 			#dag = self.destinationDAGs[dst]
 			#self.addRoutingLoopAvoidanceConstraints(dst, dag, [sw1, sw2], False)
 
-		elif type == SRType.W : 
+		if type == SRType.W : 
 			print "W", sw1, sw2, dst
-			for pid in range(len(self.waypointPaths[dst])) : 
-				wconstrs = self.waypointResilienceConstraints[sw1][dst][pid]
-				if wconstrs != None : 
-					#print "SR", sw1, sw2, dst
-					for wconstr in wconstrs : 
-						self.ilpSolver.remove(wconstr)
+		
+		for pid in range(len(self.waypointPaths[dst])) : 
+			wconstrs = self.waypointResilienceConstraints[sw1][dst][pid]
+			if wconstrs != None : 
+				#print "SR", sw1, sw2, dst
+				for wconstr in wconstrs : 
+					self.ilpSolver.remove(wconstr)
 
-			# Can remove waypoint distance constraints. 
-			neighbours = self.topology.getSwitchNeighbours(sw1)
-			for n in neighbours : 
-				if n == sw2 : continue
-				wdconstrs = self.waypointDistanceConstraints[sw1][n][pc]
-				if wdconstrs != None :
-					for wdconstr in wdconstrs : 
-						self.ilpSolver.remove(wdconstr)
+		# Can remove waypoint distance constraints. 
+		neighbours = self.topology.getSwitchNeighbours(sw1)
+		for n in neighbours : 
+			if n == sw2 : continue
+			wdconstrs = self.waypointDistanceConstraints[sw1][n][pc]
+			if wdconstrs != None :
+				for wdconstr in wdconstrs : 
+					self.ilpSolver.remove(wdconstr)
 
-			currpath = self.waypointPaths[dst][pathID]
+		currpath = self.waypointPaths[dst][pathID]
 
+		if type == SRType.RLA : 
+			print "RLA", sw1, sw2, dst
+	
+
+		if type == SRType.RLAR : 
+			print "RLAR", sw1, sw2, dst
+
+		if type == SRType.RLAR :
+			self.addRoutingLoopAvoidanceConstraints(dst, currpath, [sw1, sw2], False)
+		else : 
 			self.addRoutingLoopAvoidanceConstraints(dst, currpath, [sw1, sw2], False)
 
-		elif type == SRType.RLA : 
-			print "RLA", sw1, sw2, dst
+
+		for pid in range(len(self.waypointPaths[dst])) : 
 			rlaconstrs = self.routingLoopAvoidanceConstraints[sw1][sw2][pathID]
 			if rlaconstrs != None : 
 				#print "SR", sw1, sw2, dst
@@ -976,51 +1003,55 @@ class ZeppelinSynthesiser(object) :
 		for index in range(start, len(path) - 1) : 
 			pathDist += self.ew(path[index], path[index + 1])
 		
-		rlaconstr = self.ilpSolver.addConstr(pathDist <= self.dist(sr[1], sr[0]) + self.dist(sr[0], dstSw) - 1, 
-			"RLA-" + str(sr[1]) + "-" + str(path[start + 1]) + "-" + str(dst) + "-" + str(pathID)  )
+		if [sr[1], path[start + 1]] not in self.staticRoutes[dst] : 
+			if self.routingLoopAvoidanceConstraints[sr[1]][path[start + 1]][dst] == None:
+				self.routingLoopAvoidanceConstraints[sr[1]][path[start + 1]][dst] = []
 
-		if self.routingLoopAvoidanceConstraints[sr[1]][path[start + 1]][dst] == None:
-			self.routingLoopAvoidanceConstraints[sr[1]][path[start + 1]][dst] = []
+			for index in range(start) : 
+				rlaconstr = self.ilpSolver.addConstr(pathDist <= self.dist(sr[1], path[index]) + self.dist(path[index], dstSw) - 1, 
+					"RLA-" + str(sr[1]) + "-" + str(path[start + 1]) + "-" + str(dst) + "-" + str(pathID))
 
-		self.routingLoopAvoidanceConstraints[sr[1]][path[start + 1]][dst].append(rlaconstr)
+				self.routingLoopAvoidanceConstraints[sr[1]][path[start + 1]][dst].append(rlaconstr)
 
 		if not resilience : 
 			return
 
-		# upstreamSwitches = []
-		# for sw1 in dag :
-		# 	if sw1 == sr[1] : continue  
-		# 	sw2 = sw1
-		# 	while sw2 != None:
-		# 		if sw2 == sr[1] : # sw1 is a upstream switch of sr[1].
-		# 			upstreamSwitches.append(sw1)
-		# 			break
-		# 		sw2 = dag[sw2]
+		# Find a path from sr[1] tp dstSw which is edge-disjoint to dag
+		dagEdges = []
+		for index in range(len(path) - 1): 
+			dagEdges.append([path[index], path[index + 1]])
+			neighbours = self.topology.getSwitchNeighbours(path[index])
+			for n in neighbours : 
+				dagEdges.append([n, path[index]])
 
-		# # Find a path from sr[1] tp dstSw which is edge-disjoint to dag
-		# dagEdges = []
-		# for sw in dag : 
-		# 	if sw == dstSw : continue
-		# 	dagEdges.append([sw, dag[sw]])
-		# 	neighbours = self.topology.getSwitchNeighbours(sw)
-		# 	for n in neighbours : 
-		# 		dagEdges.append([n, sw])
+		backupPath = []
+		while len(backupPath) < 3 : 
+			backupPath = self.topology.getBFSPath(sr[1], dstSw, dagEdges)
+			if backupPath == [] : 
+				# No path  
+				print "No alternate path", dst, sr, dstSw 
+				return
+			elif len(backupPath) == 2: 
+				# Try to get a path longer than 1
+				dagEdges.append(backupPath)
 
-		# backupPath = self.topology.getBFSPath(sr[1], dstSw, dagEdges)
-		# if backupPath == [] : 
-		# 	# No path  
-		# 	print "No alternate path", dst, sr 
-		# 	return
 
-		# print dst, backupPath, sr, dag
-		# bpDist = 0
-		# for index in range(len(backupPath) - 1):
-		# 	bpDist += self.ew(backupPath[index], backupPath[index + 1])
+		print "Routing loop resilience", dst, path, sr, backupPath
+		bpDist = 0
+		for index in range(len(backupPath) - 1):
+			bpDist += self.ew(backupPath[index], backupPath[index + 1])
 		
-		# for usw in upstreamSwitches :
-		# 	# Ensure backup path is shorter than the distance from upstream switches
-		# 	self.ilpSolver.addConstr(bpDist <=  self.dist(sr[1], usw) + self.dist(usw, dstSw) - 1, 
-		# 		"RLA-" + str(sr[1]) + "-" + str(usw) + "-" + str(dstSw) + "-" + str(dst))
+		if [backupPath[1], backupPath[2]] not in self.staticRoutes[dst] : 
+			# Ensure backup path is shorter than the distance from sr[0]
+
+			if self.routingLoopAvoidanceConstraints[backupPath[1]][backupPath[2]][dst] == None:
+				self.routingLoopAvoidanceConstraints[backupPath[1]][backupPath[2]][dst] = []
+			
+			for index in range(start) : 
+				rlaconstr = self.ilpSolver.addConstr(bpDist <=  self.dist(sr[1], path[index]) + self.dist(path[index], dstSw) - 1, 
+					"RLAR-" + str(backupPath[1]) + "-" + str(backupPath[2]) + "-" + str(dst) + "-" + str(pathID))
+			
+				self.routingLoopAvoidanceConstraints[backupPath[1]][backupPath[2]][dst].append(rlaconstr)
 
 	# Backup Functions
 
@@ -1092,7 +1123,7 @@ class ZeppelinSynthesiser(object) :
 			
 			neighbours = self.topology.getSwitchNeighbours(waypointPath[start])
 			for n in neighbours : 
-				if n == waypointPath[start + 1] : continue
+				if n == waypointPath[start + 1] or n in self.waypoints[pc] : continue
 				
 				# Path distance must be smaller than non waypoint distance
 				wconstr = self.ilpSolver.addConstr(pathDist <= self.ew(waypointPath[start], n) + self.wdist(n, dstSw, pc) - 1, 
@@ -1188,17 +1219,17 @@ class ZeppelinSynthesiser(object) :
 			self.addWaypointResilienceConstraints(pc, path, waypointPath)
 			self.addWaypointResilienceConstraints(pc, waypointPath, path)
 	
-	def getIISAlternatePath(self, srcSw, dstSw, dst, path) :
-		""" Compute alternate IIS path from srcSw to dstSw """
-		iisTopo = Topology()
-		for constr in self.ilpSolver.getConstrs() :
-			if constr.getAttr(gb.GRB.Attr.IISConstr) > 0 :
-				name = constr.getAttr(gb.GRB.Attr.ConstrName) 
-				fields = name.split("-")
-				if fields[0] == "WD" :
-					pass
+	# def getIISAlternatePath(self, srcSw, dstSw, dst, path) :
+	# 	""" Compute alternate IIS path from srcSw to dstSw """
+	# 	iisTopo = Topology()
+	# 	for constr in self.ilpSolver.getConstrs() :
+	# 		if constr.getAttr(gb.GRB.Attr.IISConstr) > 0 :
+	# 			name = constr.getAttr(gb.GRB.Attr.ConstrName) 
+	# 			fields = name.split("-")
+	# 			if fields[0] == "WD" :
+	# 				pass
 
-		pass
+	# 	pass
 
 
 
