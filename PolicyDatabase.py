@@ -80,6 +80,12 @@ class PolicyDatabase(object) :
 			policy.append(0)
 		return policy
 
+	def getPredicate(self, no) : 
+		if no not in self.endpointTable : 
+			return None
+		else :
+			return self.endpointTable[no][0]
+
 	def hasWaypoints(self, pc):
 		""" Returns true or false if pc has waypoints """
 		if pc not in self.endpointTable : 
@@ -88,6 +94,12 @@ class PolicyDatabase(object) :
 			return False
 		else : 
 			return True
+
+	def getWaypoints(self, pc) :
+		if self.hasWaypoints(pc) : 
+			return self.waypointTable[pc]
+		else : 
+			return []
 
 	def addPath(self, pc, path) :
 		self.paths[pc] = path
