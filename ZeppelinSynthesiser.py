@@ -220,10 +220,10 @@ class ZeppelinSynthesiser(object) :
 			self.z3solveTime += time.time() - solvetime
 
 			status = self.ilpSolver.status
-
+			attempts = 0
 			while status == gb.GRB.INFEASIBLE or status == gb.GRB.INF_OR_UNBD  :
 				# Perform inconsistency analysis using Gurobi
-				attempts = 1
+				attempts =+ 1
 				self.ilpSolver.computeIIS()
 				self.repairInconsistency()
 				
@@ -232,6 +232,10 @@ class ZeppelinSynthesiser(object) :
 				self.z3solveTime += time.time() - solvetime
 
 				status = self.ilpSolver.status
+
+				if attempts > 1000 : 
+					print "Could not solve in 1000 iterations"
+					exit(0)
 			
 		# Extract Edge weights from Gurobi		
 		self.getEdgeWeightModel(self.staticRouteMode)	
@@ -722,12 +726,12 @@ class ZeppelinSynthesiser(object) :
 				if sr not in self.edges : 
 					self.edges.append(sr)
 
-		totEdges = 0
-		for sw in range(1, swCount + 1) :
-			totEdges += len(self.topology.getSwitchNeighbours(sw))
+		for dst in dsts : 
+			dag = self.destinationDAGs[dst]
+			totalStaticRoutes += len(dag) - 1
 
 		self.SRCount = setStaticRoutes
-		print "Ratio of Static Routes : ", setStaticRoutes, len(dsts)*totEdges 
+		print "Ratio of Static Routes : ", setStaticRoutes, totalStaticRoutes 
 		#print "Edges used", len(self.edges), totEdges
 
 
@@ -815,7 +819,7 @@ class ZeppelinSynthesiser(object) :
 						dstSw = sw
 				if dstSw == sr[0][2] :
 					# Pick this static route! 
-					chosenSR = sr
+					chosenSR = sr[0]
 					break
 
 			if chosenSR == None : 
@@ -829,7 +833,7 @@ class ZeppelinSynthesiser(object) :
 					mincut = self.topology.findMinCut(sw1, dstSw)
 					if mincut == 1 : 
 						# No backup path at sw1. Pick this static route.
-						chosenSR = sr
+						chosenSR = sr[0]
 						#print "Picked the static route at switch with no backup paths!"
 						break
 
@@ -877,14 +881,21 @@ class ZeppelinSynthesiser(object) :
 						chosenSR = staticRoutes[ind][0]
 						count = staticRoutes[ind][1]
 			
-
+			success = False
 			# Pick the best static Route
 			if chosenSR[0] == SRType.SR : 
-				self.addStaticRoute(type=chosenSR[0], sw1=chosenSR[1], sw2=chosenSR[2], dst=chosenSR[3]) # type, sw1, sw2, dst
+				success = self.addStaticRoute(type=chosenSR[0], sw1=chosenSR[1], sw2=chosenSR[2], dst=chosenSR[3]) # type, sw1, sw2, dst
  			elif chosenSR[0] == SRType.W : 
-				self.addStaticRoute(type=chosenSR[0], sw1=chosenSR[1], sw2=chosenSR[2], dst=chosenSR[3], pc=chosenSR[4], pathID=chosenSR[5])
+				success = self.addStaticRoute(type=chosenSR[0], sw1=chosenSR[1], sw2=chosenSR[2], dst=chosenSR[3], pc=chosenSR[4], pathID=chosenSR[5])
 			elif chosenSR[0] == SRType.RLA or chosenSR[0] == SRType.RLAR: 
-				self.addStaticRoute(type=chosenSR[0], sw1=chosenSR[1], sw2=chosenSR[2], dst=chosenSR[3], pathID=chosenSR[4])
+				success = self.addStaticRoute(type=chosenSR[0], sw1=chosenSR[1], sw2=chosenSR[2], dst=chosenSR[3], pathID=chosenSR[4])
+
+			if not success : 
+				print "===========?IIS?============="
+				for constr in self.ilpSolver.getConstrs() :
+					if constr.getAttr(gb.GRB.Attr.IISConstr) > 0 :
+						print constr 
+				exit(0)
 
 		else : 
 			print "===========?IIS?============="
@@ -897,6 +908,10 @@ class ZeppelinSynthesiser(object) :
 	def addStaticRoute(self, type, sw1, sw2, dst, pc=None, pathID=None) :
 		""" Add rf at sw1 -> sw2 for dst """
 		# Type = SR, W, RLA
+		if [sw1, sw2] in self.staticRoutes[dst] :
+			print "Static route already exists"
+			return False
+
 		if [sw1, sw2] not in self.staticRoutes[dst] :
 			self.staticRoutes[dst].append([sw1, sw2]) 
 			self.inconsistentSRs += 1
@@ -953,7 +968,8 @@ class ZeppelinSynthesiser(object) :
 				self.ilpSolver.remove(rlaconstr)
 
 		self.ilpSolver.update()
-	
+		
+		return True	
 	# def removeBackupPath(self, src, dst) :
 	# 	for backupPath in self.backupPaths[dst] :
 	# 		if src == backupPath[0] :
@@ -1191,23 +1207,23 @@ class ZeppelinSynthesiser(object) :
 			else : 
 				self.waypointPaths[dst].append(path)
 
-			dagEdges = []
-			for sw in dag : 
-				if sw == dstSw : continue
-				neighbours = self.topology.getSwitchNeighbours(sw)
-				for n in neighbours : 
-					dagEdges.append([n, sw])
+			# dagEdges = []
+			# for sw in dag : 
+			# 	if sw == dstSw : continue
+			# 	neighbours = self.topology.getSwitchNeighbours(sw)
+			# 	for n in neighbours : 
+			# 		dagEdges.append([n, sw])
 
-			waypointPath = self.topology.getBFSPath(path[0], path[len(path)-1], dagEdges)
-			if len(waypointPath) == 0 : 
-				#print pc, "No edge disjoint path exists. Ignore."
-				continue
+			# waypointPath = self.topology.getBFSPath(path[0], path[len(path)-1], dagEdges)
+			# if len(waypointPath) == 0 : 
+			# 	#print pc, "No edge disjoint path exists. Ignore."
+			# 	continue
 
-			waypoint = 	waypointPath[int((len(waypointPath) - 1)/2)]
+			# waypoint = 	waypointPath[int((len(waypointPath) - 1)/2)]
 
-			waypoints = [waypoint, path[int((len(path) - 1)/2)]]
+			waypoints = [path[int((len(path) - 1)/2)]]
 
-			print dst, dag, path, waypointPath, waypoints
+			print dst, dag, path, waypoints
 
 			if dst in self.waypoints : 
 				for w in waypoints : 
@@ -1216,12 +1232,11 @@ class ZeppelinSynthesiser(object) :
 			else : 
 				self.waypoints[dst] = waypoints
 
-
-			if dst not in self.waypointPaths : 
-				self.waypointPaths[dst] = []
-				self.waypointPaths[dst].append(waypointPath)
-			else : 
-				self.waypointPaths[dst].append(waypointPath)
+			# if dst not in self.waypointPaths : 
+			# 	self.waypointPaths[dst] = []
+			# 	self.waypointPaths[dst].append(waypointPath)
+			# else : 
+			# 	self.waypointPaths[dst].append(waypointPath)
 
 		# Sort waypoint Classes
 		for dst in self.waypoints : 

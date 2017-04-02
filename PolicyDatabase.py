@@ -628,7 +628,6 @@ class PolicyDatabase(object) :
 		print staticRoutes
 		# Waypoint Compliance
 		for pc in range(self.getPacketClassRange()) :
-			if pc not in waypoints : continue
 			dst = self.getDestinationSubnet(pc)
 			path = self.paths[pc]
 			srcSw = path[0]
@@ -636,16 +635,16 @@ class PolicyDatabase(object) :
 			zpath = topology.getShortestPathStaticRoutes(srcSw, dstSw, staticRoutes[dst]) # Actual Path
 
 			traverseWaypoint = False
-			if pc not in waypoints : traverseWaypoint = True
+			if dst not in waypoints : traverseWaypoint = True
 			else :
-				for w in waypoints[pc] : 
+				for w in waypoints[dst] : 
 					if w in zpath : 
-						print pc, zpath, waypoints[pc]
+						print pc, zpath, waypoints[dst]
 						traverseWaypoint = True
 
 			if not traverseWaypoint : 
 				print "Packet Class", pc ,"did not traverse waypoint"
-				print zpath,  waypoints[pc]
+				print zpath,  waypoints[dst]
 
 		return
 
