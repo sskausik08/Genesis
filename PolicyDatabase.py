@@ -624,7 +624,7 @@ class PolicyDatabase(object) :
 			if not routingLoopAbsence : 
 				print "Violation, routing loop found" 
 
-	def validateControlPlaneWaypointCompliance(self, topology, staticRoutes, waypoints): 
+	def validateControlPlaneWaypointCompliance(self, topology, staticRoutes, waypoints, waypointPaths): 
 		print staticRoutes
 		# Waypoint Compliance
 		for pc in range(self.getPacketClassRange()) :
@@ -639,41 +639,50 @@ class PolicyDatabase(object) :
 			else :
 				for w in waypoints[dst] : 
 					if w in zpath : 
-						print pc, zpath, waypoints[dst]
 						traverseWaypoint = True
 
 			if not traverseWaypoint : 
 				print "Packet Class", pc ,"did not traverse waypoint"
 				print zpath,  waypoints[dst]
 
-		return
-
 		for pc in range(self.getPacketClassRange()) :
-			if pc not in waypoints : continue
 			dst = self.getDestinationSubnet(pc)
 			path = self.paths[pc]
 			srcSw = path[0]
 			dstSw = path[len(path) - 1]
 			path = topology.getShortestPathStaticRoutes(srcSw, dstSw, staticRoutes[dst]) # Actual Path
+			if [path[0], path[1]] in staticRoutes[dst] : 
+				print "Source Static route.", pc
+				continue
+
+			wpathCount = 0
+			for wpath in waypointPaths[dst] : 
+				if wpath[0] == path[0] and wpath[len(wpath) - 1] == path[len(path) - 1] : 
+					wpathCount += 1
+			if wpathCount < 2 : 
+				print "Single waypoint path", pc
+				continue
 
 			traverseWaypointResilience = True
 			for index in range(len(path) - 1) :
 				zpath = topology.getShortestPathStaticRoutes(srcSw, dstSw, staticRoutes[dst], [[path[index], path[index+1]]])
 				traverseWaypoint = False
-				if pc not in waypoints : traverseWaypoint = True
+				if dst not in waypoints : traverseWaypoint = True
 				else :
-					for w in waypoints[pc] : 
+					for w in waypoints[dst] : 
 						if w in zpath : 
 							traverseWaypoint = True
 
 				if not traverseWaypoint : 
-					print path, waypoints
+					print path, waypoints[dst]
 					print path[index], path[index+1], zpath 
 					print "AD", topology.getPathDistance(zpath)
-					print "SR", staticRoutes[dst]
 				traverseWaypointResilience = traverseWaypointResilience & traverseWaypoint
 
 			if not traverseWaypointResilience : 
+				print dst, 
+				for wpath in waypointPaths[dst] : 
+					print wpath, topology.getPathDistance(path)
 				print "Violation, did not traverse waypoints under failures", pc
 
 	def addTrafficEngineeringObjective(self, minavg=False, minmax=False) :
