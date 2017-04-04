@@ -363,6 +363,26 @@ class Topology(object):
 		path.reverse()
 		return path
 
+	def getAllShortestPaths(self, src, dst, routefilters=[]) :
+		# Routefilters : list of edges which are disabled. Disable those edges.
+		# Return all equidistant shortest paths from src to dst.
+		if src == dst : return [src]
+		path = self.getShortestPath(src, dst, routefilters)
+		if len(path) == 0 : 
+			return []
+		distance = self.getPathDistance(path)
+		paths = [path]
+		while len(path) > 0 : 
+			routefilters.append([path[0], path[1]])
+			
+			path = self.getShortestPath(src, dst, routefilters)
+			if self.getPathDistance(path) == distance : 
+				paths.append(path)
+			else :
+				path = []
+
+		return paths
+
 	def getShortestPathStaticRoutes(self, srcSw, dstSw, staticRoutes, disabledEdges=[]) :
 		nextsw = srcSw
 		path = [srcSw]
@@ -379,6 +399,7 @@ class Topology(object):
 				if len(spath) == 0 : 
 					print "no path found"
 					return []
+				
 				nextsw = spath[1]
 
 			if nextsw in path : 
@@ -390,6 +411,38 @@ class Topology(object):
 			path.append(nextsw)
 		
 		return path
+
+	# def checkConnectivityStaticRoutes(self, srcSw, dstSw, staticRoutes, disabledEdges=[]) :
+	# 	nextsw = []
+	# 	path = [srcSw]
+		
+	# 	staticnexthop = False 
+	# 	for sr in staticRoutes : 
+	# 		if sr[0] == srcSw and sr not in disabledEdges : 
+	# 			nextsw.append(sr[1])		
+					
+
+	# 	if len(nextsw) > 0 :
+	# 		# Static routes exist at switch
+	# 		for n in nextsw : 
+	# 			stat = self.checkConnectivityStaticRoutes(n, dstSw, staticRoutes, disabledEdges)
+
+	# 		spaths = self.getAllShortestPaths(srcSw, dstSw, disabledEdges) 
+	# 		if len(spath) == 0 : 
+	# 			print "no path found"
+	# 			return []
+			
+		
+
+	# 	if nextsw in path : 
+	# 		# Static route causes loop under failure
+	# 		print path, nextsw
+	# 		print "Looping path"
+	# 		return []
+		
+	# 	path.append(nextsw)
+		
+	# 	return path
 
 	def checkRoutingLoop(self, srcSw, dstSw, staticRoutes, disabledEdges=[]) :
 		nextsw = srcSw

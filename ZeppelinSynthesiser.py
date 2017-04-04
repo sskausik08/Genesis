@@ -736,6 +736,8 @@ class ZeppelinSynthesiser(object) :
 							staticRoutes.append([[SRType.RLAR, int(fields[1]), int(fields[2]), int(fields[3]), int(fields[4])], 1])
 
 		if len(staticRoutes) > 0 : 
+			print "SRs", staticRoutes
+
 			# Check if there is a static route leadint to dstSw
 			chosenSR = None
 			for sr in staticRoutes : 
@@ -906,6 +908,7 @@ class ZeppelinSynthesiser(object) :
 			sw2 = sr[0][2]
 			dst = sr[0][3]
 
+
 	# Routing loop avoidance
 	def addRoutingLoopAvoidanceConstraints(self, srtype, dst, dstpath, sr, resilience=False) :
 		# If sr is added for dst, ensure that a link failure on dag does not cause a loop
@@ -914,11 +917,13 @@ class ZeppelinSynthesiser(object) :
 			# No need for routing loop avoidance
 			return
 
-		# if dstpath not in self.waypointPaths[dst] : 
-		# 	self.waypointPaths.append(dstpath)
 		if srtype == SRType.RLAR : 
+			currtype = "RLAR"
 			dstpathID = self.rlaBackupPaths[dst].index(dstpath)
 		else : 
+			currtype = "RLA"
+			if dstpath not in self.waypointPaths[dst] : 
+				self.waypointPaths.append(dstpath)
 			dstpathID = self.waypointPaths[dst].index(dstpath)
 
 		start = dstpath.index(sr[1])
@@ -932,7 +937,7 @@ class ZeppelinSynthesiser(object) :
 
 			for index in range(start) : 
 				rlaconstr = self.ilpSolver.addConstr(dstpathDist <= self.dist(sr[1], dstpath[index]) + self.dist(dstpath[index], dstSw) - 1, 
-					"RLA-" + str(sr[1]) + "-" + str(dstpath[start + 1]) + "-" + str(dst) + "-" + str(dstpathID))
+					currtype + "-" + str(sr[1]) + "-" + str(dstpath[start + 1]) + "-" + str(dst) + "-" + str(dstpathID))
 
 				self.routingLoopAvoidanceConstraints[sr[1]][dstpath[start + 1]][dst].append(rlaconstr)
 
@@ -949,15 +954,16 @@ class ZeppelinSynthesiser(object) :
 					dagEdges.append([n, dstpath[index]])
 
 		backupPath = []
-		while len(backupPath) < 3 : 
+		while len(backupPath) == 0 : 
 			backupPath = self.topology.getBFSPath(sr[1], dstSw, dagEdges)
 			if backupPath == [] : 
 				# No dstpath  
-				print "No alternate dstpath", dst, sr, dstSw
+				print "No alternate dstpath", dst, sr, dstSw, self.topology.findMinCut(sr[1], dstSw)
 				return
-			elif len(backupPath) == 2: 
-				# Try to get a dstpath longer than 1
-				dagEdges.append(backupPath)
+			# elif len(backupPath) == 2: 
+			# 	print "Found path len 1"
+			# 	# Try to get a dstpath longer than 1
+			# 	dagEdges.append(backupPath)
 
 		newBackupPath = []
 		for index in range(1, len(backupPath) - 1) :
@@ -996,7 +1002,13 @@ class ZeppelinSynthesiser(object) :
 		for index in range(len(backupPath) - 1):
 			bpDist += self.ew(backupPath[index], backupPath[index + 1])
 		
-		if [backupPath[1], backupPath[2]] not in self.staticRoutes[dst] : 
+		if len(backupPath) == 2 : 
+			for index in range(start) : 
+				# direct edge to dst. Cant put a static route here
+				self.ilpSolver.addConstr(bpDist <=  self.dist(sr[1], dstpath[index]) + self.dist(dstpath[index], dstSw) - 1, 
+					"RLAnoSR-" + str(backupPath[0]) + "-" + str(backupPath[1]) + "-" + str(dst) + "-" + str(rlapathID))
+
+		elif [backupPath[1], backupPath[2]] not in self.staticRoutes[dst] : 
 			# Ensure backup path is shorter than the distance from sr[0]
 
 			if self.routingLoopAvoidanceConstraints[backupPath[1]][backupPath[2]][dst] == None:
@@ -1005,7 +1017,7 @@ class ZeppelinSynthesiser(object) :
 			for index in range(start) : 
 				rlaconstr = self.ilpSolver.addConstr(bpDist <=  self.dist(sr[1], dstpath[index]) + self.dist(dstpath[index], dstSw) - 1, 
 					"RLAR-" + str(backupPath[1]) + "-" + str(backupPath[2]) + "-" + str(dst) + "-" + str(rlapathID))
-			
+				
 				self.routingLoopAvoidanceConstraints[backupPath[1]][backupPath[2]][dst].append(rlaconstr)
 
 	# Backup Functions
