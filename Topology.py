@@ -412,37 +412,75 @@ class Topology(object):
 		
 		return path
 
-	# def checkConnectivityStaticRoutes(self, srcSw, dstSw, staticRoutes, disabledEdges=[]) :
-	# 	nextsw = []
-	# 	path = [srcSw]
-		
-	# 	staticnexthop = False 
-	# 	for sr in staticRoutes : 
-	# 		if sr[0] == srcSw and sr not in disabledEdges : 
-	# 			nextsw.append(sr[1])		
+	def getAllShortestPathsStaticRoutes(self, srcSw, dstSw, staticRoutes, disabledEdges=[], prefix=[]) :
+		nexthop = []
+		paths = []
+
+		#print "Exploring", srcSw, dstSw, prefix
+		if srcSw == dstSw : 
+			return [[dstSw]]
+
+		if srcSw in prefix : 
+			# Looping path. Dont explore further
+			return []
+
+		newprefix = copy.deepcopy(prefix)
+		newprefix.append(srcSw)
+		# Find next hops
+		for sr in staticRoutes : 
+			if sr[0] == srcSw and sr not in disabledEdges : 
+				nexthop.append(sr[1])		
 					
+		if len(nexthop) > 0 :
+			#print "NHS", nexthop
+			# Static routes exist at switch
+			for n in nexthop : 
+				nexthoppaths = self.getAllShortestPathsStaticRoutes(n, dstSw, staticRoutes, disabledEdges, newprefix)
+				paths.extend(nexthoppaths)
 
-	# 	if len(nextsw) > 0 :
-	# 		# Static routes exist at switch
-	# 		for n in nextsw : 
-	# 			stat = self.checkConnectivityStaticRoutes(n, dstSw, staticRoutes, disabledEdges)
+			if len(paths) == 0 : 
+				#print "p", paths
+				return []
+			else : 
+				for index in range(len(paths)) : 
+					path = paths[index]
+					path.insert(0, srcSw)
+					paths[index] = path
+				#print "p", paths
+				return paths
 
-	# 		spaths = self.getAllShortestPaths(srcSw, dstSw, disabledEdges) 
-	# 		if len(spath) == 0 : 
-	# 			print "no path found"
-	# 			return []
-			
-		
+		# Explore OSPF shortest paths from srcSw to dstSw
+		neighbours = self.getSwitchNeighbours(srcSw)
+		mindist = 100000
+		for n in neighbours : 
+			if [srcSw, n] not in disabledEdges : 
+				path = self.getShortestPath(n, dstSw, disabledEdges)
+				if len(path) == [] : 
+					# No path from n
+					continue
 
-	# 	if nextsw in path : 
-	# 		# Static route causes loop under failure
-	# 		print path, nextsw
-	# 		print "Looping path"
-	# 		return []
-		
-	# 	path.append(nextsw)
-		
-	# 	return path
+				distance = float(self.edgeWeights[srcSw][n]) + self.getPathDistance(path)
+				if distance == mindist : 
+					nexthop.append(n)
+				elif distance < mindist : 
+					mindist = distance 
+					nexthop = [n]	
+
+		#print "NHO", nexthop
+		for n in nexthop : 
+			nexthoppaths = self.getAllShortestPathsStaticRoutes(n, dstSw, staticRoutes, disabledEdges, newprefix)
+			paths.extend(nexthoppaths)
+
+		if len(paths) == 0 : 
+			#print "p", paths
+			return []
+		else : 
+			for index in range(len(paths)) : 
+				path = paths[index]
+				path.insert(0, srcSw)
+				paths[index] = path
+			#print "p", paths
+			return paths
 
 	def checkRoutingLoop(self, srcSw, dstSw, staticRoutes, disabledEdges=[]) :
 		nextsw = srcSw

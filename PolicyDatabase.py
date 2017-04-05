@@ -616,9 +616,12 @@ class PolicyDatabase(object) :
 
 			routingLoopAbsence = True
 			for index in range(len(path) - 1) :
-				rla = topology.checkRoutingLoop(srcSw, dstSw, staticRoutes[dst], [[path[index], path[index+1]]])
-				if not rla : 
-					print "RV", dst, path, path[index], path[index+1], staticRoutes[dst]
+				paths = topology.getAllShortestPathsStaticRoutes(srcSw, dstSw, staticRoutes[dst], [[path[index], path[index+1]]])
+				rla = True
+				if len(paths) == 0 : 
+					print "Routing loop", dst, path, path[index], path[index+1], staticRoutes[dst]
+					topology.getShortestPathStaticRoutes(srcSw, dstSw, staticRoutes[dst], [[path[index], path[index+1]]])
+					rla = False
 				routingLoopAbsence = routingLoopAbsence & rla
 
 			if not routingLoopAbsence : 
@@ -632,25 +635,31 @@ class PolicyDatabase(object) :
 			path = self.paths[pc]
 			srcSw = path[0]
 			dstSw = path[len(path) - 1]
-			zpath = topology.getShortestPathStaticRoutes(srcSw, dstSw, staticRoutes[dst]) # Actual Path
-
-			traverseWaypoint = False
+			zpaths = topology.getAllShortestPathsStaticRoutes(srcSw, dstSw, staticRoutes[dst]) # Actual Path
+			traverseWaypoint = True
 			if dst not in waypoints : traverseWaypoint = True
 			else :
-				for w in waypoints[dst] : 
-					if w in zpath : 
-						traverseWaypoint = True
+				if len(zpaths) == 0 : 
+					print "No path" 
+					traverseWaypoint = False
+				
+				for zpath in zpaths : 
+					pathWaypointTraverse = False
+					for w in waypoints[dst] : 
+						if w in zpath : 
+							pathWaypointTraverse = True
+					traverseWaypoint = traverseWaypoint & pathWaypointTraverse
 
 			if not traverseWaypoint : 
 				print "Packet Class", pc ,"did not traverse waypoint"
-				print zpath,  waypoints[dst]
+				print zpaths,  waypoints[dst]
 
 		for pc in range(self.getPacketClassRange()) :
 			dst = self.getDestinationSubnet(pc)
 			path = self.paths[pc]
 			srcSw = path[0]
 			dstSw = path[len(path) - 1]
-			path = topology.getShortestPathStaticRoutes(srcSw, dstSw, staticRoutes[dst]) # Actual Path
+			path = topology.getShortestPathStaticRoutes(srcSw, dstSw, staticRoutes[dst]) #  one of the paths
 			if [path[0], path[1]] in staticRoutes[dst] : 
 				print "Source Static route.", pc
 				continue
@@ -665,18 +674,35 @@ class PolicyDatabase(object) :
 
 			traverseWaypointResilience = True
 			for index in range(len(path) - 1) :
-				zpath = topology.getShortestPathStaticRoutes(srcSw, dstSw, staticRoutes[dst], [[path[index], path[index+1]]])
-				traverseWaypoint = False
+				sharedLink = False
+				for wpath in waypointPaths[dst] : 
+					if wpath != path and wpath[0] == path[0] and path[index] in wpath and path[index+1] in wpath : 
+						# Common link. Failure will disable both paths. Dont check this link failure
+						sharedLink = True
+
+				if sharedLink : continue 
+
+				zpaths = topology.getAllShortestPathsStaticRoutes(srcSw, dstSw, staticRoutes[dst], [[path[index], path[index+1]]])
+			
+				traverseWaypoint = True
 				if dst not in waypoints : traverseWaypoint = True
 				else :
-					for w in waypoints[dst] : 
-						if w in zpath : 
-							traverseWaypoint = True
+					if len(zpaths) == 0 : 
+						print "No path", topology.getShortestPathStaticRoutes(srcSw, dstSw, staticRoutes[dst], [[path[index], path[index+1]]])
+						traverseWaypoint = False
+					
+					for zpath in zpaths : 
+						pathWaypointTraverse = False
+						for w in waypoints[dst] : 
+							if w in zpath : 
+								pathWaypointTraverse = True
+						traverseWaypoint = traverseWaypoint & pathWaypointTraverse
 
 				if not traverseWaypoint : 
 					print path, waypoints[dst]
-					print path[index], path[index+1], zpath 
-					print "AD", topology.getPathDistance(zpath)
+					print path[index], path[index+1], zpaths 
+					for zpath in zpaths : 
+						print "AD", zpath, topology.getPathDistance(zpath), 
 				traverseWaypointResilience = traverseWaypointResilience & traverseWaypoint
 
 			if not traverseWaypointResilience : 
