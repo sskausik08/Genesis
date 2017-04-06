@@ -65,7 +65,7 @@ class Topology(object):
 		self.switchSliceMap = dict()  # Stores the slice number for each switch.
 		self.graph = nx.Graph()
 		self.sliceGraph = nx.Graph()
-		self.maxPathLength = 10
+		self.maxPathLength = 8
 
 		# Tactic variable.
 		self.switchLabels = dict()

@@ -262,8 +262,8 @@ class GenesisSynthesiser(object) :
 
 		end_t = time.time()
 		self.zepFile = open("zeppelin-timing", 'a')
-		self.zepFile.write("Genesis Time\t" + str(self.pdb.getPacketClassRange()) + "\t" + str(end_t - start_t))
-		self.zepFile.write("\n")
+		self.zepFile.write("Zeppelin\t" + str(self.pdb.getPacketClassRange()) + "\t" + str(end_t - start_t))
+		self.zepFile.write("\t")
 		self.zepFile.close()
 
 		if self.synthesisSuccessFlag and self.DCSynthesisFlag: 
@@ -276,6 +276,7 @@ class GenesisSynthesiser(object) :
 
 		self.pdb.printPaths(self.topology)
 		self.pdb.validatePolicies(self.topology)
+		
 		# Control plane synthesis: outside scope of POPL17 Genesis paper.
 		if self.controlPlaneMode : 
 			from OuterZeppelinSynthesiser import OuterZeppelinSynthesiser
@@ -302,46 +303,78 @@ class GenesisSynthesiser(object) :
 				self.outerZepSynthesizer = OuterZeppelinSynthesiser(topology=self.topology, pdb=policyDatabase, timeout=600, numDomains=4, rfOpt=False, configOpt=False)
 				self.outerZepSynthesizer.enforceDAGs(policyDatabase.getDestinationDAGs(), paths, self.endpoints)
 			else : 
-				# Only OSPF Synthesis. Use odd pcs as backup paths.
+				# Only OSPF Synthesis. 
 				self.endpoints = []
+				self.waypoints = dict()
+				self.waypointClasses = []
+				waypointPaths = dict()
 				paths = dict()
 				policyDatabase = PolicyDatabase()
 				newpc = 0
 				dags = dict()
 				backups = dict()
-				for pc in range(0, self.pdb.getPacketClassRange(), 2) : 
-					dst = newpc
-					path = self.pdb.getPath(pc)
-					endpt = [self.pdb.getSourceSwitch(pc), self.pdb.getDestinationSwitch(pc)]
+
+				self.waypointFile = open("waypoint-classes")
+				for line in self.waypointFile: 
+					W = line.split("-")
+					wclass = []
+					for w in W : 
+						wclass.append(int(w))
+
+					self.waypointClasses.append(wclass)
+
+				for pc in range(0, self.pdb.getPacketClassRange()) :
+					dst = int(self.pdb.getPredicate(pc)) 
+					if dst not in self.waypoints :
+						self.waypoints[dst] = []
+
+					self.waypoints[dst] = self.waypointClasses[dst % len(self.waypointClasses)]
+
+
+				for pc in range(0, self.pdb.getPacketClassRange()) : 
+					dst = int(self.pdb.getPredicate(pc))
+					dag = self.destinationDAGs[dst]
+					srcSw = self.pdb.getSourceSwitch(pc)
+					dstSw =  self.pdb.getDestinationSwitch(pc)
+					endpt = [srcSw, dstSw]
+					
 					if endpt not in self.endpoints : 
 						self.endpoints.append(endpt)
 					
-					if dst not in dags : 
-						dags[dst] = dict()
-					dag = dags[dst] 
+					path = []
+					sw = srcSw 
+					while sw != None:
+						path.append(sw)
+						sw = dag[sw]
+					
+					if path[len(path) - 1] != dstSw :
+						print "Something is wrong!" 
+						exit(0)
 
-					for index in range(len(path) - 1):
-						dag[path[index]] = path[index + 1]
-					dag[path[len(path) - 1]] = None
+					waypointFlag = False
+					print pc, path, self.waypoints[dst], self.pdb.getWaypoints(pc)
+					for w in self.waypoints[dst] :
+						if w in path : 
+							waypointFlag = True
 
-					dags[dst] = dag
+					if waypointFlag : 
+						pc1 = policyDatabase.addReachabilityPolicy(dst, self.pdb.getSourceSwitch(pc), self.pdb.getDestinationSwitch(pc))
+						policyDatabase.addPath(pc1, path)
 
-					if dst in backups : 
-						backups[dst].append(self.pdb.getPath(pc + 1))
-					else : 
-						backups[dst] = [self.pdb.getPath(pc + 1)]
+						if dst not in dags : 
+							dags[dst] = dict()
+					
+						dag = dags[dst]
+						for index in range(len(path) - 1): 
+							dag[path[index]] = path[index + 1]
 
-					pc1 = policyDatabase.addReachabilityPolicy(dst, self.pdb.getSourceSwitch(pc), self.pdb.getDestinationSwitch(pc))
-					newpc += 1
+						dag[dstSw] = None
 
-				dsts = policyDatabase.getDestinationSubnets()
-				for dst in dsts : 
+				for dst in dags : 
 					policyDatabase.addDestinationDAG(dst, dags[dst])
 
-				self.zepSynthesiser = ZeppelinSynthesiser(topology=self.topology, pdb=policyDatabase, backup=True)
-				self.zepSynthesiser.enforceDAGs(dags=policyDatabase.getDestinationDAGs(), endpoints=self.endpoints, backups=backups)
-
-
+				self.zepSynthesiser = ZeppelinSynthesiser(topology=self.topology, pdb=policyDatabase, resilience=False)
+				self.zepSynthesiser.enforceDAGs(dags=policyDatabase.getDestinationDAGs(), endpoints=self.endpoints, waypoints=self.waypoints)
 	
 		self.pdb.writeForwardingRulesToFile(self.topology)
 		self.printProfilingStats()
@@ -1889,12 +1922,13 @@ class GenesisSynthesiser(object) :
 	def getBFSModelPath(self, pc):
 		src = self.pdb.getSourceSwitch(pc)
 		dstSw = self.pdb.getDestinationSwitch(pc)
+		dst = self.pdb.getDestinationSubnet(pc)
 
 		dag = None
 		if self.controlPlaneMode :
 			# Create Destination DAGs
-			if dstSw in self.destinationDAGs : 
-				dag = self.destinationDAGs[dstSw]
+			if dst in self.destinationDAGs : 
+				dag = self.destinationDAGs[dst]
 
 		bfstree = dict()
 		visited = dict()
@@ -1928,7 +1962,7 @@ class GenesisSynthesiser(object) :
 						sw2 = path[i + 1]
 						if path[i] not in dag :
 							dag[path[i]] = path[i+1]
-						self.destinationDAGs[dstSw] = dag
+						self.destinationDAGs[dst] = dag
 					return path
 
 			if sw == dstSw :
@@ -1948,7 +1982,8 @@ class GenesisSynthesiser(object) :
 						assert False
 						dag[path[i]] = path[i+1]
 					dag[dstSw] = None
-					self.destinationDAGs[dstSw] = dag
+					self.destinationDAGs[dst] = dag
+					print dag
 				return path
 
 			neighbours = self.topology.getSwitchNeighbours(sw)
@@ -2147,15 +2182,13 @@ class GenesisSynthesiser(object) :
 		self.tactics[pc] = tactic
 	
 	def addDestinationTreeConstraints(self, pc1, pc2) : 
-		return
+
 		""" If pc1 and pc2 have the same destination, then
 		the paths must not form a cycle. """ 
-		dst1 = self.pdb.getDestinationSwitch(pc1)
-		dst2 = self.pdb.getDestinationSwitch(pc2)
+		dst1 = self.pdb.getDestinationSubnet(pc1)
+		dst2 = self.pdb.getDestinationSubnet(pc2)
 		if dst1 <> dst2 : 
 			return 
-
-		if not pc1 % 2 == 0 or not pc2 == pc1 + 1 : return
 		
 		# if src1 == src2 : 
 		# 	print "Error: In C3 mode, cannot have two packet classes with same source and destination."

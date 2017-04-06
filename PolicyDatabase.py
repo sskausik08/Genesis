@@ -120,7 +120,10 @@ class PolicyDatabase(object) :
 					ep = self.endpointTable[pc]
 					lpath = self.paths[pc]
 					phypath = map(topology.getSwName, lpath)
-					output.write("PC#" + str(pc) + ": Endpoint Information : " + ep[0].getStr() + " Path : " + str(phypath) + "\n")
+					if type(ep[0]) == str : 
+						output.write("PC#" + str(pc) + ": Endpoint Information : " + ep[0] + " Path : " + str(phypath) + "\n")
+					else : 
+						output.write("PC#" + str(pc) + ": Endpoint Information : " + ep[0].getStr() + " Path : " + str(phypath) + "\n")
 				else :
 					policy = self.mutlicastTable[pc]
 					lpaths = self.paths[pc]
@@ -256,7 +259,7 @@ class PolicyDatabase(object) :
 			if pc in self.paths : 
 				validFlag = topology.validatePath(self.getPath(pc)) and self.validateReachabilityPolicy(pc) and self.validateIsolationPolicy(pc)
 				if not validFlag : 
-					print "Policy " + str(pc) + " not enforced correctly."
+					print "Policy " + str(pc) + " not enforced correctly.", self.paths[pc]
 					print "Topology Validation", topology.validatePath(self.getPath(pc))
 					print "Reachability Validation", self.validateReachabilityPolicy(pc)
 					print "Isolation Validation", self.validateIsolationPolicy(pc)
@@ -518,6 +521,8 @@ class PolicyDatabase(object) :
 
 	def getDestinationSubnet(self, pc) :
 		""" Return the destination subnet label (predicate) for pc """
+		if type(self.endpointTable[pc][0]) != int : 
+			return int(self.endpointTable[pc][0])
 		return self.endpointTable[pc][0]
 
 	def getDestinationSubnets(self) :
@@ -607,52 +612,25 @@ class PolicyDatabase(object) :
 			print "Error: incorrect OSPF configuration"
 			print "Number of Violations is", violationCount
 
-	def validateControlPlaneResilience(self, topology, staticRoutes): 
-		for pc in range(self.getPacketClassRange()) :
-			dst = self.getDestinationSubnet(pc)
-			path = self.paths[pc]
-			srcSw = path[0]
-			dstSw = path[len(path) - 1]
+	def validateControlPlaneResilience(self, topology, staticRoutes, waypoints, waypointPaths): 
+		# for pc in range(self.getPacketClassRange()) :
+		# 	dst = self.getDestinationSubnet(pc)
+		# 	path = self.paths[pc]
+		# 	srcSw = path[0]
+		# 	dstSw = path[len(path) - 1]
 
-			routingLoopAbsence = True
-			for index in range(len(path) - 1) :
-				paths = topology.getAllShortestPathsStaticRoutes(srcSw, dstSw, staticRoutes[dst], [[path[index], path[index+1]]])
-				rla = True
-				if len(paths) == 0 : 
-					print "Routing loop", dst, path, path[index], path[index+1], staticRoutes[dst]
-					topology.getShortestPathStaticRoutes(srcSw, dstSw, staticRoutes[dst], [[path[index], path[index+1]]])
-					rla = False
-				routingLoopAbsence = routingLoopAbsence & rla
+			# routingLoopAbsence = True
+			# for index in range(len(path) - 1) :
+			# 	paths = topology.getAllShortestPathsStaticRoutes(srcSw, dstSw, staticRoutes[dst], [[path[index], path[index+1]]])
+			# 	rla = True
+			# 	if len(paths) == 0 : 
+			# 		print "Routing loop", dst, path, path[index], path[index+1], staticRoutes[dst]
+			# 		topology.getShortestPathStaticRoutes(srcSw, dstSw, staticRoutes[dst], [[path[index], path[index+1]]])
+			# 		rla = False
+			# 	routingLoopAbsence = routingLoopAbsence & rla
 
-			if not routingLoopAbsence : 
-				print "Violation, routing loop found" 
-
-	def validateControlPlaneWaypointCompliance(self, topology, staticRoutes, waypoints, waypointPaths): 
-		print staticRoutes
-		# Waypoint Compliance
-		for pc in range(self.getPacketClassRange()) :
-			dst = self.getDestinationSubnet(pc)
-			path = self.paths[pc]
-			srcSw = path[0]
-			dstSw = path[len(path) - 1]
-			zpaths = topology.getAllShortestPathsStaticRoutes(srcSw, dstSw, staticRoutes[dst]) # Actual Path
-			traverseWaypoint = True
-			if dst not in waypoints : traverseWaypoint = True
-			else :
-				if len(zpaths) == 0 : 
-					print "No path" 
-					traverseWaypoint = False
-				
-				for zpath in zpaths : 
-					pathWaypointTraverse = False
-					for w in waypoints[dst] : 
-						if w in zpath : 
-							pathWaypointTraverse = True
-					traverseWaypoint = traverseWaypoint & pathWaypointTraverse
-
-			if not traverseWaypoint : 
-				print "Packet Class", pc ,"did not traverse waypoint"
-				print zpaths,  waypoints[dst]
+			# if not routingLoopAbsence : 
+			# 	print "Violation, routing loop found" 
 
 		for pc in range(self.getPacketClassRange()) :
 			dst = self.getDestinationSubnet(pc)
@@ -710,6 +688,35 @@ class PolicyDatabase(object) :
 				for wpath in waypointPaths[dst] : 
 					print wpath, topology.getPathDistance(path)
 				print "Violation, did not traverse waypoints under failures", pc
+
+	def validateControlPlaneWaypointCompliance(self, topology, staticRoutes, waypoints, waypointPaths): 
+		print staticRoutes
+		# Waypoint Compliance
+		for pc in range(self.getPacketClassRange()) :
+			dst = self.getDestinationSubnet(pc)
+			path = self.paths[pc]
+			srcSw = path[0]
+			dstSw = path[len(path) - 1]
+			zpaths = topology.getAllShortestPathsStaticRoutes(srcSw, dstSw, staticRoutes[dst]) # Actual Path
+			traverseWaypoint = True
+			if dst not in waypoints : traverseWaypoint = True
+			else :
+				if len(zpaths) == 0 : 
+					print "No path" 
+					traverseWaypoint = False
+				
+				for zpath in zpaths : 
+					pathWaypointTraverse = False
+					for w in waypoints[dst] : 
+						if w in zpath : 
+							pathWaypointTraverse = True
+					traverseWaypoint = traverseWaypoint & pathWaypointTraverse
+
+			if not traverseWaypoint : 
+				print "Packet Class", pc ,"did not traverse waypoint"
+				print zpaths,  waypoints[dst]
+
+
 
 	def addTrafficEngineeringObjective(self, minavg=False, minmax=False) :
 		""" Add a traffic engineering objective """

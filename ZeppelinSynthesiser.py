@@ -21,7 +21,7 @@ class SRType(Enum):
 	RLAR = 3
 
 class ZeppelinSynthesiser(object) :
-	def __init__(self, topology, pdb, backup=False) :
+	def __init__(self, topology, pdb, resilience=False) :
 		self.topology = topology
 		self.pdb = pdb
 
@@ -47,16 +47,19 @@ class ZeppelinSynthesiser(object) :
 		
 		self.sums = []
 		# Resilience 
-		self.resilience = True
+		self.resilience = False
 		self.SRCount = 0
 		self.waypoints = dict()
+		self.waypointClasses = []
 		self.waypointPaths = dict()
 		self.rlaBackupPaths = dict()
 
 		# Constants
 		self.MAX_GUROBI_ITERATIONS = 600
-		self.backupFlag = backup
+		self.backupFlag = False
 		self.maximalBackupFlag = False # maximalBackup
+		self.randomWaypoints = False
+
 
 		self.inconsistentSRs = 0
 		self.sourceSRs = 0
@@ -150,6 +153,8 @@ class ZeppelinSynthesiser(object) :
 
 		self.endpoints = copy.deepcopy(endpoints)
 		
+		self.waypoints = copy.deepcopy(waypoints)
+		
 		swCount = self.topology.getSwitchCount()
 		dsts = self.pdb.getDestinationSubnets()
 
@@ -157,87 +162,62 @@ class ZeppelinSynthesiser(object) :
 		# self.f.write(str(dags))
 		# self.f.write("\n\n\n")
 
+		self.ilpSolver = gb.Model("C3")
+		self.ilpSolver.setParam('OutputFlag', 0)
+	
 		self.constructOverlay()	
 		#self.overlayConnectivity()	
 		self.disableUnusedEdges()
 		self.initializeSMTVariables()
 		self.initializeStaticRoutes()
 
-		start_t = time.time()
+		#print "solving ILP with static routes"
+		self.staticRouteMode = True
+
+		#self.findValidCycles(
 		self.addDjikstraShortestPathConstraints()
 
-		# Adding constraints without static routes
-		for dst in dsts : 
-			dag = self.destinationDAGs[dst]
-			self.addDestinationDAGConstraints(dst, dag, True)
+		# # Prompted by Gurobi? 
+		# # self.ilpSolver.setParam(gb.GRB.Param.BarHomogeneous, 1) 
+		# # self.ilpSolver.setParam(gb.GRB.Param.Method, 2) 
+		# start1 = time.time()
+		# # Adding constraints with routeFilter variables at source
+		# for dst in dsts : 
+		# 	dag = self.destinationDAGs[dst]
+		# 	self.addDestinationDAGConstraints(dst, dag)
 
-		# Add constraints for backup paths
-		if self.backupFlag : 
-			for dst in self.backupPaths : 
-				backupPaths = self.backupPaths[dst]
-				dag = self.destinationDAGs[dst]
-				for backupPath in backupPaths : 
-					self.addBackupPathConstraints(dst, dag, backupPath, False) 
+		# if self.backupFlag : 
+		# 	for dst in self.backupPaths : 
+		# 		backupPaths = self.backupPaths[dst]
+		# 		dag = self.destinationDAGs[dst]
+		# 		for backupPath in backupPaths : 
+		# 			self.addBackupPathConstraints(dst, dag, backupPath, True) 
 
-		#print "Solving ILP without static routes"
+		self.enforceWaypointCompliance(self.resilience)
+
+		print self.waypointClasses
+
 		solvetime = time.time()
-		#modelsat = self.z3Solver.check()
 		self.ilpSolver.optimize()
 		self.z3solveTime += time.time() - solvetime
-	
-		self.staticRouteMode = False
+
 		status = self.ilpSolver.status
-
-		if status == gb.GRB.INFEASIBLE :
-			#print "solving ILP with static routes"
-			self.staticRouteMode = True
-
-			#self.findValidCycles()
-			self.ilpSolver = gb.Model("C3")
-			self.ilpSolver.setParam('OutputFlag', 0)
-			self.initializeSMTVariables()
-			self.initializeStaticRoutes()
-			self.addDjikstraShortestPathConstraints()
-
-			# # Prompted by Gurobi? 
-			# # self.ilpSolver.setParam(gb.GRB.Param.BarHomogeneous, 1) 
-			# # self.ilpSolver.setParam(gb.GRB.Param.Method, 2) 
-			# start1 = time.time()
-			# # Adding constraints with routeFilter variables at source
-			# for dst in dsts : 
-			# 	dag = self.destinationDAGs[dst]
-			# 	self.addDestinationDAGConstraints(dst, dag)
-
-			# if self.backupFlag : 
-			# 	for dst in self.backupPaths : 
-			# 		backupPaths = self.backupPaths[dst]
-			# 		dag = self.destinationDAGs[dst]
-			# 		for backupPath in backupPaths : 
-			# 			self.addBackupPathConstraints(dst, dag, backupPath, True) 
-
-			self.enforceWaypointCompliance(self.resilience)
-
+		attempts = 0
+		while status == gb.GRB.INFEASIBLE or status == gb.GRB.INF_OR_UNBD  :
+			# Perform inconsistency analysis using Gurobi
+			attempts =+ 1
+			self.ilpSolver.computeIIS()
+			self.repairInconsistency()
+			
 			solvetime = time.time()
 			self.ilpSolver.optimize()
 			self.z3solveTime += time.time() - solvetime
 
 			status = self.ilpSolver.status
-			attempts = 0
-			while status == gb.GRB.INFEASIBLE or status == gb.GRB.INF_OR_UNBD  :
-				# Perform inconsistency analysis using Gurobi
-				attempts =+ 1
-				self.ilpSolver.computeIIS()
-				self.repairInconsistency()
-				
-				solvetime = time.time()
-				self.ilpSolver.optimize()
-				self.z3solveTime += time.time() - solvetime
 
-				status = self.ilpSolver.status
-
-				if attempts > 1000 : 
-					print "Could not solve in 1000 iterations"
-					exit(0)
+			if attempts > 1000 : 
+				print "Could not solve in 1000 iterations"
+				exit(0)
 			
 		# Extract Edge weights from Gurobi		
 		self.getEdgeWeightModel(self.staticRouteMode)	
@@ -248,7 +228,10 @@ class ZeppelinSynthesiser(object) :
 		#self.pdb.printPaths(self.topology)
 		#self.pdb.validateControlPlane(self.topology, self.staticRoutes, self.backupPaths)
 		#self.pdb.validateControlPlaneResilience(self.topology, self.staticRoutes)
+		
 		self.pdb.validateControlPlaneWaypointCompliance(self.topology, self.staticRoutes, self.waypoints, self.waypointPaths)
+		if self.resilience : 
+			self.pdb.validateControlPlaneResilience(self.topology, self.staticRoutes, self.waypoints, self.waypointPaths)
 		srCount = 0
 		# Translate route filters to switch names
 		self.staticRouteNames = dict()
@@ -261,12 +244,12 @@ class ZeppelinSynthesiser(object) :
 			self.staticRouteNames[subnet] = srNames
 
 		
-		# self.zepFile = open("ospf-timing", 'a')
+		self.zepFile = open("zeppelin-timing", 'a')
 		# self.zepFile.write("Topology Switches\t" +  str(swCount))
 		# self.zepFile.write("\n")
-		print "Time1" + "\t" + str(self.pdb.getPacketClassRange()) + "\t" + str(time.time() - start_t)
-		# self.zepFile.write("Time" + "\t" + str(self.pdb.getPacketClassRange()) + "\t" + str(time.time() - start_t))
-		# self.zepFile.write("\n")
+		self.zepFile.write(str(len(self.waypointClasses)) + "\t" + str(self.pdb.getPacketClassRange()) + "\t" + str(time.time() - start_t) + "\t" + str(self.SRCount) +"\t" + str(self.totalSRCount))
+		self.zepFile.write("\n")
+		self.zepFile.close()
 		# self.zepFile.write("Static Routes" + "\t" + str(self.pdb.getPacketClassRange()) + "\t" + str(srCount) + "\t")
 		# self.zepFile.write("\n")
 
@@ -642,22 +625,21 @@ class ZeppelinSynthesiser(object) :
 			# Route filters not used. 
 			return 
 
-		totalStaticRoutes = 0
-		setStaticRoutes = 0
-		
+		self.totalSRCount = 0
+	
 		self.edges = []	
 		for dst in dsts : 
-			setStaticRoutes += len(self.staticRoutes[dst])
+			self.SRCount += len(self.staticRoutes[dst])
 			for sr in self.staticRoutes[dst] :
 				if sr not in self.edges : 
 					self.edges.append(sr)
 
 		for dst in dsts : 
 			dag = self.destinationDAGs[dst]
-			totalStaticRoutes += len(dag) - 1
+			self.totalSRCount += len(dag) - 1
 
-		self.SRCount = setStaticRoutes
-		print "Ratio of Static Routes : ", setStaticRoutes, totalStaticRoutes 
+		self.SRCount
+		print "Ratio of Static Routes : ", self.SRCount, self.totalSRCount 
 		#print "Edges used", len(self.edges), totEdges
 
 
@@ -890,7 +872,7 @@ class ZeppelinSynthesiser(object) :
 			self.addRoutingLoopAvoidanceConstraints(srtype, dst, currpath, [sw1, sw2], False)
 		else : 
 			currpath = self.waypointPaths[dst][pathID]
-			self.addRoutingLoopAvoidanceConstraints(srtype, dst, currpath, [sw1, sw2], True)
+			self.addRoutingLoopAvoidanceConstraints(srtype, dst, currpath, [sw1, sw2], self.resilience)
 
 		rlaconstrs = self.routingLoopAvoidanceConstraints[sw1][sw2][dst]
 		if rlaconstrs != None : 
@@ -1140,14 +1122,15 @@ class ZeppelinSynthesiser(object) :
 			else : 
 				self.waypointPaths[dst].append(path)
 
-			waypoints = [path[int((len(path) - 1)/2)]]
+			if self.randomWaypoints: 
+				waypoints = [path[int((len(path) - 1)/2)]]
 
-			if dst in self.waypoints : 
-				for w in waypoints : 
-					if w not in self.waypoints[dst] : 
-						self.waypoints[dst].append(w)
-			else : 
-				self.waypoints[dst] = waypoints
+				if dst in self.waypoints : 
+					for w in waypoints : 
+						if w not in self.waypoints[dst] : 
+							self.waypoints[dst].append(w)
+				else : 
+					self.waypoints[dst] = waypoints
 
 		if resilience : 
 			for pc in range(self.pdb.getPacketClassRange()) : 
@@ -1214,7 +1197,6 @@ class ZeppelinSynthesiser(object) :
 			self.waypoints[dst] = sorted(W)
 
 		print self.waypoints 
-		self.waypointClasses = []
 		for dst in self.waypoints : 
 			W = self.waypoints[dst]
 
