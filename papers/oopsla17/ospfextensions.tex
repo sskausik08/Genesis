@@ -4,4 +4,34 @@ When a tenant specifies a waypoint policy, for e.g., traffic from
 subnet A to subnet B must traverse through a firewall, they are not
 concerned with the exact path through the network except that the 
 path goes through a firewall instance (which could be replicated for
-redundancy and load-balancing purposes). Thus, we can relax \Cref{eq:uniq}
+redundancy and load-balancing purposes). \kausik{improve}
+Thus, we can relax \Cref{eq:uniq1}
+to ensure that traffic for a destination IP goes 
+through the waypoint rather than 
+enforcing the particular path provided as Genesis 
+to be the shortest path. 
+
+-> All traffic to a destination IP can pass through any of the
+waypoint instances as defined in the policy.
+
+\subsubsection{Non-waypoint Distances}
+For a waypoint set $W \subseteq V$, we define $D_s^t(W)$ to be the 
+distance between $s$ and $t$ such that the path does not
+ traverse through any waypoint $w \in W$. For a topology 
+ $T = (V,L)$, the following distance equations (similar to 
+ \Cref{eq:dist}) for the non-waypoint distances capture the
+ non-waypoint distances for a waypoint set $W$.
+\begin{equation} \label{eq:dist}
+\forall s, t \in V \setminus W. ~\forall r \in N(s) \setminus W.~
+D_s^t(W) \leq W_s^r + D_r^t(W)
+\end{equation}
+Similar to $D_s^t$ variables, $D_s^t(W)$ is upper bounded by the
+actual shortest non waypoint distance from $s$ to $t$.
+
+\subsubsection{Waypoint Compliance Constraints}
+
+\begin{equation} \label{eq:waypoint}
+\forall r \in N(s) \setminus N_{\xi_\lambda}(s).~~
+W_{s}^{r}+ D_{r}^{R_\lambda}(W) > \sum_{\mathclap{\substack{l_i=(r_1,r_2)}}} 
+W_{r_1}^{r_2}
+\end{equation}
