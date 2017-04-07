@@ -508,7 +508,11 @@ class PolicyDatabase(object) :
 				continue
 			i = 0
 			while i < len(path) - 1 :
-				self.fwdRulesFile.write(predicate.getStr() + " : " + topology.getSwName(path[i]) + " > " + topology.getSwName(path[i + 1]) + "\n")
+				if type(predicate) == str : 
+					self.fwdRulesFile.write(predicate + " : " + topology.getSwName(path[i]) + " > " + topology.getSwName(path[i + 1]) + "\n")
+				else :
+					self.fwdRulesFile.write(predicate.getStr() + " : " + topology.getSwName(path[i]) + " > " + topology.getSwName(path[i + 1]) + "\n")
+
 				i += 1
 
 	def getDestinations(self) : 
@@ -613,24 +617,24 @@ class PolicyDatabase(object) :
 			print "Number of Violations is", violationCount
 
 	def validateControlPlaneResilience(self, topology, staticRoutes, waypoints, waypointPaths): 
-		# for pc in range(self.getPacketClassRange()) :
-		# 	dst = self.getDestinationSubnet(pc)
-		# 	path = self.paths[pc]
-		# 	srcSw = path[0]
-		# 	dstSw = path[len(path) - 1]
+		for pc in range(self.getPacketClassRange()) :
+			dst = self.getDestinationSubnet(pc)
+			path = self.paths[pc]
+			srcSw = path[0]
+			dstSw = path[len(path) - 1]
 
-			# routingLoopAbsence = True
-			# for index in range(len(path) - 1) :
-			# 	paths = topology.getAllShortestPathsStaticRoutes(srcSw, dstSw, staticRoutes[dst], [[path[index], path[index+1]]])
-			# 	rla = True
-			# 	if len(paths) == 0 : 
-			# 		print "Routing loop", dst, path, path[index], path[index+1], staticRoutes[dst]
-			# 		topology.getShortestPathStaticRoutes(srcSw, dstSw, staticRoutes[dst], [[path[index], path[index+1]]])
-			# 		rla = False
-			# 	routingLoopAbsence = routingLoopAbsence & rla
+			routingLoopAbsence = True
+			for index in range(len(path) - 1) :
+				paths = topology.getAllShortestPathsStaticRoutes(srcSw, dstSw, staticRoutes[dst], [[path[index], path[index+1]]])
+				rla = True
+				if len(paths) == 0 : 
+					print "Routing loop", dst, path, path[index], path[index+1], staticRoutes[dst]
+					print topology.getShortestPathStaticRoutes(srcSw, dstSw, staticRoutes[dst], [[path[index], path[index+1]]])
+					rla = False
+				routingLoopAbsence = routingLoopAbsence & rla
 
-			# if not routingLoopAbsence : 
-			# 	print "Violation, routing loop found" 
+			if not routingLoopAbsence : 
+				print "Violation, routing loop found", pc
 
 		for pc in range(self.getPacketClassRange()) :
 			dst = self.getDestinationSubnet(pc)
@@ -638,8 +642,12 @@ class PolicyDatabase(object) :
 			srcSw = path[0]
 			dstSw = path[len(path) - 1]
 			path = topology.getShortestPathStaticRoutes(srcSw, dstSw, staticRoutes[dst]) #  one of the paths
+			if len(path) == 0 : 
+				print "Violation, No path for class", pc 
+				continue
+
 			if [path[0], path[1]] in staticRoutes[dst] : 
-				print "Source Static route.", pc
+				#print "Source Static route.", pc
 				continue
 
 			wpathCount = 0
