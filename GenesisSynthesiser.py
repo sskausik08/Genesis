@@ -338,9 +338,6 @@ class GenesisSynthesiser(object) :
 					dstSw =  self.pdb.getDestinationSwitch(pc)
 					endpt = [srcSw, dstSw]
 					
-					if endpt not in self.endpoints : 
-						self.endpoints.append(endpt)
-					
 					path = []
 					sw = srcSw 
 					while sw != None:
@@ -351,13 +348,20 @@ class GenesisSynthesiser(object) :
 						print "Something is wrong!" 
 						exit(0)
 
+					self.waypointMode = True
+					
 					waypointFlag = False
-					print pc, path, self.waypoints[dst], self.pdb.getWaypoints(pc)
+					if len(self.pdb.getWaypoints(pc)) == 0 : 
+						waypointFlag = True
+						self.waypointMode = False
 					for w in self.waypoints[dst] :
 						if w in path : 
 							waypointFlag = True
 
 					if waypointFlag : 
+						if endpt not in self.endpoints : 
+							self.endpoints.append(endpt)
+
 						pc1 = policyDatabase.addReachabilityPolicy(dst, self.pdb.getSourceSwitch(pc), self.pdb.getDestinationSwitch(pc))
 						policyDatabase.addPath(pc1, path)
 
@@ -374,8 +378,12 @@ class GenesisSynthesiser(object) :
 					policyDatabase.addDestinationDAG(dst, dags[dst])
 
 				self.zepSynthesiser = ZeppelinSynthesiser(topology=self.topology, pdb=policyDatabase, resilience=False)
-				self.zepSynthesiser.enforceDAGs(dags=policyDatabase.getDestinationDAGs(), endpoints=self.endpoints, waypoints=self.waypoints)
-	
+				if self.waypointMode : 
+					self.zepSynthesiser.enforceDAGs(dags=policyDatabase.getDestinationDAGs(), endpoints=self.endpoints, waypoints=self.waypoints)
+				else : 
+					self.zepSynthesiser.enforceDAGs(dags=policyDatabase.getDestinationDAGs(), endpoints=self.endpoints, waypoints=None)
+
+
 		self.pdb.writeForwardingRulesToFile(self.topology)
 		self.printProfilingStats()
 
@@ -2177,7 +2185,7 @@ class GenesisSynthesiser(object) :
 		for pc in range(self.pdb.getPacketClassRange()) :
 			if not self.pdb.hasWaypoints(pc) :  # Dont add the tactic for packet classes with waypoints
 				self.addTactic(tactic, pc) # For Artifact Evaluation: Replace the first arg with any of the tactics defined above 
-
+ 
 	def addTactic(self, tactic, pc) :
 		self.tactics[pc] = tactic
 	
@@ -2190,6 +2198,7 @@ class GenesisSynthesiser(object) :
 		if dst1 <> dst2 : 
 			return 
 		
+		dstSw = self.pdb.getDestinationSwitch(pc1) 
 		# if src1 == src2 : 
 		# 	print "Error: In C3 mode, cannot have two packet classes with same source and destination."
 		# 	print "Packet Classes:", pc1, pc2
@@ -2201,7 +2210,7 @@ class GenesisSynthesiser(object) :
 		maxPathLen = self.topology.getMaxPathLength()
 
 		for sw in range(1, swCount + 1):
-			if sw == dst1 : continue
+			if sw == dstSw : continue
 			reachAssertions1 = []
 			reachAssertions2 = []
 			neighbours = self.topology.getSwitchNeighbours(sw)
@@ -2211,10 +2220,10 @@ class GenesisSynthesiser(object) :
 
 			nextSwAssertions = []
 			for n in neighbours : 
-				nextSwAssertions.append(And(self.Fwd(sw, n, pc1), self.Fwd(sw, n, pc2)))
+				nextSwAssertions.append(Implies(self.Fwd(sw, n, pc1), self.Fwd(sw, n, pc2)))
 
 			# if a switch is reachable by pc1 and pc2, next switch in the path has to be the same.
-			self.z3Solver.add(Implies(And(Or(*reachAssertions1), Or(*reachAssertions2)), Or(*nextSwAssertions)))
+			self.z3Solver.add(Implies(And(Or(*reachAssertions1), Or(*reachAssertions2)), And(*nextSwAssertions)))
 
 
 	# def addDiamondConstraints(self, pc1, pc2) :

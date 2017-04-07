@@ -568,27 +568,29 @@ class PolicyDatabase(object) :
 	def validateControlPlane(self, topology, staticRoutes, backups=[]) :
 		violationCount = 0
 		for pc in range(self.getPacketClassRange()) :
-			src = self.getSourceSwitch(pc)
+			srcSw = self.getSourceSwitch(pc)
 			dstSw = self.getDestinationSwitch(pc)
 			dst = self.getDestinationSubnet(pc)
 			dag = self.dags[dst]
-			gpath = []
-			nextsw = src
-			while nextsw != dstSw : 
-				path = topology.getShortestPath(nextsw, dstSw)
-				if path[1] != dag[nextsw] and [nextsw, dag[nextsw]] not in staticRoutes[dst] : 
-					violationCount += 1 
-					print "Packet class violated by ZCP", pc 
-					print path
-					print dag
-					print staticRoutes[dst]
-					break
-				nextsw = dag[nextsw]
-
+			gpath = self.getPath(pc)
+			zpaths = topology.getAllShortestPathsStaticRoutes(srcSw, dstSw, staticRoutes[dst])
+			violation = False
+			if len(zpaths) == 1 :
+				if zpaths[0] != gpath : 
+					violation = True
+			else :
+				violation = True 
+			
+			if violation : 
+				print "Violation, path does not conform to input", pc
+				print dst, dag, gpath
+				print staticRoutes[dst]
+				print zpaths
+			
 			for tup in self.bgpExtensions : 
 				if tup[3] != dst : continue
 				if tup[1] != dstSw : continue
-				nextsw = src
+				nextsw = srcSw
 				while nextsw != dstSw : 
 					zpath = topology.getShortestPath(nextsw, dstSw)
 					zpath2 = topology.getShortestPath(nextsw, tup[2])
