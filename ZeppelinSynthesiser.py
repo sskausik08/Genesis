@@ -663,9 +663,13 @@ class ZeppelinSynthesiser(object) :
 					self.edges.append(sr)
 
 		for dst in dsts : 
-			dag = self.destinationDAGs[dst]
-			self.totalSRCount += len(dag) - 1
-
+			edges = []
+			for path in self.zeppelinPaths[dst] : 
+				for index in range(len(path) - 1):
+					if [path[index], path[index + 1]] not in edges :  
+						edges.append([path[index], path[index + 1]])
+			self.totalSRCount += len(edges)
+				
 		self.SRCount
 		print "Ratio of Static Routes : ", self.SRCount, self.totalSRCount 
 		#print "Edges used", len(self.edges), totEdges
