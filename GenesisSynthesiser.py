@@ -383,6 +383,17 @@ class GenesisSynthesiser(object) :
 				else : 
 					self.zepSynthesiser.enforceDAGs(dags=policyDatabase.getDestinationDAGs(), endpoints=self.endpoints, waypoints=None)
 
+				self.zepFile = open("zeppelin-timing", 'a')
+				self.zepFile.write("Zeppelin\t" + str(self.pdb.getPacketClassRange()) + "\t" + str(end_t - start_t))
+				self.zepFile.write("\t")
+				self.zepFile.close()
+
+				self.zepSynthesiser = ZeppelinSynthesiser(topology=self.topology, pdb=policyDatabase, resilience=True)
+				if self.waypointMode : 
+					self.zepSynthesiser.enforceDAGs(dags=policyDatabase.getDestinationDAGs(), endpoints=self.endpoints, waypoints=self.waypoints)
+				else : 
+					self.zepSynthesiser.enforceDAGs(dags=policyDatabase.getDestinationDAGs(), endpoints=self.endpoints, waypoints=None)
+
 
 		self.pdb.writeForwardingRulesToFile(self.topology)
 		self.printProfilingStats()

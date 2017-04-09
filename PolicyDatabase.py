@@ -625,18 +625,18 @@ class PolicyDatabase(object) :
 			srcSw = path[0]
 			dstSw = path[len(path) - 1]
 
-			routingLoopAbsence = True
-			for index in range(len(path) - 1) :
-				paths = topology.getAllShortestPathsStaticRoutes(srcSw, dstSw, staticRoutes[dst], [[path[index], path[index+1]]])
-				rla = True
-				if len(paths) == 0 : 
-					print "Routing loop", dst, path, path[index], path[index+1], staticRoutes[dst]
-					print topology.getShortestPathStaticRoutes(srcSw, dstSw, staticRoutes[dst], [[path[index], path[index+1]]])
-					rla = False
-				routingLoopAbsence = routingLoopAbsence & rla
+			# routingLoopAbsence = True
+			# for index in range(len(path) - 1) :
+			# 	paths = topology.getAllShortestPathsStaticRoutes(srcSw, dstSw, staticRoutes[dst], [[path[index], path[index+1]]])
+			# 	rla = True
+			# 	if len(paths) == 0 : 
+			# 		print "Routing loop", dst, path, path[index], path[index+1], staticRoutes[dst]
+			# 		print topology.getShortestPathStaticRoutes(srcSw, dstSw, staticRoutes[dst], [[path[index], path[index+1]]])
+			# 		rla = False
+			# 	routingLoopAbsence = routingLoopAbsence & rla
 
-			if not routingLoopAbsence : 
-				print "Violation, routing loop found", pc
+			# if not routingLoopAbsence : 
+			# 	print "Violation, routing loop found", pc
 
 		resilienceScore = 0
 		for pc in range(self.getPacketClassRange()) :
@@ -653,14 +653,14 @@ class PolicyDatabase(object) :
 				print "P", pc, paths
 
 			path = paths[0]
-			# wpathCount = 0
-			# for wpath in waypointPaths[dst] : 
-			# 	if wpath[0] == path[0] and wpath[len(wpath) - 1] == path[len(path) - 1] : 
-			# 		wpathCount += 1
-			# if wpathCount < 2 : 
-			# 	print "Single waypoint path", pc
-			# 	resilienceScore = resilienceScore - len(path)
-				#continue
+			wpathCount = 0
+			singlePath = False
+			for wpath in waypointPaths[dst] : 
+				if wpath[0] == path[0] and wpath[len(wpath) - 1] == path[len(path) - 1] : 
+					wpathCount += 1
+			if wpathCount < 2 : 
+				print "Single waypoint path", pc
+				singlePath = True				
 
 			traverseWaypointResilience = True
 			for index in range(len(path) - 1) :
@@ -676,7 +676,6 @@ class PolicyDatabase(object) :
 				if dst not in waypoints : traverseWaypoint = True
 				else :
 					if len(zpaths) == 0 : 
-						print "No path", topology.getShortestPathStaticRoutes(srcSw, dstSw, staticRoutes[dst], [[path[index], path[index+1]]])
 						traverseWaypoint = False
 					
 					for zpath in zpaths : 
@@ -687,27 +686,30 @@ class PolicyDatabase(object) :
 						traverseWaypoint = traverseWaypoint & pathWaypointTraverse
 
 				if not traverseWaypoint : 
-					print path, waypoints[dst]
-					print path[index], path[index+1], zpaths 
-					for zpath in zpaths : 
-						print "AD", zpath, topology.getPathDistance(zpath), 
+					if not singlePath : 
+						print path, waypoints[dst]
+						print path[index], path[index+1], zpaths
+						print "No path", topology.getShortestPathStaticRoutes(srcSw, dstSw, staticRoutes[dst], [[path[index], path[index+1]]])
+						for zpath in zpaths : 
+							print "AD", zpath, topology.getPathDistance(zpath) 
 
 					resilienceScore = resilienceScore - 1
 				
-				elif len(staticRoutes[dst]) > 0 : 
-					print "Success", dst, pc 
-					print path, waypoints[dst]
-					print path[index], path[index+1], zpaths 
+				# elif len(staticRoutes[dst]) > 0 : 
+				# 	print "Success", dst, pc 
+				# 	print path, waypoints[dst]
+				# 	print path[index], path[index+1], zpaths 
 				
 				traverseWaypointResilience = traverseWaypointResilience & traverseWaypoint
 
-			if not traverseWaypointResilience : 
-				print dst, 
-				for wpath in waypointPaths[dst] : 
-					print wpath, topology.getPathDistance(path)
-				print "Violation, did not traverse waypoints under failures", pc
+			# if not traverseWaypointResilience : 
+			# 	print dst, 
+			# 	for wpath in waypointPaths[dst] : 
+			# 		print wpath, topology.getPathDistance(path)
+			# 	#print "Violation, did not traverse waypoints under failures", pc
 
 		print "Resilience Score is ", resilienceScore
+		return resilienceScore
 
 	def validateControlPlaneWaypointCompliance(self, topology, staticRoutes, waypoints, waypointPaths): 
 		print staticRoutes

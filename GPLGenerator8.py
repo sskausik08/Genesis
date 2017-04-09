@@ -11,7 +11,7 @@ if len(sys.argv) != 5 :
 	exit(0)
 topoFile = sys.argv[1]
 count = int(sys.argv[2])
-dsts = int(count / 2)
+dsts = int(count)
 waypointclasses = int(sys.argv[3])
 gplfile = open(sys.argv[4], 'w')
 
@@ -28,7 +28,7 @@ wclasses = []
 for i in range(waypointclasses) : 
 	while True : 
 		wclass = []
-		for j in range(4) : 
+		for j in range(3) : 
 			w = random.randint(edgeSwitches + 1, swCount - 1)
 			if w not in wclass : 
 				wclass.append(w)
@@ -64,19 +64,19 @@ for i in range(dsts) :
 			break
 
 	w1 = wclass[random.randint(0, len(wclass) - 1)]
-	w2 = wclass[random.randint(0, len(wclass) - 1)]
+	#w2 = wclass[random.randint(0, len(wclass) - 1)]
 	if w1 >= 2 * edgeSwitches + 2 : 
 		w1 = "c" + str(w1)
 	else : 
 		w1 = "a" + str(w1) 
 
-	if w2 >= 2 * edgeSwitches + 2 : 
-		w2 = "c" + str(w2)
-	else : 
-		w2 = "a" + str(w2) 
+	# if w2 >= 2 * edgeSwitches + 2 : 
+	# 	w2 = "c" + str(w2)
+	# else : 
+	# 	w2 = "a" + str(w2) 
 
 	gplfile.write("p" + str(i) + "_" + str(0) + " := " + str(i) + " : e" + str(s1)  + " >> [ " + w1 + " ] >> e" + str(d) + "\n")
-	gplfile.write("p" + str(i) + "_" + str(1) + " := " + str(i) + " : e" + str(s2)  + " >> [ " + w2 + " ] >> e" + str(d) + "\n")
+	#gplfile.write("p" + str(i) + "_" + str(1) + " := " + str(i) + " : e" + str(s2)  + " >> [ " + w2 + " ] >> e" + str(d) + "\n")
 
 # if count == 1 : # If no of packet classes = group size, then there are no isolation policies
 # 	exit(0)

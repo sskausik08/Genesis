@@ -75,6 +75,8 @@ class Topology(object):
 
 		self.disabledEdges = dict()
 
+		self.pathTime = 0 
+
 	def getName(self) :
 		return self.name
 
@@ -727,34 +729,22 @@ class Topology(object):
 
 			if disabledPath : continue
 
-			waypointPath = False
-			for w in waypoints : 
-				if w in path : 
-					waypointPath = True
-					if path not in validPaths : 
-						validPaths.append(path)
-					break
+			if len(waypoints) == 0 :
+				validPaths.append(path)
+
+			else : 
+				waypointPath = False
+				for w in waypoints : 
+					if w in path : 
+						waypointPath = True
+						if path not in validPaths : 
+							validPaths.append(path)
+						break
 
 			if len(validPaths) > 50 : 
-				return validPaths
+				break
 
-		# for w in waypoints : 
-		# 	path1 = self.getBFSPath(srcSw, w, disabledEdges)
-		# 	dEdges = copy.deepcopy(disabledEdges) 
-		# 	for i in range(len(path1) - 1) : 
-		# 		dEdges.append([path1[i], path1[i+1]])
-		# 		neighbours = self.getSwitchNeighbours(path1[i])
-		# 		for n in neighbours : 
-		# 			dEdges.append([n, path1[i]])
-		# 	neighbours = self.getSwitchNeighbours(w)
-		# 	for n in neighbours : 
-		# 		dEdges.append([n, w])
-		# 	path2 = self.getBFSPath(w, dstSw, dEdges)
-		# 	if len(path1) != 0 and len(path2) != 0 : 
-		# 		path1.extend(path2[1:])
-		# 		return path1
-
-		return []
+		return validPaths
 
 	def checkTopologyContinuity(self) : 
 		""" Check if all switches in the topology are connected"""
