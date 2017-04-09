@@ -2205,12 +2205,13 @@ class GenesisSynthesiser(object) :
 		# 	exit(0)
 
 		# If pc1 and pc2 intersect (are reachable at a switch), 
-		# then both are forwarded to the same switch. 
+			# then both are forwarded to the same switch. 
 		swCount = self.topology.getSwitchCount()
 		maxPathLen = self.topology.getMaxPathLength()
 
 		for sw in range(1, swCount + 1):
 			if sw == dstSw : continue
+			if sw == self.pdb.getSourceSwitch(pc1) and sw == self.pdb.getSourceSwitch(pc2) : continue
 			reachAssertions1 = []
 			reachAssertions2 = []
 			neighbours = self.topology.getSwitchNeighbours(sw)

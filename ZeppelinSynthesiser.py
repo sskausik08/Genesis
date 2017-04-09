@@ -19,6 +19,7 @@ class SRType(Enum):
 	W = 1
 	RLA = 2
 	RLAR = 3
+	WR = 4
 
 class ZeppelinSynthesiser(object) :
 	def __init__(self, topology, pdb, resilience=False) :
@@ -47,7 +48,7 @@ class ZeppelinSynthesiser(object) :
 		
 		self.sums = []
 		# Resilience 
-		self.resilience = False
+		self.resilience = True
 		self.SRCount = 0
 		self.waypoints = dict()
 		self.waypointClasses = []
@@ -228,8 +229,8 @@ class ZeppelinSynthesiser(object) :
 			self.pdb.validateControlPlane(self.topology, self.staticRoutes)
 		else : 
 			self.pdb.validateControlPlaneWaypointCompliance(self.topology, self.staticRoutes, self.waypoints, self.zeppelinPaths)
-		if self.resilience : 
-			self.pdb.validateControlPlaneResilience(self.topology, self.staticRoutes, self.waypoints, self.zeppelinPaths)
+		
+		self.pdb.validateControlPlaneResilience(self.topology, self.staticRoutes, self.waypoints, self.zeppelinPaths)
 		
 		srCount = 0
 		# Translate route filters to switch names
@@ -717,6 +718,19 @@ class ZeppelinSynthesiser(object) :
 							# Compute score for static route
 							staticRoutes.append([[SRType.W, int(fields[1]), int(fields[2]), int(fields[3]), int(fields[4])], 1])
 
+				elif fields[0] == "WR" :
+					# resilient waypoint path distance constraint
+					foundFlag = False
+					for index in range(len(staticRoutes)) :
+						if staticRoutes[index][0] == [SRType.WR, int(fields[1]), int(fields[2]), int(fields[3]), int(fields[4])] : 
+							staticRoutes[index] = [staticRoutes[index][0], staticRoutes[index][1] + 1]
+							foundFlag = True
+							break
+					if not foundFlag :
+						if [int(fields[1]), int(fields[2])] not in self.staticRoutes[int(fields[3])] : 
+							# Compute score for static route
+							staticRoutes.append([[SRType.WR, int(fields[1]), int(fields[2]), int(fields[3]), int(fields[4])], 1])
+
 				elif fields[0] == "RLA" : 
 					# Routing loop avoidance constraint
 					foundFlag = False
@@ -799,9 +813,12 @@ class ZeppelinSynthesiser(object) :
 				for sr in staticRoutes : 
 					sw1 = sr[0][1]
 					dst = sr[0][3]
-					if [sw1, dst] in self.endpoints : 
-						# Source SR
-						sourceStaticRoutes.append(sr)
+					for path in self.zeppelinPaths[dst] : 
+						if path[0] == sw1 : 
+							# Source static route. 
+							if sr not in sourceStaticRoutes : 
+								sourceStaticRoutes.append(sr)
+							break
 				
 				if len(sourceStaticRoutes) == len(staticRoutes) :
 					print "No option than to add static routes at source"
@@ -830,12 +847,15 @@ class ZeppelinSynthesiser(object) :
 				exit(0)
 
 		else : 
-			print "===========?IIS?============="
 			for constr in self.ilpSolver.getConstrs() :
 				if constr.getAttr(gb.GRB.Attr.IISConstr) > 0 :
-					print constr 
-			exit(0)
-
+					name = constr.getAttr(gb.GRB.Attr.ConstrName) 
+					fields = name.split("-")
+					if fields[0] == "noSR" : 
+						# Cant have a static route to eliminate this, just remove.
+						self.ilpSolver.remove(constr)
+						break
+				
 
 	def addStaticRoute(self, srtype, sw1, sw2, dst, pc=None, pathID=None) :
 		""" Add rf at sw1 -> sw2 for dst """
@@ -864,12 +884,11 @@ class ZeppelinSynthesiser(object) :
 		if srtype == SRType.W : 
 			print "W", sw1, sw2, dst
 		
-		for pid in range(len(self.zeppelinPaths[dst])) : 
-			wconstrs = self.waypointResilienceConstraints[sw1][dst][pid]
-			if wconstrs != None : 
-				#print "SR", sw1, sw2, dst
-				for wconstr in wconstrs : 
-					self.ilpSolver.remove(wconstr)
+		wconstrs = self.waypointResilienceConstraints[sw1][sw2][dst]
+		if wconstrs != None : 
+			#print "SR", sw1, sw2, dst
+			for wconstr in wconstrs : 
+				self.ilpSolver.remove(wconstr)
 
 		# Can remove waypoint distance constraints. 
 		# neighbours = self.topology.getSwitchNeighbours(sw1)
@@ -891,7 +910,10 @@ class ZeppelinSynthesiser(object) :
 			self.addRoutingLoopAvoidanceConstraints(srtype, dst, currpath, [sw1, sw2], False)
 		else : 
 			currpath = self.zeppelinPaths[dst][pathID]
-			self.addRoutingLoopAvoidanceConstraints(srtype, dst, currpath, [sw1, sw2], self.resilience)
+			self.addRoutingLoopAvoidanceConstraints(srtype, dst, currpath, [sw1, sw2], False)
+
+		if srtype == SRType.W or srtype == SRType.RLA : 
+			self.addWaypointResilienceConstraints(sw1, sw2, dst)
 
 		rlaconstrs = self.routingLoopAvoidanceConstraints[sw1][sw2][dst]
 		if rlaconstrs != None : 
@@ -915,6 +937,8 @@ class ZeppelinSynthesiser(object) :
 	def addRoutingLoopAvoidanceConstraints(self, srtype, dst, dstpath, sr, resilience=False) :
 		# If sr is added for dst, ensure that a link failure on dag does not cause a loop
 		dstSw = dstpath[len(dstpath) - 1]
+		print dstpath, sr
+
 		if sr[1] == dstSw :
 			# No need for routing loop avoidance
 			return
@@ -922,9 +946,14 @@ class ZeppelinSynthesiser(object) :
 		if srtype == SRType.RLAR : 
 			dstpathID = self.rlaBackupPaths[dst].index(dstpath)
 		else : 
-			if dstpath not in self.zeppelinPaths[dst] : 
-				self.zeppelinPaths.append(dstpath)
-			dstpathID = self.zeppelinPaths[dst].index(dstpath)
+			for path in self.zeppelinPaths[dst] : 
+				if sr[0] in path and sr[1] == path[path.index(sr[0]) + 1] : 
+					dstpath = path
+					dstpathID = self.zeppelinPaths[dst].index(dstpath)
+					break
+			# if dstpath not in self.zeppelinPaths[dst] : 
+			# 	self.zeppelinPaths.append(dstpath)
+			
 
 		start = dstpath.index(sr[1])
 		dstpathDist = 0
@@ -935,7 +964,7 @@ class ZeppelinSynthesiser(object) :
 			srname = ""
 			# Check to see if SR is just RLAR or W as well. 
 			for wpath in self.zeppelinPaths[dst] : 
-				if sr[1] in wpath and dstpath[start + 1] in wpath : 
+				if sr[1] in wpath and dstpath[start + 1] == wpath[wpath.index(sr[1]) + 1] : 
 					# THis is a static route on a primary path. 
 					srname = "W-" + str(sr[1]) + "-" + str(dstpath[start + 1]) + "-" + str(dst) + "-" + str(0) + "-" + str(dstpathID)
 					print "W in RLAR no res", srname
@@ -1052,7 +1081,7 @@ class ZeppelinSynthesiser(object) :
 				for index in range(startIndex) : 
 					# direct edge to dst. Cant put a static route here
 					self.ilpSolver.addConstr(self.ew(sr[1], nsw) + bpDist <=  self.dist(sr[1], wpath[index]) + self.dist(wpath[index], dstSw) - 1, 
-						"RLAnoSR-" + str(sr[1]) + "-" + str(backupPath[0]) + "-" + str(dst) + "-" + str(rlapathID))
+						"noSR-" + str(sr[1]) + "-" + str(backupPath[0]) + "-" + str(dst) + "-" + str(rlapathID))
 
 				if len(backupPath) > 1 and [backupPath[0], backupPath[1]] not in self.staticRoutes[dst] : 
 					# Ensure backup path is shorter than the distance from upstream paths
@@ -1136,11 +1165,13 @@ class ZeppelinSynthesiser(object) :
 					self.ilpSolver.addConstr(self. wdist(s, t, wclass) >= self.dist(s, t), "Dw-" + str(self.constraintIndex) + " ")	
 					self.constraintIndex += 1
 
-	def addWaypointComplianceConstraints(self, dst, waypointPath) : 
+	def addWaypointComplianceConstraints(self, dst, waypointPath, pathtype="W") : 
 		# Add constraints to ensure path goes through atleast one waypoint.	
 		dstSw = waypointPath[len(waypointPath) - 1]
 
 		#print dstSw, dags
+		if pathtype == "WR" : 
+			print "Alternate waypoint path", dst, waypointPath
 		
 		pathID = self.zeppelinPaths[dst].index(waypointPath)
 
@@ -1152,8 +1183,8 @@ class ZeppelinSynthesiser(object) :
 			for index in range(start, len(waypointPath) - 1) :
 				pathDist += self.ew(waypointPath[index], waypointPath[index+1])
 
-			if self.waypointResilienceConstraints[waypointPath[start]][dst][pathID] == None : 
-				self.waypointResilienceConstraints[waypointPath[start]][dst][pathID] = []
+			if self.waypointResilienceConstraints[waypointPath[start]][waypointPath[start + 1]][dst] == None : 
+				self.waypointResilienceConstraints[waypointPath[start]][waypointPath[start + 1]][dst] = []
 			
 			neighbours = self.topology.getSwitchNeighbours(waypointPath[start])
 			for n in neighbours : 
@@ -1161,9 +1192,91 @@ class ZeppelinSynthesiser(object) :
 				
 				# Path distance must be smaller than non waypoint distance
 				wconstr = self.ilpSolver.addConstr(pathDist <= self.ew(waypointPath[start], n) + self.wdist(n, dstSw, self.getWClass(dst)) - 1, 
-					"W-" + str(waypointPath[start]) + "-" + str(waypointPath[start + 1]) + "-" + str(dst) + "-" + str(pathID))
+					pathtype + "-" + str(waypointPath[start]) + "-" + str(waypointPath[start + 1]) + "-" + str(dst) + "-" + str(pathID))
 
-				self.waypointResilienceConstraints[waypointPath[start]][dst][pathID].append(wconstr)
+				self.waypointResilienceConstraints[waypointPath[start]][waypointPath[start + 1]][dst].append(wconstr)
+
+	def addWaypointResilienceConstraints(self, sw1, sw2, dst) : 
+		if not self.resilience : 
+			return
+
+		for sw in self.destinationDAGs[dst] :
+			if self.destinationDAGs[dst][sw] == None : 
+				dstSw = sw
+				break
+
+		for path in self.zeppelinPaths[dst] :
+			connectedToSrc = True
+			for index in range(len(path) - 1) :
+				if [path[index], path[index + 1]] == [sw1, sw2] and connectedToSrc : 
+					# Need to add another resilient path at sw2
+					
+					waypointPath = self.getWaypointPath(sw2, dstSw, path, dst)	# FInd best intersecting waypoint path
+					if len(waypointPath) > 0 : 
+						self.zeppelinPaths[dst].append(waypointPath)
+						self.addWaypointComplianceConstraints(dst, waypointPath, "WR")
+
+				if [path[index], path[index + 1]] not in self.staticRoutes[dst] : 
+					connectedToSrc = False
+
+	def getWaypointPath(self, srcSw, dstSw, path, dst) : 
+		dagEdges = []
+		for index in range(len(path) - 1) :
+			sw = path[index]
+			dagEdges.append([sw, path[index + 1]]) 
+			if sw == dstSw : continue
+			neighbours = self.topology.getSwitchNeighbours(sw)
+			for n in neighbours : 
+				dagEdges.append([n, sw])
+
+		# append upstream switch edges of other paths
+		for wpath in self.zeppelinPaths[dst] :
+			if wpath == path : continue 
+			if srcSw in wpath : 
+				for index in range(wpath.index(sw2)) : 
+					neighbours = self.topology.getSwitchNeighbours(wpath[index])
+					for n in neighbours : 
+						dagEdges.append([n, wpath[index]])
+
+		waypointPaths = self.topology.getWaypointPaths(srcSw, dstSw, self.waypoints[dst], dagEdges) 
+
+		for waypointPath in waypointPaths : 
+			#TODO: merge to DAG
+			newWaypointPath = []
+			for index in range(1, len(waypointPath) - 1) :
+				wsw = waypointPath[index]
+				shortest = []
+				shortestLen = 1000000 
+				for path2 in self.zeppelinPaths[dst] : 
+					if wsw in path2 : 
+						# Found a path2 to dst 
+						bplen = len(path2) - path2.index(wsw) - 1
+						if bplen < shortestLen : 
+							shortest = path2
+							shortestLen = bplen
+
+				if len(shortest) > 0 : 
+					# Found a backup path with least distance to dst. Use that.
+					newWaypointPath = waypointPath[:waypointPath.index(wsw)]
+					newWaypointPath.extend(shortest[shortest.index(wsw):])
+					break
+
+			if newWaypointPath != [] : 
+				waypointPath = newWaypointPath
+
+			# Check waypoint validity
+			validPath = False
+			for w in self.waypoints[dst] : 
+				if w in waypointPath: 
+					validPath = True 
+					break
+
+			if validPath : 
+				return waypointPath
+
+	
+		return []
+
 
 	def enforceWaypointCompliance(self, resilience=False) : 
 		swCount = self.topology.getSwitchCount()
@@ -1190,64 +1303,68 @@ class ZeppelinSynthesiser(object) :
 				else : 
 					self.waypoints[dst] = waypoints
 
-		if resilience and self.randomWaypoints: 
+		if resilience: 
 			for pc in range(self.pdb.getPacketClassRange()) : 
 				dst = self.pdb.getDestinationSubnet(pc)
 				path = self.pdb.getPath(pc)
 				dag = self.destinationDAGs[dst]
+				srcSw = path[0]
 				dstSw = path[len(path)-1]
 				dagEdges = []
-				for index in range(len(path) - 1) :
-					sw = path[index]
-					dagEdges.append([sw, path[index + 1]]) 
-					if sw == dstSw : continue
-					neighbours = self.topology.getSwitchNeighbours(sw)
-					for n in neighbours : 
-						dagEdges.append([n, sw])
+				# for index in range(len(path) - 1) :
+				# 	sw = path[index]
+				# 	dagEdges.append([sw, path[index + 1]]) 
+				# 	if sw == dstSw : continue
+				# 	neighbours = self.topology.getSwitchNeighbours(sw)
+				# 	for n in neighbours : 
+				# 		dagEdges.append([n, sw])
 
-				# append upstream switch edges of other paths which use sr[1]
-				for wpath in self.zeppelinPaths[dst] :
-					if wpath == path : continue 
-					if path[0] in wpath : 
-						for index in range(wpath.index(path[0])) : 
-							neighbours = self.topology.getSwitchNeighbours(wpath[index])
-							for n in neighbours : 
-								dagEdges.append([n, wpath[index]])
+				# # append upstream switch edges of other paths
+				# for wpath in self.zeppelinPaths[dst] :
+				# 	if wpath == path : continue 
+				# 	if path[0] in wpath : 
+				# 		for index in range(wpath.index(path[0])) : 
+				# 			neighbours = self.topology.getSwitchNeighbours(wpath[index])
+				# 			for n in neighbours : 
+				# 				dagEdges.append([n, wpath[index]])
 
-				waypointPath = self.topology.getBFSPath(path[0], path[len(path)-1], dagEdges)
-				if len(waypointPath) != 0 :
-					#TODO: merge to DAG
-					newWaypointPath = []
-					for index in range(1, len(waypointPath) - 1) :
-						wsw = waypointPath[index]
-						shortest = []
-						shortestLen = 1000000 
-						for path in self.zeppelinPaths[dst] : 
-							if wsw in path : 
-								# Found a path to dst 
-								bplen = len(path) - path.index(wsw) - 1
-								if bplen < shortestLen : 
-									shortest = path
-									shortestLen = bplen
+				# waypointPath = self.topology.getWaypointPath(path[0], path[len(path)-1], self.waypoints[dst], dagEdges)
+				# if len(waypointPath) != 0 :
+				# 	#TODO: merge to DAG
+				# 	newWaypointPath = []
+				# 	for index in range(1, len(waypointPath) - 1) :
+				# 		wsw = waypointPath[index]
+				# 		shortest = []
+				# 		shortestLen = 1000000 
+				# 		for path in self.zeppelinPaths[dst] : 
+				# 			if wsw in path : 
+				# 				# Found a path to dst 
+				# 				bplen = len(path) - path.index(wsw) - 1
+				# 				if bplen < shortestLen : 
+				# 					shortest = path
+				# 					shortestLen = bplen
 
-						if len(shortest) > 0 : 
-							# Found a backup path with least distance to dst. Use that.
-							newWaypointPath = waypointPath[:waypointPath.index(wsw)]
-							newWaypointPath.extend(shortest[shortest.index(wsw):])
-							break
+				# 		if len(shortest) > 0 : 
+				# 			# Found a backup path with least distance to dst. Use that.
+				# 			newWaypointPath = waypointPath[:waypointPath.index(wsw)]
+				# 			newWaypointPath.extend(shortest[shortest.index(wsw):])
+				# 			break
 
-					if newWaypointPath != [] : 
-						print "WP", pc, waypointPath, newWaypointPath
-						waypointPath = newWaypointPath
+				# 	if newWaypointPath != [] : 
+				# 		print "WP", pc, waypointPath, newWaypointPath
+				# 		waypointPath = newWaypointPath
 
-					waypoint = 	waypointPath[int((len(waypointPath) - 1)/2)]
-					if waypoint not in self.waypoints[dst] : 
-						self.waypoints[dst].append(waypoint)
-
+				# 	# Check if waypoint path is actually valid
+				# 	validPath = False
+				# 	for w in self.waypoints[dst] : 
+				# 		if w in waypointPath: 
+				# 			validPath = True 
+				# 			break
+				waypointPath = self.getWaypointPath(srcSw, dstSw, path, dst)
+				if len(waypointPath) > 0 : 
 					self.zeppelinPaths[dst].append(waypointPath)
 				else : 
 					print "Waypoint min cut ", self.topology.findMinCut(path[0], path[len(path)-1])
-
 
 		# Sort waypoint Classes
 		for dst in self.waypoints : 
@@ -1270,6 +1387,7 @@ class ZeppelinSynthesiser(object) :
 				print dst, self.waypoints[dst], self.zeppelinPaths[dst]
 				for path in self.zeppelinPaths[dst] :
 					self.addWaypointComplianceConstraints(dst, path)
+
 
 		# Repair Functions
 

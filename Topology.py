@@ -696,6 +696,66 @@ class Topology(object):
 
 		return []
 
+	def getAllPaths(start, end, path=[]):
+		path = path + [start]
+		#print path
+		if start == end:
+			return [path]
+		#if len(path) > 4:
+		#   return None
+		if not graph.has_key(start):
+			return []
+		paths = []
+		for node in graph[start]:
+			if node not in path:
+				newpaths = find_all_paths(graph, node, end, path)
+				if newpaths != None:
+					for newpath in newpaths:
+						paths.append(newpath)
+		return paths
+
+	def getWaypointPaths(self, srcSw, dstSw, waypoints, disabledEdges=[]) : 
+		paths = list(nx.all_simple_paths(self.graph, source=srcSw, target=dstSw, cutoff=self.getMaxPathLength()))
+		paths = sorted(paths, key=lambda x:len(x))
+		validPaths = []
+		for path in paths : 
+			disabledPath = False
+			for edge in disabledEdges : 
+				if edge[0] in path and edge[1] in path and path.index(edge[0]) < len(path) - 1 and edge[1] == path[path.index(edge[0]) + 1] :
+					disabledPath = True
+					break
+
+			if disabledPath : continue
+
+			waypointPath = False
+			for w in waypoints : 
+				if w in path : 
+					waypointPath = True
+					if path not in validPaths : 
+						validPaths.append(path)
+					break
+
+			if len(validPaths) > 50 : 
+				return validPaths
+
+		# for w in waypoints : 
+		# 	path1 = self.getBFSPath(srcSw, w, disabledEdges)
+		# 	dEdges = copy.deepcopy(disabledEdges) 
+		# 	for i in range(len(path1) - 1) : 
+		# 		dEdges.append([path1[i], path1[i+1]])
+		# 		neighbours = self.getSwitchNeighbours(path1[i])
+		# 		for n in neighbours : 
+		# 			dEdges.append([n, path1[i]])
+		# 	neighbours = self.getSwitchNeighbours(w)
+		# 	for n in neighbours : 
+		# 		dEdges.append([n, w])
+		# 	path2 = self.getBFSPath(w, dstSw, dEdges)
+		# 	if len(path1) != 0 and len(path2) != 0 : 
+		# 		path1.extend(path2[1:])
+		# 		return path1
+
+		return []
+
 	def checkTopologyContinuity(self) : 
 		""" Check if all switches in the topology are connected"""
 		reachableSwitches = dict()
