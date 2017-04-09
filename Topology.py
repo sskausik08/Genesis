@@ -75,6 +75,8 @@ class Topology(object):
 
 		self.disabledEdges = dict()
 
+		self.pathTime = 0 
+
 	def getName(self) :
 		return self.name
 
@@ -695,6 +697,54 @@ class Topology(object):
 					swQueue.append(n)
 
 		return []
+
+	def getAllPaths(start, end, path=[]):
+		path = path + [start]
+		#print path
+		if start == end:
+			return [path]
+		#if len(path) > 4:
+		#   return None
+		if not graph.has_key(start):
+			return []
+		paths = []
+		for node in graph[start]:
+			if node not in path:
+				newpaths = find_all_paths(graph, node, end, path)
+				if newpaths != None:
+					for newpath in newpaths:
+						paths.append(newpath)
+		return paths
+
+	def getWaypointPaths(self, srcSw, dstSw, waypoints, disabledEdges=[]) : 
+		paths = list(nx.all_simple_paths(self.graph, source=srcSw, target=dstSw, cutoff=self.getMaxPathLength()))
+		paths = sorted(paths, key=lambda x:len(x))
+		validPaths = []
+		for path in paths : 
+			disabledPath = False
+			for edge in disabledEdges : 
+				if edge[0] in path and edge[1] in path and path.index(edge[0]) < len(path) - 1 and edge[1] == path[path.index(edge[0]) + 1] :
+					disabledPath = True
+					break
+
+			if disabledPath : continue
+
+			if len(waypoints) == 0 :
+				validPaths.append(path)
+
+			else : 
+				waypointPath = False
+				for w in waypoints : 
+					if w in path : 
+						waypointPath = True
+						if path not in validPaths : 
+							validPaths.append(path)
+						break
+
+			if len(validPaths) > 50 : 
+				break
+
+		return validPaths
 
 	def checkTopologyContinuity(self) : 
 		""" Check if all switches in the topology are connected"""

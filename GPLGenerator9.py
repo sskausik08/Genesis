@@ -6,13 +6,12 @@ import math
 
 # python GPLGenerator.py <topology-file> <number-of-packet-classes> <tenant-group-size> <gpl-filename>
 # python GPLGenerator.py ./topologies/fattree-6.topo 50 10 fat6-50-10.gpl
-if len(sys.argv) != 5 : 
-	print "python GPLGenerator8.py <topology-file> <number-of-packet-classes> <number-of-waypoint-classes> <gpl-filename>"
+if len(sys.argv) <> 5 : 
+	print "python GPLGenerator.py <topology-file> <number-of-packet-classes> <tenant-group-size> <gpl-filename>"
 	exit(0)
 topoFile = sys.argv[1]
 count = int(sys.argv[2])
-dsts = int(count)
-waypointclasses = int(sys.argv[3])
+isolatePercentage = int(sys.argv[3])
 gplfile = open(sys.argv[4], 'w')
 
 topology = Topology()
@@ -24,80 +23,50 @@ swCount = topology.getSwitchCount()
 edgeSwitches = (topology.getSwitchCount() * 2/ 5) - 1  
 k = int(math.sqrt(topology.getSwitchCount() * 4/ 5))
 
-wclasses = []
-for i in range(waypointclasses) : 
-	while True : 
-		wclass = []
-		for j in range(3) : 
-			w = random.randint(edgeSwitches + 1, swCount - 1)
-			if w not in wclass : 
-				wclass.append(w)
-		wclass = sorted(wclass)
-		if wclass not in wclasses :
-			wclasses.append(wclass)
-			break
-
-waypointFile = open("waypoint-classes", 'w')
-for i in range(len(wclasses)) :
-	wclass = wclasses[i]
-	wclassStr = ""
-	for j in range(len(wclass)) :
-		w = wclass[j]
-		if w >= 2 * edgeSwitches + 2 : 
-			waypoint = topology.getSwID("c" + str(w))
-		else : 
-			waypoint = topology.getSwID("a" + str(w))
-		wclassStr += str(waypoint) + "-" 
-	
-	wclassStr = wclassStr[:len(wclassStr)-1]
-	waypointFile.write(wclassStr)
-	waypointFile.write("\n")
-
-endpoints = []
-for i in range(dsts) :
-	d = random.randint(0,edgeSwitches)
-	wclass = wclasses[i % len(wclasses)]
-	while True:		
-		s1 = random.randint(0,edgeSwitches)
-		s2 = random.randint(0,edgeSwitches)
-		if s1 != d and s2 != d and s1 != s2 : 
-			break
-
-	w1 = wclass[random.randint(0, len(wclass) - 1)]
-	#w2 = wclass[random.randint(0, len(wclass) - 1)]
-	if w1 >= 2 * edgeSwitches + 2 : 
-		w1 = "c" + str(w1)
-	else : 
-		w1 = "a" + str(w1) 
-
-	# if w2 >= 2 * edgeSwitches + 2 : 
-	# 	w2 = "c" + str(w2)
-	# else : 
-	# 	w2 = "a" + str(w2) 
-
-	gplfile.write("p" + str(i) + "_" + str(0) + " := " + str(i) + " : e" + str(s1)  + " >> [ " + w1 + " ] >> e" + str(d) + "\n")
-	#gplfile.write("p" + str(i) + "_" + str(1) + " := " + str(i) + " : e" + str(s2)  + " >> [ " + w2 + " ] >> e" + str(d) + "\n")
-
-# if count == 1 : # If no of packet classes = group size, then there are no isolation policies
-# 	exit(0)
-# gplfile.write("== \n")	
-# sets = dict()
-# for i in range(groups) :
-# 	set = "[ "
-# 	for j in range(groupsize) :
-# 		set += "p" + str(i) + "_" + str(j)
-# 		if j != groupsize - 1: 
-# 			set += ", "
-# 	set += " ]"
-# 	sets[i] = set
-# 	gplfile.write("p" + str(i) + "_" + str(0) + " || " + "p" + str(i) + "_" + str(1) + "\n")
+groups = count / isolatePercentage
+groupsize = isolatePercentage
+dsts = isolatePercentage/2
 
 
-# for i in range(groups) :
-# 	for j in range(i) :
-# 		if i != j : 
-# 			gplfile.write(sets[i] + " || " + sets[j] + "\n")
+endpoints = dict()
+currdst = 0
+for i in range(groups) :	
+	srcGroup = dict()
+	dstGroup = dict()
+	for j in range(edgeSwitches + 1) :
+		srcGroup[j] = 0
+		dstGroup[j] = 0
+	for dst in range(dsts) :
+		while True:		
+			d = random.randint(0,edgeSwitches)
+			if dstGroup[d] < k/2 - 1:
+				s1 = random.randint(0,edgeSwitches)
+				s2 = random.randint(0,edgeSwitches)
+				if s1 != d and s2 != d and s1 != s2 : 
+					if srcGroup[s1] < k/2 - 1 and srcGroup[s2] < k/2 - 1:
+						srcGroup[s1] += 1
+						srcGroup[s2] += 1
+						dstGroup[d] += 1
+						break
 
+		gplfile.write("p" + str(i) + "_" + str(dst) + " := " + str(currdst) + " : e" + str(s1)  + " >> e" + str(d) + "\n")
+		gplfile.write("p" + str(i) + "__" + str(dst) + " := " + str(currdst) + " : e" + str(s2)  + " >> e" + str(d) + "\n")
+		currdst += 1
+
+if count == 1 : # If no of packet classes = group size, then there are no isolation policies
+	exit(0)
+gplfile.write("== \n")	
+for i in range(groups) :
+	sets = dict()
+	for dst in range(dsts) : 
+		setStr = "[ "
+		setStr += "p" + str(i) + "_" + str(dst) + ", "
+		setStr += "p" + str(i) + "__" + str(dst) + " ]"
+		sets[dst] = setStr
+
+	for dst1 in range(dsts) :
+		for dst2 in range(dst1) :
+			gplfile.write(sets[dst2] + " || " + sets[dst1] + "\n")
 
 
 
@@ -105,7 +74,7 @@ for i in range(dsts) :
 # 	while True:
 # 		s = random.randint(0,edgeSwitches)
 # 		d = random.randint(0,edgeSwitches)
-# 		if s != d :
+# 		if s <> d :
 # 			break
 
 	
@@ -114,8 +83,8 @@ for i in range(dsts) :
 # 		a2 = random.randint(18,35)
 # 		a3 = random.randint(18,35)
 # 		a4 = random.randint(18,35)
-# 		if a1 != a2 and a1 != a3 and a2 != a3: 
-# 			if a1 != a4 and a2 != a4 and a3 != a4 :
+# 		if a1 <> a2 and a1 <> a3 and a2 <> a3: 
+# 			if a1 <> a4 and a2 <> a4 and a3 <> a4 :
 # 				break
 
 	# if random.randint(0,5) == 2 : 
