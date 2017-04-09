@@ -39,16 +39,17 @@ and BGP as the inter-domain routing protocol.
 
 
 The OSPF configurations are expressed 
-using two functions: edge weights $W$ and
- route filters $RF$. For BGP configurations: 
+using the edge weights function $W$. 
+For BGP configurations: 
 we have the local preference function $LP$ 
 and the iBGP filter function $IF$. Static 
 routes are expressed using the $SR$ function.
 We express the complete network configuration $C$
-as a tuple $(\Theta,W,RF,LP,IF,SR)$.  In the 
+as a tuple $(\Theta,W,LP,IF,SR)$.  In the 
 rest of the section, we describe each component 
 of the configuration $C$ and the routing function 
 $\route^C$ for the network given the configuration $C$. 
+\kausik{Remove this simplifying assumption}
 We assume the following  
 simplifying property for $C$: for any two 
 routers $r_1$ and $r_2$,
@@ -60,19 +61,19 @@ When synthesizing $C$, we will ensure that this property is satisfied.
 \minisection{Static Routes} Static routing refers to a router using a
 manually-configured routing entry, rather than information from
 dynamic protocols like OSPF or BGP.  Static routing is useful to enforce certain
-paths that are not easily realizable using routing protocols because 
+paths that are not realizable using routing protocols because 
 static
 routes for a given destination have the highest preference over other routes for the same
 destination.  
 We define the static route partial
-function $SR: V \times \Lambda \mapsto V$ with the following meaning. 
-Given a router $r$
+function $SR: V \times \Lambda \mapsto V$ with the following meaning:  
+given a router $r$
 and destination $\lambda$, if $SR(r,\lambda)=r'$, then traffic for
 destination $\lambda$ reaching node $r$ is always forwarded to node
-$r'$. We assume that  the static routes induced by the function $SR$ form paths and
+$r'$. \kausik{We assume that  the static routes induced by the function $SR$ form paths and
 we use $\Pi_{SR}$ to denote the set of all  static paths. 
 Formally, for a destination $\lambda$ and a router $r$, if $SR(r,\lambda)=r'$ then
-either $r'$ is directly connected to the subnet $\lambda$ or there exists $r''$ such that $SR(r',\lambda)=r''$.
+either $r'$ is directly connected to the subnet $\lambda$ or there exists $r''$ such that $SR(r',\lambda)=r''$}
 
 %These paths would have a highest preference.
 
@@ -92,21 +93,21 @@ path $\pi=l_1\cdots l_n$, we indicate the sum of weights of the
 links in the path by $W(\pi)=\sum W(l_i)$. 
 
 
-OSPF also allows  route filters
-to selectively disable an
-edge for a given destination by  
-blocking advertisements to a
-particular destination along a link. 
-%Formally, a  route filter is a pair $(l,\lambda)\in L\times \Lambda$
-%which disables the link $l$ for destination $\lambda$. 
-We define the  route filter function 
-$RF: \Lambda \rightarrow 2^L$ which maps each destination  
-to a set of disabled links for that destination. 
-Given an   destination $\lambda\in \Lambda$, 
-a legal path with respect to $RF$ and $\lambda$
-is a valid path $\pi=l_1\cdots l_k$ such that for every $i$,
-$l_i\not\in RF(\lambda)$.
-We use $\Pi_\lambda$ to denote the set of all such paths.
+%OSPF also allows  route filters
+%to selectively disable an
+%edge for a given destination by  
+%blocking advertisements to a
+%particular destination along a link. 
+%%Formally, a  route filter is a pair $(l,\lambda)\in L\times \Lambda$
+%%which disables the link $l$ for destination $\lambda$. 
+%We define the  route filter function 
+%$RF: \Lambda \rightarrow 2^L$ which maps each destination  
+%to a set of disabled links for that destination. 
+%Given an   destination $\lambda\in \Lambda$, 
+%a legal path with respect to $RF$ and $\lambda$
+%is a valid path $\pi=l_1\cdots l_k$ such that for every $i$,
+%$l_i\not\in RF(\lambda)$.
+%We use $\Pi_\lambda$ to denote the set of all such paths.
 
 We define the routing function 
 $\route_{ospf}^G$ 
