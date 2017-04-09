@@ -65,7 +65,7 @@ class Topology(object):
 		self.switchSliceMap = dict()  # Stores the slice number for each switch.
 		self.graph = nx.Graph()
 		self.sliceGraph = nx.Graph()
-		self.maxPathLength = 8
+		self.maxPathLength = 10
 
 		# Tactic variable.
 		self.switchLabels = dict()
@@ -744,6 +744,7 @@ class Topology(object):
 			if len(validPaths) > 50 : 
 				break
 
+		#print validPaths
 		return validPaths
 
 	def checkTopologyContinuity(self) : 

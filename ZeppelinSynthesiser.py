@@ -22,7 +22,7 @@ class SRType(Enum):
 	WR = 4
 
 class ZeppelinSynthesiser(object) :
-	def __init__(self, topology, pdb, resilience=False) :
+	def __init__(self, topology, pdb, resilience=False, waypointCompliance=False) :
 		self.topology = topology
 		self.pdb = pdb
 
@@ -50,6 +50,7 @@ class ZeppelinSynthesiser(object) :
 		# Resilience 
 
 		self.resilience = resilience
+		self.waypointCompliance = waypointCompliance
 		self.SRCount = 0
 		self.waypoints = dict()
 		self.waypointClasses = []
@@ -180,7 +181,7 @@ class ZeppelinSynthesiser(object) :
 		#self.findValidCycles(
 		self.addDjikstraShortestPathConstraints()
 
-		if self.waypoints == None : 
+		if not self.waypointCompliance: 
 			# Prompted by Gurobi? 
 			# # self.ilpSolver.setParam(gb.GRB.Param.BarHomogeneous, 1) 
 			# # self.ilpSolver.setParam(gb.GRB.Param.Method, 2) 
@@ -219,7 +220,9 @@ class ZeppelinSynthesiser(object) :
 		# Extract Edge weights from Gurobi
 		self.staticRouteMode = True		
 		self.getEdgeWeightModel(self.staticRouteMode)	
-		
+			
+		end_t = time.time() - start_t
+
 		# Add static routes to ensure there arent any violations
 		#self.removeViolations()
 		# self.f.close()	
@@ -227,7 +230,7 @@ class ZeppelinSynthesiser(object) :
 		#self.pdb.validateControlPlane(self.topology, self.staticRoutes, self.backupPaths)
 		#self.pdb.validateControlPlaneResilience(self.topology, self.staticRoutes)
 		
-		if self.waypoints == None : 
+		if not self.waypointCompliance : 
 			self.pdb.validateControlPlane(self.topology, self.staticRoutes)
 		else : 
 			self.pdb.validateControlPlaneWaypointCompliance(self.topology, self.staticRoutes, self.waypoints, self.zeppelinPaths)
@@ -249,7 +252,7 @@ class ZeppelinSynthesiser(object) :
 		self.zepFile = open("zeppelin-timing", 'a')
 		# self.zepFile.write("Topology Switches\t" +  str(swCount))
 		# self.zepFile.write("\n")
-		self.zepFile.write(str(len(self.waypointClasses)) + "\t" + str(self.pdb.getPacketClassRange()) + "\t" + str(time.time() - start_t) + "\t" + str(self.SRCount) +"\t" + str(self.totalSRCount) + "\t" + str(self.resilience) + "\t" + str(score))
+		self.zepFile.write(str(len(self.waypointClasses)) + "\t" + str(self.pdb.getPacketClassRange()) + "\t" + str(end_t) + "\t" + str(self.SRCount) +"\t" + str(self.totalSRCount) + "\t" + str(self.waypointCompliance) + "\t" + str(self.resilience) + "\t" + str(score))
 		self.zepFile.write("\n")
 		self.zepFile.close()
 		# self.zepFile.write("Static Routes" + "\t" + str(self.pdb.getPacketClassRange()) + "\t" + str(srCount) + "\t")
@@ -910,16 +913,17 @@ class ZeppelinSynthesiser(object) :
 		if srtype == SRType.RLAR : 
 			print "RLAR", sw1, sw2, dst
 
-		if srtype == SRType.RLAR or srtype == SRType.WR :
-			#currpath = self.rlaBackupPaths[dst][pathID]
-			currpath = self.zeppelinPaths[dst][pathID]
-			self.addRoutingLoopAvoidanceConstraints(srtype, dst, currpath, [sw1, sw2], False)
-		else : 
-			currpath = self.zeppelinPaths[dst][pathID]
-			self.addRoutingLoopAvoidanceConstraints(srtype, dst, currpath, [sw1, sw2], True)
+		if self.waypointCompliance : 
+			if srtype == SRType.RLAR or srtype == SRType.WR :
+				#currpath = self.rlaBackupPaths[dst][pathID]
+				currpath = self.zeppelinPaths[dst][pathID]
+				self.addRoutingLoopAvoidanceConstraints(srtype, dst, currpath, [sw1, sw2], False)
+			else : 
+				currpath = self.zeppelinPaths[dst][pathID]
+				self.addRoutingLoopAvoidanceConstraints(srtype, dst, currpath, [sw1, sw2], True)
 
-		if srtype == SRType.W or srtype == SRType.RLA : 
-			self.addWaypointResilienceConstraints(sw1, sw2, dst, currpath)
+			if srtype == SRType.W or srtype == SRType.RLA : 
+				self.addWaypointResilienceConstraints(sw1, sw2, dst, currpath)
 
 		rlaconstrs = self.routingLoopAvoidanceConstraints[sw1][sw2][dst]
 		if rlaconstrs != None : 

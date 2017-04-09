@@ -650,57 +650,52 @@ class PolicyDatabase(object) :
 				resilienceScore = resilienceScore - 10000
 				continue
 			else : 
-				print "P", pc, paths
+				print "P", pc, paths, waypoints[dst]
 
-			path = paths[0]
-			wpathCount = 0
-			singlePath = False
-			for wpath in waypointPaths[dst] : 
-				if wpath[0] == path[0] and wpath[len(wpath) - 1] == path[len(path) - 1] : 
-					wpathCount += 1
-			if wpathCount < 2 : 
-				print "Single waypoint path", pc
-				singlePath = True				
+			# path = paths[0]
+			# wpathCount = 0
+			# singlePath = False
+			# for wpath in waypointPaths[dst] : 
+			# 	if wpath[0] == path[0] and wpath[len(wpath) - 1] == path[len(path) - 1] : 
+			# 		wpathCount += 1
+			# if wpathCount < 2 : 
+			# 	print "Single waypoint path", pc
+			# 	singlePath = True				
 
-			traverseWaypointResilience = True
-			for index in range(len(path) - 1) :
-				sharedLink = False
-				for wpath in waypointPaths[dst] : 
-					if wpath != path and wpath[0] == path[0] and path[index] in wpath and path[index+1] in wpath : 
-						# Common link. Failure will disable both paths. Dont check this link failure
-						sharedLink = True
-
-				zpaths = topology.getAllShortestPathsStaticRoutes(srcSw, dstSw, staticRoutes[dst], [[path[index], path[index+1]]])
-				
-				traverseWaypoint = True
-				if dst not in waypoints : traverseWaypoint = True
-				else :
-					if len(zpaths) == 0 : 
-						traverseWaypoint = False
+			for sw in range(1, topology.getSwitchCount() +1) : 
+				for n in topology.getSwitchNeighbours(sw) : 
+					if sw >= n : continue
+					zpaths = topology.getAllShortestPathsStaticRoutes(srcSw, dstSw, staticRoutes[dst], [[sw,n],[n,sw]])
 					
-					for zpath in zpaths : 
-						pathWaypointTraverse = False
-						for w in waypoints[dst] : 
-							if w in zpath : 
-								pathWaypointTraverse = True
-						traverseWaypoint = traverseWaypoint & pathWaypointTraverse
+					traverseWaypoint = True
+					if dst not in waypoints : traverseWaypoint = True
+					else :
+						if len(zpaths) == 0 : 
+							traverseWaypoint = False
 
-				if not traverseWaypoint : 
-					if not singlePath : 
-						print path, waypoints[dst]
-						print path[index], path[index+1], zpaths
-						print "No path", topology.getShortestPathStaticRoutes(srcSw, dstSw, staticRoutes[dst], [[path[index], path[index+1]]])
-						for zpath in zpaths : 
-							print "AD", zpath, topology.getPathDistance(zpath) 
+						else : 	
+							for zpath in zpaths : 
+								pathWaypointTraverse = False
+								for w in waypoints[dst] : 
+									if w in zpath : 
+										pathWaypointTraverse = True
+								traverseWaypoint = traverseWaypoint & pathWaypointTraverse
 
-					resilienceScore = resilienceScore - 1
+					if not traverseWaypoint : 
+						resilienceScore = resilienceScore - 1
+						#if not singlePath or True : 
+							#print path, waypoints[dst]
+							#print path[index], path[index+1], zpaths
+						#print "No path", topology.getShortestPathStaticRoutes(srcSw, dstSw, staticRoutes[dst], [[path[index], path[index+1]]])
+						#for zpath in zpaths : 
+						#	print "AD", zpath, topology.getPathDistance(zpath) 
+
+					#resilienceScore = resilienceScore - 1
 				
 				# elif len(staticRoutes[dst]) > 0 : 
 				# 	print "Success", dst, pc 
 				# 	print path, waypoints[dst]
 				# 	print path[index], path[index+1], zpaths 
-				
-				traverseWaypointResilience = traverseWaypointResilience & traverseWaypoint
 
 			# if not traverseWaypointResilience : 
 			# 	print dst, 

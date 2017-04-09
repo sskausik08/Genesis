@@ -377,23 +377,24 @@ class GenesisSynthesiser(object) :
 				for dst in dags : 
 					policyDatabase.addDestinationDAG(dst, dags[dst])
 
-				self.zepSynthesiser = ZeppelinSynthesiser(topology=self.topology, pdb=policyDatabase, resilience=False)
-				if self.waypointMode : 
-					self.zepSynthesiser.enforceDAGs(dags=policyDatabase.getDestinationDAGs(), endpoints=self.endpoints, waypoints=self.waypoints)
-				else : 
-					self.zepSynthesiser.enforceDAGs(dags=policyDatabase.getDestinationDAGs(), endpoints=self.endpoints, waypoints=None)
-
+				self.zepSynthesiser = ZeppelinSynthesiser(topology=self.topology, pdb=policyDatabase, resilience=False, waypointCompliance=False)
+				self.zepSynthesiser.enforceDAGs(dags=policyDatabase.getDestinationDAGs(), endpoints=self.endpoints, waypoints=self.waypoints)
+				
 				self.zepFile = open("zeppelin-timing", 'a')
 				self.zepFile.write("Zeppelin\t" + str(self.pdb.getPacketClassRange()) + "\t" + str(end_t - start_t))
 				self.zepFile.write("\t")
 				self.zepFile.close()
 
-				self.zepSynthesiser = ZeppelinSynthesiser(topology=self.topology, pdb=policyDatabase, resilience=True)
-				if self.waypointMode : 
-					self.zepSynthesiser.enforceDAGs(dags=policyDatabase.getDestinationDAGs(), endpoints=self.endpoints, waypoints=self.waypoints)
-				else : 
-					self.zepSynthesiser.enforceDAGs(dags=policyDatabase.getDestinationDAGs(), endpoints=self.endpoints, waypoints=None)
+				self.zepSynthesiser = ZeppelinSynthesiser(topology=self.topology, pdb=policyDatabase, resilience=False, waypointCompliance=True )
+				self.zepSynthesiser.enforceDAGs(dags=policyDatabase.getDestinationDAGs(), endpoints=self.endpoints, waypoints=self.waypoints)
+				
+				self.zepFile = open("zeppelin-timing", 'a')
+				self.zepFile.write("Zeppelin\t" + str(self.pdb.getPacketClassRange()) + "\t" + str(end_t - start_t))
+				self.zepFile.write("\t")
+				self.zepFile.close()
 
+				self.zepSynthesiser = ZeppelinSynthesiser(topology=self.topology, pdb=policyDatabase, resilience=True, waypointCompliance=True )
+				self.zepSynthesiser.enforceDAGs(dags=policyDatabase.getDestinationDAGs(), endpoints=self.endpoints, waypoints=self.waypoints)
 
 		self.pdb.writeForwardingRulesToFile(self.topology)
 		self.printProfilingStats()
