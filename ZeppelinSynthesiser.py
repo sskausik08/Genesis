@@ -56,6 +56,7 @@ class ZeppelinSynthesiser(object) :
 		self.waypointClasses = []
 		self.zeppelinPaths = dict()
 		self.zeppelinPathTypes = dict()
+		self.firstStaticRoutes = defaultdict(lambda:defaultdict(lambda:None))
 		self.rlaBackupPaths = dict()
 
 		# Constants
@@ -72,6 +73,7 @@ class ZeppelinSynthesiser(object) :
 		# Gurobi Constraints
 		self.distanceConstraints = defaultdict(lambda:defaultdict(lambda:defaultdict(lambda:None)))
 		self.backupPathConstraints = defaultdict(lambda:defaultdict(lambda:None))
+		self.firstStaticRouteConstraints = defaultdict(lambda:defaultdict(lambda:None))
 
 	def initializeSMTVariables(self) :
 		swCount = self.topology.getSwitchCount()
@@ -252,7 +254,7 @@ class ZeppelinSynthesiser(object) :
 		self.zepFile = open("zeppelin-timing", 'a')
 		# self.zepFile.write("Topology Switches\t" +  str(swCount))
 		# self.zepFile.write("\n")
-		self.zepFile.write(str(len(self.waypointClasses)) + "\t" + str(self.pdb.getPacketClassRange()) + "\t" + str(end_t) + "\t" + str(self.SRCount) +"\t" + str(self.totalSRCount) + "\t" + str(self.waypointCompliance) + "\t" + str(self.resilience) + "\t" + str(score))
+		self.zepFile.write(str(len(self.waypointClasses)) + "\t" + str(self.pdb.getPacketClassRange()) + "\t" + str(end_t) + "\t" + str(self.SRCount) +"\t" + str(self.totalSRCount) + "\t" + str(self.waypointCompliance) + "\t" + str(self.resilience) + "\t" + str(score[0]) + "\t" + str(score[1]))
 		self.zepFile.write("\n")
 		self.zepFile.close()
 		# self.zepFile.write("Static Routes" + "\t" + str(self.pdb.getPacketClassRange()) + "\t" + str(srCount) + "\t")
@@ -858,8 +860,19 @@ class ZeppelinSynthesiser(object) :
 			print "===========?IIS?============="
 			for constr in self.ilpSolver.getConstrs() :
 				if constr.getAttr(gb.GRB.Attr.IISConstr) > 0 :
-					print constr 
-			exit(0)
+					name = constr.getAttr(gb.GRB.Attr.ConstrName) 
+					fields = name.split("-")
+					if fields[0] == "noSR" :
+						dst = int(fields[3])
+						pathID = int(fields[4])
+
+						fsrConstraint = self.firstStaticRouteConstraints[dst][pathID]	
+						print "Removing waypoint distance constraint", fields
+						self.ilpSolver.remove(fsrConstraint)
+						self.firstStaticRouteConstraints[dst][pathID] = None
+						self.ilpSolver.update()
+						return
+				
 				
 
 	def addStaticRoute(self, srtype, sw1, sw2, dst, pc=None, pathID=None) :
@@ -922,7 +935,7 @@ class ZeppelinSynthesiser(object) :
 				currpath = self.zeppelinPaths[dst][pathID]
 				self.addRoutingLoopAvoidanceConstraints(srtype, dst, currpath, [sw1, sw2], True)
 
-			if srtype == SRType.W or srtype == SRType.RLA : 
+			if srtype == SRType.W or srtype == SRType.WR : 
 				self.addWaypointResilienceConstraints(sw1, sw2, dst, currpath)
 
 		rlaconstrs = self.routingLoopAvoidanceConstraints[sw1][sw2][dst]
@@ -1235,10 +1248,49 @@ class ZeppelinSynthesiser(object) :
 				dstSw = sw
 				break
 
-		start = dstpath.index(sw2)
+		#start = dstpath.index(sw2)
+		for path in self.zeppelinPaths[dst] :
+			changeFlag = False
+			if sw1 in path and sw2 == path[path.index(sw1) + 1] : 
+				# SR in path. See if first static route.
+				pathID = self.zeppelinPaths[dst].index(path)
+				if self.firstStaticRoutes[dst][pathID] == None : 
+					self.firstStaticRoutes[dst][pathID] = [sw1, sw2]
+					changeFlag = True
+				elif path.index(self.firstStaticRoutes[dst][pathID][0]) > path.index(sw1) : 
+					self.firstStaticRoutes[dst][pathID] = [sw1, sw2]
+					changeFlag = True
+			
+			if changeFlag: 
+				pathID = self.zeppelinPaths[dst].index(path)
+				fsrConstraint = self.firstStaticRouteConstraints[dst][pathID]
+				if fsrConstraint != None : 
+					self.ilpSolver.remove(fsrConstraint)
+
+				for path2 in self.zeppelinPaths[dst] : 
+					if path2[0] == path[0] and path2 != path: 
+						bpDist = 0
+						for index in range(len(path2) - 1) : 
+							bpDist += self.ew(path2[index], path2[index + 1])
+
+						fsrDist = 0
+						for index in range(path.index(sw1)) : 
+							fsrDist += self.ew(path[index], path[index + 1])
+
+						newfsrConstraint = self.ilpSolver.addConstr(bpDist <= fsrDist + self.dist(sw1, dstSw), 
+							"noSR-" + str(sw1) + "-" + str(sw2) + "-" + str(dst) + "-" + str(pathID))
+						
+						self.firstStaticRouteConstraints[dst][pathID] = newfsrConstraint		
+
+		self.ilpSolver.update()		
+		dstpathID = self.zeppelinPaths[dst].index(dstpath)
+		if self.zeppelinPathTypes[dst][dstpathID] == "WR" : 
+			# Dont need to add another path for this.
+			return
 
 		connectedToSrc = True
-		for index in range(len(dstpath) - 1) :
+		#for index in range(len(dstpath) - 1) :
+		for index in range(1) :
 			if [dstpath[index], dstpath[index + 1]] == [sw1, sw2] and connectedToSrc : 
 				# Need to add another resilient dstpath at sw2
 				
@@ -1248,29 +1300,54 @@ class ZeppelinSynthesiser(object) :
 					self.zeppelinPathTypes[dst].append("WR")
 					self.addWaypointComplianceConstraints(dst, waypointPath, "WR")
 
-			elif [dstpath[index], dstpath[index + 1]] == [sw1, sw2] and not connectedToSrc : 
-				# Find if waypoint traversal happens after sr
-				for index in range(len(dstpath) - 1) : 
-					if dstpath[index] in self.waypoints[dst] and index <= start : 
-						# Dont care about waypoint compliance
-						backupPath = self.getWaypointPath(sw2, dstSw, dstpath, dst, False) # Dont need to traverse waypoint in backupPath
-						completePath = dstpath[:start]
-						completePath.extend(backupPath)
-						self.zeppelinPaths[dst].append(completePath)
-						self.zeppelinPathTypes[dst].append("WR")
+			# elif [dstpath[index], dstpath[index + 1]] == [sw1, sw2] and not connectedToSrc : 
+			# 	# Find if waypoint traversal happens after sr
+			# 	for index in range(len(dstpath) - 1) : 
+			# 		if dstpath[index] in self.waypoints[dst] and index <= start : 
+			# 			# Dont care about waypoint compliance
+			# 			backupPath = self.getWaypointPath(sw2, dstSw, dstpath, dst, False) # Dont need to traverse waypoint in backupPath
+			# 			completePath = dstpath[:start]
+			# 			completePath.extend(backupPath)
+			# 			self.zeppelinPaths[dst].append(completePath)
+			# 			self.zeppelinPathTypes[dst].append("WR")
 
-						self.addRoutingLoopAvoidanceConstraints(self, SRType.WR, dst, completePath, [sw1, sw2])
+			# 			self.addRoutingLoopAvoidanceConstraints(self, SRType.WR, dst, completePath, [sw1, sw2])
 
-					else :
-						waypointPath = self.getWaypointPath(sw2, dstSw, dstpath, dst, True) 
-						if len(waypointPath) > 0 : 
-							self.zeppelinPaths[dst].append(waypointPath)
-							self.zeppelinPathTypes[dst].append("WR")
-							self.addWaypointComplianceConstraints(dst, waypointPath, "WR")
+			# 		else :
+			# 			waypointPath = self.getWaypointPath(sw2, dstSw, dstpath, dst, True) 
+			# 			if len(waypointPath) > 0 : 
+			# 				self.zeppelinPaths[dst].append(waypointPath)
+			# 				self.zeppelinPathTypes[dst].append("WR")
+			# 				self.addWaypointComplianceConstraints(dst, waypointPath, "WR")
 
-				if [path[index], path[index + 1]] not in self.staticRoutes[dst] : 
-					connectedToSrc = False
+			# 	if [path[index], path[index + 1]] not in self.staticRoutes[dst] : 
+			# 		connectedToSrc = False
 
+	# def getWaypointPath(self, srcSw, dstSw, path, dst, waypointFlag=True) : 
+	# 	dagEdges = []
+	# 	for index in range(len(path) - 1) :
+	# 		sw = path[index]
+	# 		dagEdges.append([sw, path[index + 1]]) 
+	# 		if sw == dstSw : continue
+	# 		#neighbours = self.topology.getSwitchNeighbours(sw)
+	# 		# for n in neighbours : 
+	# 		# 	dagEdges.append([n, sw])
+
+	# 	# append upstream switch edges of other paths
+	# 	for wpath in self.zeppelinPaths[dst] :
+	# 		if srcSw in wpath : 
+	# 			for index in range(wpath.index(srcSw)) : 
+	# 				neighbours = self.topology.getSwitchNeighbours(wpath[index])
+	# 				for n in neighbours : 
+	# 					dagEdges.append([n, wpath[index]])
+
+	# 	if waypointFlag : 
+	# 		waypointPath = self.topology.getWaypointPaths(srcSw, dstSw, self.waypoints[dst], self.zeppelinPaths[dst], dagEdges)
+	# 	else : 
+	# 		waypointPath = self.topology.getWaypointPaths(srcSw, dstSw, [], self.zeppelinPaths[dst], dagEdges)
+
+	# 	return waypointPath
+	
 	def getWaypointPath(self, srcSw, dstSw, path, dst, waypointFlag=True) : 
 		dagEdges = []
 		for index in range(len(path) - 1) :
@@ -1421,6 +1498,7 @@ class ZeppelinSynthesiser(object) :
 				waypointPath = self.getWaypointPath(srcSw, dstSw, path, dst)
 				if len(waypointPath) > 0 : 
 					self.zeppelinPaths[dst].append(waypointPath)
+					self.zeppelinPathTypes[dst].append("W")
 				else : 
 					print "Waypoint min cut ", self.topology.findMinCut(path[0], path[len(path)-1])
 
