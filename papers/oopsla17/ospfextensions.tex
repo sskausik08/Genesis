@@ -31,7 +31,7 @@ actual shortest non waypoint distance from $s$ to $t$.
 \subsubsection{Waypoint Compliance Constraints}
 
 \begin{equation} \label{eq:waypoint}
-\forall r \in N(s) \setminus N_{\xi_\lambda}(s).~~
-W_{s}^{r}+ D_{r}^{R_\lambda}(W) > \sum_{\mathclap{\substack{l_i=(r_1,r_2)}}} 
-W_{r_1}^{r_2}
+\forall r \in N(s) \setminus N_{\xi_\lambda}(s).~~ \sum_{\mathclap{\substack{l_i=(r_1,r_2)}}} 
+W_{r_1}^{r_2} < 
+W_{s}^{r}+ D_{r}^{R_\lambda}(W) 
 \end{equation}

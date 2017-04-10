@@ -121,17 +121,17 @@ link weights and
 a learning-based procedure for extracting more complex OSPF configuration from
 the unsatisfiable cores of the constraints.
 We compute BGP configuration directly from the domain mapping and the paths.
-Finally, we use MCMC sampling to stochastically search for the best way to
+Finally, \kausik{in settings which potentially offer flexibility in terms of domain assignments like datacenter networks}, we use MCMC sampling to stochastically search for the best way to
 partition the network into multiple domains which satisfy hard
 operator policies on configurations such as  the size of each OSPF
 domain. Further, \name allows operators to optimize two key management
-objectives. The first is maximizing endpoint  resilience, as \name
+objectives. \kausik{The first is maximizing endpoint  resilience, as \name
 requires route filters to induce certain paths, thereby affecting
 failure resilience. The second minimizing the configuration overhead imposed
 by inter-domain routing (BGP and static routes), which helps decrease
 configuration complexity, thus, easing automated
 verification~\cite{batfish, arc, era} and improving readability for
-performing future manual changes.
+performing future manual changes.}
 
 \name can synthesize OSPF configurations for 200 paths in 200
 seconds for a 40 node ISP topology, and achieve greater than 
