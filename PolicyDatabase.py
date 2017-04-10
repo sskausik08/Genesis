@@ -107,7 +107,10 @@ class PolicyDatabase(object) :
 			self.enforcementStatusTable[pc] = True # Policy #pc has been enforced. 
 
 	def getPath(self, pc) :
-		return self.paths[pc]
+		if pc in self.paths : 
+			return self.paths[pc]
+		else : 
+			return []
 
 	def getPaths(self) :
 		return self.paths
@@ -639,6 +642,7 @@ class PolicyDatabase(object) :
 			# 	print "Violation, routing loop found", pc
 
 		resilienceScore = 0
+		bestScore = 0
 		resilientClasses = 0
 		for pc in range(self.getPacketClassRange()) :
 			dst = self.getDestinationSubnet(pc)
@@ -648,8 +652,7 @@ class PolicyDatabase(object) :
 			paths = topology.getAllShortestPathsStaticRoutes(srcSw, dstSw, staticRoutes[dst]) #  one of the paths
 			if len(path) == 0 : 
 				print "Violation, No path for class", pc 
-				resilienceScore = resilienceScore - 10000
-				continue
+				return [0, 0] 
 			else : 
 				print "P", pc, paths, waypoints[dst]
 
@@ -663,39 +666,50 @@ class PolicyDatabase(object) :
 				#print "Single waypoint path", pc
 				singlePath = True				
 
+			links = []
+			for path in paths : 
+				for index in range(len(path) - 1) :
+					if path[index] >= path[index + 1] : 
+						link = [path[index+1], path[index]]
+					else : 
+						link = [path[index], path[index+1]]
+					
+					if link not in links :
+						links.append(link)
+
+			bestScore += len(links)
+
 			traverseWaypointResilience = True
-			for sw in range(1, topology.getSwitchCount() +1) : 
-				for n in topology.getSwitchNeighbours(sw) : 
-					if sw >= n : continue
-					zpaths = topology.getAllShortestPathsStaticRoutes(srcSw, dstSw, staticRoutes[dst], [[sw,n],[n,sw]])
-					
-					traverseWaypoint = False
-					if dst not in waypoints : traverseWaypoint = True
-					else :
-						if len(zpaths) == 0 : 
-							traverseWaypoint = False
+			for [sw, n] in links : 
+				zpaths = topology.getAllShortestPathsStaticRoutes(srcSw, dstSw, staticRoutes[dst], [[sw,n],[n,sw]])
+				
+				traverseWaypoint = False
+				if dst not in waypoints : traverseWaypoint = True
+				else :
+					if len(zpaths) == 0 : 
+						traverseWaypoint = False
 
-						else : 	
-							for zpath in zpaths : 
-								pathWaypointTraverse = False
-								for w in waypoints[dst] : 
-									if w in zpath : 
-										pathWaypointTraverse = True
-								traverseWaypoint = traverseWaypoint | pathWaypointTraverse
+					else : 	
+						for zpath in zpaths : 
+							pathWaypointTraverse = False
+							for w in waypoints[dst] : 
+								if w in zpath : 
+									pathWaypointTraverse = True
+							traverseWaypoint = traverseWaypoint | pathWaypointTraverse
 
-					
-					traverseWaypointResilience = traverseWaypointResilience & traverseWaypoint
-					if not traverseWaypoint : 
-						resilienceScore = resilienceScore - 1
-						if not singlePath: 
-							#print path, waypoints[dst]
-							print sw,n, zpaths
-						#print "No path", topology.getShortestPathStaticRoutes(srcSw, dstSw, staticRoutes[dst], [[path[index], path[index+1]]])
-						#for zpath in zpaths : 
-						#	print "AD", zpath, topology.getPathDistance(zpath) 
+				
+				traverseWaypointResilience = traverseWaypointResilience & traverseWaypoint
+				if not traverseWaypoint : 
+					if not singlePath: 
+						#print path, waypoints[dst]
+						print sw,n, zpaths
+				else : 
+					resilienceScore += 1
+					#print "No path", topology.getShortestPathStaticRoutes(srcSw, dstSw, staticRoutes[dst], [[path[index], path[index+1]]])
+					#for zpath in zpaths : 
+					#	print "AD", zpath, topology.getPathDistance(zpath) 
 
-					#resilienceScore = resilienceScore - 1
-
+				#resilienceScore = resilienceScore - 1
 
 			if traverseWaypointResilience : 
 				resilientClasses += 1
@@ -710,6 +724,7 @@ class PolicyDatabase(object) :
 			# 		print wpath, topology.getPathDistance(path)
 			# 	#print "Violation, did not traverse waypoints under failures", pc
 
+		resilienceScore = float(resilienceScore)/ float(bestScore)
 		print "Resilience Score is ", resilienceScore
 		print "Resilient Classes are", resilientClasses
 		return [resilienceScore, resilientClasses]

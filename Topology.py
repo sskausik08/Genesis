@@ -747,6 +747,60 @@ class Topology(object):
 		#print validPaths
 		return validPaths
 
+	def getWaypointPaths2(self, srcSw, dstSw, waypoints, paths, disabledEdges=[]) :
+		# Compute a digraph from the paths
+		dstDag = nx.DiGraph()
+		for path in paths : 
+			for sw in path :
+				if sw not in dstDag.nodes() : 
+					dstDag.add_node(sw)
+
+		for path in paths :
+			for index in range(len(path) - 1) : 
+				if path[index + 1] not in dstDag.neighbors(path[index]) : 
+					dstDag.add_edge(path[index], path[index+1])
+
+
+		paths = list(nx.all_simple_paths(self.graph, source=srcSw, target=dstSw, cutoff=self.getMaxPathLength()))
+		paths = sorted(paths, key=lambda x:len(x))
+		
+		for path in paths : 
+			disabledPath = False
+			for edge in disabledEdges : 
+				if edge[0] in path and edge[1] in path and path.index(edge[0]) < len(path) - 1 and edge[1] == path[path.index(edge[0]) + 1] :
+					disabledPath = True
+					break
+
+			if disabledPath : continue
+
+			waypointPathFlag = False
+			if len(waypoints) == 0 :
+				waypointPathFlag = True
+
+			for w in waypoints : 
+				if w in path : 
+					waypointPathFlag = True
+					break
+
+			if not waypointPathFlag :
+				continue
+
+			# Check if no directed cycles are formed.
+			dag = copy.deepcopy(dstDag)
+			# for sw in path :
+			# 	dag.add_node(sw)
+
+			for index in range(len(path) - 1) : 
+				dag.add_edge(path[index], path[index+1])
+
+			try : 
+				cycle = nx.find_cycle(dag, orientation='original')
+			except :
+				# Good path
+				return path
+
+		return []
+
 	def checkTopologyContinuity(self) : 
 		""" Check if all switches in the topology are connected"""
 		reachableSwitches = dict()

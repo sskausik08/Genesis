@@ -160,6 +160,11 @@ class ZeppelinSynthesiser(object) :
 		self.endpoints = copy.deepcopy(endpoints)
 		
 		self.waypoints = copy.deepcopy(waypoints)
+
+		if backups != None : 
+			self.backups = copy.deepcopy(backups)
+		else : 
+			self.backups = dict()
 		
 		swCount = self.topology.getSwitchCount()
 		dsts = self.pdb.getDestinationSubnets()
@@ -250,7 +255,8 @@ class ZeppelinSynthesiser(object) :
 				srNames.append([self.topology.getSwName(sr[0]), self.topology.getSwName(sr[1])])
 			self.staticRouteNames[subnet] = srNames
 
-		
+		for dst in self.zeppelinPaths : 
+			print "D", dst, self.zeppelinPaths[dst]
 		self.zepFile = open("zeppelin-timing", 'a')
 		# self.zepFile.write("Topology Switches\t" +  str(swCount))
 		# self.zepFile.write("\n")
@@ -1329,9 +1335,9 @@ class ZeppelinSynthesiser(object) :
 	# 		sw = path[index]
 	# 		dagEdges.append([sw, path[index + 1]]) 
 	# 		if sw == dstSw : continue
-	# 		#neighbours = self.topology.getSwitchNeighbours(sw)
-	# 		# for n in neighbours : 
-	# 		# 	dagEdges.append([n, sw])
+	# 		neighbours = self.topology.getSwitchNeighbours(sw)
+	# 		for n in neighbours : 
+	# 			dagEdges.append([n, sw])
 
 	# 	# append upstream switch edges of other paths
 	# 	for wpath in self.zeppelinPaths[dst] :
@@ -1445,7 +1451,21 @@ class ZeppelinSynthesiser(object) :
 				dag = self.destinationDAGs[dst]
 				srcSw = path[0]
 				dstSw = path[len(path)-1]
-				dagEdges = []
+				
+				if dst in self.backups : 
+					for bpath in self.backups[dst] : 
+						if bpath[0] == srcSw and bpath[1] != path : 
+							# backup path. Add to zeppelinPaths
+							self.zeppelinPaths[dst].append(bpath)
+							self.zeppelinPathTypes[dst].append("W")
+				else : 
+					waypointPath = self.getWaypointPath(srcSw, dstSw, path, dst)
+					if len(waypointPath) > 0 : 
+						self.zeppelinPaths[dst].append(waypointPath)
+						self.zeppelinPathTypes[dst].append("W")
+					else : 
+						print "Waypoint min cut ", self.topology.findMinCut(path[0], path[len(path)-1])
+
 				# for index in range(len(path) - 1) :
 				# 	sw = path[index]
 				# 	dagEdges.append([sw, path[index + 1]]) 
@@ -1495,12 +1515,7 @@ class ZeppelinSynthesiser(object) :
 				# 		if w in waypointPath: 
 				# 			validPath = True 
 				# 			break
-				waypointPath = self.getWaypointPath(srcSw, dstSw, path, dst)
-				if len(waypointPath) > 0 : 
-					self.zeppelinPaths[dst].append(waypointPath)
-					self.zeppelinPathTypes[dst].append("W")
-				else : 
-					print "Waypoint min cut ", self.topology.findMinCut(path[0], path[len(path)-1])
+				
 
 		# Sort waypoint Classes
 		for dst in self.waypoints : 

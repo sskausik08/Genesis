@@ -312,7 +312,7 @@ class GenesisSynthesiser(object) :
 				policyDatabase = PolicyDatabase()
 				newpc = 0
 				dags = dict()
-				backups = dict()
+				self.backups = dict()
 
 				self.waypointFile = open("waypoint-classes")
 				for line in self.waypointFile: 
@@ -333,16 +333,48 @@ class GenesisSynthesiser(object) :
 
 				for pc in range(0, self.pdb.getPacketClassRange()) : 
 					dst = int(self.pdb.getPredicate(pc))
-					dag = self.destinationDAGs[dst]
+					path = self.pdb.getPath(pc)
 					srcSw = self.pdb.getSourceSwitch(pc)
 					dstSw =  self.pdb.getDestinationSwitch(pc)
 					endpt = [srcSw, dstSw]
-					
-					path = []
-					sw = srcSw 
-					while sw != None:
-						path.append(sw)
-						sw = dag[sw]
+
+					if len(path) == 0 : # no path
+						continue
+
+					if endpt in self.endpoints : 
+						# pc is a backup path. Check if traversing waypoint and provide as backup.
+
+						backupFlag = False
+						# Check if backup already present. 
+						if dst in self.backups : 
+							for bpath in self.backups[dst] : 
+								if bpath[0] == srcSw : 
+									# Backup already exists. Ignore this path.
+									backupFlag = True
+
+						if backupFlag : 
+							continue
+
+						waypointFlag = False
+						if len(self.pdb.getWaypoints(pc)) == 0 : 
+							waypointFlag = True
+						for w in self.waypoints[dst] :
+							if w in path : 
+								waypointFlag = True
+								break
+
+						if waypointFlag : 
+							if dst not in self.backups : 
+								self.backups[dst] = []
+							self.backups[dst].append(path)
+
+						continue
+
+					# path = []
+					# sw = srcSw 
+					# while sw != None:
+					# 	path.append(sw)
+					# 	sw = dag[sw]
 					
 					if path[len(path) - 1] != dstSw :
 						print "Something is wrong!" 
@@ -394,7 +426,7 @@ class GenesisSynthesiser(object) :
 				self.zepFile.close()
 
 				self.zepSynthesiser = ZeppelinSynthesiser(topology=self.topology, pdb=policyDatabase, resilience=True, waypointCompliance=True )
-				self.zepSynthesiser.enforceDAGs(dags=policyDatabase.getDestinationDAGs(), endpoints=self.endpoints, waypoints=self.waypoints)
+				self.zepSynthesiser.enforceDAGs(dags=policyDatabase.getDestinationDAGs(), endpoints=self.endpoints, waypoints=self.waypoints, backups=self.backups)
 
 		self.pdb.writeForwardingRulesToFile(self.topology)
 		self.printProfilingStats()
@@ -1957,33 +1989,33 @@ class GenesisSynthesiser(object) :
 		while len(swQueue) > 0 :
 			sw = swQueue.popleft()
 			visited[sw] = True
-			if self.controlPlaneMode and dag <> None : 
-				if sw in dag and sw <> dstSw and is_true(self.fwdmodel.evaluate(self.Fwd(sw,dag[sw],pc))): 
-					# Continue path along the dag
-					path = []
-					nextsw = sw
-					while nextsw <> src :
-						path.append(nextsw)
-						nextsw = bfstree[nextsw]
-					path.append(src)
-					# Reverse path.
-					path.reverse() # path is now from src -> sw
+			# if self.controlPlaneMode and dag <> None : 
+			# 	if sw in dag and sw <> dstSw and is_true(self.fwdmodel.evaluate(self.Fwd(sw,dag[sw],pc))): 
+			# 		# Continue path along the dag
+			# 		path = []
+			# 		nextsw = sw
+			# 		while nextsw <> src :
+			# 			path.append(nextsw)
+			# 			nextsw = bfstree[nextsw]
+			# 		path.append(src)
+			# 		# Reverse path.
+			# 		path.reverse() # path is now from src -> sw
 
-					# Traverse the DAG fron sw
-					nextsw = dag[sw]
-					while nextsw <> None : 
-						path.append(nextsw)
-						nextsw = dag[nextsw]
+			# 		# Traverse the DAG fron sw
+			# 		nextsw = dag[sw]
+			# 		while nextsw <> None : 
+			# 			path.append(nextsw)
+			# 			nextsw = dag[nextsw]
 					
-					# Sanity Check if path is valid
-					i = 0
-					for i in range(len(path) - 1) :
-						sw1 = path[i]
-						sw2 = path[i + 1]
-						if path[i] not in dag :
-							dag[path[i]] = path[i+1]
-						self.destinationDAGs[dst] = dag
-					return path
+			# 		# Sanity Check if path is valid
+			# 		i = 0
+			# 		for i in range(len(path) - 1) :
+			# 			sw1 = path[i]
+			# 			sw2 = path[i + 1]
+			# 			if path[i] not in dag :
+			# 				dag[path[i]] = path[i+1]
+			# 			self.destinationDAGs[dst] = dag
+			# 		return path
 
 			if sw == dstSw :
 				path = [dstSw]
@@ -1995,15 +2027,15 @@ class GenesisSynthesiser(object) :
 				# Reverse path.
 				path.reverse()
 
-				if self.controlPlaneMode :
-					if dag == None : dag = dict()
-					i = 0
-					for i in range(len(path) - 1) : 
-						assert False
-						dag[path[i]] = path[i+1]
-					dag[dstSw] = None
-					self.destinationDAGs[dst] = dag
-					print dag
+				# if self.controlPlaneMode :
+				# 	if dag == None : dag = dict()
+				# 	i = 0
+				# 	for i in range(len(path) - 1) : 
+				# 		assert False
+				# 		dag[path[i]] = path[i+1]
+				# 	dag[dstSw] = None
+				# 	self.destinationDAGs[dst] = dag
+				# 	print dag
 				return path
 
 			neighbours = self.topology.getSwitchNeighbours(sw)
