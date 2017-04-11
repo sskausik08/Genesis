@@ -37,7 +37,6 @@ for i in range(waypointclasses) :
 		if w not in wclass : 
 			wclass.append(w)
 			
-		wclass.append(w)
 		wclass = sorted(wclass)
 		if wclass not in wclasses :
 			wclasses.append(wclass)
@@ -64,14 +63,28 @@ for i in range(len(wclasses)) :
 endpoints = []
 for i in range(dsts) :
 	while True:		
-		d = random.randint(0,edgeSwitches)
+		d = random.randint(0,swCount - 1)
 		wclass = wclasses[i % len(wclasses)]
 		w1 = wclass[random.randint(0, len(wclass) - 1)]
 		w2 = wclass[random.randint(0, len(wclass) - 1)]
-		s1 = random.randint(0,edgeSwitches)
+		s1 = random.randint(0,swCount -1 )
 		if s1 != d and s1 not in wclass and d not in wclass and w1 != w2 : 
 			break
 	
+	if s1 >= 2 * edgeSwitches + 2 : 
+		s1 = "c" + str(s1)
+	elif s1 <= edgeSwitches :
+		s1 = "e" + str(s1)
+	else : 
+		s1 = "a" + str(s1) 
+
+	if d >= 2 * edgeSwitches + 2 : 
+		d = "c" + str(d)
+	elif d <= edgeSwitches :
+		d = "e" + str(d)
+	else : 
+		d = "a" + str(d) 
+
 	if w1 >= 2 * edgeSwitches + 2 : 
 		w1 = "c" + str(w1)
 	elif w1 <= edgeSwitches :
@@ -86,10 +99,10 @@ for i in range(dsts) :
 	else : 
 		w2 = "a" + str(w2) 
 	
-	gplfile.write("p" + str(i) + "_" + str(0) + " := " + str(i) + " : e" + str(s1)  + " >> [ " + w1 + " ] >> e" + str(d) + "\n")
+	gplfile.write("p" + str(i) + "_" + str(0) + " := " + str(i) + " : " + s1  + " >> [ " + w1 + " ] >> " + str(d) + "\n")
 	#gplfile.write("p" + str(i) + "_" + str(1) + " := " + str(i) + " : e" + str(s2)  + " >> [ " + w2 + " ] >> e" + str(d) + "\n")
-	gplfile.write("p" + str(i) + "_" + str(1) + " := " + str(i) + " : e" + str(s1)  + " >> [ " + w2 + " ] >> e" + str(d) + "\n")
-	gplfile.write("p" + str(i) + "_" + str(2) + " := " + str(i) + " : e" + str(s1)  + " >> [ " + w1 + " ] >> e" + str(d) + "\n")
+	gplfile.write("p" + str(i) + "_" + str(1) + " := " + str(i) + " : " + s1  + " >> [ " + w2 + " ] >> " + str(d) + "\n")
+	gplfile.write("p" + str(i) + "_" + str(2) + " := " + str(i) + " : " + str(s1)  + " >> [ " + w1 + " ] >> " + str(d) + "\n")
 	#gplfile.write("p" + str(i) + "__" + str(1) + " := " + str(i) + " : e" + str(s2)  + " >> [ " + w1 + " ] >> e" + str(d) + "\n")
 
 gplfile.write("== \n")	
