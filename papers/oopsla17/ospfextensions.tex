@@ -26,7 +26,7 @@ distance between $s$ and $t$ such that the path does not
 D_s^t(W) \leq W_s^r + D_r^t(W)
 \end{equation}
 Similar to $D_s^t$ variables, $D_s^t(W)$ is upper bounded by the
-actual shortest non waypoint distance from $s$ to $t$.
+actual shortest non-waypoint distance from $s$ to $t$.
 
 \subsubsection{Waypoint Compliance Constraints}
 
@@ -35,3 +35,22 @@ actual shortest non waypoint distance from $s$ to $t$.
 W_{r_1}^{r_2} < 
 W_{s}^{r}+ D_{r}^{R_\lambda}(W) 
 \end{equation}
+
+\subsubsection{Routing Loop Avoidance Constraints} \label{sec:loopavoidance}
+Consider the example configuration shown in \Cref{fig:ospfexample}(c). 
+Traffic for $\lambda$ at router $s$ is forwarded to $r_1$ because of the
+static route at $s$. At router $r_1$, the shortest OSPF route to
+$\lambda$ is $r_1 \rightarrow s \rightarrow t$ with weight 6 (compared 
+to $r_1 \rightarrow t$ of weight 50). Thus, $r_1$ will send the 
+packet back to $s$, and thus, causing a routing loop as $s$ will send
+it back to $r_1$ and back and forth till the \emph{ttl} (time to live) of the
+packet expires. 
+
+To prevent a routing loop, the shortest
+path from $sr_2$ to $R_\lambda$ must not traverse through an upstream router 
+$ur$ (otherwise a routing loop is formed). 
+This is expressed by the following constraint: 
+\[
+\sum_{\mathclap{\substack{l_i=(r_1,r_2)}}} 
+W_{r_1}^{r_2} < D^{ur}_{sr_2} + D_{ur}^{R_\lambda} 
+\]		
