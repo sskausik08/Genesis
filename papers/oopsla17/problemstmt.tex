@@ -25,8 +25,8 @@ $u_1\neq v_n\wedge\forall i,j \leq n.
 ~i \not= j \rightarrow u_i \not= u_j$---and adjacent links in the
 path share a router---i.e., $\forall i < n. ~v_i = u_{i+1}$.
 Sometimes we represent the path $\pi$ as $u_1\rightarrow u_2 \rightarrow  \cdots \rightarrow v_n$.
-Given two nodes $s$ and $t$, we use $\Pi_s^t$ to denote the set of all paths
-with source $s$ and target $t$---i.e., $u_1=s$ and  $v_n=t$. 
+We define a predicate $valid(\pi)$ to denote that $\pi$ is 
+is a loop-free valid path. 
 We write $l \in \pi$ when the path $\pi$ contains the link $l$. 
 
 To model hierarchical control planes in which
@@ -242,58 +242,50 @@ returns the next-hop BGP router from $r$.
 
 
 \minisection{OSPF+BGP+Static Routes} We now describe how routing
-happens in hierarchical domains.  Assume that in domain $d$, traffic 
-for destination $\lambda$ originates at source
-router $s$---i.e., $\Theta(s) = d$. 
-If the target router $t$ connected to the
-destination $\lambda$ belongs to domain $d$, then there exists a OSPF route for
-$\lambda$ at $s$, and the path taken would be
-$\route_{ospf}^C(s,t,\lambda)$.
-
-Consider the case of destination $\lambda$ being connected 
-to an external domain, thus, traffic for destination $\lambda$
-will be sent to a BGP gateway router $r$ of domain $d$ and $r$ 
-will forward  the traffic to its neighbouring domains till
-it reaches the internal domain of $\lambda$. Formally, a BGP gateway
-router is a router $g$ such that $\exists g' \in N(g). 
-~\Theta(g') \not= \Theta(g)$. 
+happens in hierarchical domains. The routing function 
+$\route^C: V \times \Lambda \mapsto 2^V$ specifies the forwarding
+behavior of a router for a destination $\lambda$. 
+% \kausik{Assume that in domain $d$, traffic 
+%for destination $\lambda$ originates at source
+%router $s$---i.e., $\Theta(s) = d$. 
+%If the target router $t$ connected to the
+%destination $\lambda$ belongs to domain $d$, then there exists a OSPF route for
+%$\lambda$ at $s$, and the path taken would be
+%$\route_{ospf}^C(s,t,\lambda)$.}
+At a router $r$, if there exists a static routes for destination $\lambda$,
+these routes take highest precedence over OSPF and BGP routes, 
+and thus, $\route^C(s, \lambda) = \route_{sr}^C(s, \lambda)$.
 
 For a domain $\theta$, if $\lambda$ is not directly 
 connected to one of the routers in $\theta$, the BGP 
 gateways will receive external advertisements for $\lambda$.
 For this scenario, the gateway router set is defined as follows: 
 $G(\theta, \lambda) = \{r ~|~ \route^C_{bgp}(r, \lambda) \not= \perp\}$
+Consider a router $r$ in domain $\theta$. 
+If router $r$ is a BGP router belonging to $\theta$ and $r \in G (\theta, \lambda)$, then, the external BGP route has higher
+precedence over any OSPF route, and thus, $\route_C(r, \lambda)=\route^C_{bgp}(r, \lambda)$. 
 
-However, not all BGP routes for $\lambda$
-are distributed 
-into OSPF
-BGP gateways in a domain exchange routes using iBGP,
-and if the best path chosen is an eBGP route, 
-the gateway redistributes the eBGP route into OSPF. 
-Therefore, if multiple BGP routers
-can redistribute a route for $\lambda$,  
-the closest gateway in terms of OSPF distance
-is chosen. We define a gateway function $G^C$,
-that given a domain number $n\in \nat$,
-%a local preference $LP$,
-%a weight function $W$,
-%route filters $RF$,
-a router $r$ such that $\Theta(r)=n$,
-and destination $\lambda$ outside of domain $n$, 
-returns the closest
-gateway router to $r$ for destination $\lambda$. 
-Finally, the routing function 
-$\route^C$
-%:\Theta \times LP \times W \times RF \times V \times V \times \Lambda \rightarrow L^* 
-returns paths from source to destination in a inter-domain network:
-given a source $s_1$ and a destination $\lambda$ connected to target router $t$, 
-
+Finally, for a router $r$ in $\theta$ which is not a BGP gateway 
+router and no static routes, $r$ uses OSPF to route traffic to the closest BGP
+gateway router in $G (\theta, \lambda)$, which in turn will forward  the traffic to its neighbouring domains and so on till it reaches the internal domain of $\lambda$.  Thus, the modified OSPF routing 
+function $\route^C_{ospf}$ for an external destination $\lambda$
+is defined as follows: 
 \[
-\route^C(s, \lambda) = 
+\route_{ospf}^C(r,\lambda) = \{~~r_1 ~|~ r_1 \in N(r). ~\exists g_1 \in G (\theta, \lambda). ~\forall r_2 \in N(s). \forall g_2 \in G (\theta, \lambda). 
+\]
+\[ 
+W(r, r_1) + D(r_1, g_1) \leq
+W(r, r_2) + D(r_2, g_2~~)\}
+\]
+Piecing together the different routing protocols and their 
+interactions, the routing function 
+$\route^C$ for the hierarchical domain network configuration $C$ is defined as follows: 
+\[
+\route^C(r, \lambda) = 
 \begin{cases}
-\route_{sr}^C(s, \lambda) & \route_{SR}^C(s, \lambda) \not= \emptyset \\
-\route_{bgp}^C(s, \lambda) & s \in G(\Theta(s), \lambda) \\
-\route_{ospf}^C(s, \lambda) & otherwise 
+\route_{sr}^C(r, \lambda) & \route_{sr}^C(r, \lambda) \not= \emptyset \\
+\route_{bgp}^C(r, \lambda) & r \in G(\Theta(r), \lambda) \\
+\route_{ospf}^C(r, \lambda) & otherwise 
 \end{cases}
 \]
 %\[
@@ -305,11 +297,6 @@ given a source $s_1$ and a destination $\lambda$ connected to target router $t$,
 %	\qquad\qquad\qquad\qquad \cdots  + (g_{n-1}, s_n) +\route_{ospf}^C(s_n,t,\lambda)
 %\end{array}
 %\]
-Here, for each $i>1$, $g_i=G^C(\Theta(s_i),s_i,\lambda)$, 
-$s_i=\route_{bgp}^C(g_{i-1}, \lambda)$,
-and  $+$ is the concatenation operator for paths. 
-
-
 
 \minisection{Induced paths}
 We assume a set of packet classes $PC : [0,C_{pc}]$ 
