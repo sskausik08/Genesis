@@ -48,14 +48,15 @@ We express the complete network configuration $C$
 as a tuple $(\Theta,W,LP,IF,SR)$.  In the 
 rest of the section, we describe each component 
 of the configuration $C$ and the routing function 
-$\route^C$ for the network given the configuration $C$. 
-\kausik{Remove this simplifying assumption}
+$\route^C: V \times \Lambda \mapsto 2^V$ for 
+the network given the configuration $C$. 
+\kausik{Remove this simplifying assumption
 We assume the following  
 simplifying property for $C$: for any two 
 routers $r_1$ and $r_2$,
 traffic will be forwarded from $r_1$ to $r_2$ 
 along a single path. 
-When synthesizing $C$, we will ensure that this property is satisfied.
+When synthesizing $C$, we will ensure that this property is satisfied.}
 
 
 \minisection{Static Routes} Static routing refers to a router using a
@@ -66,11 +67,14 @@ static
 routes for a given destination have the highest preference over other routes for the same
 destination.  
 We define the static route partial
-function $SR: V \times \Lambda \mapsto V$ with the following meaning:  
+function $SR: V \times \Lambda \mapsto 2^V$ with the following meaning:  
 given a router $r$
-and destination $\lambda$, if $SR(r,\lambda)=r'$, then traffic for
+and destination $\lambda$, if $SR(r,\lambda)=\{r_1, r_2\}$, then traffic for
 destination $\lambda$ reaching node $r$ is always forwarded to node
-$r'$. \kausik{We assume that  the static routes induced by the function $SR$ form paths and
+$r_1$ and $r_2$. (\kausik{todo: validate}). 
+Thus, the static routing function $\route^C_{sr}(r, \lambda)$ is
+simply the set $SR(r, \lambda)$. 
+\kausik{We assume that  the static routes induced by the function $SR$ form paths and
 we use $\Pi_{SR}$ to denote the set of all  static paths. 
 Formally, for a destination $\lambda$ and a router $r$, if $SR(r,\lambda)=r'$ then
 either $r'$ is directly connected to the subnet $\lambda$ or there exists $r''$ such that $SR(r',\lambda)=r''$}
@@ -88,49 +92,68 @@ Let us
 define the OSPF weight function $W: L \mapsto \rat$ which 
 maps edges of the topology to positive rational weights. 
 % todo: When to talk about converting LRA to LIA.
-For a given
-path $\pi=l_1\cdots l_n$, we indicate the sum of weights of the
-links in the path by $W(\pi)=\sum W(l_i)$. 
+%For a given
+%path $\pi=l_1\cdots l_n$, we indicate the sum of weights of the
+%links in the path by $W(\pi)=\sum W(l_i)$. 
+For two routers $s$ and $t$ in the same OSPF domain, 
+we define the distance function $D:V \times V \mapsto \rat$ 
+to be the weight of the shortest OSPF path between two routers
+belonging to the same OSPF domain. Note that $D$ depends on the 
+OSPF weight function $W$. (\kausik{Need to define distance?})
+We define the gateway function $G: \nat \times \lambda \mapsto 2^V$ to denote the gateway routers in a domain which provide a route to $\lambda$. If $\lambda$ 
+is directly connected to a single router $r_\lambda$, for all routers $r$ in the 
+same domain as $r_\lambda$:  
+$\Theta(r) = \Theta(r_\lambda) \implies G(\Theta(r), \lambda) = \{r_\lambda\}$.
+ If $\lambda$ is not connected
+to any router in the domain as $r$, then $G(\Theta(r),\lambda)$ is 
+determined by the BGP configuration, which we will talk about later. 
+
+%\kausik{OSPF also allows  route filters
+%to selectively disable an
+%edge for a given destination by  
+%blocking advertisements to a
+%particular destination along a link. 
+%%Formally, a  route filter is a pair $(l,\lambda)\in L\times \Lambda$
+%%which disables the link $l$ for destination $\lambda$. 
+%We define the  route filter function 
+%$RF: \Lambda \rightarrow 2^L$ which maps each destination  
+%to a set of disabled links for that destination. 
+%Given an   destination $\lambda\in \Lambda$, 
+%a legal path with respect to $RF$ and $\lambda$
+%is a valid path $\pi=l_1\cdots l_k$ such that for every $i$,
+%$l_i\not\in RF(\lambda)$.
+%We use $\Pi_\lambda$ to denote the set of all such paths.}
 
 
-\kausik{OSPF also allows  route filters
-to selectively disable an
-edge for a given destination by  
-blocking advertisements to a
-particular destination along a link. 
-%Formally, a  route filter is a pair $(l,\lambda)\in L\times \Lambda$
-%which disables the link $l$ for destination $\lambda$. 
-We define the  route filter function 
-$RF: \Lambda \rightarrow 2^L$ which maps each destination  
-to a set of disabled links for that destination. 
-Given an   destination $\lambda\in \Lambda$, 
-a legal path with respect to $RF$ and $\lambda$
-is a valid path $\pi=l_1\cdots l_k$ such that for every $i$,
-$l_i\not\in RF(\lambda)$.
-We use $\Pi_\lambda$ to denote the set of all such paths.}
-
-We define the routing function 
-$\route_{ospf}^G$ 
-that, given 
-%a weight function $W$,
-%a  route filter function $RF$,
-a source node $s$,
-a target node $t$,
-and destination   
-$\lambda$,
-returns the OSPF-induced paths from $s$ to $t$ for destination   $\lambda$.
-Informally, $\route_{ospf}^G(s,t,\lambda)$ returns the shortest path between
-$s$ and $t$ that does not traverse any link in $RF(\lambda)$. The following definition also
-accounts for the higher priority of static routes.
+%We define the routing function 
+%$\route_{ospf}^C$  
+%%a weight function $W$,
+%%a  route filter function $RF$,
+%a source node $s$,
+%a target node $t$,
+%and destination   
+%$\lambda$,
+%returns the OSPF-induced paths from $s$ to $t$ for destination   $\lambda$.
+%Informally, $\route_{ospf}^G(\Theta(s),t,\lambda)$ returns the shortest path between
+%$s$ and $t$ that does not traverse any link in $RF(\lambda)$. The following definition also
+%accounts for the higher priority of static routes.
+We now define the OSPF routing function $\route_{ospf}^C$ for router $r$
+forwarding traffic
+for a destination $\lambda$ which is directly connected to a router $r_\lambda$ in the same OSPF domain as $r$, i.e., $G(\Theta(r),\lambda) = \{r_\lambda\}$. Intuitively, 
+any OSPF router $r$ will forward $\lambda$ traffic along a path with
+shortest distance to router $r_\lambda$. This is expressed as follows: 
 \[
-\route_{ospf}^C(s,t,\lambda) = 
-\begin{cases}
-\pi  & \text{$\Pi_s^t \cap \Pi_{SR} =\{\pi\}$} \\
-\pi & 
-\text{$\Pi_s^t \cap \Pi_{SR} =\emptyset \wedge \pi\in \Pi_s^t\cap \Pi_\lambda ~\wedge $}  \\
-& \text{~~~~$\neg\exists \pi'\in\Pi_s^t\cap \Pi_\lambda . W(\pi')< W(\pi)$} 
-\end{cases}
+\route_{ospf}^C(r,\lambda) = \{r_1 ~|~ r_1 \in N(r).~\forall r_2 \in N(s) .~W(r, r_1) + D(r_1, r_\lambda) \le 
+W(r, r_2) + D(r_2, r_\lambda)\}
 \]
+%\[
+%\begin{cases}
+%\pi  & \text{$\Pi_s^t \cap \Pi_{SR} =\{\pi\}$} \\
+%\pi & 
+%\text{$\Pi_s^t \cap \Pi_{SR} =\emptyset \wedge \pi\in \Pi_s^t\cap \Pi_\lambda ~\wedge $}  \\
+%& \text{~~~~$\neg\exists \pi'\in\Pi_s^t\cap \Pi_\lambda . W(\pi')< W(\pi)$} 
+%\end{cases}
+%%\]
 
 \minisection{BGP} BGP is a path-vector inter-domain routing protocol
 that connects different domains (also called autonomous systems), where each domain
@@ -138,7 +161,7 @@ comprises of one or more routers (typically managed by a single
 entity). A BGP router receives routes from BGP peers (internal peers
 send iBGP routes, external peers send eBGP routes). Each route for the
 destination comprises of a domain-level path to the destination
-domain, and by default a BGP router will forward a packet through  the path that traverses fewer domains.
+domain, and by default, a BGP router will forward a packet through the path that traverses fewer domains.
  
 To support policy routing, BGP routers can be configured with a
 \emph{local preference} variable to assign higher priorities to
@@ -163,36 +186,26 @@ if a BGP router $r_1 \in IF(r_2, \lambda)$, then
 $r_2$ will not advertise a route for $\lambda$ to
 $r_1$ through iBGP. 
  
- \iffull
-Algorithm~\ref{alg:bgppathrules} defines the routing function 
-$\route_{bgp}^C$ 
-that given 
+Algorithm~\ref{alg:bgppathrules} defines the BGP routing function
+based on the best path selection at each BGP router. 
 %a local preference function $LP$,
-a BGP router $r$
-and destination  
-$\lambda$,
-returns 
-the next-hop BGP router in the path. 
-\else
-We only describe the routing semantics of BGP
-informally and the complete BGP path selection algorithm is submitted as part of the supplementary material.
-\fi
-BGP 
+Informally, BGP 
 chooses a route with highest local preference, and
-if there is a tie, it then chooses the route the traverses fewer domains~\cite{bgp}. 
+if there is a tie, it then chooses the route that traverses fewer domains~\cite{bgp}. 
 \name synthesizes configurations where all ties are 
-are broken using these criteria. Formally, we have a routing function 
-$\route_{bgp}^C(r,\lambda)$, that given a switch $r$ and a destination $\lambda$,
-returns the next-hop router for going from $r$ to $\lambda$. 
-Finally, static routes 
-have a higher preference than BGP routes, therefore a static route
-$SR(r, \lambda)$ will be preferred over BGP.
+are broken using these criteria. Formally, we have a BGP routing
+partial function 
+$\route_{bgp}^C: V \times \lambda \mapsto V$, 
+that given a BGP router $r$ and a destination $\lambda$,
+returns the next-hop BGP router from $r$. 
 
 \begin{algorithm} [t]
 	\begin{footnotesize} 
 		\caption{BGP Best Path Selection at router $r$ for dst. $\lambda$}
 		\label{alg:bgppathrules}
+		\begin{multicols}{2}
 		\begin{algorithmic}[1]
+			\vspace*{-0.75cm}
 			\Procedure{BestPath}{} \\
 			\hspace*{0.4cm} [Each route $\gamma$ of form $(\lambda, local\_pref, len, nexthop)$]
 			\State{$\Upsilon_{ebgp}$ = $\bigcup$ Route from external BGP neighbour for $\lambda$} 
@@ -200,10 +213,6 @@ $SR(r, \lambda)$ will be preferred over BGP.
 				 $r \not\in IF(r_1, \lambda)$}
 			\State{$\Upsilon = \Upsilon_{ebgp}\cup \Upsilon_{ibgp}$}
 			\\
-			\If{$SR(r,\lambda) = r_1$} 
-			\State{$\route^C_{bgp}(r, \lambda) = r_1$\hfill [Static Route has highest pref.]}
-			\Else \\
-			\indent\indent \hspace{0.3cm}[Find routes with highest \emph{local preference}]
 			\State{$\Upsilon_{lp} = \{\gamma \in \Upsilon \mid \forall \gamma_1 \in \Upsilon. ~\gamma.local\_pref \geq \gamma_1.local\_pref\}$}
 			\If{$|\Upsilon_{lp}| = 1$}
 			\State{$\gamma_{best} = \gamma \in \Upsilon_{lp}$}
@@ -221,13 +230,13 @@ $SR(r, \lambda)$ will be preferred over BGP.
 			\hspace*{0.7cm}\indent [Traffic for $\lambda$ will not exit domain through $r$]
 			\State{$\route^C_{bgp}(r, \lambda) = \bot$}
 			\EndIf
-			\EndIf
 			\EndProcedure
 			%				\State{ . }
 			%				\State{Prefer the path with the lowest \emph{multi-exit discriminator} (MED).}
 			%				\State{Prefer eBGP over iBGP paths.}
 			%				\State{Prefer the route that comes from the BGP router with the lowest \emph{router ID}.}
 		\end{algorithmic}
+		 \end{multicols}
 	\end{footnotesize}
 \end{algorithm}
 
@@ -249,9 +258,15 @@ it reaches the internal domain of $\lambda$. Formally, a BGP gateway
 router is a router $g$ such that $\exists g' \in N(g). 
 ~\Theta(g') \not= \Theta(g)$. 
 
+For a domain $\theta$, if $\lambda$ is not directly 
+connected to one of the routers in $\theta$, the BGP 
+gateways will receive external advertisements for $\lambda$.
+For this scenario, the gateway router set is defined as follows: 
+$G(\theta, \lambda) = \{r ~|~ \route^C_{bgp}(r, \lambda) \not= \perp\}$
+
 However, not all BGP routes for $\lambda$
 are distributed 
-into OSPF (to prevent explosion of forwarding tables). 
+into OSPF
 BGP gateways in a domain exchange routes using iBGP,
 and if the best path chosen is an eBGP route, 
 the gateway redistributes the eBGP route into OSPF. 
@@ -272,33 +287,45 @@ $\route^C$
 %:\Theta \times LP \times W \times RF \times V \times V \times \Lambda \rightarrow L^* 
 returns paths from source to destination in a inter-domain network:
 given a source $s_1$ and a destination $\lambda$ connected to target router $t$, 
+
 \[
-\begin{array}{c}
-	\route^C(s_1, t, \lambda) = 
-	\route_{ospf}^C(s_1,g_1, \lambda) + 
-	 (g_1, s_2 )+\qquad\qquad\qquad  \\
-%	~~~~~~~~~~~~~~~~~~~~~~~~~\route_{ospf}^C(s_2,g_2, \lambda) + (g_2, s_3) + \\
-	\qquad\qquad\qquad\qquad \cdots  + (g_{n-1}, s_n) +\route_{ospf}^C(s_n,t,\lambda)
-\end{array}
+\route^C(s, \lambda) = 
+\begin{cases}
+\route_{sr}^C(s, \lambda) & \route_{SR}^C(s, \lambda) \not= \emptyset \\
+\route_{bgp}^C(s, \lambda) & s \in G(\Theta(s), \lambda) \\
+\route_{ospf}^C(s, \lambda) & otherwise 
+\end{cases}
 \]
+%\[
+%\begin{array}{c}
+%	\route^C(s_1, t, \lambda) = 
+%	\route_{ospf}^C(s_1,g_1, \lambda) + 
+%	 (g_1, s_2 )+\qquad\qquad\qquad  \\
+%%	~~~~~~~~~~~~~~~~~~~~~~~~~\route_{ospf}^C(s_2,g_2, \lambda) + (g_2, s_3) + \\
+%	\qquad\qquad\qquad\qquad \cdots  + (g_{n-1}, s_n) +\route_{ospf}^C(s_n,t,\lambda)
+%\end{array}
+%\]
 Here, for each $i>1$, $g_i=G^C(\Theta(s_i),s_i,\lambda)$, 
 $s_i=\route_{bgp}^C(g_{i-1}, \lambda)$,
 and  $+$ is the concatenation operator for paths. 
 
+
+
 \minisection{Induced paths}
 We assume a set of packet classes $PC : [0,C_{pc}]$ 
-and map each path (only reachability policies produce paths,
-the rest specify properties on these paths)
-to a unique integer in $PC$.
-For a packet class $pc$, $s_{pc}$ denotes the source router,
-$t_{pc}$ denotes the destination router, and $\lambda_{pc}$
-denotes the destination   address. 
-
+and map each reachability/waypoint policy (which produce paths) 
+to a unique integer in $PC$. The rest of the policies specify 
+properties on these paths. 
+For a packet class $pc$, $s_{pc}$ denotes the source router, 
+and $\lambda_{pc}$
+denotes the destination IP address. 
 
 \begin{definition}[Induced Paths]
 Given a configuration $C$ and a set of packet classes $PC$, the set of paths
 $\paths^C(PC)$ induced by $C$ is defined as follows: 
-$\forall pc \in PC.$ $\route^C(s_{pc}, t_{pc}, \lambda_{pc})$ $\in \paths^C(PC)$.
+\[
+\paths^C(PC) = \bigcup_{\forall pc} \{(\pi=l_1\ldots l_k ~|~ valid(\pi) ~\wedge l_1 = (s_{pc}, v_1) \in \pi  ~\wedge ~\forall ~l_i=(u_i, v_i) \in \pi. ~v_i \in \route^C(u_i,\lambda_{pc})\}
+\]
 \end{definition}
 
 \subsection{Problem Definition}

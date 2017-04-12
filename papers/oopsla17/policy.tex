@@ -1,17 +1,17 @@
-\begin{table}[!t]
+\begin{table}
 \begin{small}
 	\begin{center}
 		\begin{tabular}{m{7.8em}  m{15.9em} } 
 			{\bf Policy} & {\bf Description} \\ 
 			\hline
 			Reachability & There is a path from router $s$ to router $t$ for destination $\lambda$ \\ \hline
-			Reachability with \newline Ordered Waypoints & The path  from $s$ to $t$ for destination $\lambda$ 
-			traverses some switch in the set $W_1$, \ldots, then some switch in the set $W_k$.\\ \hline
+			Reachability with \newline Waypoints & The path  from $s$ to $t$ for destination $\lambda$ 
+			traverses a set of waypoints in the path\\ \hline
 			Traffic Isolation & Paths of two reachability policies $R1$ and $R2$ do not share  links \\ \hline
 			Traffic Engineering  & Minimize total/max link utilization \\
 		\end{tabular}
 	\end{center}
-	\compactcaption{\genesis path-based policy support.} \label{tab:policysupport} 
+	\caption{\genesis path-based policy support.} \label{tab:policysupport} 
 \end{small}
 \end{table}
 \begin{table}[!t]
@@ -24,13 +24,11 @@
 				Domain Size  & Lower and upper
 				limit of size of domain (number of routers): $l\leq ds\leq u$ \\ \hline
 				BGP \newline Enable & Enable BGP on routers $B$ (hardware constraint) \\ \hline
-				Route-Filters: $rc$ & Lower bound number of filters:
-				$rc > C_{rc}$\\ \hline
 				Static Route: ${sc}$ & Upper bound number of static route rules: $sc < C_{sc}$ \\ \hline
 				BGP Config. Overhead: $bc$ & Upper bound the number of local preference entries and iBGP filters $bc < C_{bc}$ \\ \hline
 				Cost Minimization & Minimize user-defined cost $expr(rc, sc, bc)$
 			\end{tabular}
 		\end{center}
-		\compactcaption{\name configuration policy support.} \label{tab:configpolicysupport} 
+		\caption{\name configuration policy support.} \label{tab:configpolicysupport} 
 	\end{small}
 \end{table}
