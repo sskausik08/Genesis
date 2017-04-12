@@ -226,42 +226,39 @@ When BGP routes for destination $\lambda$
 are redistributed by multiple gateways to an 
 OSPF domain, \name uses a modified OSPF synthesis
 algorithm from \secref{sec:intra-synthesis} to assign OSPF weights to the links in each domain
-and place route filters. 
+and place static routes. 
 This is 
 required because an OSPF router will choose
 the closest BGP gateway in terms of OSPF distance 
 for $\lambda$. For instance, a router $r$ will choose
-from gateways $g_1$ and $g_2$ according to the OSPF distances from $r$ to $g_1$ and
-and $r$ to $g_2$. 
+from gateways $g_1$ over $g_2$ if the OSPF distance from $r$ to $g_1$ 
+is strictly lesser than the distance from $r$ to $g_2$. 
 Assume we are given the input subpath $\pi_i=r \rightarrow^+ g_1$ in
 the domain $d=\Theta(\pi_i)$ for some destination $\lambda$ outside
-of $d$; this path should reach $g_1$. 
+of $d$; this path should exit through gateway $g_1$. 
 \name adds additional
 constraints ensuring the distance to $g_2$ from routers
 on the path $\pi_i$ is strictly
 greater than the distance to $g_1$. 
 
-Let us define $\Gamma_\lambda$ to be the set of gateway
-routers for destination $\lambda$ in a given domain $d$. 
+Let $G(\theta, \lambda)$ be the set of gateway
+routers for destination $\lambda$ in a given domain $\theta$. 
 We define the relation $r_1 \rightarrow^+_{\xi_{\lambda}} r_2$, which holds if
 $r_2$ is reachable from $r_1$ in the destination tree $\xi_\lambda$.
 For each subpath $r \rightarrow^+_{\xi_{\lambda}} g$ to destination $\lambda$
-and for each $g' \in \Gamma_{\lambda}$ such that $g\neq g'$,
+and for each $g' \in G(\theta, \lambda)$ such that $g\neq g'$,
 \name adds the following constraint
 to ensure that the  router $r$
 chooses the correct gateway: 
-\begin{multline} \label{eq:gateway}
+\begin{equation} \label{eq:gateway}
 \forall r' \in N(r) \setminus N_{\xi_\lambda}(r).~
-W_r^{r'} + D_{r'}^{g'} > \sum_{\mathclap{\substack{(r_1,r_2) \in r \rightarrow^+_{\xi_{\lambda}} g }}} 
-~W_{r_1}^{r_2}
-\end{multline}
-Like for unmodified OSPF synthesis, the system of
-constraints generated can be inconsistent and require
-route filters to eliminate constraints
-and  filter shorter routes to gateways which are
-not on the input path.
-%, and 
-%thus the synthesized configuration would forward traffic to
-%the gateway specified by the input path. 
-We pick route filters using the same approach we presented in
-\secref{sec:routefilter}. 
+\sum_{\mathclap{\substack{(r_1,r_2) \in r \rightarrow^+_{\xi_{\lambda}} g }}}~~~~~W_{r_1}^{r_2} < 
+W_r^{r'} + D_{r'}^{g'} 
+\end{equation}
+If the system of
+constraints generated is inconsistent, Zeppelin will add 
+static routes to eliminate constraints
+and filter shorter routes to gateways which are
+not on the input path. For Equation~\ref{eq:gateway},
+adding the static route $(r, N_{\xi_\lambda})$ to $SR(\lambda)$
+will eliminate the infeasibility caused due to this equation.
