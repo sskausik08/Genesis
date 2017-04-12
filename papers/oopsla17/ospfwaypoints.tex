@@ -1,0 +1,85 @@
+\section{Waypoint-Compliant Intra-domain Synthesis}
+When a tenant specifies a waypoint policy, for e.g., traffic from
+subnet A to subnet B must traverse through a firewall, they are not
+concerned with the exact path through the network except that the 
+path goes through any of the firewall instances, which are replicated 
+for resiliency and load-balancing purposes. Thus, we can define 
+logical waypoints and map each logical waypoint to a set of physical
+locations, and \name must ensure the path traverses through the logical waypoint.
+
+Instead of enforcing the
+exact \genesis path, we incorporate waypoint-compliance in the 
+intra-domain configuration synthesis. However, this can only 
+support a subset of waypoint policies and more complicated policies
+can be enforced using the \genesis paths. 
+Formally, we can synthesize intra-domain configurations
+for an unordered waypoint policy with packet class $pc$ of the form: 
+\texttt{$\lambda$: s >> \{$W_1$, \ldots $W_n$\} >> t},
+where the destination is $\lambda$,  
+$s$ and $t$ are the source and destination router respectively, 
+and $W_1, W_2 \ldots W_n \subseteq V$ are waypoint sets.
+The configuration $C$ is waypoint-compliant w.r.t $pc$ if: 
+\[
+\exists \pi \in \paths^C(pc). ~\forall i \leq n. ~\exists w_i \in W_i. 
+~\exists u. ~~(u, w_i) \in \pi 
+\]
+where $\paths^C(pc)$ is the set of induced paths for 
+$pc$ (Definition~\ref{def:inducedpaths}). 
+
+In the rest of the section, we discuss the set of constraints
+to generate a single logical waypoint policy, and then extend it 
+to unordered logical waypoints. Finally, we discuss the synthesis
+of resilient configurations which are waypoint-compliant even in 
+the face of failures. 
+
+\subsection{Logical Waypoint Constraints}
+For a waypoint set $W \subseteq V$, we define $D_s^t(W)$ to be the 
+distance between $s$ and $t$ such that the path does not
+ traverse through any waypoint $w \in W$. For a topology 
+ $T = (V,L)$, the following distance equations (similar to 
+ \Cref{eq:dist}) for the non-waypoint distances capture the
+ non-waypoint distances for a waypoint set $W$.
+\begin{equation} \label{eq:dist}
+\forall s, t \in V \setminus W. ~\forall r \in N(s) \setminus W.~
+D_s^t(W) \leq W_s^r + D_r^t(W)
+\end{equation}
+Similar to $D_s^t$ variables, $D_s^t(W)$ is upper bounded by the
+actual shortest non-waypoint distance from $s$ to $t$.
+
+\subsubsection{Waypoint Compliance Constraints}
+
+\begin{equation} \label{eq:waypoint}
+\forall r \in N(s) \setminus N_{\xi_\lambda}(s).~~ \sum_{\mathclap{\substack{l_i=(r_1,r_2)}}} 
+W_{r_1}^{r_2} < 
+W_{s}^{r}+ D_{r}^{R_\lambda}(W) 
+\end{equation}
+
+\subsubsection{Routing Loop Avoidance Constraints} \label{sec:loopavoidance}
+Consider the example configuration shown in \Cref{fig:ospfexample}(c). 
+Traffic for $\lambda$ at router $s$ is forwarded to $r_1$ because of the
+static route at $s$. At router $r_1$, the shortest OSPF route to
+$\lambda$ is $r_1 \rightarrow s \rightarrow t$ with weight 6 (compared 
+to $r_1 \rightarrow t$ of weight 50). Thus, $r_1$ will send the 
+packet back to $s$, and thus, causing a routing loop as $s$ will send
+it back to $r_1$ and back and forth till the \emph{ttl} (time to live) of the
+packet expires. 
+
+Zeppelin adds additional constraints to mitigate the creation of prevention
+of routing loops when static routes are added. In each iteration of
+Zeppelin's unsat-core learning procedure: 
+Zeppelin picks a static route $(v, v')$
+for $\lambda$ and removes the constraints pertaining to 
+the static route, it \emph{adds} new constraints to avoid
+causing routing loops due to the newly added static route. This
+approach ensures we do not add superflous constraints for links
+which do not contain a static route in the final configuration 
+and will not cause routing loops.  
+
+the shortest
+path from $sr_2$ to $R_\lambda$ must not traverse through an upstream router 
+$ur$ (otherwise a routing loop is formed). 
+This is expressed by the following constraint: 
+\[
+\sum_{\mathclap{\substack{l_i=(r_1,r_2)}}} 
+W_{r_1}^{r_2} < D^{ur}_{sr_2} + D_{ur}^{R_\lambda} 
+\]		

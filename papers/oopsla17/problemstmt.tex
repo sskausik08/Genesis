@@ -1,3 +1,5 @@
+
+
 \section{Routing Model and Problem Definition}
 In this section, we formally define the problem addressed in this
 paper.  We first define how different
@@ -154,6 +156,47 @@ W(r, r_2) + D(r_2, r_\lambda)\}
 %& \text{~~~~$\neg\exists \pi'\in\Pi_s^t\cap \Pi_\lambda . W(\pi')< W(\pi)$} 
 %\end{cases}
 %%\]
+\begin{wrapfigure}{}{0.5\textwidth}
+	\begin{minipage}{0.5\textwidth}
+		\begin{algorithm}[H]
+			\begin{footnotesize} 
+				\caption{BGP Best Path Selection at router $r$ for  $\lambda$}
+				\label{alg:bgppathrules}
+				\begin{algorithmic}[1]
+					\Procedure{BestPath}{} \\
+					\hspace*{0.4cm} [Each route $\gamma$ of form $(\lambda, local\_pref, len, nexthop)$]
+					\State{$\Upsilon_{ebgp}$ = $\bigcup$ Route from external BGP neighbour for $\lambda$} 
+					\State{$\Upsilon_{ibgp}$ = $\bigcup$ Route from internal BGP router $r_1$:
+						$r \not\in IF(r_1, \lambda)$}
+					\State{$\Upsilon = \Upsilon_{ebgp}\cup \Upsilon_{ibgp}$}
+					\\
+					\State{$\Upsilon_{lp} = \{\gamma \in \Upsilon \mid \forall \gamma_1 \in \Upsilon. ~\gamma.local\_pref \geq \gamma_1.local\_pref\}$}
+					\If{$|\Upsilon_{lp}| = 1$}
+					\State{$\gamma_{best} = \gamma \in \Upsilon_{lp}$}
+					\Else \newline
+					\hspace*{0.7cm}\indent [Prefer the path with the smallest \emph{AS Path length}]
+					\State{$\Upsilon_{as} = \{\gamma \in \Upsilon_{lp}  \mid \forall \gamma_1 \in \Upsilon_{lp}. ~\gamma.len \leq \gamma_1.len\} $}
+					\If{$|\Upsilon_{as}| = 1$}
+					\State{$\gamma_{best} = \gamma \in \Upsilon_{as}$}	
+					\EndIf
+					\EndIf
+					\If{$\gamma_{best} \in \Upsilon_{ebgp}$}
+					\State{$\route^C_{bgp}(r, \lambda) = \gamma_{best}.nexthop$}
+					\State{Redistribute $\gamma_{best}$ to OSPF domain}
+					\Else \\
+					\hspace*{0.7cm}\indent [Traffic for $\lambda$ will not exit domain through $r$]
+					\State{$\route^C_{bgp}(r, \lambda) = \bot$}
+					\EndIf
+					\EndProcedure
+					%				\State{ . }
+					%				\State{Prefer the path with the lowest \emph{multi-exit discriminator} (MED).}
+					%				\State{Prefer eBGP over iBGP paths.}
+					%				\State{Prefer the route that comes from the BGP router with the lowest \emph{router ID}.}
+				\end{algorithmic}
+			\end{footnotesize}
+		\end{algorithm}
+	\end{minipage}
+\end{wrapfigure}
 
 \minisection{BGP} BGP is a path-vector inter-domain routing protocol
 that connects different domains (also called autonomous systems), where each domain
@@ -198,48 +241,6 @@ partial function
 $\route_{bgp}^C: V \times \lambda \mapsto V$, 
 that given a BGP router $r$ and a destination $\lambda$,
 returns the next-hop BGP router from $r$. 
-
-\begin{algorithm} [t]
-	\begin{footnotesize} 
-		\caption{BGP Best Path Selection at router $r$ for dst. $\lambda$}
-		\label{alg:bgppathrules}
-		\begin{multicols}{2}
-		\begin{algorithmic}[1]
-			\vspace*{-0.75cm}
-			\Procedure{BestPath}{} \\
-			\hspace*{0.4cm} [Each route $\gamma$ of form $(\lambda, local\_pref, len, nexthop)$]
-			\State{$\Upsilon_{ebgp}$ = $\bigcup$ Route from external BGP neighbour for $\lambda$} 
-			\State{$\Upsilon_{ibgp}$ = $\bigcup$ Route from internal BGP router $r_1$:
-				 $r \not\in IF(r_1, \lambda)$}
-			\State{$\Upsilon = \Upsilon_{ebgp}\cup \Upsilon_{ibgp}$}
-			\\
-			\State{$\Upsilon_{lp} = \{\gamma \in \Upsilon \mid \forall \gamma_1 \in \Upsilon. ~\gamma.local\_pref \geq \gamma_1.local\_pref\}$}
-			\If{$|\Upsilon_{lp}| = 1$}
-			\State{$\gamma_{best} = \gamma \in \Upsilon_{lp}$}
-			\Else \newline
-			\hspace*{0.7cm}\indent [Prefer the path with the smallest \emph{AS Path length}]
-			\State{$\Upsilon_{as} = \{\gamma \in \Upsilon_{lp}  \mid \forall \gamma_1 \in \Upsilon_{lp}. ~\gamma.len \leq \gamma_1.len\} $}
-			\If{$|\Upsilon_{as}| = 1$}
-			\State{$\gamma_{best} = \gamma \in \Upsilon_{as}$}	
-			\EndIf
-			\EndIf
-			\If{$\gamma_{best} \in \Upsilon_{ebgp}$}
-			\State{$\route^C_{bgp}(r, \lambda) = \gamma_{best}.nexthop$}
-			\State{Redistribute $\gamma_{best}$ to OSPF domain}
-			\Else \\
-			\hspace*{0.7cm}\indent [Traffic for $\lambda$ will not exit domain through $r$]
-			\State{$\route^C_{bgp}(r, \lambda) = \bot$}
-			\EndIf
-			\EndProcedure
-			%				\State{ . }
-			%				\State{Prefer the path with the lowest \emph{multi-exit discriminator} (MED).}
-			%				\State{Prefer eBGP over iBGP paths.}
-			%				\State{Prefer the route that comes from the BGP router with the lowest \emph{router ID}.}
-		\end{algorithmic}
-		 \end{multicols}
-	\end{footnotesize}
-\end{algorithm}
-
 
 \minisection{OSPF+BGP+Static Routes} We now describe how routing
 happens in hierarchical domains. The routing function 
@@ -307,11 +308,11 @@ For a packet class $pc$, $s_{pc}$ denotes the source router,
 and $\lambda_{pc}$
 denotes the destination IP address. 
 
-\begin{definition}[Induced Paths]
+\begin{definition}[Induced Paths] \label{def:inducedpaths}
 Given a configuration $C$ and a set of packet classes $PC$, the set of paths
 $\paths^C(PC)$ induced by $C$ is defined as follows: 
 \[
-\paths^C(PC) = \bigcup_{\forall pc} \{(\pi=l_1\ldots l_k ~|~ valid(\pi) ~\wedge l_1 = (s_{pc}, v_1) \in \pi  ~\wedge ~\forall ~l_i=(u_i, v_i) \in \pi. ~v_i \in \route^C(u_i,\lambda_{pc})\}
+\paths^C(PC) = \{(\pi=l_1\ldots l_k ~|~ valid(\pi) ~\wedge l_1 = (s_{pc}, v_1) \in \pi  ~\wedge ~\forall ~l_i=(u_i, v_i) \in \pi. ~v_i \in \route^C(u_i,\lambda_{pc})\}
 \]
 \end{definition}
 
@@ -355,10 +356,11 @@ Certain
 
 Finally, \name provides ways to specify upper bounds on the number of
 \kausik{1) route filters, which in general reduce the resilience of the network---i.e., $rc=|\cup_{\lambda\in \Lambda} RF(\lambda)|\leq C_{rc}$},
-1) static routes---i.e., $sc=|\{(v, v', \lambda)\mid \exists v'. v' \in SR(v,\lambda)\}|\leq C_{sc}$, and
-3) BGP configurations, which increase the complexity of the network---i.e., 
+1) static routes which can lead to undesired routing behaviors under failures like routing loops (\secref{sec:loopavoidance})---i.e., $sc=|\{(v, v', \lambda)\mid \exists v'. v' \in SR(v,\lambda)\}|\leq C_{sc}$, and
+2) BGP configurations, which increase the complexity of the network---i.e., 
 $bc=|\bigcup_{v,\lambda\in V\times\Lambda} IF(v,\lambda)\cup \{(v,v',\lambda)\mid LP(v,v',\lambda)\neq \bot\}|\leq C_{bc}$.
 \name also allows to minimize certain expressions over the quantities $sc$, and $bc$---e.g., $max(sc, bc)$. 
+
 \kausik{Ideally, the most important metric we want to maximize is resilience---i.e.,
 the number of alternate paths between endpoints.
 However, this metric is too hard to handle as it depends on complex graph properties. 
