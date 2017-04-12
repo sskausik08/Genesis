@@ -36,7 +36,7 @@ class OuterZeppelinSynthesiser(object) :
 		self.numDomains = numDomains
 		self.MCMC_MAX_ITER = 10000000	
 		self.MCMC_MAX_TIME = timeout # in seconds
-		self.beta = 0.03 # Constant
+		self.beta = 0.0115 # Constant
 		self.configOpt = configOpt
 		self.rfOpt = rfOpt
 
@@ -59,11 +59,11 @@ class OuterZeppelinSynthesiser(object) :
 		# Profiling variables
 		self.worstConfScore = 1
 		self.bestConfScore = 1000000000000000000
-		self.worstRFScore = 1
-		self.bestRFScore = 1000000000000000000
+		self.worstSRScore = 1
+		self.bestSRScore = 1000000000000000000
 
 		self.confScoreTime = 0
-		self.rfScoreTime = 0
+		self.srScoreTime = 0
 		self.continuityTime = 0
 		self.domainChangeTime = 0
 
@@ -90,40 +90,33 @@ class OuterZeppelinSynthesiser(object) :
 		print self.domains
 		print "Validation", self.checkValidDomainAssignment()
 		start_t = time.time() 
-		[bestRFCount, bestTRL] = self.synthesizeOSPFConfigurations()
-		bestRFScore = self.routeFilterScore()
+		[bestSRCount, bestTRL] = self.synthesizeOSPFConfigurations()
+		bestSRScore = self.staticSRScore()
 		self.bestConfScore = self.configurationScore()
 		bestospfTime = time.time() - start_t
 
-		self.zepFile = open("zeppelin-timing", 'a')
+		self.zepFile = open("mcmc-timing", 'a')
 		if not self.configOpt: 
 			print "Worst RF Configuration"
 			start_t = time.time()
-			[worstRFCount, worstTRL] = self.synthesizeOSPFConfigurations(self.worstDomainAssigmentRF)
+			[worstSRCount, worstTRL] = self.synthesizeOSPFConfigurations(self.worstDomainAssigmentRF)
 			worstospfTime = time.time() - start_t
-			worstRFScore = 0
+			worstSRScore = 0
                         if self.worstDomainAssigmentRF != None : 
-                                self.switchDomains = self.worstDomainAssigmentRF 
-                                self.computeBoundaries()
-                                worstRFScore = self.routeFilterScore()
+                            self.switchDomains = self.worstDomainAssigmentRF 
+                            self.computeBoundaries()
+                            worstSRScore = self.staticSRScore()
 
-			self.zepFile.write("Time taken  for MCMC is (and iterations), and OSPF time " + str(mcmcTime) + "\t" + str(self.MCMCIter) + "\t" + str(len(dags)) + "\t" + str(len(paths)))
+			self.zepFile.write(str(self.MCMCIter) + "\t" + str(len(paths)))
+			self.zepFile.write("\t" + str(self.bestConfScore) + "\t" + str(self.worstConfScore))
+			self.zepFile.write("\t" + str(bestSRCount) + "\t" + str(worstSRCount))
+			self.zepFile.write("\t" + str(bestospfTime) + "\t" + str(worstospfTime))
 			self.zepFile.write("\n")
-			self.zepFile.write("Config Improvement " + "\t" + str(self.bestConfScore) + "\t" + str(self.worstConfScore))
-			self.zepFile.write("\n")
-			self.zepFile.write("RF Improvement " + "\t" + str(len(paths)) + "\t" + str(bestRFCount) + "\t" + str(worstRFCount))
-			self.zepFile.write("\n")
-			self.zepFile.write("RF Scores " + "\t" + str(bestRFScore) + "\t" + str(worstRFScore))
-			self.zepFile.write("\n")
-			self.zepFile.write("TRL" + "\t" + str(len(paths)) + "\t" + str(bestTRL) + "\t" + str(worstTRL))
-			self.zepFile.write("\n")
-			self.zepFile.write("OSPF Time" + "\t" + str(len(paths)) + "\t" + str(bestospfTime) + "\t" + str(worstospfTime))
-			self.zepFile.write("\n")
-		else : 
-			self.zepFile.write("Time taken  for MCMC is (and iterations), and OSPF time " + str(mcmcTime) + "\t" + str(self.MCMCIter) + "\t" + str(len(dags)) + "\t" + str(len(paths)))
-			self.zepFile.write("\n")
-			self.zepFile.write("Config Improvement " + str(float(self.bestConfScore)/float(self.worstConfScore)) + "\t" + str(self.bestConfScore) + "\t" + str(self.worstConfScore))
-			self.zepFile.write("\n")
+		# else : 
+		# 	self.zepFile.write("Time taken  for MCMC is (and iterations), and OSPF time " + str(mcmcTime) + "\t" + str(self.MCMCIter) + "\t" + str(len(dags)) + "\t" + str(len(paths)))
+		# 	self.zepFile.write("\n")
+		# 	self.zepFile.write("Config Improvement " + str(float(self.bestConfScore)/float(self.worstConfScore)) + "\t" + str(self.bestConfScore) + "\t" + str(self.worstConfScore))
+		# 	self.zepFile.write("\n")
 
 		self.zepFile.close()
 
@@ -199,10 +192,9 @@ class OuterZeppelinSynthesiser(object) :
 
 			transition = self.flip(transitionProbability) 
 			if transition :	
-				if newScore > Score :
-					hillClimb += 1
-				
-				#print "Score", Score, newScore, " Accept", sw, oldDomain, newDomain, worstScore, bestScore, transitionProbability, hillClimb, self.MCMCIter
+				hillClimb += 1
+
+				#print "Score", Score, newScore, " Accept", sw, oldDomain, newDomain, bestScore, self.bestSRScore, self.bestConfScore, transitionProbability, hillClimb, self.MCMCIter
 				# accept transition to new state
 				Score = newScore # Update the score as we accept transition				
 				
@@ -218,7 +210,7 @@ class OuterZeppelinSynthesiser(object) :
 		print "MCMC Interations", self.MCMCIter
 		print "Best score", bestScore, "Worst score", worstScore
 		print "Best configuration score", self.bestConfScore, "Worst configuration score", self.worstConfScore
-		print "Best RF score", self.bestRFScore, "Worst RF score", self.worstRFScore
+		print "Best RF score", self.bestSRScore, "Worst RF score", self.worstSRScore
 		
 
 	def flip(self, p):
@@ -520,6 +512,13 @@ class OuterZeppelinSynthesiser(object) :
 		#print "Prev Conf Score", self.prevConfScore
 
 		# Compute score
+	 	srScore = self.staticSRScore(sw, newDomain, oldDomain)
+	 	if srScore > self.worstSRScore : 
+			self.worstSRScore = srScore
+			self.worstDomainAssigmentRF = copy.deepcopy(self.switchDomains) # Copy the worst RF domain assignment.
+		if srScore < self.bestSRScore : 
+			self.bestSRScore = srScore
+
 	 	confScore = self.configurationScore(sw, newDomain, oldDomain)
 	 	if confScore > self.worstConfScore : 
 			self.worstConfScore = confScore
@@ -530,22 +529,13 @@ class OuterZeppelinSynthesiser(object) :
 
 		if self.configOpt : 
 			return 4000 * float(confScore)/float(self.worstConfScore)
-		
-		start_t = time.time()
-		rfScore = self.routeFilterScore()
-		self.rfScoreTime = time.time() - start_t
-		if rfScore > self.worstRFScore : 
-			self.worstRFScore = rfScore
-			self.worstDomainAssigmentRF = copy.deepcopy(self.switchDomains) # Copy the worst RF domain assignment.
-		if rfScore < self.bestRFScore : 
-			self.bestRFScore = rfScore
 
 		if self.rfOpt : 
-			return 4000 * float(rfScore)/float(self.worstRFScore)
+			return 4000 * float(srScore)/float(self.worstSRScore)
 
-		#print float(confScore)/float(self.confScoreUpperBound), float(rfScore)/float(self.RFScoreUpperBound), self.confScoreUpperBound
-		score += 4000 * max(float(confScore)/float(self.worstConfScore), float(rfScore)/float(self.worstRFScore))
-		score += 400 * min(float(confScore)/float(self.worstConfScore), float(rfScore)/float(self.worstRFScore))
+		#print float(confScore)/float(self.confScoreUpperBound), float(srScore)/float(self.SRScoreUpperBound), self.confScoreUpperBound
+		score += 4000 * max(float(confScore)/float(self.worstConfScore), float(srScore)/float(self.worstSRScore))
+		score += 400 * min(float(confScore)/float(self.worstConfScore), float(srScore)/float(self.worstSRScore))
 
 		return score
 
@@ -595,13 +585,7 @@ class OuterZeppelinSynthesiser(object) :
 		""" Computes the extra lines of BGP required to enforce policy routing 
 		in the inter-domain setting """ 
 
-		if len(self.ASPaths) == 0 :
-			score = self.findStaticConfScore()
-			self.prevStaticConfScore = score
-		else :
-			self.staticConfScoreDiff = self.findStaticConfScoreDiff(sw, newDomain, oldDomain)
-			score = self.prevStaticConfScore + self.staticConfScoreDiff
-
+		score = 0
 		# State resets
 		for subnet in self.destinationDAGs.keys() :
 			for domain in range(self.numDomains) : 
@@ -1049,18 +1033,26 @@ class OuterZeppelinSynthesiser(object) :
 										self.diamondPaths[swDiv][swConv].append(dstpath2)
 									break
 
-		self.RFScoreUpperBound = 0
+		self.SRScoreUpperBound = 0
 		for sw1 in range(1, self.swCount + 1) : 
 			for sw2 in range(1, self.swCount + 1) :
 				if self.diamondCount[sw1][sw2] > 0 :
-					self.RFScoreUpperBound += self.diamondCount[sw1][sw2]
+					self.SRScoreUpperBound += self.diamondCount[sw1][sw2]
 
 
-	def routeFilterScore(self) :
+	def staticSRScore(self, sw=None, newDomain=None, oldDomain=None) :
 		# Score based on number of OSPF filters required in each domain.
 		# This is overapproximated by number of diamonds in each domain.
-
 		score = 0
+
+		if len(self.ASPaths) == 0 :
+			score = self.findStaticConfScore()
+			self.prevStaticConfScore = score
+		else :
+			self.staticConfScoreDiff = self.findStaticConfScoreDiff(sw, newDomain, oldDomain)
+			score = self.prevStaticConfScore + self.staticConfScoreDiff
+		
+
 		for domain in range(self.numDomains) :
 			for sw1 in self.domains[domain] : 
 				for sw2 in self.domains[domain] :
@@ -1077,17 +1069,17 @@ class OuterZeppelinSynthesiser(object) :
 	# 	self.computeRandomDomainAssignment()
 	# 	self.computeBoundaries() # boundary bookkeeping for efficiency 
 
-	# 	rfScore = self.routeFilterScore()
-	# 	RFCount = self.synthesizeOSPFConfigurations()
-	# 	rfFactor = float(rfScore)/float(RFCount)
+	# 	srScore = self.staticSRScore()
+	# 	SRCount = self.synthesizeOSPFConfigurations()
+	# 	rfFactor = float(srScore)/float(SRCount)
 
 	# 	# Repeat again
 	# 	self.computeRandomDomainAssignment()
 	# 	self.computeBoundaries() # boundary bookkeeping for efficiency 
 
-	# 	rfScore2 = self.routeFilterScore()
-	# 	RFCount2 = self.synthesizeOSPFConfigurations()
-	# 	rfFactor2 = float(rfScore2)/float(RFCount2)
+	# 	srScore2 = self.staticSRScore()
+	# 	SRCount2 = self.synthesizeOSPFConfigurations()
+	# 	rfFactor2 = float(srScore2)/float(SRCount2)
 
 	# 	print rfFactor, rfFactor2
 	# 	exit(0)
@@ -1247,8 +1239,8 @@ class OuterZeppelinSynthesiser(object) :
 
 	def synthesizeOSPFConfigurations(self, switchDomains=None) : 
 		# Found a domain assignment from MCMC. Solve the OSPF domains now.
-		self.routefilters = dict()
-		RFCount = 0
+		self.staticRoutes = dict()
+		SRCount = 0
 		
 		for domain in range(self.numDomains) :
 			topo = self.getDomainTopology(domain, switchDomains)
@@ -1261,22 +1253,23 @@ class OuterZeppelinSynthesiser(object) :
 				pdb.addDestinationDAG(dst, dags[dst])
 
 			zepSynthesiser = ZeppelinSynthesiser(topo, pdb)
-			routeFilterNames = zepSynthesiser.enforceDAGs(dags=dags, endpoints=endpoints, bgpExtensions=bgpExtensions)
+			staticRouteNames = zepSynthesiser.enforceDAGs(dags=dags, endpoints=endpoints, bgpExtensions=bgpExtensions)
 
-			for dst in routeFilterNames : 
-				RFCount += len(routeFilterNames[dst])
-				for rf in routeFilterNames[dst] :
-					if dst not in self.routefilters : 
-						self.routefilters[dst] = [[self.topology.getSwID(rf[0]), self.topology.getSwID(rf[1])]]
+			for dst in staticRouteNames : 
+				SRCount += len(staticRouteNames[dst])
+				for rf in staticRouteNames[dst] :
+					if dst not in self.staticRoutes : 
+						self.staticRoutes[dst] = [[self.topology.getSwID(rf[0]), self.topology.getSwID(rf[1])]]
 					else : 
-						self.routefilters[dst].append([self.topology.getSwID(rf[0]), self.topology.getSwID(rf[1])])
+						self.staticRoutes[dst].append([self.topology.getSwID(rf[0]), self.topology.getSwID(rf[1])])
 
+		SRCount += self.findStaticConfScore()
 		# Compute Resilience Loss due to filtering
-		totalresilienceLoss = self.findTotalResilienceLoss()
+		totalresilienceLoss = 0
 
-		print "Number of route filters are ", RFCount
+		print "Number of staticRoutes are ", SRCount
 		print "Resilience Loss ", totalresilienceLoss
-		return [RFCount, totalresilienceLoss]
+		return [SRCount, totalresilienceLoss]
 
 
 	def findTotalResilienceLoss(self) :
@@ -1288,11 +1281,11 @@ class OuterZeppelinSynthesiser(object) :
 			dstSw = self.pdb.getDestinationSwitch(pc)
 			subnet = self.pdb.getDestinationSubnet(pc)
 
-			if subnet not in self.routefilters : 
+			if subnet not in self.staticRoutes : 
 				continue 
 
 			bestMincut = self.findMinCut(srcSw, dstSw, [])
-			mincut = self.findMinCut(srcSw, dstSw, self.routefilters[subnet])
+			mincut = self.findMinCut(srcSw, dstSw, self.staticRoutes[subnet])
 
 			totalresilienceLoss += bestMincut - mincut
 

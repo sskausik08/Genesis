@@ -236,14 +236,17 @@ class ZeppelinSynthesiser(object) :
 		#self.pdb.printPaths(self.topology)
 		#self.pdb.validateControlPlane(self.topology, self.staticRoutes, self.backupPaths)
 		#self.pdb.validateControlPlaneResilience(self.topology, self.staticRoutes)
+		for dst in self.zeppelinPaths : 
+			print "D", dst, self.zeppelinPaths[dst]
+
+		# if not self.waypointCompliance : 
+		# 	self.pdb.validateControlPlane(self.topology, self.staticRoutes)
+		# else : 
+		# 	self.pdb.validateControlPlaneWaypointCompliance(self.topology, self.staticRoutes, self.waypoints, self.zeppelinPaths)
 		
-		if not self.waypointCompliance : 
-			self.pdb.validateControlPlane(self.topology, self.staticRoutes)
-		else : 
-			self.pdb.validateControlPlaneWaypointCompliance(self.topology, self.staticRoutes, self.waypoints, self.zeppelinPaths)
-		
-		score = self.pdb.validateControlPlaneResilience(self.topology, self.staticRoutes, self.waypoints, self.zeppelinPaths)
-		
+		# score = self.pdb.validateControlPlaneResilience(self.topology, self.staticRoutes, self.waypoints, self.zeppelinPaths)
+		score = [0,0]
+
 		srCount = 0
 		# Translate route filters to switch names
 		self.staticRouteNames = dict()
@@ -266,7 +269,7 @@ class ZeppelinSynthesiser(object) :
 		# self.zepFile.write("Static Routes" + "\t" + str(self.pdb.getPacketClassRange()) + "\t" + str(srCount) + "\t")
 		# self.zepFile.write("\n")
 
-		#return self.staticRouteNames
+		return self.staticRouteNames
 
 	def removeViolations(self) : 
 		self.staticRoutesAdded = 0
@@ -406,12 +409,6 @@ class ZeppelinSynthesiser(object) :
 			pathDist = self.ew(sw, dag[sw])
 			t = dag[sw] 
 			while t != None :				
-				# distconstr = self.ilpSolver.addConstr(self.dist(sw, t) == self.ew(sw, dag[sw]) + self.dist(dag[sw], t), 
-				# 	"SR-" + str(sw) + "-" + str(dag[sw]) + "-" + str(t) + "-" + str(dst) + "-" + str(self.constraintIndex))
-				
-				# self.distanceConstraints[sw][dag[sw]][dst].append(distconstr)
-				# self.constraintIndex += 1
-			
 				neighbours = self.topology.getSwitchNeighbours(sw)
 				for n in neighbours : 
 					if n != dag[sw] : 
@@ -427,177 +424,6 @@ class ZeppelinSynthesiser(object) :
 
 		self.addBGPExtensionConstraints(dst, dag, staticRouteMode)
 
-	def addBackupPathConstraints(self, dst, dag, backupPath, staticRouteMode) :
-		""" Adds constraints such backup path is activated when the main path fails"""	
-		for sw in dag :
-			if dag[sw] == None :
-				dstSw = sw
-
-		startSw = backupPath[0]
-		origSw = dag[startSw]
-		backupSw = backupPath[1]
-
-		# Ensure backup path is shorter than the other switches at startSw
-		backupDist = 0
-		for i in range(len(backupPath) - 1) : 
-			backupDist += self.ew(backupPath[i], backupPath[i + 1])
-
-		self.backupPathConstraints[backupPath[0]][dst] = []
-		neighbours = self.topology.getSwitchNeighbours(startSw)
-		for n in neighbours : 
-			if n != origSw and n != backupSw :
-				constr = self.ilpSolver.addConstr(backupDist  
-					<= self.ew(startSw, n) + self.dist(n, dstSw) - 1, 
-					"BP-" + str(backupPath[0]) + "-" + str(dst) + "-" + str(self.constraintIndex))
-				self.backupPathConstraints[backupPath[0]][dst].append(constr)
-				self.constraintIndex += 1
-
-
-		origDist = self.ew(startSw, origSw)
-		while origSw != dstSw : 
-			# Ensure backup path is shorter than the other paths starting at origSw
-			neighbours = self.topology.getSwitchNeighbours(origSw)
-			for n in neighbours : 
-				if n != dag[origSw] : 
-					constr = self.ilpSolver.addConstr(backupDist 
-						<= origDist + self.ew(origSw, n) + self.dist(n, dstSw) - 1, 
-						"BP-" + str(backupPath[0]) + "-" + str(dst) + "-" + str(self.constraintIndex))
-					self.backupPathConstraints[backupPath[0]][dst].append(constr)
-					self.constraintIndex += 1
-
-			origDist += self.ew(origSw, dag[origSw])
-			origSw = dag[origSw]
-
-		# Create a dag from backupSw to dstSw and add shortest path constraints
-		backupDag = dict()
-		for i in range(1, len(backupPath) - 1):
-			backupDag[backupPath[i]] = backupPath[i + 1]
-		backupDag[dstSw] = None
-
-		if not staticRouteMode :
-			for sw in backupDag : 
-				t = backupDag[sw]
-				while t != None :				
-					constr = self.ilpSolver.addConstr(self.dist(sw, t) == self.ew(sw, backupDag[sw]) + self.dist(backupDag[sw], t))
-					self.backupPathConstraints[backupPath[0]][dst].append(constr)
-
-					neighbours = self.topology.getSwitchNeighbours(sw)
-					for n in neighbours : 
-						if n != backupDag[sw] : 
-							constr = self.ilpSolver.addConstr(self.dist(sw, t) <= self.ew(sw, n) + self.dist(n, t) - 1)
-							self.backupPathConstraints[backupPath[0]][dst].append(constr)
-
-					t = backupDag[t]
-		else:
-			for sw in backupDag :	
-				if sw == dstSw : continue					
-				nextsw = sw
-				totalDist = 0 # Store the distance from sw to t along backupDag.
-				while nextsw != dstSw : 
-					totalDist += self.ew(nextsw, backupDag[nextsw])
-					nextsw = backupDag[nextsw]
-
-				constr = self.ilpSolver.addConstr(self.dist(sw, dstSw) <= totalDist)
-				self.backupPathConstraints[backupPath[0]][dst].append(constr)
-
-				if not [sw, backupDag[sw]] in self.staticRoutes[dst] : 
-					neighbours = self.topology.getSwitchNeighbours(sw)
-					if self.distanceConstraints[sw][backupDag[sw]][dst] == None : 
-						self.distanceConstraints[sw][backupDag[sw]][dst] = []
-					for n in neighbours : 
-						if n != backupDag[sw]: 
-							distconstr = self.ilpSolver.addConstr(totalDist <= self.ew(sw, n) + self.dist(n, dstSw) - 1, 
-							"SR-" + str(sw) + "-"+ str(backupDag[sw]) + "-" + str(dstSw) + "-" + str(dst) + "-" + str(self.constraintIndex))
-
-							self.distanceConstraints[sw][backupDag[sw]][dst].append(distconstr)
-							self.constraintIndex += 1
-
-
-	def addMaximalBackupPathConstraints(self, dst, dag, backupPath, staticRouteMode) :
-		""" Adds constraints such backup path is activated when the main path fails"""	
-		for sw in dag :
-			if dag[sw] == None :
-				dstSw = sw
-
-		startSw = backupPath[0]
-		origSw = dag[startSw]
-		backupSw = backupPath[1]
-
-		bpVar = self.bp(backupPath[0], dst)
-
-		# Ensure backup path is shorter than the other switches at startSw
-		backupDist = 0
-		for i in range(len(backupPath) - 1) : 
-			backupDist += self.ew(backupPath[i], backupPath[i + 1])
-
-		self.backupPathConstraints[backupPath[0]][dst] = []
-		neighbours = self.topology.getSwitchNeighbours(startSw)
-		for n in neighbours : 
-			if n != origSw and n != backupSw :
-				constr = self.ilpSolver.addConstr(backupDist  
-					<= self.ew(startSw, n) + self.dist(n, dstSw) - 1 + 1000000 * bpVar, 
-					"BP-" + str(backupPath[0]) + "-" + str(dst) + "-" + str(self.constraintIndex))
-
-				self.constraintIndex += 1
-
-
-		origDist = self.ew(startSw, origSw)
-		while origSw != dstSw : 
-			# Ensure backup path is shorter than the other paths starting at origSw
-			neighbours = self.topology.getSwitchNeighbours(origSw)
-			for n in neighbours : 
-				if n != dag[origSw] : 
-					constr = self.ilpSolver.addConstr(backupDist 
-						<= origDist + self.ew(origSw, n) + self.dist(n, dstSw) - 1 + 1000000 * bpVar, 
-						"BP-" + str(backupPath[0]) + "-" + str(dst) + "-" + str(self.constraintIndex))
-	
-					self.constraintIndex += 1
-
-			origDist += self.ew(origSw, dag[origSw])
-			origSw = dag[origSw]
-
-		# Create a dag from backupSw to dstSw and add shortest path constraints
-		backupDag = dict()
-		for i in range(1, len(backupPath) - 1):
-			backupDag[backupPath[i]] = backupPath[i + 1]
-		backupDag[dstSw] = None
-
-		if not staticRouteMode :
-			for sw in backupDag : 
-				t = backupDag[sw]
-				while t != None :				
-					constr = self.ilpSolver.addConstr(self.dist(sw, t) == self.ew(sw, backupDag[sw]) + self.dist(backupDag[sw], t))
-	
-					neighbours = self.topology.getSwitchNeighbours(sw)
-					for n in neighbours : 
-						if n != backupDag[sw] : 
-							constr = self.ilpSolver.addConstr(self.dist(sw, t) <= self.ew(sw, n) + self.dist(n, t) - 1)
-			
-					t = backupDag[t]
-		else:
-			for sw in backupDag :	
-				if sw == dstSw : continue					
-				nextsw = sw
-				totalDist = 0 # Store the distance from sw to t along backupDag.
-				while nextsw != dstSw : 
-					totalDist += self.ew(nextsw, backupDag[nextsw])
-					nextsw = backupDag[nextsw]
-
-				constr = self.ilpSolver.addConstr(self.dist(sw, dstSw) <= totalDist)
-
-				if not [sw, backupDag[sw]] in self.staticRoutes[dst] : 
-					neighbours = self.topology.getSwitchNeighbours(sw)
-					if self.distanceConstraints[sw][backupDag[sw]][dst] == None : 
-						self.distanceConstraints[sw][backupDag[sw]][dst] = []
-					for n in neighbours : 
-						if n != backupDag[sw]: 
-							distconstr = self.ilpSolver.addConstr(totalDist <= self.ew(sw, n) + self.dist(n, dstSw) - 1, 
-							"SR-" + str(sw) + "-"+ str(backupDag[sw]) + "-" + str(dstSw) + "-" + str(dst) + "-" + str(self.constraintIndex))
-
-							self.distanceConstraints[sw][backupDag[sw]][dst].append(distconstr)
-							self.constraintIndex += 1
-
-
 	def addBGPExtensionConstraints(self, dst, dag, staticRouteMode=True) :
 		# TODO: Change wrt static routes
 		for tup in self.bgpExtensions: 
@@ -605,27 +431,31 @@ class ZeppelinSynthesiser(object) :
 			src = tup[0]
 			end1 = tup[1]
 			end2 = tup[2]
-			if not staticRouteMode :
-				while src != None:
-					self.ilpSolver.addConstr(self.dist(src, end1) <= self.dist(src, end2) - 1)
-					src = dag[src]
-			else:
-				while src != end1:			
-					nextsw = src
-					totalDist = 0 # Store the distance from sw to end1 along dag.
-					while nextsw != end1 : 
-						totalDist += self.ew(nextsw, dag[nextsw])
-						nextsw = dag[nextsw]
 
-					if not [src, dag[src]] in self.staticRoutes[dst] : 
-						neighbours = self.topology.getSwitchNeighbours(src)
-						for n in neighbours : 
-							if n != dag[src] : 
-								self.ilpSolver.addConstr(totalDist <= self.ew(src, n) + self.dist(n, end2) - 1, "SR-" + str(src) + "-" 
-									+ str(dag[src]) + "-" + str(end2) + "-" + str(dst) + "-" + str(self.constraintIndex))
-								self.constraintIndex += 1
-					
-					src = dag[src]			
+			for path in self.zeppelinPaths[dst] :
+				if src in path and dag[src] in path : 
+					pathID = self.zeppelinPaths[dst].index(path)
+					break
+			
+			while src != end1:		
+				if self.distanceConstraints[src][dag[src]][dst] == None : 
+					self.distanceConstraints[src][dag[src]][dst] = []	
+				nextsw = src
+				totalDist = 0 # Store the distance from sw to end1 along dag.
+				while nextsw != end1 : 
+					totalDist += self.ew(nextsw, dag[nextsw])
+					nextsw = dag[nextsw]
+
+				if not [src, dag[src]] in self.staticRoutes[dst] : 
+					neighbours = self.topology.getSwitchNeighbours(src)
+					for n in neighbours : 
+						if n != dag[src] : 
+							distconstr = self.ilpSolver.addConstr(totalDist <= self.ew(src, n) + self.dist(n, end2) - 1, 
+								"SR-" + str(src) + "-" + str(dag[src]) + "-" + str(dst) + "-" + str(pathID))
+
+							self.distanceConstraints[src][dag[src]][dst].append(distconstr)
+				
+				src = dag[src]			
 
 	def getEdgeWeightModel(self, staticRouteMode=True) : 
 		self.zepOutputFile = open("zeppelin-output", 'w')
@@ -866,7 +696,8 @@ class ZeppelinSynthesiser(object) :
 			print "===========?IIS?============="
 			for constr in self.ilpSolver.getConstrs() :
 				if constr.getAttr(gb.GRB.Attr.IISConstr) > 0 :
-					name = constr.getAttr(gb.GRB.Attr.ConstrName) 
+					name = constr.getAttr(gb.GRB.Attr.ConstrName)
+					print name 
 					fields = name.split("-")
 					if fields[0] == "noSR" :
 						dst = int(fields[3])
@@ -878,9 +709,11 @@ class ZeppelinSynthesiser(object) :
 						self.firstStaticRouteConstraints[dst][pathID] = None
 						self.ilpSolver.update()
 						return
-				
-				
 
+			print self.zeppelinPaths[dst]
+			exit(0)
+				
+				
 	def addStaticRoute(self, srtype, sw1, sw2, dst, pc=None, pathID=None) :
 		""" Add rf at sw1 -> sw2 for dst """
 		# Type = SR, W, RLA
@@ -965,6 +798,8 @@ class ZeppelinSynthesiser(object) :
 	# Routing loop avoidance
 	def addRoutingLoopAvoidanceConstraints(self, srtype, dst, dstpath, sr, resilience=False) :
 		# If sr is added for dst, ensure that a link failure on dag does not cause a loop
+		if not self.waypointCompliance : 
+			return 
 		dstSw = dstpath[len(dstpath) - 1]
 		print dstpath, sr
 
