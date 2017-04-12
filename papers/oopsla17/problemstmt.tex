@@ -353,12 +353,12 @@ Certain
 	Formally, for every $r\in V\setminus B$,
 	there does not exist a router $r'\in N(r)$ such that $\Theta(r) \not= \Theta(r')$
 
-\kausik{Finally, \name provides ways to specify upper bounds on the number of
-1) route filters, which in general reduce the resilience of the network---i.e., $rc=|\cup_{\lambda\in \Lambda} RF(\lambda)|\leq C_{rc}$},
-2) static routes---i.e., $sc=|\{(v,\lambda)\mid \exists v'. SR(v,\lambda)=v'\}|\leq C_{sc}$, and
+Finally, \name provides ways to specify upper bounds on the number of
+\kausik{1) route filters, which in general reduce the resilience of the network---i.e., $rc=|\cup_{\lambda\in \Lambda} RF(\lambda)|\leq C_{rc}$},
+1) static routes---i.e., $sc=|\{(v, v', \lambda)\mid \exists v'. v' \in SR(v,\lambda)\}|\leq C_{sc}$, and
 3) BGP configurations, which increase the complexity of the network---i.e., 
 $bc=|\bigcup_{v,\lambda\in V\times\Lambda} IF(v,\lambda)\cup \{(v,v',\lambda)\mid LP(v,v',\lambda)\neq \bot\}|\leq C_{bc}$.
-\name also allows to minimize certain expressions over the quantities $rc$, $sc$, and $bc$---e.g., $max(rc, sc+bc)$. 
+\name also allows to minimize certain expressions over the quantities $sc$, and $bc$---e.g., $max(sc, bc)$. 
 \kausik{Ideally, the most important metric we want to maximize is resilience---i.e.,
 the number of alternate paths between endpoints.
 However, this metric is too hard to handle as it depends on complex graph properties. 
