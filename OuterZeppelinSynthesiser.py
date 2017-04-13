@@ -36,9 +36,10 @@ class OuterZeppelinSynthesiser(object) :
 		self.numDomains = numDomains
 		self.MCMC_MAX_ITER = 10000000	
 		self.MCMC_MAX_TIME = timeout # in seconds
-		self.beta = 0.0115 # Constant
+		self.beta = 0.011 # Constant
 		self.configOpt = configOpt
 		self.rfOpt = rfOpt
+
 
 		# Scoring State variables 
 		self.scoreIter = 0
@@ -107,7 +108,7 @@ class OuterZeppelinSynthesiser(object) :
                             self.computeBoundaries()
                             worstSRScore = self.staticSRScore()
 
-			self.zepFile.write(str(self.MCMCIter) + "\t" + str(len(paths)))
+			self.zepFile.write(str(self.MCMCIter) + "\t" + str(self.accepts) + "\t" + str(len(paths)))
 			self.zepFile.write("\t" + str(self.bestConfScore) + "\t" + str(self.worstConfScore))
 			self.zepFile.write("\t" + str(bestSRCount) + "\t" + str(worstSRCount))
 			self.zepFile.write("\t" + str(bestospfTime) + "\t" + str(worstospfTime))
@@ -125,6 +126,7 @@ class OuterZeppelinSynthesiser(object) :
 		# Start a MCMC sampling walk with number of domains=self.numDomains. 
 		print "Starting MCMC Walk"
 		self.MCMCIter = 0	
+		self.accepts = 0
 
 		# Find diamonds for route-filter calculations. 
 		self.findDiamonds()
@@ -192,7 +194,7 @@ class OuterZeppelinSynthesiser(object) :
 
 			transition = self.flip(transitionProbability) 
 			if transition :	
-				hillClimb += 1
+				self.accepts += 1
 
 				#print "Score", Score, newScore, " Accept", sw, oldDomain, newDomain, bestScore, self.bestSRScore, self.bestConfScore, transitionProbability, hillClimb, self.MCMCIter
 				# accept transition to new state
