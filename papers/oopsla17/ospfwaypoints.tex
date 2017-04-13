@@ -33,28 +33,64 @@ of resilient configurations which are waypoint-compliant even in
 the face of failures. 
 
 \subsection{Logical Waypoint Constraints}
-For a waypoint set $W \subseteq V$, we define $D_s^t(W)$ to be the 
+Let us consider a waypoint policy for $\lambda$ which
+specifies that traffic to $\lambda$ must traverse through
+one of the physical waypoints $w \in W$, where $W \subseteq V$.
+In the first phase, \genesis provides paths which
+satisfy the waypoint policy. We use this path as a 
+``hint'' to enforce waypoint-compliance without 
+enforcing the exact path. 
+
+We define $D_s^t(W)$ to be the 
 distance between $s$ and $t$ such that the path does not
- traverse through any waypoint $w \in W$. For a topology 
- $T = (V,L)$, the following distance equations (similar to 
- \Cref{eq:dist}) for the non-waypoint distances capture the
- non-waypoint distances for a waypoint set $W$.
-\begin{equation} \label{eq:dist}
+ traverse through any waypoint $w \in W$. Intuitively, we
+  can add constraints to represent these distances by
+  considering a network topology where all the physical 
+  waypoint locations $W$ are removed. Formally, for a topology 
+ $T = (V,L)$, the following distance equations 
+ capture the non-waypoint distances 
+ for a waypoint set $W$:
+\begin{equation} \label{eq:wdistance}
 \forall s, t \in V \setminus W. ~\forall r \in N(s) \setminus W.~
 D_s^t(W) \leq W_s^r + D_r^t(W)
 \end{equation}
-Similar to $D_s^t$ variables, $D_s^t(W)$ is upper bounded by the
-actual shortest non-waypoint distance from $s$ to $t$.
+These constraints are similar to the constraints specified in
+\Cref{eq:distance}, but on an ``altered'' topology where all
+the waypoint routers are removed, and thus, any path in this 
+topology is not compliant with the waypoint policy. 
+Similar to $D_s^t$ variables, 
+$D_s^t(W)$ is upper bounded by the actual shortest non-waypoint distance from $s$ to $t$.
 
-\subsubsection{Waypoint Compliance Constraints}
-
+Given a destination tree $\xi_\lambda$, we will use the non
+waypoint distances to enforce waypoint-compliance. Consider a 
+router in $r$ such the waypoint $w \in W$ is downstream to $r$ in $\xi_\lambda$
+(there exists a path from $r$ to $w$ in $\xi_\lambda$), therefore,
+the path from $r$ must traverse through 
+a waypoint in $W$.  
+Suppose, the sum of weights of the edges of
+the path in the tree $W(r \rightarrow^+_{\xi_\lambda} R_\lambda)$  
+is strictly smaller than the non-waypoint 
+distance from $r$ to $R_\lambda$. This will ensure that 
+the shortest path from $r$ to $R_\lambda$ which does not go through
+any $w \in W$ will have a distance strictly greater than the path through
+$\xi_\lambda$, thus, the path from $r$ to $R_\lambda$ will traverse
+through a waypoint $w \in W$. These constraints are expressed as follows:
 \begin{equation} \label{eq:waypoint}
-\forall r \in N(s) \setminus N_{\xi_\lambda}(s).~~ \sum_{\mathclap{\substack{l_i=(r_1,r_2)}}} 
+\forall r' \in N(s) \setminus N_{\xi_\lambda}(r).~~ \sum_{\mathclap{\substack{l_i=(r_1,r_2)}}} 
 W_{r_1}^{r_2} < 
-W_{s}^{r}+ D_{r}^{R_\lambda}(W) 
+W_{r}^{r'}+ D_{r'}^{R_\lambda}(W) 
 \end{equation}
+Note that, unlike Equations~\ref{eq:unique}, in this case, 
+router $r$ will not necessarily forward traffic to  
+$N_{\xi_\lambda}(r)$, but the path chosen will be waypoint-compliant. 
+Also, if one of these constraints was part of an unsatisfiable  
+core, we can add the static route $(r, N_{\xi_\lambda}(r))$ to
+$SR(\lambda)$ to eliminate the equations at router $r$. 
 
 \subsubsection{Routing Loop Avoidance Constraints} \label{sec:loopavoidance}
+Since, we are not enforcing a particular path in the network for waypoint-
+compliance, adding
+static routes can lead to undesired behaviors like routing loops.  
 Consider the example configuration shown in \Cref{fig:ospfexample}(c). 
 Traffic for $\lambda$ at router $s$ is forwarded to $r_1$ because of the
 static route at $s$. At router $r_1$, the shortest OSPF route to
@@ -67,19 +103,37 @@ packet expires.
 Zeppelin adds additional constraints to mitigate the creation of prevention
 of routing loops when static routes are added. In each iteration of
 Zeppelin's unsat-core learning procedure: 
-Zeppelin picks a static route $(v, v')$
+Zeppelin picks a static route $(r, r')$
 for $\lambda$ and removes the constraints pertaining to 
-the static route, it \emph{adds} new constraints to avoid
+the static route. It also \emph{adds} new constraints to avoid
 causing routing loops due to the newly added static route. This
-approach ensures we do not add superflous constraints for links
-which do not contain a static route in the final configuration 
-and will not cause routing loops.  
+lazy approach ensures we do not add superflous constraints for links
+that do not contain a static route in the final configuration 
+and will not cause routing loops without sacrificing correctness. 
 
-the shortest
-path from $sr_2$ to $R_\lambda$ must not traverse through an upstream router 
-$ur$ (otherwise a routing loop is formed). 
-This is expressed by the following constraint: 
-\[
-\sum_{\mathclap{\substack{l_i=(r_1,r_2)}}} 
-W_{r_1}^{r_2} < D^{ur}_{sr_2} + D_{ur}^{R_\lambda} 
-\]		
+Suppose, Zeppelin added a static route $(sr_1, sr_2)$ for destination
+$\lambda$ where $sr_2 = N_{\xi_\lambda}(sr_1)$ (because we do not add
+static routes on any other links except $\xi_\lambda$). We need to
+ensure that for any switch in $\xi_\lambda$ which does not 
+lie in the downstream path $sr_2 \rightarrow^+_{\xi_\lambda} R_\lambda$, 
+the shortest path from $sr_2$ to $R_\lambda$ must not traverse through 
+it, for that could potentially cause a routing loop. For example, in \Cref{fig:ospfexample}(c), the shortest path from $r_1$ to $t$ was
+going through $s$ (which is upstream of $r_1$), therefore, causing 
+a routing loop. 
+
+Therefore, to prevent routing loops, we ensure that the weight
+of path $W(sr_2 \rightarrow^+_{\xi_\lambda} R_\lambda)$ is 
+strictly smaller than any path from $sr_2$ which traverses a
+router $r'$ not in the downstream path from $sr_2$. Zeppelin
+adds the following constraints to ensure that the path $l_0...l_k$
+from $sr_2$ to $R_\lambda$ is shorter than the paths which reach 
+$R_\lambda$ through $r'$: 
+\begin{equation}
+\forall r' \in \xi_\lambda. ~sr_2 \not\rightarrow_{\xi_\lambda}^+ r'. 
+~~~~~\sum_{\mathclap{\substack{l_i=(r_1,r_2)}}} 
+W_{r_1}^{r_2} < D^{r'}_{sr_2} + D_{r'}^{R_\lambda} 
+\end{equation}
+% write about static route for this. 
+
+\subsection{Resilience Synthesis}
+
