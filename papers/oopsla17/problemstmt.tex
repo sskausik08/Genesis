@@ -233,8 +233,7 @@ that given a BGP router $r$ and a destination $\lambda$,
 returns the next-hop BGP router from $r$. 
 
 \minisection{OSPF+BGP+Static Routes} We now describe how routing
-happens in hierarchical domains. 
-The OSPF configurations are expressed 
+happens in hierarchical domains. 	`
 We express the complete network configuration $C$
 as a tuple $(\Theta,W,LP,IF,SR)$, where $\Theta$ is
 the router domain assignment, $W$ is the OSPF
@@ -389,11 +388,11 @@ the number of filters; we will show that this strategy is effective in our exper
 \minisection{Synthesis problems}
 \noindent We now define when a configuration $C$ is policy-compliant
 and present our synthesis problems.
-\begin{definition}[Policy-Compliance] \label{def:policycompliance}
+\begin{definition}[Policy-Compliance and Synthesis] \label{def:policycompliance}
 	Given a set of path policies $\Psi$ and a set of configuration policies $P$,
-	a configuration $C$ is policy-compliant with $(\Psi,P)$,
-	$C \models (\Psi,P)$, if the set of
-	induced paths satisfies $\Psi$, $\paths^C(PC) \models \Psi$,
+	a configuration $C$ is policy-compliant with $(\Psi,P)$,  
+	written as $C \models (\Psi,P)$, if the set of
+	induced paths satisfies $\Psi$, i.e., $\paths^C(PC) \models \Psi$,
 	and $C$ satisfies the policies in $P$.
 	The \emph{configuration synthesis problem} is to find, given $\Psi$ and $P$,
 a configuration $C$ that is policy compliant with $(\Psi,P)$.
@@ -401,7 +400,7 @@ a configuration $C$ that is policy compliant with $(\Psi,P)$.
 
 As anticipated in Section~\ref{sec:motivation}, our approach will proceed in two phases,
 one of which solves the following sub-problem.  
-\begin{definition}[Path-Compliance] \label{def:pathcompliance}
+\begin{definition}[Path-Compliance and Synthesis] \label{def:pathcompliance}
 Given a set of configuration policies $P$
 and a set of paths $\Pi$ over packet classes $PC$,
 	a configurations $C$ is path-compliant with 

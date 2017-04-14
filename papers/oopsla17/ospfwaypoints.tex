@@ -1,4 +1,4 @@
-\section{Waypoint-Compliant Intra-domain Synthesis}
+\section{Waypoint-Compliance Synthesis}
 When a tenant specifies a waypoint policy, for e.g., traffic from
 subnet A to subnet B must traverse through a firewall, they are not
 concerned with the exact path through the network except that the 
@@ -7,6 +7,7 @@ for resiliency and load-balancing purposes. Thus, we can define
 logical waypoints and map each logical waypoint to a set of physical
 locations, and \name must ensure the path traverses through the logical waypoint.
 
+\subsection{Problem Statement}
 Instead of enforcing the
 exact \genesis path, we incorporate waypoint-compliance in the 
 intra-domain configuration synthesis. However, this can only 
@@ -32,7 +33,7 @@ to unordered logical waypoints. Finally, we discuss the synthesis
 of resilient configurations which are waypoint-compliant even in 
 the face of failures. 
 
-\subsection{Logical Waypoint Constraints}
+\subsection{Intra-domain Constraints}
 Let us consider a waypoint policy for $\lambda$ which
 specifies that traffic to $\lambda$ must traverse through
 one of the physical waypoints $w \in W$, where $W \subseteq V$.
@@ -87,7 +88,7 @@ Also, if one of these constraints was part of an unsatisfiable
 core, we can add the static route $(r, N_{\xi_\lambda}(r))$ to
 $SR(\lambda)$ to eliminate the equations at router $r$. 
 
-\subsubsection{Routing Loop Avoidance Constraints} \label{sec:loopavoidance}
+\minisection{Routing Loop Avoidance Constraints} \label{sec:loopavoidance}
 Since, we are not enforcing a particular path in the network for waypoint-
 compliance, adding
 static routes can lead to undesired behaviors like routing loops.  
@@ -136,4 +137,3 @@ W_{r_1}^{r_2} < D^{r'}_{sr_2} + D_{r'}^{R_\lambda}
 % write about static route for this. 
 
 \subsection{Resilience Synthesis}
-
