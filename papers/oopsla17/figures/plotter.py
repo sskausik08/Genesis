@@ -295,25 +295,108 @@ def adjustFigAspect(fig,aspect=1):
 # plt.grid()
 # plt.savefig('ospfAvgRes.eps',  format='eps', dpi=1000, bbox_inches='tight')
 
-ospfWaypointFig = plt.figure(5)
+#ospfWaypointFig = plt.figure(1)
+ospfWaypointFig, (ax1, ax2, ax3) = plt.subplots(1, 3, sharey=True)
+adjustFigAspect(ospfWaypointFig, 4.5)
 x = range(10, 90, 10)
-zeroes = [0 for z in x]
-genesisTime = range(8)
-zeppelinTime = range(0, 16, 2)
-totTime = [a + b for a,b in zip(genesisTime,zeppelinTime)]
+xticks = range(10, 90, 20)
+yticks = [0, 1, 10, 100, 1000]
+zeroes = [1 for a in range(8)]
+genesisTime = [1.905232944, 4.054856551, 6.447951472, 8.774414492, 11.60772855, 14.57009258,18.05601811, 21.1040017]
+totTime = [2.650796689,5.545891339,15.29532384,31.4204547,97.32999361,209.9557621,338.6178232,437.1733794]
+#totTime = [a + b for a,b in zip(genesisTime,zeppelinTime)]
 
-plt.xlim(xmin=0, xmax=80)
-plt.ylim(ymin=0, ymax=25)
+ax1.set_xlim([10, 80])
+ax1.set_xticks(xticks)
+ax1.set_yscale('log')
 
-plt.plot(x, genesisTime, '#4daf4a')
-plt.plot(x, totTime, '#377eb8',)
+ax1.plot(x, genesisTime, '#ff7f00')
+ax1.plot(x, totTime, '#377eb8',)
 
-plt.fill_between(x, genesisTime, totTime, color='#377eb8', alpha='0.5')
-plt.fill_between(x, zeroes, genesisTime, color='#4daf4a', alpha='0.5')
+ax1.fill_between(x, genesisTime, totTime, color='#377eb8', alpha='0.5', label="Zeppelin")
+ax1.fill_between(x, 1, genesisTime, color='#ff7f00', alpha='0.5', label="Genesis")
 
-plt.show()
+#plt.legend(loc='best', frameon=False, fontsize=18)
+ax1.set_ylabel('Synthesis Time (s)', fontsize=5)
 
+ax1.grid()
 
+genesisTime = [1.898177683,4.137906945,6.411716133,8.66710724,11.57976503,14.78331525,17.91517298,21.24656556]
+totTime = [3.339358291,8.092288089,30.90892007,101.4620721,284.8738477,531.9663218,743.310784,923.8451524]
+
+ax2.set_xlim([10, 80])
+ax2.set_xticks(xticks)
+ax2.set_yscale('log')
+
+ax2.plot(x, genesisTime, '#ff7f00')
+ax2.plot(x, totTime, '#377eb8',)
+
+z = ax2.fill_between(x, genesisTime, totTime, color='#377eb8', alpha='0.5', label="Zeppelin")
+g = ax2.fill_between(x, 1, genesisTime, color='#ff7f00', alpha='0.5', label="Genesis")
+
+#plt.legend(loc='best', frameon=False, fontsize=18)
+ax2.set_xlabel('Number of Paths', fontsize=20)
+ax2.grid()
+
+genesisTime = [1.686398292,4.115126556,6.254837424,8.705678749,11.5079913,14.68902937,17.80753183,21.22884498]
+totTime = [4.920500342,13.93155347,47.64036253,181.4483577,448.8050332,921.0370142,1526.903791,2082.716671]
+
+ax3.set_xlim([10, 80])
+ax3.set_xticks(xticks)
+ax3.set_yscale('log')
+
+ax3.plot(x, genesisTime, '#ff7f00')
+ax3.plot(x, totTime, '#377eb8',)
+
+ax3.fill_between(x, genesisTime, totTime, color='#377eb8', alpha='0.5', label="Zeppelin")
+ax3.fill_between(x, 1, genesisTime, color='#ff7f00', alpha='0.5', label="Genesis")
+
+ax3.grid()
+# ax2.grid()
+
+plt.savefig('ospfwaypoint.eps', format='eps', dpi=1000, bbox_inches='tight')
+
+ospfIsolationFig, (ax1, ax2) = plt.subplots(1, 2, sharey=True)
+
+x = range(10, 90, 10)
+xticks = range(10, 90, 20)
+zeroes = [1 for a in range(8)]
+genesisTime = [2.89080843,6.00545728,9.226121505,12.25871157,15.34863245,18.33711504,21.43881194,24.63348559]
+totTime = [3.466053895,6.866023487,10.80940593,15.62154008,21.4005797,29.08060994,42.86516188,73.06307]
+
+ax1.set_xlim([10, 80])
+ax1.set_xticks(xticks)
+ax1.set_yscale('log')
+
+ax1.plot(x, genesisTime, '#ff7f00')
+ax1.plot(x, totTime, '#377eb8',)
+
+ax1.fill_between(x, genesisTime, totTime, color='#377eb8', alpha='0.5', label="Zeppelin")
+ax1.fill_between(x, 1, genesisTime, color='#ff7f00', alpha='0.5', label="Genesis")
+
+#plt.legend(loc='best', frameon=False, fontsize=18)
+ax1.set_ylabel('Synthesis Time (s)', fontsize=5)
+
+ax1.grid()
+x = range(20, 100, 20)
+genesisTime = [8.910769089,17.94230479,26.42362858,35.19051689]
+totTime = [9.795185072,21.18261655,39.06264416,77.62741683]
+
+ax2.set_xlim([20, 80])
+ax2.set_xticks(x)
+ax2.set_yscale('log')
+
+ax2.plot(x, genesisTime, '#ff7f00')
+ax2.plot(x, totTime, '#377eb8',)
+
+z = ax2.fill_between(x, genesisTime, totTime, color='#377eb8', alpha='0.5', label="Zeppelin")
+g = ax2.fill_between(x, 1, genesisTime, color='#ff7f00', alpha='0.5', label="Genesis")
+
+#plt.legend(loc='best', frameon=False, fontsize=18)
+ax2.set_xlabel('Number of Paths', fontsize=20)
+ax2.grid()
+
+plt.savefig('ospfisolation.eps', format='eps', dpi=1000, bbox_inches='tight')
 
 # mcmc = plt.figure(2)
 # f = open("zep-mcmc.csv")
