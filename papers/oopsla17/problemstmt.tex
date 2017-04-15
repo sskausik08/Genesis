@@ -233,9 +233,10 @@ that given a BGP router $r$ and a destination $\lambda$,
 returns the next-hop BGP router from $r$. 
 
 \minisection{OSPF+BGP+Static Routes} We now describe how routing
-happens in hierarchical domains. 	`
+happens in hierarchical domains.
 We express the complete network configuration $C$
-as a tuple $(\Theta,W,LP,IF,SR)$, where $\Theta$ is
+as a tuple $(T, \Theta,W,LP,IF,SR)$, where $T$ is the 
+network topology, $\Theta$ is
 the router domain assignment, $W$ is the OSPF
 edge weight function,
 the local preference function $LP$  
@@ -303,16 +304,21 @@ SR(r, \lambda) & SR(r, \lambda) \not= \emptyset \\
 We assume a set of packet classes $PC : [0,C_{pc}]$ 
 and map each reachability/waypoint policy (which produce paths) 
 to a unique integer in $PC$. The rest of the policies specify 
-properties on these paths. 
-For a packet class $pc$, $s_{pc}$ denotes the source router, 
-and $\lambda_{pc}$
-denotes the destination IP address. 
+properties on these paths. Each packet class $pc$ is associated
+with a tuple ($s_{pc}, d_{pc}, \lambda_pc)$ which specifies 
+the path from $s_{pc}$ to $d_{pc}$ for destination IP $\lambda_{pc}$.
 
 \begin{definition}[Induced Paths] \label{def:inducedpaths}
+Given a configuration $C$, the set of induced paths $\paths^C(pc)$
+by the configuration $C$ for the packet class $pc$ is defined as follows:
+\begin{multline*}
+\paths^C(pc) = \{\pi=l_1\ldots l_k ~|~ valid(\pi) ~\wedge ~l_1 = (s_{pc}, v_1) \in \pi  ~\wedge ~l_k=(u_k, d_{pc}) ~\wedge \\
+~\forall ~l_i=(u_i, v_i) \in \pi. ~v_i \in \route^C(u_i,\lambda_{pc})\}
+\end{multline*}
 Given a configuration $C$ and a set of packet classes $PC$, the set of paths
-$\paths^C(PC)$ induced by $C$ is defined as follows: 
+$\paths^C(PC)$ induced by $C$ is defined as: 
 \[
-\paths^C(PC) = \{(\pi=l_1\ldots l_k ~|~ valid(\pi) ~\wedge l_1 = (s_{pc}, v_1) \in \pi  ~\wedge ~\forall ~l_i=(u_i, v_i) \in \pi. ~v_i \in \route^C(u_i,\lambda_{pc})\}
+\paths^C(PC) = \bigcup_{\forall pc} \paths(pc)
 \]
 \end{definition}
 
@@ -332,7 +338,7 @@ if the paths in $\Pi$ satisfy all the policies in $\Psi$ (see~\cite{genesis} for
 A configuration $C$ satisfies a set of configuration policies $P$
 if $C$ satisfies every constraint in $P$.
 For each configuration policy 
-we define what it means for  a configuration $C=(\Theta,W,LP,IF,SR)$ to satisfy it.
+we define what it means for  a configuration $C=(T,\Theta,W,LP,IF,SR)$ to satisfy it.
 
 The first type of policy restricts how many OSPF domains $N_D$ a
 configuration might have

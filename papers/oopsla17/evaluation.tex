@@ -107,13 +107,30 @@ of the endpoints in \name and the best resilience.
 However, we are able to achieve more than
 50 percent of the resilience offered by the topology. 
 
+\begin{table}{l}{8em}
+	\begin{footnotesize}
+		\begin{center}
+			\begin{tabular}{P{10em}| P{4em} | P{4em} | P{4em} | P{4em}}
+				Synthesis Type & Number of Packet Classes & Avg. Synthesis time (s) & Avg. Number of Resilient Classes & Ratio of Static Routes \\
+				\hline
+				1-Resilient Waypoint & 10 & 122.16 & 7.13 & 7/100\\
+				Waypoint & 10 & 7.85 & 0.3 & 7/100\\
+				1-Resilient Waypoint & 20 & 122.16 & 7.1 & 7/100\\
+				Waypoint & 20 & 7.85 & 0.3 & 7/100\\
+				1-Resilient Waypoint & 40 & 122.16 & 7.1 & 7/100\\
+				Waypoint & 40 & 7.85 & 0.3 & 7/100\\
+			\end{tabular}
+		\end{center}
+		\compactcaption{Average synthesis time per class for waypoint policies with increasing number of waypoints. } \label{tab:waypointeval} 
+	\end{footnotesize}
+\end{table} 
 \begin{figure*}[!t]
 	\centering
-	\subfloat[Configuration Overhead]
-	{\includegraphics[width=0.33\columnwidth]{figures/confMCMC.eps}}
-	\subfloat[Total Loss of Resilience]
-	{\includegraphics[width=0.33\columnwidth]{figures/TRLMCMC.eps}}
-	\subfloat[MCMC Optimizations]
+%	\subfloat[Configuration Overhead]
+%	{\includegraphics[width=0.33\columnwidth]{figures/confMCMC.eps}}
+%	\subfloat[Total Loss of Resilience]
+%	{\includegraphics[width=0.33\columnwidth]{figures/TRLMCMC.eps}}
+%	\subfloat[MCMC Optimizations]
 	{\includegraphics[width=0.33\columnwidth]{figures/ratioMCMC.eps}}
 	\compactcaption{\label{fig:mcmceval}
 	MCMC Evaluation }

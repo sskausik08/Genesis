@@ -41,65 +41,6 @@ We first show how to solve the problem when
 we are not allowed to use static routes
 and then
 extend our technique to handle static routes.
-
-\begin{figure}[!t]
-	\centering
-	\subfloat[Edge Weights]{
-		\raisebox{0.5cm}{\resizebox {0.33\columnwidth} {!} {
-				\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
-				square/.style={regular polygon,regular polygon sides=4}] 
-				\node[state] at (0,0) (s)  {$s$}; 
-				\node[state] at (1.8,1) (v1)  {$r_1$}; 
-				\node[state] at (3.6, 0)(t) {$t$};
-				\node[state, rectangle] at (5, 0) (d1) {$\lambda$};
-				\path[->] 
-				(s) edge [red] node [black] {1} (v1)
-				edge  node {5} (t)
-				(v1) edge [red] node [black] {2} (t)
-				(t) edge [red, dashed] node {} (d1);
-				\end{tikzpicture}
-			}}}
-			\subfloat[Static Routes]{
-				\resizebox {0.33\columnwidth} {!} {
-					\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
-					square/.style={regular polygon,regular polygon sides=4}] 
-					\node[state] at (0,0) (s)  {$s$}; 
-					\node[state] at (2, 1) (v1)  {$r_1$}; 
-					\node[state] at (4, 0)(t) {$t$};
-					\node[state, rectangle] at (5.5, 0.75) (d1) {$\lambda_1$};
-					\node[state, rectangle] at (5.5, -0.75) (d2) {$\lambda_2$};
-					\path[->] 
-					(s) edge [red] node [black] {1} (v1)
-					edge [blue] node [above, black] {5} node [below, black] {$sr((s,t),\lambda_2)$} (t)
-					(v1) edge [red] node [black] {2} (t)
-					(t) edge [red, dashed] node {} (d1)
-					(t) edge [blue, dashed] node {} (d2);
-					\end{tikzpicture}
-				}}
-			\subfloat[Routing Loop]{
-				\raisebox{0.6cm}{\resizebox {0.33\columnwidth} {!} {
-				\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
-					square/.style={regular polygon,regular polygon sides=4}] 
-					\node[state] at (0,0) (s)  {$s$}; 
-					\node[state] at (1.8,1) (v1)  {$r_1$}; 
-					\node[state] at (3.6, 0)(t) {$t$};
-					\node[state, rectangle] at (5, 0) (d1) {$\lambda$};
-					\path[->] 
-					(s) edge [red] node [black, sloped, anchor=center, above]
-						{$sr(\lambda)$} node
-						[black, sloped, anchor=center, below] {1} (v1)
-					edge  node [below] {5} (t)
-					(v1) edge [red] node [black] {50} (t)
-					(t) edge [red, dashed] node {} (d1);
-				\end{tikzpicture}
-				}}}
-					\compactcaption{OSPF edge weights and static routes
-				 such that the routers forward traffic along
-					the colored paths and routing loops potentially caused
-					by static routes.}
-				\label{fig:ospfexample}
-\end{figure}
-			
 			
 \subsubsection{Intra-domain Synthesis Without Static Routes} \label{sec:ospf}
  
@@ -194,6 +135,46 @@ in $\xi_\lambda$, and
 thus, the synthesized edge weights will ensure 
 paths in $\xi_\lambda$ are the shortest. 
 
+\begin{figure}[!t]
+	\centering
+	\subfloat[Edge Weights]{
+		\raisebox{0.5cm}{\resizebox {0.33\columnwidth} {!} {
+				\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
+				square/.style={regular polygon,regular polygon sides=4}] 
+				\node[state] at (0,0) (s)  {$s$}; 
+				\node[state] at (1.8,1) (v1)  {$r_1$}; 
+				\node[state] at (3.6, 0)(t) {$t$};
+				\node[state, rectangle] at (5, 0) (d1) {$\lambda$};
+				\path[->] 
+				(s) edge [red] node [black] {1} (v1)
+				edge  node {5} (t)
+				(v1) edge [red] node [black] {2} (t)
+				(t) edge [red, dashed] node {} (d1);
+				\end{tikzpicture}
+			}}}
+			\subfloat[Static Routes]{
+				\resizebox {0.33\columnwidth} {!} {
+					\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
+					square/.style={regular polygon,regular polygon sides=4}] 
+					\node[state] at (0,0) (s)  {$s$}; 
+					\node[state] at (2, 1) (v1)  {$r_1$}; 
+					\node[state] at (4, 0)(t) {$t$};
+					\node[state, rectangle] at (5.5, 0.75) (d1) {$\lambda_1$};
+					\node[state, rectangle] at (5.5, -0.75) (d2) {$\lambda_2$};
+					\path[->] 
+					(s) edge [red] node [black] {1} (v1)
+					edge [blue] node [above, black] {5} node [below, black] {$sr((s,t),\lambda_2)$} (t)
+					(v1) edge [red] node [black] {2} (t)
+					(t) edge [red, dashed] node {} (d1)
+					(t) edge [blue, dashed] node {} (d2);
+					\end{tikzpicture}
+				}}
+						\compactcaption{OSPF edge weights and static routes
+							such that the routers forward traffic along
+							the colored paths.}
+						\label{fig:ospfexample}
+					\end{figure}
+					
 \subsubsection{Intra-domain Synthesis with Static Routes} \label{sec:ospfsr}
 
 If the system of equations presented in Section~\ref{sec:ospf} admits a solution, 
