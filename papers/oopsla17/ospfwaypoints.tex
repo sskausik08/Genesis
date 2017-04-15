@@ -209,7 +209,7 @@ soundness by lazily adding the loop avoidance constraints.
 Suppose, Zeppelin added a static route $(sr_1, sr_2)$ for destination
 $\lambda$ where $sr_2 = N_{\xi_\lambda}(sr_1)$ (because we do not add
 static routes on any other links except $\xi_\lambda$). We need to
-ensure that for any switch in $\xi_\lambda$ which does not 
+ensure that for any router in $\xi_\lambda$ which does not 
 lie in the downstream path $sr_2 \rightarrow^+_{\xi_\lambda} R_\lambda$, 
 the shortest path from $sr_2$ to $R_\lambda$ must not traverse through 
 it, for that could potentially cause a routing loop. For example, in \Cref{fig:ospfexample}(c), the shortest path from $r_1$ to $t$ was
@@ -243,13 +243,20 @@ route, and continue with the unsat-core learning algorithm.
 Let us consider a waypoint policy for $\lambda$ which
 specifies that traffic to $\lambda$ from router $s$ 
 must traverse through
-one of the waypoints $w \in \waypt$. Suppose the tenant 
+one of the waypoints $w \in \waypt$. We assume that 
+all the waypoints belong in the same domain, i.e., 
+$|\{\Theta(w) | w \in W\}| = 1$. NFV provides 
+flexibility of waypoint placement in the network, 
+and we can ensure
+all replicas belong to the same domain.  
+Suppose the tenant 
 specifies that under any single link failure, the traffic 
 to $\lambda$ must be waypoint-compliant; this is defined 
 as \emph{1-resilient waypoint-compliance}. The constraints 
 described in \secref{sec:ospfwaypoint} ensure waypoint-compliance
 only when all links are functional, compliance is uncertain
-when a link fails.   
+when a link fails. We now discuss the approach of incorporating
+resilience in the intra-domain configuration synthesis.
 
 Instead of just adding constraints which ensure that a single 
 waypoint-compliant path (provided by Genesis) is strictly 
@@ -275,12 +282,79 @@ constraints for both paths $\pi_1$ and $\pi_2$ provided by Genesis,
 we enforce a \emph{partial order}: there are two paths to $\lambda$
 which are shorter than non waypoint distance, the 
 ordering of the weight of $\pi_1$ and $\pi_2$ is irrelevant. 
-\[
+\begin{equation} \label{eq:resilience}
 \{ W(\pi_1), W(\pi_2) \} < D^t_s(\waypt) 
-\]  
+\end{equation}
 Thus, if a single link fails, only of these paths is affected. Suppose
 $\pi_1$ is affected, OSPF will not route traffic a  
 non-waypoint-compliant path, as the weight of $\pi_2$ is shorter than any path which is not waypoint-compliant due to the constraints generated 
 by \name.
 
-\kausik{Fill equations here about when there are static routes}
+\minisection{Resilience with Static Routes}
+Let us consider the case when there are static routes in the OSPF
+domain. This complicates the synthesis of resilient configurations. 
+Consider $\pi_1$ and $\pi_2$ are two edge disjoint paths 
+connecting the routers $s$ to $t$. Suppose, $\pi_1$ is the 
+chosen primary path and it uses static routes on 
+some of its links.
+Ideally, we want to ensure 
+that if any link on $\pi_1$ fails, 
+then the network must switch over to $\pi_2$. 
+
+A static route $(r_1, r_2)$ on path $\pi$ for destination $\lambda$ implies that OSPF routing at $r_1$ is sending traffic to a 
+router $r' \not= r_2$ and the OSPF path would be violating
+waypoint-compliance. Instead, the static route circumvents 
+the OSPF shortest route at $r_1$ and \emph{steers} $\lambda$ 
+traffic to $r_2$ and not $r'$. Therefore, for a 
+path $\pi$ connecting routers $s$ and $t$ such that it 
+has a static route on one of its links, 
+then $W(\pi)$ is greater than or equal to the 
+actual OSPF distance
+between $s$ and $t$ (which is the OSPF route at $s$).
+Let us suppose $\pi = l_1 \ldots l_k = (u_1, v_1) \ldots (u_k, v_k)$ 
+and 
+there exists a $\alpha \leq k$ such that 
+$l_\alpha = (u_\alpha, v_\alpha)$  
+is the first 
+static route from the source in $\pi$, i.e., 
+$\forall 1 \leq \beta < \alpha. ~(u_\beta, v_\beta) \not\in SR(\lambda)$.
+Therefore, all routers between $s$ and $u_\alpha$ did
+not require any static routes to steer traffic along a 
+non-shortest path. Therefore, we can estimate the 
+actual shortest OSPF distance between $s$ to $t$ as:
+\[
+\sum_{i=1}^{\alpha - 1} W_{u_i}^{v_i} + D_{u_\alpha}^t
+\]
+
+
+Coming back to the synthesis of resilient configurations,
+when \name adds static routes for \emph{steering},  
+the partial order \Cref{eq:resilience} is not necessarily true 
+(the partial order would hold only under no failures and 
+no static routes). 
+Because of that, when the primary path $\pi_1$ fails, the 
+failover path $\pi_2$ may not be chosen. To ensure that 
+$\pi_2$ is always chosen, we try to split the traffic
+along $\pi_1$ and $\pi_2$, therefore, a failure to $\pi_1$
+will still ensure that traffic is sent through $\pi_2$ 
+(which is waypoint-compliant). To enforce splitting amongst
+$\pi_1$ and $\pi_2$, we add the following constraints: 
+\begin{equation}
+	W(\pi_2) \leq \sum_{i=1}^{\alpha - 1} W_{u_i}^{v_i} + D_{u_\alpha}^t	
+\end{equation}
+where $(u_\alpha, v_\alpha)$ is the first static route in $\pi_1$.
+We add symmetric constraints constraining $W(\pi_1)$. 
+
+Similar to the routing loop avoidance constraints, we add the
+above constraints lazily when a static route is added to one of the
+paths for $\lambda$. However, if one of these constraints is part of 
+an unsatisfiable core, we cannot add a static route to eliminate 
+this unsatisfiability. \name lazily eliminates these constraints from the
+system of equations depending on whether these constraints are part of 
+an unsat-core which cannot be eliminated by a static route. Thus, 
+our resilience synthesis is not sound and for certain failure scenarios, 
+the paths generated are not waypoint-compliant. However, 
+based on our experiments (\secref{sec:reseval}), 
+this technique generates highly resilient configurations 
+in practice. 
+

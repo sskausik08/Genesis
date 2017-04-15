@@ -10,26 +10,25 @@ BGP configuration and static routes to ensure that the
 paths will traverse the correct domains.
 Second, we show how to modify the 
 techniques given in Section~\ref{sec:intra-synthesis}
-to determine the edge weights and route filters
+to determine the edge weights and static routes
  in each domain to guarantee that paths traverse
 the correct gateway routers.
 
 
-
-
-
 \subsubsection{Configuring BGP and Static Routes}
-BGP is a path-vector protocol where each router,
-for each destination $d$,
+BGP is a path-vector protocol where each BGP router,
+for each destination $\lambda$,
 advertises to its peers
-what sequence of domains one should follow to get to  $d$.  
+what sequence of domains one should follow to get to  $\lambda$.  
 In this section, we describe how to configure
-BGP routers so that the routes chosen by BGP (and redistributed into OSPF) 
+BGP routers so that the routes chosen by BGP 
+(and redistributed into OSPF) 
 can yield the policy-compliant
 paths $\Pi$ given as input. 
 We need to take into account three different
 cases, which are illustrated in \Cref{fig:bgpexample}.  
-For sake of simplicity, we omit certain small details from the following discussion.
+For sake of simplicity, we omit certain small details 
+from the following discussion.
 
 In the first case, a path is preferred because it traverses fewer domains.
 For example, in \Cref{fig:bgpexample}(a), we want
