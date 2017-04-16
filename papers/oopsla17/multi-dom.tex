@@ -110,10 +110,8 @@ This advertisement will be rejected because it creates a loop---i.e., the domain
 appears twice in the path. 
 To enforce domain paths with loops, we use static routes. In this example
 the static routes
-$SR(r_1,\lambda) = r_2$, $SR(r_2,\lambda) = g_1$, and $SR(g_1,\lambda) = g_2$ 
+$(r_1,\lambda) = \{r_2\}$, $SR(r_2,\lambda) = \{g_1\}$, and $SR(g_1,\lambda) = \{g_2\}$ 
 guarantee that routes from $r_1$, $r_2$, and $g_2$ to $\lambda$ traverse the desired links.
-Notice that the path from $g_2$ to $\lambda$ does not 
-require static routes, as there are no domain loops.
 
 \minisection{Algorithm}
 We are now ready to describe the algorithm that,
@@ -148,9 +146,9 @@ For all links that are not in $\pi'$
 we will require static routes.
 With abuse of notation, for every link $(r_1,r_2)\in\bigcup_{i< nl} \pi_i\cup \bigcup_{i< nl}\{l_i^{i+1}\}$ 
 we have
-$SR(r_1, \lambda) = r_2$.
+$SR(r_1, \lambda) = \{r_2\}$.
 
-Finally, for each intra-domain subpath $\pi_i$ that is not statically routed---i.e., $i\geq nl$---\name applies
+Finally, for each intra-domain subpath $\pi_i$ that is not statically routed by this algorithm---i.e., $i\geq nl$---\name applies
 OSPF synthesis for the domain $\Theta(\pi_i)$. 
 This is done after aggregating by domain across all subpaths obtained when processing all paths in $\Pi$.
 We describe this in the next section.
@@ -223,7 +221,8 @@ We describe this in the next section.
 When BGP routes for destination $\lambda$ 
 are redistributed by multiple gateways to an 
 OSPF domain, \name uses a modified OSPF synthesis
-algorithm from \secref{sec:intra-synthesis} to assign OSPF weights to the links in each domain
+algorithm from \secref{sec:intra-synthesis} 
+to assign OSPF weights to the links in each domain
 and place static routes. 
 This is 
 required because an OSPF router will choose
@@ -258,5 +257,5 @@ constraints generated is inconsistent, Zeppelin will add
 static routes to eliminate constraints
 and filter shorter routes to gateways which are
 not on the input path. For Equation~\ref{eq:gateway},
-adding the static route $(r, N_{\xi_\lambda})$ to $SR(\lambda)$
-will eliminate the infeasibility caused due to this equation.
+adding the static route $(r, N_{\xi_\lambda}(r))$ to $SR(\lambda)$
+will eliminate the infeasibility caused due to this constraint.

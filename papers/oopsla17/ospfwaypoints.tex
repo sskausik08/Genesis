@@ -1,39 +1,33 @@
-\section{Waypoint-Compliance Synthesis}
-Middleboxes like firewalls,
-proxies, intrusion detection and prevention systems and 
-optimizers play a crucial role in enterprise and
-datacenter networks for security, performance 
-and auditing considerations. Enforcing waypoint policies for
-middlebox traversals is one of the most common policies 
-supported by network operators. When a 
-tenant specifies a waypoint policy, 
-for e.g., traffic from
-subnet A to subnet B must traverse 
-through a firewall, the control plane need not
-route traffic through a particular path, but ensure
-that the path through the network traverses the firewall. 
-Thus, instead of enforcing the path provided by \genesis,
-we extend \name to provide support for \emph{waypoint-compliance}
-synthesis (\secref{sec:ospfwaypoint}). 
-
-Another matter of consideration for tenants is 
+\section{Resilient Waypoint-Compliance Synthesis}
+A crucial aspect of consideration for tenants is 
 policy-compliance under failures (which are frequent in 
-datacenter networks), which can violate key security 
-properties. For example, 
-traffic for a particular subnet under 
-failure scenarios can become vulnerable to attacks if the 
-path in the network no longer traverses the firewall. 
+datacenter networks), which can violate key security
+and availability properties. 
+For instance, in 2012,
+failure of a router in a Microsoft Azure data center 
+triggered previously unknown configuration errors on other 
+devices, degrading service 
+in the West Europe region for over 2
+hours~\cite{azure}; the end goal is 
+the synthesis of resilient and policy-compliant 
+control planes. 
 However, providing compliance 
 guarantees for all policies
 under arbitary link failures is a difficult problem, 
 especially in a traditional control plane 
 which reacts to failures in a distributed fashion. 
+In \name, we tackle the synthesis of resilient policy-
+compliant control planes for a subset of policies: 
+\emph{waypoint traversals}.
 
-\name incorporates policy-compliance
-for a subset of waypoint policies 
-under bounded link failure scenarios without the 
-need for intervention by a central controller by 
-leveraging the emerging field of NFV. 
+Middleboxes like firewalls,
+proxies, optimizers, and intrusion detection/prevention 
+systems 
+ play a crucial role in enterprise and
+datacenter networks for security, performance,  
+and auditing considerations. Support for  
+middlebox traversals is commonly 
+provided by network operators.
 Network Function Virtualization (NFV) has been a 
 major driving force for providing reliability 
 guarantees under failures  
@@ -43,84 +37,88 @@ their middleboxes across the network for providing
 resilience guarantees. For waypoint policy-compliance, 
 we define a \emph{waypoint set} 
 which denotes the set of physical replicas of the 
-middlebox and ensure that routing under a bounded 
-number of failures traverses an element in the waypoint
-set. In this paper, we will describe the approach to  
-provide resilience guarantees for arbitary single
-link failures (\secref{sec:ospfresilience}).
-
+middlebox; the control plane under a bounded 
+number of failures must route traffic through a 
+path which traverses an element of the waypoint
+set. In the rest of this section, 
+we will describe the synthesis of resilient 
+waypoint-compliant network configurations. 
 
 \subsection{Problem Statement}
 Let us consider an 
 unordered waypoint policy of the form: 
-\texttt{$\lambda$: s >> \{$W_1$, \ldots $W_n$\} >> t},
+\texttt{$\lambda$: s >> $\waypt$ >> t},
 where $\lambda$ is the destination IP subnet,  
 $s$ and $t$ are the source and destination router respectively, 
-and $W_1, W_2 \ldots W_n \subseteq V$ are waypoint sets. This
-policy is mapped to a packet class $pc \in \nat$. A path 
-$\pi$ is policy-compliant iff the path from $s$ to $t$ traverses
-through a waypoint $w_i \in W_i$ for all $i=\{1,\ldots n\}$. 
-The configuration $C$ is waypoint-compliant for packet class $pc$ 
-iff: 
-\[
-\exists \pi \in \paths^C(pc). ~\forall i \leq n. ~\exists w_i \in W_i. 
-~\exists u. ~~(u, w_i) \in \pi 
-\]
-where $\paths^C(pc)$ is the set of induced paths for 
-$pc$ by configuration $C$ (Definition~\ref{def:inducedpaths}). 
-
-A configuration $C=(T,\Theta,W,LP,IF,SR)$ is 1-resilient 
+and $\waypt \subseteq V$ is the waypoint set. This
+policy is mapped to a packet class $pc \in \nat$. 
+A configuration $C=(T,\Theta,W,LP,IF,SR)$ is 
+\emph{waypoint-compliant} with respect to $pc$ 
+iff, there exists a path from $s$ to $t$ in the 
+set of induced paths $\paths(pc)$ that traverses
+through a waypoint $w \in \waypt$
+(Definition~\ref{def:inducedpaths}). 
+A configuration $C$ is 
+\emph{1-resilient waypoint-compliant} 
 for packet class $pc$  
-iff for all 
-$T' = (V, L'), |L'| = |L| - 1$, the configuration $C'
+iff,   
+$\forall T' = (V, L'), |L'| = |L| - 1$ (single link failures), 
+the configuration $C'
 =(T',\Theta,W,LP,IF,SR)$  
 is waypoint-compliant for packet class $pc$. 
 
-\definecolor{orange}{RGB}{255, 157, 30} 
-\begin{figure}[!t] 
-	\centering
-	\subfloat[Edge Weights]{
-		\resizebox {0.33\columnwidth} {!} {
-				\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
-				square/.style={regular polygon,regular polygon sides=4}] 
-				\node[state] at (0,0) (s)  {$s$}; 
-				\node[state, fill=orange] at (1.8,1) (v1)  {$r_1$}; 
-				\node[state, fill=orange] at (1.8,-1) (v2)  {$r_2$}; 
-				\node[state] at (3.6, 0)(t) {$t$};
-				\node[state, rectangle] at (5, 0) (d1) {$\lambda$};
-				\path[->] 
-				(s) edge [red] node [black] {1} (v1)
-				(s) edge  node {1} (v2)
-				edge  node [above] {10} (t)
-				(v1) edge [red] node [black] {5} (t)
-				(v2) edge  node [black] {1} (t)
-				(t) edge [red, dashed] node {} (d1);
-				\end{tikzpicture}
-			}}
-		\subfloat[Routing Loop]{
-\raisebox{0.7cm}{\resizebox {0.33\columnwidth} {!} {
-	\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
-	square/.style={regular polygon,regular polygon sides=4}] 
-	\node[state] at (0,0) (s)  {$s$}; 
-	\node[state] at (1.8,1) (v1)  {$r_1$}; 
-	\node[state] at (3.6, 0)(t) {$t$};
-	\node[state, rectangle] at (5, 0) (d1) {$\lambda$};
-	\path[->] 
-	(s) edge [red] node [black, sloped, anchor=center, above]
-	{$sr(\lambda)$} node
-	[black, sloped, anchor=center, below] {1} (v1)
-	edge  node [below] {5} (t)
-	(v1) edge [red] node [black] {50} (t)
-	(t) edge [red, dashed] node {} (d1);
-	\end{tikzpicture}
-}}}
-	\compactcaption{OSPF edge weights such that the path is waypoint-compliant and example of routing loop created by a static route.}
-	\label{fig:ospfw}
-\end{figure}
-\subsection{Intra-domain Waypoint Compliance}\label{sec:ospfwaypoint}
+A caveat to note in our definition of waypoint-compliance 
+is the use of existential quantifier instead of universal 
+quantifier for the set of induced paths for $pc$, i.e.,
+the desired routing outcome is the existence of \emph{atleast}
+one waypoint-compliant path from $s$ to $t$, 
+however, it is possible to
+have paths from $s$ to $t$ which are not traversing through 
+a waypoint under some failure scenario. Our 
+definition can be realized by two mechanisms: 1) A router
+which has multiple routes for $\lambda$ will split the traffic
+among these routes, and 2) The waypoint can mark certain fields in
+the packet header, and the network operator can employ 
+simple edge-based checks at the destination 
+(for e.g., in the hypervisor) to 
+detect if a packet traversed the waypoint or not. Thus, only
+packets which traversed a waypoint-compliant path would be 
+accepted and forwarded to the tenant. 
+
+\subsection{Intra-domain Resilient Waypoint Compliance}\label{sec:ospfwaypoint}
 Let us consider a waypoint policy for $\lambda$ which
-specifies that traffic to $\lambda$ must traverse through
-one of the waypoints $w \in \waypt$, where $\waypt \subseteq V$.
+specifies that traffic to $\lambda$ from router $s$ 
+must traverse through
+one of the waypoints $w \in \waypt$. We assume that 
+all the waypoints belong in the same domain, i.e., 
+$|\{\Theta(w) | w \in W\}| = 1$. NFV provides 
+flexibility of waypoint placement in the network, 
+and we can ensure
+all replicas belong to the same domain.  
+Under any single link failure, we need atleast one path 
+to $\lambda$ which is waypoint-compliant. 
+
+We leverage \genesis's
+support for isolation to generate two edge-disjoint\footnote
+{The edge-disjoint paths will actually be vertex-disjoint (except the 
+	source and destination) due to the destination-tree constraints
+	in \genesis.} paths
+which are waypoint-compliant with respect to $\waypt$. A single link
+failure will not disable both these paths, so if traffic to $\lambda$ 
+would 
+traverse one of these two paths under failures, 
+we would achieve 1-resilient
+waypoint-compliance. However, enforcing the two paths exactly
+is difficult. Instead, if we can ensure that the weight
+of these two paths is shorter than any non-compliant path in 
+the network, $\lambda$ traffic will have atleast two edge-disjoint 
+compliant paths to traverse 
+before it traverses a non-compliant path. We will now discuss the
+constraints to generate a waypoint-compliant path, and then 
+how to use the two edge-disjoint paths to provide 1-resilience. 
+
+
+\subsubsection{Waypoint-Compliance Constraints}
 In the first phase, \genesis provides a path which
 satisfies the waypoint policy. We use this path as a 
 ``hint'' to incorporate waypoint-compliance in the OSPF 
@@ -146,6 +144,7 @@ the waypoint routers are removed, and thus, any path in this
 topology is not compliant with the waypoint policy. 
 Similar to $D_s^t$ variables, 
 $D_s^t(\waypt)$ is upper bounded by the actual shortest non-waypoint distance from $s$ to $t$.
+
 
 Given a destination tree $\xi_\lambda$, we will use the 
 non-waypoint distances to enforce waypoint-compliance. Consider a 
@@ -181,6 +180,48 @@ If one of these constraints was part of an unsatisfiable
 core, we can add the static route $(r, N_{\xi_\lambda}(r))$ to
 $SR(\lambda)$ to eliminate the equations at router $r$. 
 
+\definecolor{orange}{RGB}{255, 157, 30} 
+\begin{figure}[!t] 
+	\centering
+	\subfloat[Edge Weights]{
+		\resizebox {0.33\columnwidth} {!} {
+			\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
+			square/.style={regular polygon,regular polygon sides=4}] 
+			\node[state] at (0,0) (s)  {$s$}; 
+			\node[state, fill=orange] at (1.8,1) (v1)  {$r_1$}; 
+			\node[state, fill=orange] at (1.8,-1) (v2)  {$r_2$}; 
+			\node[state] at (3.6, 0)(t) {$t$};
+			\node[state, rectangle] at (5, 0) (d1) {$\lambda$};
+			\path[->] 
+			(s) edge [red] node [black] {1} (v1)
+			(s) edge  node {1} (v2)
+			edge  node [above] {10} (t)
+			(v1) edge [red] node [black] {5} (t)
+			(v2) edge  node [black] {1} (t)
+			(t) edge [red, dashed] node {} (d1);
+			\end{tikzpicture}
+		}}
+		\subfloat[Routing Loop]{
+			\raisebox{0.7cm}{\resizebox {0.33\columnwidth} {!} {
+					\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
+					square/.style={regular polygon,regular polygon sides=4}] 
+					\node[state] at (0,0) (s)  {$s$}; 
+					\node[state] at (1.8,1) (v1)  {$r_1$}; 
+					\node[state] at (3.6, 0)(t) {$t$};
+					\node[state, rectangle] at (5, 0) (d1) {$\lambda$};
+					\path[->] 
+					(s) edge [red] node [black, sloped, anchor=center, above]
+					{$sr(\lambda)$} node
+					[black, sloped, anchor=center, below] {1} (v1)
+					edge  node [below] {5} (t)
+					(v1) edge [red] node [black] {50} (t)
+					(t) edge [red, dashed] node {} (d1);
+					\end{tikzpicture}
+				}}}
+				\compactcaption{OSPF edge weights such that the path is waypoint-compliant and example of routing loop created by a static route.}
+				\label{fig:ospfw}
+			\end{figure}
+			
 \minisection{Routing Loop Avoidance Constraints} \label{sec:loopavoidance}
 Since we are not enforcing a particular path in the network for waypoint-
 compliance, adding
@@ -239,39 +280,7 @@ remove these constraints. After we add the static route,
 we add loop avoidance constraints for the new static
 route, and continue with the unsat-core learning algorithm. 
 
-\subsection{Intra-domain Resilience} \label{sec:ospfresilience}
-Let us consider a waypoint policy for $\lambda$ which
-specifies that traffic to $\lambda$ from router $s$ 
-must traverse through
-one of the waypoints $w \in \waypt$. We assume that 
-all the waypoints belong in the same domain, i.e., 
-$|\{\Theta(w) | w \in W\}| = 1$. NFV provides 
-flexibility of waypoint placement in the network, 
-and we can ensure
-all replicas belong to the same domain.  
-Suppose the tenant 
-specifies that under any single link failure, the traffic 
-to $\lambda$ must be waypoint-compliant; this is defined 
-as \emph{1-resilient waypoint-compliance}. The constraints 
-described in \secref{sec:ospfwaypoint} ensure waypoint-compliance
-only when all links are functional, compliance is uncertain
-when a link fails. We now discuss the approach of incorporating
-resilience in the intra-domain configuration synthesis.
-
-Instead of just adding constraints which ensure that a single 
-waypoint-compliant path (provided by Genesis) is strictly 
-shorter than the non-waypoint distance, we can leverage \genesis's
-support for isolation to generate two edge-disjoint\footnote
-{The edge-disjoint paths will actually be vertex-disjoint (except the 
-	source and destination) due to the destination-tree constraints
-	in \genesis.} paths
-which are waypoint-compliant with respect to $\waypt$. A single link
-failure will not disable both these paths, so if traffic to $\lambda$ 
-would 
-traverse one of these two paths under failures, 
-we would achieve 1-resilient
-waypoint-compliance. 
-
+\subsection{Resilience Constraints} \label{sec:ospfresilience}
 Assume that the OSPF domain does not allow any static routes. 
 We use Genesis to provide two waypoint-compliant 
 edge-disjoint paths $\pi_1$ amd $\pi_2$ from $s$ to $t$.
@@ -325,6 +334,31 @@ actual shortest OSPF distance between $s$ to $t$ as:
 \[
 \sum_{i=1}^{\alpha - 1} W_{u_i}^{v_i} + D_{u_\alpha}^t
 \]
+
+\begin{figure}[!t] 
+	\centering
+	\subfloat[Edge Weights]{
+		\resizebox {0.33\columnwidth} {!} {
+			\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
+			square/.style={regular polygon,regular polygon sides=4}] 
+			\node[state] at (0,0) (r0)  {$r_0$}; 
+			\node[state] at (-2,0) (s)  {$s$}; 
+			\node[state, fill=orange] at (1.8,1) (v1)  {$r_1$}; 
+			\node[state, fill=orange] at (1.8,-1) (v2)  {$r_2$}; 
+			\node[state] at (3.6, 0)(t) {$t$};
+			\node[state, rectangle] at (5, 0) (d1) {$\lambda$};
+			\path[->] 
+			(s) edge [red] node [black] {1} (v1)
+			(s) edge  node {1} (v2)
+			edge  node [above] {10} (t)
+			(v1) edge [red] node [black] {5} (t)
+			(v2) edge  node [black] {1} (t)
+			(t) edge [red, dashed] node {} (d1);
+			\end{tikzpicture}
+		}}
+				\compactcaption{OSPF edge weights such that the path is waypoint-compliant and example of routing loop created by a static route.}
+				\label{fig:ospfres}
+			\end{figure}
 
 
 Coming back to the synthesis of resilient configurations,
