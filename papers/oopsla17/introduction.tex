@@ -40,16 +40,19 @@ Our goal is to {\em automate the process of creating a correct
   distributed realization of policies in a traditional control
   plane}. We wish to handle a wide range of policies, e.g.,
 reachability, service chaining, and traffic engineering, to meet
-applications' diverse security and compliance requirements. With
+applications' diverse security and compliance requirements. 
+With
 increasing sizes of networks, we must further provide support for
 realizing hierarchical control planes to ensure scalability,
 necessitating the use of multiple intra- and inter-domain routing
-protocols (e.g., OSPF and BGP). Finally, we want to ensure the
-generated control plane satisfies certain failure-tolerance
-properties. Thus, our work contrasts with prior efforts~\cite{netegg,
+protocols (e.g., OSPF and BGP). 
+\loris{Finally, and most importantly, we want
+generated control planes that are tolerant to network malfunctions such as link
+failures.}
+Thus, our work contrasts with prior efforts~\cite{netegg,
   propane, merlin,simple,fattire, netkat, netkatcompiler, sol}, which
 generate SDN- or BGP-specific control planes for a limited range of
-policies (e.g., peering).
+policies (e.g., peering) and \loris{do note attempt to be resilient to failures}.
 
 %\kausik{Do we need this paragragh?}
 %Although a distributed control plane is composed of a collection of routing
@@ -68,16 +71,16 @@ is computationally hard.
 %are the control plane.
 First, even generating a set of policy-compliant 
 paths for a SDN  is 
-computationally hard (e.g., enforcing isolated
-paths is NP-complete). 
+computationally hard---e.g., enforcing isolated
+paths is NP-complete. 
 Second, to infer the concrete
 set of paths induced by network configurations, 
 one has to incorporate
 into synthesis
-complex concepts---e.g., shortest path algorithms---which
-require constraints in complex
-theories---e.g., propositional logic (SAT) 
-and linear rational
+complex concepts---e.g., reasoning about shortest path algorithms
+requires constraints in complex
+theories that combine propositional logic (SAT) 
+with linear rational
 arithmetic (LRA). Even with recent 
 advances in Satisfiability Modulo Theories
 (SMT) solvers, 
@@ -85,28 +88,38 @@ approaches that directly generate configurations  from policies
 do not scale to
 even moderately-sized networks or 
 sets of policies~\cite{synet}.
+\loris{Third, to generate control planes that are resilient to failures, one has to reason
+about how configurations of different protocols react to failures, 
+which further complicates an already intractable synthesis
+problem. }
 
 %(6) We propose a two-phased approach that synthesizes a partially-correct
 %control plane from examples, and then applies a series of transformations to
 %produce a fully policy-compliant control plane.
 
-Instead, we propose \name, a two-phased approach to synthesizing
-configurations.  First, using the tool \genesis~\cite{genesis}, we synthesize a
-concrete set of paths---i.e., the forwarding state---satisfying all
-the specified policies, such as, waypoint, isolation,
+\loris{
+In this paper, we present \name, a new approach for synthesizing
+highly resilient policy-compliant configurations.}  
+Unlike previous approaches, \name uses a two-phased approach
+that does not attempt to generate 
+a policy-compliant control planes in a single step.
+First, \name 
+uses the tool \genesis~\cite{genesis}
+to synthesize paths---i.e., the forwarding state---that are compliant
+with given policies, such as, waypoint, isolation,
 and traffic engineering.
 %a partially-correct control plane from a set of example paths, such
 %as those contained within a sample data plane. 
-Second, we generate
-domain-level split of the routers in the network,
-and corresponding 
+Second, \name generates 
+%domain-level split of the routers in the network,
+%and corresponding 
 intra- and inter-domain router configurations
 that induce the forwarding
-state synthesized by \genesis. We show that this approach makes synthesis tractable.
+state synthesized by \genesis \loris{and provide high resilience} . 
+We show that this approach makes synthesis tractable and effective.
 %, and we can
 %perform multiple iterations to eventually produce policy-compliant
 %configurations.
-
 %% We present \name, 
 %% a framework to synthesize router configurations which 
 %% converge to a forwarding state such traffic is
@@ -118,24 +131,52 @@ OSPF for intra-domain routing, while domains use BGP for inter-domain
 routing. 
 We synthesize OSPF configurations using linear constraint solving to compute
 link weights and 
-a learning-based procedure for extracting more complex OSPF configuration from
+a learning-based procedure for extracting more complex OSPF configurations from
 the unsatisfiable cores of the constraints.
 We compute BGP configuration directly from the domain mapping and the paths.
-Finally, \kausik{in settings which potentially offer flexibility in terms of domain assignments like datacenter networks}, we use MCMC sampling to stochastically search for the best way to
-partition the network into multiple domains which satisfy hard
-operator policies on configurations such as  the size of each OSPF
-domain. Further, \name allows operators to optimize two key management
-objectives. \kausik{The first is maximizing endpoint  resilience, as \name
-requires route filters to induce certain paths, thereby affecting
-failure resilience. The second minimizing the configuration overhead imposed
-by inter-domain routing (BGP and static routes), which helps decrease
-configuration complexity, thus, easing automated
-verification~\cite{batfish, arc, era} and improving readability for
-performing future manual changes.}
 
+\loris{We investigate two notions of resilience and provide modified versions of
+\name's basic synthesis algorithm that can generate highly
+resilient configurations.
+First, we consider a setting where the network operator wants to guarantee connectivity
+for most hosts when links fail.
+We present a modified algorithm that avoids placing unnecessary
+static routes and tries to avoid routing loops induced by such static routes,
+therefore improving connectivity under failure.
+In general, minimizing configuration overhead---i.e., number of static routes---also helps decreasing configuration complexity, thus, easing automated
+verification~\cite{batfish, arc, era} and improving readability for
+performing future manual changes.
+Second, we consider a setting where the network operator wants to guarantee
+that, even when a link fails, certain classes of traffic still traverse a certain
+set of waypoints--e.g., firewalls.
+We  leverage \genesis ability to 
+generate edge-disjoint paths, which we use to modify our linear constraints
+to guarantee that, under single failures traffic, still has traverses the given waypoints. 
+}
+
+% Further, \name allows operators to optimize two key management
+%objectives. \kausik{The first is maximizing endpoint  resilience, as \name
+%requires route filters to induce certain paths, thereby affecting
+%failure resilience. The second minimizing the configuration overhead imposed
+%by inter-domain routing (BGP and static routes), which helps decrease
+%configuration complexity, thus, easing automated
+%verification~\cite{batfish, arc, era} and improving readability for
+%performing future manual changes.}
+%}
+
+Finally, \kausik{in settings which offer flexibility in terms of domain assignments like datacenter networks}, we present a stochastic search technique 
+partitioning the network into multiple domains which satisfy hard
+operator policies on configurations such as  the size of each OSPF
+domain. 
+\loris{We also show how the search technique can be used to find
+configurations with improved resilience.}
+
+We evaluate \name on medium-sized topologies and show that
 \name can synthesize OSPF configurations for 200 paths in 200
 seconds for a 40 node ISP topology, and achieve greater than 
 50\% resilience for fat-tree topologies.
+\todo{what does resilient mean here? this last para and contrib need to be rewritten
+after eval}
  On average, using MCMC, \name can increase
 endpoint resilience by $1.6\times$ and 
 reduce configuration overhead
