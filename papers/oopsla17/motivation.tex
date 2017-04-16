@@ -21,6 +21,9 @@
 % into actual device configurations to make our system practical for use with
 % real networks.
 
+\todo{Why is the following section needed at all? I think it should be consolidated with 
+intro}
+
 One of the foremost tasks in network management is programming 
 networks to forward traffic in a manner consistent with user- and
 application-induced high-level policies. Common types of policies
@@ -53,7 +56,8 @@ policies, otherwise performance, security, or availability problems may arise.
 % or fail (even if it is distributed), leading to (a partial) network failure.
 
 A common theme among these policies is that they specify
-\emph{network-wide intent}~\cite{intent}: operators can specify what
+\emph{network-wide intent}~\cite{intent}
+\todo{Fix all citations that don't have year}: operators can specify what
 they \emph{want} from the network as a whole, instead of \emph{how}
 individual components of the network must be configured.
 Software-defined networking (SDN) has led to the development of
@@ -144,6 +148,9 @@ plane design requirements---e.g., the number and maximum size of
 domains---our goal is to synthesize control plane configurations that
 comply with the control-plane requirements and generate paths that
 comply with the path requirements. 
+
+\todo{before I rewrite the following paragraph want to know if we need this
+section at all}
 Concretely, we investigate two increasingly
 hard problems: 1) given partition of the network into multiple routing
 domains, synthesize intra- and inter-domain policy-compliant routing  configurations
