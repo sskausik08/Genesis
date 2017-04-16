@@ -201,6 +201,7 @@ $SR(\lambda)$ to eliminate the equations at router $r$.
 			(t) edge [red, dashed] node {} (d1);
 			\end{tikzpicture}
 		}}
+		\hspace*{1cm}
 		\subfloat[Routing Loop]{
 			\raisebox{0.7cm}{\resizebox {0.33\columnwidth} {!} {
 					\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
@@ -280,28 +281,29 @@ remove these constraints. After we add the static route,
 we add loop avoidance constraints for the new static
 route, and continue with the unsat-core learning algorithm. 
 
-\subsection{Resilience Constraints} \label{sec:ospfresilience}
-Assume that the OSPF domain does not allow any static routes. 
-We use Genesis to provide two waypoint-compliant 
+\subsubsection{Resilience Constraints} \label{sec:ospfresilience}
+For 1-resilience, we use Genesis to provide two waypoint-compliant 
 edge-disjoint paths $\pi_1$ amd $\pi_2$ from $s$ to $t$.
 Equations~\ref{eq:waypoint} ensure that the edge weights 
 of the path provided by Genesis are strictly shorter than 
-the non-waypoint distance for $\lambda$. By adding these
-constraints for both paths $\pi_1$ and $\pi_2$ provided by Genesis,
+the non-waypoint distance for $\lambda$. 
+Let us assume there are no static routes in the 
+OSPF domain. By adding these
+constraints for both paths $\pi_1$ and $\pi_2$, 
 we enforce a \emph{partial order}: there are two paths to $\lambda$
 which are shorter than non waypoint distance, the 
 ordering of the weight of $\pi_1$ and $\pi_2$ is irrelevant. 
 \begin{equation} \label{eq:resilience}
 \{ W(\pi_1), W(\pi_2) \} < D^t_s(\waypt) 
 \end{equation}
-Thus, if a single link fails, only of these paths is affected. Suppose
-$\pi_1$ is affected, OSPF will not route traffic a  
+Thus, if a single link fails, only one 
+of these paths is affected. Suppose
+$\pi_1$ is affected, OSPF will not route traffic through a  
 non-waypoint-compliant path, as the weight of $\pi_2$ is shorter than any path which is not waypoint-compliant due to the constraints generated 
 by \name.
 
 \minisection{Resilience with Static Routes}
-Let us consider the case when there are static routes in the OSPF
-domain. This complicates the synthesis of resilient configurations. 
+Suppose there are static routes in the OSPF domain. 
 Consider $\pi_1$ and $\pi_2$ are two edge disjoint paths 
 connecting the routers $s$ to $t$. Suppose, $\pi_1$ is the 
 chosen primary path and it uses static routes on 
@@ -309,6 +311,9 @@ some of its links.
 Ideally, we want to ensure 
 that if any link on $\pi_1$ fails, 
 then the network must switch over to $\pi_2$. 
+Because of static routes,  
+the distance between $s$ and 
+$t$ could be different than $W(\pi_1)$ or $W(\pi_2)$.
 
 A static route $(r_1, r_2)$ on path $\pi$ for destination $\lambda$ implies that OSPF routing at $r_1$ is sending traffic to a 
 router $r' \not= r_2$ and the OSPF path would be violating
@@ -326,39 +331,48 @@ there exists a $\alpha \leq k$ such that
 $l_\alpha = (u_\alpha, v_\alpha)$  
 is the first 
 static route from the source in $\pi$, i.e., 
-$\forall 1 \leq \beta < \alpha. ~(u_\beta, v_\beta) \not\in SR(\lambda)$.
+$\forall \beta. ~1 \leq \beta < \alpha. ~(u_\beta, v_\beta) \not\in SR(\lambda)$.
 Therefore, all routers between $s$ and $u_\alpha$ did
 not require any static routes to steer traffic along a 
-non-shortest path. Therefore, we can estimate the 
+non-shortest path. Therefore, we estimate the 
 actual shortest OSPF distance between $s$ to $t$ as:
 \[
 \sum_{i=1}^{\alpha - 1} W_{u_i}^{v_i} + D_{u_\alpha}^t
 \]
 
-\begin{figure}[!t] 
-	\centering
-	\subfloat[Edge Weights]{
-		\resizebox {0.33\columnwidth} {!} {
-			\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
-			square/.style={regular polygon,regular polygon sides=4}] 
-			\node[state] at (0,0) (r0)  {$r_0$}; 
-			\node[state] at (-2,0) (s)  {$s$}; 
-			\node[state, fill=orange] at (1.8,1) (v1)  {$r_1$}; 
-			\node[state, fill=orange] at (1.8,-1) (v2)  {$r_2$}; 
-			\node[state] at (3.6, 0)(t) {$t$};
-			\node[state, rectangle] at (5, 0) (d1) {$\lambda$};
-			\path[->] 
-			(s) edge [red] node [black] {1} (v1)
-			(s) edge  node {1} (v2)
-			edge  node [above] {10} (t)
-			(v1) edge [red] node [black] {5} (t)
-			(v2) edge  node [black] {1} (t)
-			(t) edge [red, dashed] node {} (d1);
-			\end{tikzpicture}
-		}}
-				\compactcaption{OSPF edge weights such that the path is waypoint-compliant and example of routing loop created by a static route.}
-				\label{fig:ospfres}
-			\end{figure}
+%\begin{figure}[!t] 
+%	\centering
+%	\subfloat[Edge Weights]{
+%		\resizebox {0.33\columnwidth} {!} {
+%			\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
+%			square/.style={regular polygon,regular polygon sides=4}] 
+%			\node[state] at (-0.6,1.2) (v3)  {$r_3$}; 
+%			\node[state] at (1.9,1.2) (v4)  {$r_4$}; 
+%			\node[state] at (-2,0) (s)  {$r_0$}; 
+%			\node[state] at (-4,0) (src)  {$s$}; 
+%			\node[state, fill=orange] at (0.8,0) (v1)  {$r_1$}; 
+%			\node[state, fill=orange] at (-0.6,-1.2) (v2)  {$r_2$}; 
+%			\node[state] at (3, 0)(t) {$t$};
+%			\node[state, rectangle] at (4.4, 0) (d1) {$\lambda$};
+%			\path[->] 
+%			(s) edge [red] node [black, above] {$sr(\lambda)$} 
+%			node [black, below] {4} (v1)
+%			(src) edge [red]  node [black, below] {2} (v2)
+%			(src) edge [red] node [black] {1} (s)
+%			(v3) edge [blue] node [above, black] {1} (s)
+%			(v1) edge [blue] node [above, black] {1} (v3)
+%			(v1) edge [red] node [black] {1} (t)
+%			(v2) edge [red]  node [black, below] {3} (t)
+%			(v1) edge node {1} (v4)
+%			(v4) edge node {1} (t)
+%			(t) edge [red, dashed] node {} (d1);
+%			\end{tikzpicture}
+%		}}
+%				\compactcaption{OSPF edge weights and static routes for 1-resilient waypoint-compliance, where the red paths are the two edge disjoint paths for 
+%				$\waypt = \{r_1, r_2\}$. If link $r_1 \rightarrow t$ 
+%				fails, }
+%				\label{fig:ospfres}
+%			\end{figure}
 
 
 Coming back to the synthesis of resilient configurations,
