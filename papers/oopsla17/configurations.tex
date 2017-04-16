@@ -1,11 +1,31 @@
 \section{Synthesising Domain Assignments}
 \label{sec:synth-dom-ass}
+Traditional hierarchical networks are partitioned primarily
+based on ownership of domains--- each autonomous system 
+is owned by a separate entity, or due to hardware 
+limitations--- the intra-domain routers  
+may not be equipped to run BGP. 
+Many networks today have well-defined routing hierarchies,
+but these are realized through careful painstaking
+engineering. For example, it is often difficult to determine
+which routers to include in an OSPF area, how many OSPF
+domains to create, etc. Enterprise and datacenter 
+networks offer flexibility in routing protocols run on each
+router (BGP/OSPF)
+and mechanisms to update domain assignments periodically.
+In such settings, \name can automatically find
+good routing domain hierarchies with increased
+resilience/decreased complexity. We envision that operators
+will synthesize ``one-shot'' domain assignments for their changing 
+input policies at coarse-grained timescales (days/weeks);
+operators need not synthesize these assignments for every 
+policy change. 
 
 In this section, we present an algorithm for 
 solving the path-compliance synthesis problem when a domain assignment is not given to us (Definition~\ref{def:pathcompliance}).
 The algorithm searches the space of possible domain assignment $\Theta$ to find
 one that meets all configuration policies and has good quantitative properties---e.g., minimizes
-the number of route filters.
+the number of static routes. 
 %Formally, we are given 
 %a topology $T=(V,L)$, a set of paths $\Pi$ and
 %configuration policies $P$, 
@@ -19,7 +39,7 @@ We first show that when the domain assignment is not given,
 even the simplest variant of the path-compliance assignment problem
 is computationally hard.
 \begin{theorem}
-If $P$ disallows the use of route filters ($rc\leq 0$)
+If $P$ disallows the use of static routes ($sc \leq 0$)
 the path-compliance synthesis problem is NP-complete.
 \end{theorem}
 \iffull
@@ -29,11 +49,13 @@ the path-compliance synthesis problem is NP-complete.
 Given the complexity of this problem, we opt for a greedy
 stochastic search.
 \name searches the space of assignments using Markov
-Chain Monte Carlo (MCMC) sampling methods and specifically the Metropolis-Hasting
+Chain Monte Carlo (MCMC) sampling methods, specifically the Metropolis-Hasting
 algorithm, a common technique used in several optimization 
 problems~\cite{stoke}. 
-We first present the general structure of our searching algorithm and 
-then describe how the quantities in Table~\ref{tab:configpolicysupport} can be computed
+We first present the general structure of our search 
+algorithm and 
+then describe how the quantities 
+in Table~\ref{tab:configpolicysupport} can be computed
 or estimated to drive the search.
 
 
