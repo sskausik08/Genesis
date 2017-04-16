@@ -347,7 +347,9 @@ ax3.fill_between(x, 1, genesisTime, color='#ff7f00', alpha='0.5', label="Genesis
 
 ax3.grid()
 # ax2.grid()
-
+plt.legend(['Genesis','Zeppelin'], fontsize=13,  ncol=2, loc='upper center', 
+    bbox_to_anchor=[-0.7, 1.50], columnspacing=1.0, labelspacing=0.0,handletextpad=0.0, 
+    handlelength=1.5, fancybox=True)
 plt.savefig('ospfwaypoint.eps', format='eps', dpi=1000, bbox_inches='tight')
 
 ospfIsolationFig, (ax1, ax2) = plt.subplots(1, 2, sharey=True)
@@ -361,13 +363,12 @@ totTime = [3.466053895,6.866023487,10.80940593,15.62154008,21.4005797,29.0806099
 
 ax1.set_xlim([10, 80])
 ax1.set_xticks(xticks)
-ax1.set_yscale('log')
 
 ax1.plot(x, genesisTime, '#ff7f00')
 ax1.plot(x, totTime, '#377eb8',)
 
 ax1.fill_between(x, genesisTime, totTime, color='#377eb8', alpha='0.5', label="Zeppelin")
-ax1.fill_between(x, 1, genesisTime, color='#ff7f00', alpha='0.5', label="Genesis")
+ax1.fill_between(x, 0, genesisTime, color='#ff7f00', alpha='0.5', label="Genesis")
 
 #plt.legend(loc='best', frameon=False, fontsize=18)
 ax1.set_ylabel('Synthesis Time (s)', fontsize=5)
@@ -379,18 +380,19 @@ totTime = [9.795185072,21.18261655,39.06264416,77.62741683]
 
 ax2.set_xlim([20, 80])
 ax2.set_xticks(x)
-ax2.set_yscale('log')
 
 ax2.plot(x, genesisTime, '#ff7f00')
 ax2.plot(x, totTime, '#377eb8',)
 
 z = ax2.fill_between(x, genesisTime, totTime, color='#377eb8', alpha='0.5', label="Zeppelin")
-g = ax2.fill_between(x, 1, genesisTime, color='#ff7f00', alpha='0.5', label="Genesis")
+g = ax2.fill_between(x, 0, genesisTime, color='#ff7f00', alpha='0.5', label="Genesis")
 
 #plt.legend(loc='best', frameon=False, fontsize=18)
 ax2.set_xlabel('Number of Paths', fontsize=20)
 ax2.grid()
-
+plt.legend(['Genesis','Zeppelin'], fontsize=13,  ncol=2, loc='upper center', 
+    bbox_to_anchor=[-0.35, 1.50], columnspacing=1.0, labelspacing=0.0,handletextpad=0.0, 
+    handlelength=1.5, fancybox=True)
 plt.savefig('ospfisolation.eps', format='eps', dpi=1000, bbox_inches='tight')
 
 
