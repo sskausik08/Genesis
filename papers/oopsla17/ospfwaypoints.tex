@@ -145,6 +145,26 @@ topology is not compliant with the waypoint policy.
 Similar to $D_s^t$ variables, 
 $D_s^t(\waypt)$ is upper bounded by the actual shortest non-waypoint distance from $s$ to $t$.
 
+\definecolor{orange}{RGB}{255, 157, 30} 
+\begin{wrapfigure}{Hr}{0.39\columnwidth}
+			\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
+			square/.style={regular polygon,regular polygon sides=4}] 
+			\node[state] at (0,0) (s)  {$s$}; 
+			\node[state, fill=orange] at (1.8,1) (v1)  {$r_1$}; 
+			\node[state, fill=orange] at (1.8,-1) (v2)  {$r_2$}; 
+			\node[state] at (3.6, 0)(t) {$t$};
+			\node[state, rectangle] at (5, 0) (d1) {$\lambda$};
+			\path[->] 
+			(s) edge [red] node [black] {1} (v1)
+			(s) edge  node {1} (v2)
+			edge  node [above] {10} (t)
+			(v1) edge [red] node [black] {5} (t)
+			(v2) edge  node [black] {1} (t)
+			(t) edge [red, dashed] node {} (d1);
+			\end{tikzpicture}
+			\compactcaption{OSPF edge weights such that the path is waypoint-compliant.} 
+			\label{fig:ospfwayptexample}
+\end{wrapfigure}
 
 Given a destination tree $\xi_\lambda$, we will use the 
 non-waypoint distances to enforce waypoint-compliance. Consider a 
@@ -180,48 +200,47 @@ If one of these constraints was part of an unsatisfiable
 core, we can add the static route $(r, N_{\xi_\lambda}(r))$ to
 $SR(\lambda)$ to eliminate the equations at router $r$. 
 
-\definecolor{orange}{RGB}{255, 157, 30} 
-\begin{figure}[!t] 
-	\centering
-	\subfloat[Edge Weights]{
-		\resizebox {0.33\columnwidth} {!} {
-			\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
-			square/.style={regular polygon,regular polygon sides=4}] 
-			\node[state] at (0,0) (s)  {$s$}; 
-			\node[state, fill=orange] at (1.8,1) (v1)  {$r_1$}; 
-			\node[state, fill=orange] at (1.8,-1) (v2)  {$r_2$}; 
-			\node[state] at (3.6, 0)(t) {$t$};
-			\node[state, rectangle] at (5, 0) (d1) {$\lambda$};
-			\path[->] 
-			(s) edge [red] node [black] {1} (v1)
-			(s) edge  node {1} (v2)
-			edge  node [above] {10} (t)
-			(v1) edge [red] node [black] {5} (t)
-			(v2) edge  node [black] {1} (t)
-			(t) edge [red, dashed] node {} (d1);
-			\end{tikzpicture}
-		}}
-		\hspace*{1cm}
-		\subfloat[Routing Loop]{
-			\raisebox{0.7cm}{\resizebox {0.33\columnwidth} {!} {
-					\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
-					square/.style={regular polygon,regular polygon sides=4}] 
-					\node[state] at (0,0) (s)  {$s$}; 
-					\node[state] at (1.8,1) (v1)  {$r_1$}; 
-					\node[state] at (3.6, 0)(t) {$t$};
-					\node[state, rectangle] at (5, 0) (d1) {$\lambda$};
-					\path[->] 
-					(s) edge [red] node [black, sloped, anchor=center, above]
-					{$sr(\lambda)$} node
-					[black, sloped, anchor=center, below] {1} (v1)
-					edge  node [below] {5} (t)
-					(v1) edge [red] node [black] {50} (t)
-					(t) edge [red, dashed] node {} (d1);
-					\end{tikzpicture}
-				}}}
-				\compactcaption{OSPF edge weights such that the path is waypoint-compliant and example of routing loop created by a static route.}
-				\label{fig:ospfw}
-			\end{figure}
+
+%\begin{figure}[!t] 
+%	\centering
+%	\subfloat[Edge Weights]{
+%		\resizebox {0.33\columnwidth} {!} {
+%			\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
+%			square/.style={regular polygon,regular polygon sides=4}] 
+%			\node[state] at (0,0) (s)  {$s$}; 
+%			\node[state, fill=orange] at (1.8,1) (v1)  {$r_1$}; 
+%			\node[state, fill=orange] at (1.8,-1) (v2)  {$r_2$}; 
+%			\node[state] at (3.6, 0)(t) {$t$};
+%			\node[state, rectangle] at (5, 0) (d1) {$\lambda$};
+%			\path[->] 
+%			(s) edge [red] node [black] {1} (v1)
+%			(s) edge  node {1} (v2)
+%			edge  node [above] {10} (t)
+%			(v1) edge [red] node [black] {5} (t)
+%			(v2) edge  node [black] {1} (t)
+%			(t) edge [red, dashed] node {} (d1);
+%			\end{tikzpicture}
+%		}}
+%		\hspace*{1cm}
+%		\subfloat[Routing Loop]{
+%			\raisebox{0.7cm}{\resizebox {0.33\columnwidth} {!} {
+%					\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
+%					square/.style={regular polygon,regular polygon sides=4}] 
+%					\node[state] at (0,0) (s)  {$s$}; 
+%					\node[state] at (1.8,1) (v1)  {$r_1$}; 
+%					\node[state] at (3.6, 0)(t) {$t$};
+%					\node[state, rectangle] at (5, 0) (d1) {$\lambda$};
+%					\path[->] 
+%					(s) edge [red] node [black, sloped, anchor=center, above]
+%					{$sr(\lambda)$} node
+%					[black, sloped, anchor=center, below] {1} (v1)
+%					edge  node [below] {5} (t)
+%					(v1) edge [red] node [black] {50} (t)
+%					(t) edge [red, dashed] node {} (d1);
+%					\end{tikzpicture}
+%				}}}
+%				\label{fig:ospfw}
+%			\end{figure}
 			
 \minisection{Routing Loop Avoidance Constraints} \label{sec:loopavoidance}
 Since we are not enforcing a particular path in the network for waypoint-
@@ -235,6 +254,25 @@ to $r_1 \rightarrow t$ of weight 50). Thus, $r_1$ will send the
 packet back to $s$, and thus, causing a routing loop as $s$ will send
 it back to $r_1$ and back and forth till the \emph{ttl} (time to live) of the
 packet expires. 
+
+\begin{wrapfigure}{lH}{0.37\columnwidth}
+	\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
+				square/.style={regular polygon,regular polygon sides=4}] 
+				\node[state] at (0,0) (s)  {$s$}; 
+				\node[state] at (1.8,1) (v1)  {$r_1$}; 
+				\node[state] at (3.6, 0)(t) {$t$};
+				\node[state, rectangle] at (5, 0) (d1) {$\lambda$};
+				\path[->] 
+				(s) edge [red] node [black, sloped, anchor=center, above]
+				{$sr(\lambda)$} node
+				[black, sloped, anchor=center, below] {1} (v1)
+				edge  node [below] {5} (t)
+				(v1) edge [red] node [black] {50} (t)
+				(t) edge [red, dashed] node {} (d1);
+				\end{tikzpicture}
+				\compactcaption{Example of routing loop caused by a static route.} \label{fig:ospfloop}
+\end{wrapfigure}
+
 
 Zeppelin adds additional constraints to mitigate the creation of prevention
 of routing loops when static routes are added. In each iteration of
@@ -304,27 +342,85 @@ by \name.
 
 \minisection{Resilience with Static Routes}
 Suppose there are static routes in the OSPF domain. 
-Consider $\pi_1$ and $\pi_2$ are two edge disjoint paths 
-connecting the routers $s$ to $t$. Suppose, $\pi_1$ is the 
-chosen primary path and it uses static routes on 
-some of its links.
+Consider the example in \Cref{fig:ospfres} where 
+$\pi_1=s\rightarrow r_0 \rightarrow r_1 \rightarrow t$ 
+and $\pi_2=s\rightarrow r_2 \rightarrow t$ 
+are two edge disjoint paths 
+connecting the routers $s$ to $t$. In this example, 
+$\pi_1$ is the 
+chosen primary path and it use a static routes 
+for $r_0 \rightarrow r_1$. 
 Ideally, we want to ensure 
 that if any link on $\pi_1$ fails, 
 then the network must switch over to $\pi_2$. 
-Because of static routes,  
-the distance between $s$ and 
-$t$ could be different than $W(\pi_1)$ or $W(\pi_2)$.
+When link $r_1 \rightarrow t$ fails,
+router $s$ forwards to $r_0$ (
+path weight 5: $ s \rightarrow r_0 \rightarrow r_2 \rightarrow t$)
+over $r_2$ (path weight 6: $s \rightarrow r_2 \rightarrow t$). 
+Because of the static route at $r_0$, traffic is forwarded
+to $r_1$ which sends it back to $r_0$ through $r_3$, 
+causing a routing loop. Note that, both paths $\pi_1$
+and $\pi_2$ have weights smaller than the shortest non-waypoint
+ distance, which is $\infty$ for this example, as all paths
+ go through $r_1$ or $r_2$. 
+
+\begin{figure}
+	\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
+	square/.style={regular polygon,regular polygon sides=4}] 
+	\node[state] at (-0.6,1.2) (v3)  {$r_3$}; 
+	\node[state] at (-2,0) (s)  {$r_0$}; 
+	\node[state] at (-4,0) (src)  {$s$}; 
+	\node[state, fill=orange] at (0.8,0) (v1)  {$r_1$}; 
+	\node[state, fill=orange] at (-0.6,-1.2) (v2)  {$r_2$}; 
+	\node[state] at (3, 0)(t) {$t$};
+	\node[state, rectangle] at (4.4, 0) (d1) {$\lambda$};
+	\path[->] 
+	(s) edge [red] node [black, above] {$sr(\lambda)$} 
+	node [black, below] {4} (v1)
+	(s) edge [black] node {1} (v2)
+	(src) edge [red]  node [black, below] {3 (1 $\checkmark$)} (v2)
+	(src) edge [red] node [black] {1} (s)
+	(v3) edge [blue] node [above, black] {1} (s)
+	(v1) edge [blue] node [above, black] {1} (v3)
+	(v1) edge [red, strike thru arrow] node [black] {1} (t)
+	(v2) edge [red]  node [black, below] {3} (t)
+	(t) edge [red, dashed] node {} (d1);
+	\end{tikzpicture}
+	\compactcaption{Example non-resilient configuration for the red paths provided by Genesis for $\waypt = \{r_1, r_2\}$. If link $r_1 \rightarrow t$ 
+		fails, a routing loop is formed at $r_0 \rightarrow r_1 \rightarrow r_3 \rightarrow r_0$, no traffic reaches $t$. 
+		The configuration is 1-resilient waypoint-compliant when the $s \rightarrow r_2$ weight is set to 1.}
+	\label{fig:ospfresexample}
+\end{figure}
+
+
+When \name adds static routes on the paths, it 
+adds loop avoidance constraints assuming no failures. 
+However, the static route can lead to a loop under certain
+failures. 
+Since we impose a partial order on $\pi_1$ and $\pi_2$ (\Cref{eq:resilience}), 
+when the primary path $\pi_1$ fails, the 
+failover path $\pi_2$ may not be chosen always. 
+Instead, we try to split the traffic
+along $\pi_1$ and $\pi_2$ even under non-failure scenarios,
+therefore, a failure to $\pi_1$
+will still ensure that traffic will be 
+sent through $\pi_2$. Therefore, we add constraints 
+to ensure the following property of splitting 
+the traffic among both $\pi_1$ and $\pi_2$. With 
+static routes in play, the routes seen at $s$ may not 
+correspond to weights $W(\pi_1)$ and  $W(\pi_2)$, thus
+the constraint $W(\pi_1) = W(\pi_2)$ does not ensure the 
+traffic split (\Cref{fig:ospfresexample}).
 
 A static route $(r_1, r_2)$ on path $\pi$ for destination $\lambda$ implies that OSPF routing at $r_1$ is sending traffic to a 
-router $r' \not= r_2$ and the OSPF path would be violating
-waypoint-compliance. Instead, the static route circumvents 
+router $r' \not= r_2$. Instead, the static route circumvents 
 the OSPF shortest route at $r_1$ and \emph{steers} $\lambda$ 
 traffic to $r_2$ and not $r'$. Therefore, for a 
 path $\pi$ connecting routers $s$ and $t$ such that it 
 has a static route on one of its links, 
-then $W(\pi)$ is greater than or equal to the 
+$W(\pi)$ is greater than or equal to the 
 actual OSPF distance
-between $s$ and $t$ (which is the OSPF route at $s$).
+between $s$ and $t$ corresponding to $\pi_1$. 
 Let us suppose $\pi = l_1 \ldots l_k = (u_1, v_1) \ldots (u_k, v_k)$ 
 and 
 there exists a $\alpha \leq k$ such that 
@@ -334,64 +430,32 @@ static route from the source in $\pi$, i.e.,
 $\forall \beta. ~1 \leq \beta < \alpha. ~(u_\beta, v_\beta) \not\in SR(\lambda)$.
 Therefore, all routers between $s$ and $u_\alpha$ did
 not require any static routes to steer traffic along a 
-non-shortest path. Therefore, we estimate the 
-actual shortest OSPF distance between $s$ to $t$ as:
-\[
-\sum_{i=1}^{\alpha - 1} W_{u_i}^{v_i} + D_{u_\alpha}^t
-\]
+non-shortest path. Therefore, our estimate
+actual shortest OSPF distance  between $s$ to $t$ 
+corresponding to $\pi_1$ 
+as the sum of weights till $u_\alpha$ plus the distance
+from $u_\alpha$ to $t$. In our running example, 
+$u_\alpha = r_0$, the distance between $s$ to $t$ 
+is estimated as $W_s^{r_0} + D_{r_0}^t = 1 + (1 + 1 + 1)$
+which is the shortest OSPF distance. 
 
-%\begin{figure}[!t] 
-%	\centering
-%	\subfloat[Edge Weights]{
-%		\resizebox {0.33\columnwidth} {!} {
-%			\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
-%			square/.style={regular polygon,regular polygon sides=4}] 
-%			\node[state] at (-0.6,1.2) (v3)  {$r_3$}; 
-%			\node[state] at (1.9,1.2) (v4)  {$r_4$}; 
-%			\node[state] at (-2,0) (s)  {$r_0$}; 
-%			\node[state] at (-4,0) (src)  {$s$}; 
-%			\node[state, fill=orange] at (0.8,0) (v1)  {$r_1$}; 
-%			\node[state, fill=orange] at (-0.6,-1.2) (v2)  {$r_2$}; 
-%			\node[state] at (3, 0)(t) {$t$};
-%			\node[state, rectangle] at (4.4, 0) (d1) {$\lambda$};
-%			\path[->] 
-%			(s) edge [red] node [black, above] {$sr(\lambda)$} 
-%			node [black, below] {4} (v1)
-%			(src) edge [red]  node [black, below] {2} (v2)
-%			(src) edge [red] node [black] {1} (s)
-%			(v3) edge [blue] node [above, black] {1} (s)
-%			(v1) edge [blue] node [above, black] {1} (v3)
-%			(v1) edge [red] node [black] {1} (t)
-%			(v2) edge [red]  node [black, below] {3} (t)
-%			(v1) edge node {1} (v4)
-%			(v4) edge node {1} (t)
-%			(t) edge [red, dashed] node {} (d1);
-%			\end{tikzpicture}
-%		}}
-%				\compactcaption{OSPF edge weights and static routes for 1-resilient waypoint-compliance, where the red paths are the two edge disjoint paths for 
-%				$\waypt = \{r_1, r_2\}$. If link $r_1 \rightarrow t$ 
-%				fails, }
-%				\label{fig:ospfres}
-%			\end{figure}
-
-
-Coming back to the synthesis of resilient configurations,
-when \name adds static routes for \emph{steering},  
-the partial order \Cref{eq:resilience} is not necessarily true 
-(the partial order would hold only under no failures and 
-no static routes). 
-Because of that, when the primary path $\pi_1$ fails, the 
-failover path $\pi_2$ may not be chosen. To ensure that 
-$\pi_2$ is always chosen, we try to split the traffic
-along $\pi_1$ and $\pi_2$, therefore, a failure to $\pi_1$
-will still ensure that traffic is sent through $\pi_2$ 
-(which is waypoint-compliant). To enforce splitting amongst
-$\pi_1$ and $\pi_2$, we add the following constraints: 
+To enforce splitting amongst
+$\pi_1$ and $\pi_2$, we ensure that the weight 
+of the path $W(\pi_2)$\footnote{
+Note that ideally, the OSPF distance corresponding to 
+$\pi_2$ would also depend on the first static route on
+$\pi_2$, our distance variables are upper bounded by actual
+distances and may not be equal, and thus, upper bounding 
+those variables in these constraints do not ensure correctness.
+For soundness, we use $W(\pi_2)$ which is an upper bound
+for the OSPF distance corresponding to 
+$\pi_2$. 
+} 
+is lesser than or equal to 
+the estimated OSPF distance corresponding to $\pi_1$: 
 \begin{equation}
 	W(\pi_2) \leq \sum_{i=1}^{\alpha - 1} W_{u_i}^{v_i} + D_{u_\alpha}^t	
 \end{equation}
-where $(u_\alpha, v_\alpha)$ is the first static route in $\pi_1$.
-We add symmetric constraints constraining $W(\pi_1)$. 
 
 Similar to the routing loop avoidance constraints, we add the
 above constraints lazily when a static route is added to one of the

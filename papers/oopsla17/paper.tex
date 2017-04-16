@@ -39,6 +39,25 @@
 \newcommand{\pushcode}[1][1]{\hskip\dimexpr#1\algorithmicindent\relax}
 \newcolumntype{P}[1]{>{\centering\arraybackslash}p{#1}}
 
+\usetikzlibrary{calc}
+\usetikzlibrary{arrows}
+\usetikzlibrary{decorations.markings}
+
+\newcommand*{\StrikeThruDistance}{0.2cm}%
+\newcommand*{\StrikeThru}{\StrikeThruDistance,\StrikeThruDistance}%
+
+
+\tikzset{strike thru arrow/.style={
+		decoration={markings, mark=at position 0.5 with {
+				\draw [black, thick,-] 
+				++ (-\StrikeThruDistance,-\StrikeThruDistance) 
+				-- ( \StrikeThruDistance, \StrikeThruDistance);}
+		},
+		postaction={decorate},
+	}}
+	
+
+
 \usepackage[font=small]{caption}
 %\usepackage{subcaption}
 \usepackage{enumitem}
