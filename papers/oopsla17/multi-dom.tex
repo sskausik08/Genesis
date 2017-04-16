@@ -43,7 +43,7 @@ domain path length 2. Since our objective is to send traffic along
 $g_3$, for path (1) we do not need to add any further BGP configurations,
 and the route via $g_3$ is automatically redistributed into domain D0;
 for destination $\lambda$, the gateway at domain D0 is $g_3$, i.e.,
-$G^C(0, r_1, \lambda) = g_3$.
+$G(0, \lambda) = g_3$.
 
 In the second case, the requested path does not have shortest domain path length
 and we therefore need to set local preferences.
@@ -57,9 +57,10 @@ we need to set the local preference of route received by $g_1$
 In the example, we set the preference at node $g_1$: 
 $LP(g_1, g_4, \lambda) = 100$
 which causes $g_1$ to become gateway at domain D0 for destination $\lambda$, i.e., 
-$G^C(0, r_1, \lambda) = g_1$.
+$G(0, \lambda) = g_1$.
 
-In the third case, two paths from different sources in the same domain, but for the same destination $\lambda$, exit 
+In the third case, two paths from different sources 
+destination $\lambda$ exit
 the domain through two different
 gateways.
 For example, in \Cref{fig:bgpexample}(b),
@@ -68,23 +69,27 @@ gateway router $g_1$, while the path from $r_2$  to $\lambda$ exits
 through $g_2$. 
 Moreover,  we assume that $g_1$ is the closest gateway to $r_1$ and 
 $g_2$ is the closest gateway to $r_2$ w.r.t. OSPF paths in the domain.
-In this case, both these routes need to be 
-somehow redistributed to the OSPF domain. 
-By assign local preferences such that
+In this case, both these routes need to be  
+redistributed to the OSPF domain. 
+By assigning local preferences such that
 $LP(g_1,g_3,\lambda)<LP(g_2,g_4,\lambda)$,
-we have that $g_2$ is advertised to the OSPF domain
-and
-the traffic from $r_2$ correctly exists through $g_2$. 
-To prevent that the traffic from $r_1$ also exists through $g_2$,
-we add an iBGP filter for the connection $g_2 \rightarrow g_1$ for
-destination IP $\lambda$.\footnote{Gateways $g_1$ and $g_2$ need not be connected by a 
-link directly; iBGP establishes a connection among the 
-BGP routers in a domain.} Thus, $g_1$ will not receive the
-$g_2 \rightarrow g_4$ route from $g_2$, 
-and the route from  $r_1$ to $\lambda$ will exit through $g_1$.
-%as it has the highest local preference
-%of all routes received by $g_1$, and will be redistributed into the 
-%OSPF domain. 
+ $g_2$ will redistribute a route for $\lambda$ 
+ to the OSPF domain and
+the traffic from $r_2$ will correctly exit through $g_2$. 
+To prevent the traffic from $r_1$ to exit through $g_2$,
+we add an iBGP filter
+\footnote{Gateways $g_1$ and $g_2$ need not be connected by a physical 
+	link directly; iBGP establishes a connection among the 
+	BGP routers in a domain.}
+ for the connection $g_2 \rightarrow g_1$ for
+destination IP $\lambda$. 
+Thus, $g_1$ will not receive the
+a route for $\lambda$ from $g_2$, and therefore,
+redistribute the route it received from $g_3$. For 
+this example, $G(0, \lambda) = \{g_1, g_2\}$.
+$\lambda$ traffic from $r_1$ will exit through $g_1$ 
+as it is the closest gateway. 
+
 \begin{figure*}
 	\centering
 	\subfloat[Single
@@ -110,7 +115,7 @@ This advertisement will be rejected because it creates a loop---i.e., the domain
 appears twice in the path. 
 To enforce domain paths with loops, we use static routes. In this example
 the static routes
-$(r_1,\lambda) = \{r_2\}$, $SR(r_2,\lambda) = \{g_1\}$, and $SR(g_1,\lambda) = \{g_2\}$ 
+$SR(r_1,\lambda) = \{r_2\}$, $SR(r_2,\lambda) = \{g_1\}$, and $SR(g_1,\lambda) = \{g_2\}$ 
 guarantee that routes from $r_1$, $r_2$, and $g_2$ to $\lambda$ traverse the desired links.
 
 \minisection{Algorithm}
