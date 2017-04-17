@@ -1,8 +1,6 @@
 \subsection{Synthesizing Path-compliant  Inter-domain Configurations}
 \label{sec:inter-synthesis}
 
-\todo{clarify that hard part of static routes is intra domain
-and the ones we place for inter are necessary}
 Next, we extend our algorithm to
 solve the path-compliance problem in the presence
 of multiple domains---i.e., $|\{\Theta(r) \mid r\in V\}|>1$.
@@ -100,8 +98,8 @@ as it is the closest gateway.
 	\hfill
 	\subfloat[Static Routes]{\includegraphics[width=0.265\columnwidth]{figures/static-route.pdf}}
 	\compactcaption{\label{fig:bgpexample}
-		Examples of how BGP and static routes are configured for 
-		inter-domain routing given a domain assignment $\Theta$.}
+		Examples of BGP and static route configurations for 
+		inter-domain routing given domain assignment $\Theta$.}
 \end{figure*}
 
 %\minisection{Static Routes} \label{sec:static}
@@ -152,7 +150,13 @@ For all links that are not in $\pi'$
 we will require static routes.
 With abuse of notation, for every link $(r_1,r_2)\in\bigcup_{i< nl} \pi_i\cup \bigcup_{i< nl}\{l_i^{i+1}\}$ 
 we have
-$SR(r_1, \lambda) = \{r_2\}$.
+$SR(r_1, \lambda) = \{r_2\}$. Note that the 
+inter-domain static routes we place
+for a domain assignment $\Theta$ is necessary, 
+finding optimal static routes for intra-domain  
+is hard. 
+\kausik{Done: clarify that hard part of static routes is intra domain
+	and the ones we place for inter are necessary}
 
 Finally, for each intra-domain subpath $\pi_i$ that is not statically routed by this algorithm---i.e., $i\geq nl$---\name applies
 OSPF synthesis for the domain $\Theta(\pi_i)$. 
@@ -224,6 +228,7 @@ We describe this in the next section.
 %
 %\todo{Changes to OSPF synthesis to ensure closest gateway}
 \subsubsection{Modified OSPF Synthesis for Multiple Gateways}
+\todo{Can shorten this section, same technique mostly}
 When BGP routes for destination $\lambda$ 
 are redistributed by multiple gateways to an 
 OSPF domain, \name uses a modified OSPF synthesis

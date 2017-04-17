@@ -141,36 +141,42 @@ seconds on average to synthesize waypoint-compliant configurations.
 %	\end{footnotesize}
 %\end{table} 
 
-\subsection{Resilience Performance of Intra-domain Synthesis} \label{sec:mcmceval}
-\noindent\textbf{Coonectivity-resilience.}~~~
+\subsection{Resilience Performance of Intra-domain Synthesis} \label{sec:reseval}
+\noindent\textbf{Connectivity-resilience.}~~~
 We now evaluate the resilience of configurations 
-of \name's intra-domain synthesis (1-PC). For this, 
+of \name's intra-domain synthesis (1-PC).
+For this, 
 we consider the path-compliance isolation workload for
 varying number of paths 
 in \secref{sec:ospfeval} and benchmark the connectivity-
 resilience obtained over a baseline path-compliance 
 configuration 
 where we use static routes for all links in the path and 
-assign OSPF edge weights randomly. \Cref{fig:ospfbaselineresilience}
-shows the plot of the different resilience metrics for 
-1-PC over the baseline configurations. 1-PC obtains a
-average resilience score of 0.95 over the baseline score 
-of 0.85, while the fraction of 1-resilient paths (based on
-connectivity) in 1-PC is much greater (0.83) compared to 
-the baseline (0.49).
+assign OSPF edge weights randomly. For these workloads,
+\name on average places 
+$(8 \pm 0.5)$\% of the static routes as 
+compared to the baseline configuration. 
+\Cref{fig:ospfbaselineresilience}
+shows the plot of connectivity-resilience scores for 
+1-PC configurations over the baseline configurations. 
+1-PC provides an average connectivity-resilience score 
+of 0.95 over the baseline score 
+of 0.85.
 
-\begin{wrapfigure}{r}{0.3\columnwidth}
+\begin{wrapfigure}{r}{0.20\columnwidth}
 	\begin{center}
-		\includegraphics[width=0.3\columnwidth]{figures/ospfbaselineresilience.eps}
+		\includegraphics[width=0.20\columnwidth]{figures/ospfbaselineresilience.eps}
 		%	\subfloat[Number of Route Filters]
 		%	{\includegraphics[width=0.33\columnwidth]{figures/ospfRF.eps}}
 		%	\subfloat[Endpoint Resilience]
 		%	{\includegraphics[width=0.32\columnwidth]{figures/ospfAvgRes.eps}}
 		\compactcaption{\label{fig:ospfbaselineresilience}
-			End-to-end synthesis time (log (s)) for waypoint policy workloads for varying 
-			number of paths and different number of waypoint sets.}
+			Connectivity-resilience for 1-PC configurations compared to the baseline 
+			configurations.}
 	\end{center} 
 \end{wrapfigure}
+
+
 \noindent\textbf{Resilient Waypoint Compliance.}~~~
 We now evaluate the resilience obtained by \name's
 resilient waypoint-compliance synthesis (referred to as 2-WC)
@@ -184,14 +190,23 @@ using a single waypoint-path from Genesis. For these
 experiments, for the same policy input, we run \genesis + \name 
 3 times with a random seed, and report the most-resilient configuration.
 
-\Cref{fig:ospf} shows the scatter plot of the policy-resilience 
+\Cref{fig:ospfres} shows the scatter plot of the policy-resilience 
 score obtained by 2-WC over 1-PC and 1-WC over 100 runs
-for varying number of destinations (10, 20 and 40). 
-We can observe that 2-WC is able to synthesize highly
-resilient configurations (score > 0.9) over 1-PC (
-average score is 0.5) and 1-WC (average score is 0.6). 
+for varying number of policies (10, 20 and 40), each policy mapped 
+to a particular destination IP address. 
+For 40 policies, 
+we can observe that 2-WC is able to synthesize highly
+resilient policy-compliant configurations 
+(average score is 0.98) over 1-PC (
+average score is 0.41) and 1-WC (average score is 0.51). 
+Observe that 
 1-WC is able to provide higher policy-resilience than
-1-PC because
+1-PC. This is because we only
+force the \name path's weight to 
+be shorter than the shortest 
+non-compliant path, and thus, we could get 
+other waypoint-compliant paths to be shorter than the  
+\name path, providing higher policy-resilience.
 
 \begin{figure*}
 	\centering

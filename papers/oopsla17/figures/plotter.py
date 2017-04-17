@@ -444,7 +444,7 @@ ax1.set_ylim([0, 1])
 
 ax1.scatter(zepres10W, zepres10WR, marker="x", s=20, color='#ff7f00')
 ax1.plot([0.0, 1.0], linestyle='--', color="black") 
-ax1.set_xlabel('1-WC Score \n \#Paths:10', fontsize=13)
+ax1.set_xlabel('1-WC Score \n \#Policies:10', fontsize=13)
 ax1.set_ylabel('2-WC Score', fontsize=13)
 ax1.grid()
 
@@ -461,7 +461,7 @@ ax2.set_ylim([0, 1])
 
 ax2.scatter(zepres20W, zepres20WR, marker="x", s=20, color='#ff7f00')
 ax2.plot([0.0, 1.0], linestyle='--', color="black") 
-ax2.set_xlabel('1-WC Score \n \#Paths:20', fontsize=13)
+ax2.set_xlabel('1-WC Score \n \#Policies:20', fontsize=13)
 # ax2.set_ylabel('2-WC Score', fontsize=13)
 ax2.grid()
 #ax2.scatter(zepres20P, zepres20WR, marker="^", s=3, color='#377eb8')
@@ -478,7 +478,7 @@ ax3.set_ylim([0, 1])
 
 ax3.scatter(zepres40W, zepres40WR, marker="x", s=20, color='#ff7f00')
 ax3.plot([0.0, 1.0], linestyle='--', color="black") 
-ax3.set_xlabel('1-WC Score \n \#Paths:40', fontsize=13)
+ax3.set_xlabel('1-WC Score \n \#Policies:40', fontsize=13)
 # ax3.set_ylabel('2-WC Score', fontsize=13)
 ax3.grid()
 
@@ -491,7 +491,7 @@ ax1.set_ylim([0, 1])
 
 ax1.scatter(zepres10P, zepres10WR, marker="x", s=20, color='#377eb8')
 ax1.plot([0.0, 1.0], linestyle='--', color="black") 
-ax1.set_xlabel('1-PC Score \n \#Paths:10', fontsize=13)
+ax1.set_xlabel('1-PC Score \n \#Policies:10', fontsize=13)
 ax1.set_ylabel('2-WC Score', fontsize=13)
 ax1.grid()
 
@@ -508,7 +508,7 @@ ax2.set_ylim([0, 1])
 
 ax2.scatter(zepres20P, zepres20WR, marker="x", s=20, color='#377eb8')
 ax2.plot([0.0, 1.0], linestyle='--', color="black") 
-ax2.set_xlabel('1-PC Score \n \#Paths:20', fontsize=13)
+ax2.set_xlabel('1-PC Score \n \#Policies:20', fontsize=13)
 # ax2.set_ylabel('2-WC Score', fontsize=13)
 ax2.grid()
 #ax2.scatter(zepres20P, zepres20WR, marker="^", s=3, color='#377eb8')
@@ -525,7 +525,7 @@ ax3.set_ylim([0, 1])
 
 ax3.scatter(zepres40P, zepres40WR, marker="x", s=20, color='#377eb8')
 ax3.plot([0.0, 1.0], linestyle='--', color="black") 
-ax3.set_xlabel('1-PC Score \n \#Paths:40', fontsize=13)
+ax3.set_xlabel('1-PC Score \n \#Policies:40', fontsize=13)
 # ax3.set_ylabel('2-WC Score', fontsize=13)
 ax3.grid()
 
@@ -546,14 +546,14 @@ zepBaselineF=zepBaselineF[:100]
 ax1.set_xlim([0, 1])
 ax1.set_ylim([0, 1])
 
-ax1.scatter(zepBaseline, zepConRes, marker="o", s=16, color='#377eb8', label='Score')
-ax1.scatter(zepBaselineF, zepConF, marker="x", s=16, color='#ff7f00', label='Fraction')
+ax1.scatter(zepBaseline, zepConRes, marker="x", s=16, color='#377eb8', label='Score')
+#ax1.scatter(zepBaselineF, zepConF, marker="x", s=16, color='#ff7f00', label='Fraction')
 ax1.plot([0.0, 1.0], linestyle='--', color="black") 
-ax1.set_xlabel('Baseline ', fontsize=12)
-ax1.set_ylabel('1-PC', fontsize=12)
+ax1.set_xlabel('Baseline Score', fontsize=12)
+ax1.set_ylabel('1-PC Score', fontsize=12)
 ax1.grid()
 
-plt.legend(loc='lower right', ncol=1, frameon=False, fontsize=8)
+#plt.legend(loc='lower right', ncol=1, frameon=False, fontsize=8)
 
 plt.savefig('ospfbaselineresilience.eps', format='eps', dpi=1000, bbox_inches='tight')
 
