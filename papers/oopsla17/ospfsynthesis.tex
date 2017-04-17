@@ -1,4 +1,4 @@
-\section{From Policies to Connectivity-Resilient  Intra-domain Configurations}
+\section{From Policies to Connectivity-Resilient  Configurations}
 \label{sec:config-synthesis}
 
 In this section, we present algorithms for 
@@ -13,6 +13,14 @@ $IF$, $LP$, and $W$ such that for
 $C=(\Theta,W,LP,IF,SR)$,
 $\paths^C(PC) = \Pi$, and
 $C$ satisfies $P$.
+In terms of resilience, our goal is to synthesize policy-compliant configurations
+with high
+\emph{connectivity-resilience} and for the moment, we do not care about 
+preserving policy-compliance under failure.
+
+\loris{need to argue that minimizing static routes is the right thing to do and then
+show the hardness result}
+
 %We call this problem the \emph{routing configuration synthesis} problem.
 Before we present our techniques,
 we show that
