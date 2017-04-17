@@ -204,9 +204,11 @@ Observe that
 1-PC. This is because we only
 force the \name path's weight to 
 be shorter than the shortest 
-non-compliant path, and thus, we could get 
-other waypoint-compliant paths to be shorter than the  
-\name path, providing higher policy-resilience.
+non-compliant path, and thus, there could be
+other waypoint-compliant paths which are 
+shorter than the  
+\name path, 
+providing higher policy-resilience.
 
 \begin{figure*}
 	\centering
@@ -219,7 +221,8 @@ other waypoint-compliant paths to be shorter than the
 	%	\subfloat[Endpoint Resilience]
 	%	{\includegraphics[width=0.32\columnwidth]{figures/ospfAvgRes.eps}}
 	\compactcaption{\label{fig:ospfres}
-		OSPF Synthesis evaluation}
+		Policy-resilience scores obtained by 2-WC, 1-WC and 1-PC synthesis 
+		for varying waypoint policy workloads.}
 \end{figure*}
 %\begin{figure*}
 %	\centering
@@ -234,8 +237,8 @@ other waypoint-compliant paths to be shorter than the
 
 
 \subsection{Dynamic Domain Assignment Performance} \label{sec:mcmceval}
-\begin{wrapfigure}{r}{0.35\columnwidth}
-	\includegraphics[width=0.33\columnwidth]{figures/ratioMCMC.eps}
+\begin{wrapfigure}{r}{0.3\columnwidth}
+	\includegraphics[width=0.29\columnwidth]{figures/ratioMCMC.eps}
 	\compactcaption{\label{fig:mcmceval}
 		MCMC Evaluation for varying number of paths.}
 \end{wrapfigure}
@@ -300,12 +303,15 @@ for varying number of paths.
 In smaller workloads, we obtain a 0.5$\times$ reduction, 
 but incur an increase in number of static routes. For 
 larger workloads, the MCMC sampling is able to
-reduce both the static routes by $0.35\times$ and 
-BGP configuration overhead by $0.3\times$. 
+reduce both the static routes 
+BGP configuration overhead by $0.3\times$. We also
+compare the connectivity-resilience score 
+of the best and the worst configuration, and MCMC
+is able to increase the connectivity-resilience score 
+by $0.1\times$ for large workloads.
 %The tunable parameter $\alpha$ 
 %can be used to assign different priorities to these objectives to get
 %different trends.
-\kausik{Talk about connectivity-resilience} 
 
 
 

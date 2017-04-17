@@ -148,34 +148,45 @@ markersize = 11
 # plt.grid()
 # plt.savefig('TRLMCMC.eps', format='eps', dpi=1000, bbox_inches='tight')
 
-mcmcRatioFig = plt.figure(4)
+label_size = 17
+matplotlib.rcParams['xtick.labelsize'] = label_size 
+matplotlib.rcParams['ytick.labelsize'] = label_size 
+
+mcmcFig, (ax1) = plt.subplots(1, 1, figsize=(5, 4.5))
 
 x = range(200, 1200, 200)
-fatBGP = [0.5269179799,0.6517081949,0.6832602247,0.7071751691,0.7223716153]
-#ionTRLDev = [0.2497695343,0.1444746083,0.1113659797,0.1181381913,0.09257034323]
+fatBGP = [0.5374582832,0.6363530327,0.6772793902,0.6926588771,0.7191581698]
+fatBGPDev = [0.108141025,0.06570855045,0.07627663603,0.06172817589,0.07534140738]
 
-fatSR = [1.761261467,0.9587403338,0.827105564,0.6978998297,0.6535906463]
+fatSR = [1.657828742,1.01794802,0.8033826657,0.6954567232,0.6683307083]
+fatSRDev = [0.6925780782,0.2658573956,0.2039409816,0.1406134489,0.09359728377]
 
-plt.xlim(xmin=190, xmax=1010)
-plt.ylim(ymin=0, ymax=2)
+fatRes = [0.9651012484,0.9968658583,1.05642215,1.075417458,1.105757245]
+fatResDev = [0.04498975121,0.04621815565,0.0805032214,0.06748772542,0.06435999191]
 
-plt.plot(x, fatBGP, '#4daf4a',marker="D", markersize=markersize, label="BGP Ratio")
-# plt.errorbar(x, ionTRL, color='#4daf4a', yerr=ionTRLDev, linestyle="None")
-# plt.plot(x, ionConf, '#377eb8',marker="^", markersize=markersize, label="Conf Ratio (Ion)")
-# plt.errorbar(x, ionConf, color='#377eb8', yerr=ionConfDev, linestyle="None")
+ax1.set_xlim([190, 1010])
+ax1.set_ylim([0,2])
 
-plt.plot(x, fatSR, '#ff7f00', marker="o", markersize=markersize, label="SR Ratio")
-# plt.errorbar(x, fatTRL, color='#ff7f00', yerr=fatTRLDev, linestyle="None")
-# plt.plot(x, fatConf, '#984ea3', marker="s", markersize=markersize, label="Conf Ratio (Fat-8)")
-# plt.errorbar(x, fatConf, color='#984ea3', yerr=fatConfDev, linestyle="None")
+ax1.plot(x, fatBGP, '#377eb8',marker="D", markersize=markersize, label="BGP")
+ax1.errorbar(x, fatBGP, color='#377eb8', yerr=fatBGPDev, linestyle="None")
 
-plt.legend(loc='upper left', mode="expand", ncol=2, frameon=False, fontsize=18)
+ax1.plot(x, fatSR, '#ff7f00', marker="o", markersize=markersize, label="SR")
+ax1.errorbar(x, fatSR, color='#ff7f00', yerr=fatSRDev, linestyle="None")
 
-plt.xlabel('Number of Paths', fontsize=20)
-plt.ylabel('Ratio', fontsize=20)
+ax1.plot(x, fatRes, '#984ea3', marker="s", markersize=markersize, label="Resil.")
+ax1.errorbar(x, fatRes, color='#984ea3', yerr=fatResDev, linestyle="None")
 
-plt.grid()
+ax1.legend(loc='upper right', ncol=3, frameon=False, fontsize=14)
+
+ax1.set_xlabel('\#Paths', fontsize=13)
+ax1.set_ylabel('Ratio', fontsize=13)
+
+ax1.grid()
 plt.savefig('ratioMCMC.eps', format='eps', dpi=1000, bbox_inches='tight')
+
+label_size = 12
+matplotlib.rcParams['xtick.labelsize'] = label_size 
+matplotlib.rcParams['ytick.labelsize'] = label_size 
 
 
 # ospfTimeFig = plt.figure(5)
