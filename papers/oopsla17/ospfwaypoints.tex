@@ -21,6 +21,10 @@ In \name, we tackle the synthesis of resilient policy-
 compliant control planes for a subset of policies: 
 \emph{waypoint traversals}.
 
+\loris{somewhere describe how it's a two-phase approach
+and now all the paper is about 1-resilience so don't say
+1 resilience everywhere}
+
 Middleboxes like firewalls,
 proxies, optimizers, and intrusion detection/prevention 
 systems 
@@ -53,6 +57,11 @@ where $\lambda$ is the destination IP subnet,
 $s$ and $t$ are the source and destination router respectively, 
 and $\waypt \subseteq V$ is the waypoint set. This
 policy is mapped to a packet class $pc \in \nat$. 
+
+\loris{the definition is now in sec 3, rewrite this to just
+use the notion of policy compliance and just say 
+we want to maximize, so we don't have to worry about soundness
+completenss}
 A configuration $C=(T,\Theta,W,LP,IF,SR)$ is 
 \emph{waypoint-compliant} with respect to $pc$ 
 iff, there exists a path from $s$ to $t$ in the 
