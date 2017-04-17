@@ -3,13 +3,17 @@
 
 In this section, we present an algorithm
 for synthesizing distributed configurations
-that adhere to path policies like the one described in Figure~\ref{tab:policysupport}.
-In general, no existing tool for synthesizing distributed configurations
-can handle this heterogeneous set of these policies---e.g., isolation---and, even less so,
+that adhere to path policies like the one described 
+in Figure~\ref{tab:policysupport}.
+In general, no existing tool for synthesizing 
+distributed configurations
+can handle this heterogeneous set of 
+these policies---e.g., isolation---and, even less so,
 generate resilient configurations.
 Due to the complexity of the problem, in this
 section, we focus on 
-synthesizing  configurations that are \emph{policy-compliant} and \emph{connectivity-resilient}.
+synthesizing  configurations that 
+are \emph{policy-compliant} and \emph{connectivity-resilient}.
 
 
 
@@ -43,29 +47,23 @@ $\paths^C(PC) = \Pi$.
 This problem admits a trivial solution that uses
 static routes to exactly enforce the set of input paths. 
 This can be done by adding a 
-static route to $SR(\lambda)$ for every link $l$ in $\xi_\lambda$. 
+static route to $SR(\lambda)$ for every link $l$ in 
+the paths in $\Pi$. 
 However, this solution will use more static routes than necessary
 and, in the presence of failures, static routes may
-create routing loops that make certain connections unreachable and reduce connectivity-resilience.
-Given the relation between the number of static routes and connectivity-resilience,
-we set as our goal that of generating configurations with few static routes.
+create routing loops that make certain connections 
+unreachable and reduce connectivity-resilience.
+Given the relation between the number of static 
+routes and connectivity-resilience,
+we set as our goal that of generating configurations 
+with fewer static routes.
 
-We show how to synthesize  path-compliant  intra-domain configurations---i.e., when there
+We show how to synthesize 
+path-compliant intra-domain 
+configurations---i.e., when there
 is only a single domain---and then extend our technique to
  intra-domain configurations---i.e., when
 there are multiple domains.
-
-\todo{move this to intro}
-For instance, in 2012,
-failure of a router in a Microsoft Azure data center 
-triggered previously unknown configuration errors on other 
-devices, degrading service 
-in the West Europe region for over 2
-hours~\cite{azure}; therefore, the end goal is 
-to synthesize resilient and policy-compliant 
-configurations. 
-
-
 
 \subsection{Synthesising Path-compliant Intra-domain Configurations} \label{sec:intra-synthesis}
 In this section, we show how to synthesize  path-compliant  intra-domain configurations that

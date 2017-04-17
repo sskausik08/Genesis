@@ -8,8 +8,10 @@ In such settings, Zeppelin can help by automating domain creation/restructuring.
 In this section, we present an algorithm for 
 solving the path-compliance synthesis problem when a domain assignment is not given to us (Definition~\ref{def:pathcompliance}).
 The algorithm searches the space of possible domain assignment $\Theta$ to find
-one that meets all configuration policies and increases resilience---e.g., minimizes
-the number of static routes. 
+one that meets all configuration policies and increases 
+connectivity-resilience. Instead of directly reasoning about 
+resilience which is hard, we try to minimize the number of static routes, 
+which leads to greater connectivity-resilience scores.
 
 Before proceeding, we first show that when the domain assignment is not given,
 even the simplest variant of the path-compliance assignment problem
@@ -54,8 +56,9 @@ domain assignments.
 In our setting, each domain assignment $\Theta$
 has an associated cost $c(\Theta, e)$
 where
-$e=expr(rc, sc, bc)$
-is the expression we are trying to minimize---e.g., if we are trying to minimize the number of static routes $e=sc$.
+$e=expr(sc, bc)$
+is the expression we are trying to minimize---e.g., 
+if we are trying to minimize the number of static routes $e=sc$.
 We will discuss how our cost function is implemented in the Section~\ref{sec:cost-fun}.
 %Given the cost function $c(.)$ and probability density 
 %function $p(.)$, 
@@ -155,7 +158,6 @@ higher probability.
 
 \subsection{The Cost of a Domain Assignment}
 \label{sec:cost-fun}
-\todo{change with current cost which increases resilience}
 In the previous section, we presented the general structure of our search algorithm,
 but we did not specify how the cost function $c(\Theta,e)$
 is computed. 
@@ -164,17 +166,25 @@ is computed.
 %the number of route filters $rc$,
 %the number of static routes $sc$,
 %and the number of BGP configuration entries $bc$.
-Computing the cost $c(\Theta,e)$ amounts to substituting in $e=expr(rc, sc, bc)$
-the values of $rc$,
-$sc$, and $bc$ for the configuration $\Theta$.
-The techniques presented in Section~\ref{sec:inter-synthesis} provide a way to 
-synthesize BGP configurations and static routes for a given domain assignment
+Computing the cost $c(\Theta,e)$ amounts to substituting in 
+$e=expr(sc, bc)$
+the values of 
+$sc$ and $bc$ for the assignment $\Theta$.
+The techniques presented in Section~\ref{sec:inter-synthesis} 
+provide a way to 
+synthesize BGP configurations and 
+inter-domain static routes for a 
+given domain assignment
 and can be used to 
-efficiently compute the quantities $sc$ and $bc$.
-However, we showed that, given a domain assignment, computing the  minimal required number of route filters $rc$
+efficiently compute the quantities $bc$.
+However, we showed that, given a domain assignment, 
+computing the  minimal required number of intra-domain 
+static routes 
 is a challenging problem (Theorem~\ref{thm:ospfsynth}).
 Since we want MCMC to explore as many assignments as possible,
-we present a heuristic technique for estimating the number of route filters required by a domain assignment. 
+we present a heuristic technique for estimating
+ the number of static routes required by a domain assignment. 
+
 
 We say that two paths $\pi=(r_1,r_2)\cdots (r_{n-1},r_n), \pi'=(r_1',r_2')\cdots (r_{n-1}',r_n')$ with destinations $\lambda$ and $\lambda'$
 form an $(r_i, r_j, \lambda, \lambda')$\emph{-diamond} if and only if
@@ -188,30 +198,30 @@ between these routers.
 
 If the paths $\pi$ and $\pi'$ completely lie in the same domain,
 the presence of a diamond 
-implies that OSPF needs to compute two different shortest paths between $r_i$ and $r_j$, 
+implies that there are two different 
+shortest paths between $r_i$ and $r_j$, 
 which means that
-at least one route filter is required.
+at least one static route is required.
 On the other hand, if $r_i$ and $r_j$ lie in
-different domains, no route filters are required to resolve this diamond. 
+different domains, no static routes 
+are required to resolve this diamond. 
 %\loris{not sure if following sentence needed}
 %In the limiting
 %case where each router is a separate domain of size 1,
 %no route filters are required, and the entire 
 %network can be configured using BGP. 
-
-
-
-
 Before  starting the MCMC search, \name precomputes
 the set of all diamonds induced by the paths $\Pi$. 
 For each
 domain assignment $\Theta$,
-\name estimates the number of required 
-route filters $rc$ by counting for 
+\name estimates the number of intra-domain
+static routes by counting for 
 how many $(r_i, r_j, \lambda, \lambda')$-diamonds
 $\Theta(r_i) = \Theta(r_j)$. 
-Notice that two different diamonds that share an edge could be resolved
-by placing a single filter on the shared edge, whereas our estimated route filter cost 
+Notice that two different diamonds that share 
+an edge could be resolved
+by placing a static route on the shared edge, 
+whereas our estimated static route cost 
 would be 2. 
 %\loris{I think this is true, but not sure if necessary.
 %Intuitively, our algorithm is similar to the greedy algorithm for solving vertex cover~\cite{}, and 
@@ -219,15 +229,17 @@ would be 2.
 %we can show that our estimate produces at most twice as many route filters as the ones 
 %needed to eliminate all diamonds.}
 
-While diamonds in the same domain definitely require route filters, there might be
-sets of paths that do not contain diamonds but that still require route filters
-and are not
+While diamonds in the same domain definitely require 
+static routes, there might be
+sets of paths that do not contain 
+diamonds but that still require static routes;
+these are not
 taken into account in our estimate. 
 However, our diamond-based estimate
 can be computed efficiently and 
-our experiments  show that reductions 
-in cost lead to decreased number of filters
-and increased endpoint resilience (\Cref{sec:mcmceval}).
+our experiments show that reductions 
+in cost lead to decreased number of static routes
+and increased connectivity-resilience (\Cref{sec:mcmceval}).
 
 %\minisection{Cost of Configuration Overhead} 
 %Given a domain assignment $\Theta$, the exact number of static routes,
