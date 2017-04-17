@@ -1,17 +1,16 @@
 \section{From Waypoint Policies to Policy-Resilient Configurations}
 \label{sec:waypointres}
 
-In this section, we consider a setting in which the operator 
-wants to 
-enforce a restricted set of policies but also wants to guarantee
-that, even when a link fails, the resulting configuration is still policy-compliant---i.e.,
-the configuration has high policy-resilience.
-However, ensuring policy-resilience in the presence of complex and heterogeneous policies,
-providing  policy-resiliency is too difficult of a problem.
-Therefore, we focus our attention on a restricted but important class of
-policies: 
-\emph{waypoint traversals}.
 
+The algorithm we presented in the previous section can generate configurations
+for complex types of policies and at the same time can achieve good
+connectivity resilience.
+In this section, we present a different algorithm that, for a restricted set of policies,
+can synthesize configurations with high \emph{policy-resilience}.
+In particular, we focus our attention on an important class of
+policies:  \emph{waypoint traversals}.
+
+\subsection{Problem Setup}
 Waypoint policies 
 that require traffic to traverse
 firewalls,
@@ -20,27 +19,19 @@ systems
 play a crucial role in enterprise and
 datacenter networks for security, performance,  
 and auditing considerations.
-Support for  
-middlebox traversals is commonly 
-provided by network operators.
-Network Function Virtualization (NFV) has been a 
-major driving force for providing reliability 
-guarantees under failures  
-for middlebox traversals~\cite{opennf, netbricks}. 
-Using NFV technology, operators can replicate 
-their middleboxes across the network for providing 
-resilience guarantees. 
-
 We therefore focus our attention on policies of the form 
 \texttt{$\lambda$: s >> $\waypt$ >> t}
 where $\lambda$ is a destination IP subnet,  
 $s$ and $t$ are the source and destination router respectively, 
-and $\waypt \subseteq V$ is a waypoint set. 
+and $\waypt \subseteq V$ is a set of waypoints (also called the \emph{waypoint set}). 
 Each policy is mapped to a packet class and
-we say that a configuration complies to a policy of this form for the corresponding packet class
+we say that a configuration complies to a policy 
+\texttt{$\lambda$: s >> $\waypt$ >> t}
+ for the corresponding packet class
 $pc$ if
 at least one of the induced paths in $\paths^C(pc)$ 
 traverses one waypoint $w \in \waypt$.\footnote{
+\todo{Kausik read this and check}
 The attentive reader will note that in our definition of waypoint-compliance 
 we do not require all induced paths for $pc$ to traverse the waypoints. 
 Our 
@@ -55,41 +46,37 @@ packets which traversed a waypoint-compliant path would be
 accepted and forwarded to the tenant. 
 }
 Here the set $\waypt$
-represents the set of physical replicas of, e.g., a firewall.
+can be the set of physical replicas of,  for example, a firewall.
 
-
-
-%; the control plane under a bounded 
-%number of failures must route traffic through a 
-%path which traverses an element of the waypoint
-%set. In the rest of this section, 
-%we will describe the synthesis of resilient 
-%waypoint-compliant network configurations. 
 
  Given a set of such waypoint policies, our goal is to
 find a policy-compliant configuration $C=(T,\Theta,W,LP,IF,SR)$ 
 with high policy-resilience.
+In the following section, we focus on intra-domain configurations,
+and present an algorithm
+that solves this problem when the network has a single domain.
+When the network has multiple domains
+\todo{explain why we don't do inter, seems like first para from next section
+should be somewhere here}
 
-%\emph{1-resilient waypoint-compliant} 
-%for packet class $pc$  
-%iff,   
-%$\forall T' = (V, L'), |L'| = |L| - 1$ (single link failures), 
-%the configuration $C'
-%=(T',\Theta,W,LP,IF,SR)$  
-%is waypoint-compliant for packet class $pc$. 
+%
+%\loris{somewhere describe how it's a two-phase approach
+%and now all the paper is about 1-resilience so don't say
+%1 resilience everywhere}
+
+\todo{not sure where following text belongs}
+Support for  
+middlebox traversals is commonly 
+provided by network operators.
+Network Function Virtualization (NFV) has been a 
+major driving force for providing reliability 
+guarantees under failures  
+for middlebox traversals~\cite{opennf, netbricks}. 
+Using NFV technology, operators can replicate 
+their middleboxes across the network for providing 
+resilience guarantees. 
 
 
-
-
-%A crucial aspect of consideration for tenants is 
-%policy-compliance under failures (which are frequent in 
-%datacenter networks), which can violate key security
-%and availability properties. 
-
-
-\loris{somewhere describe how it's a two-phase approach
-and now all the paper is about 1-resilience so don't say
-1 resilience everywhere}
 
 
 
