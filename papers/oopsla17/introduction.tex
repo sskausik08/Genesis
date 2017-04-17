@@ -9,13 +9,6 @@ the network must provide certain guarantees in the event of failures;
 and (3) most policies are global---i.e., they concern end-to-end
 paths, not individual devices/links.
 
-%(2) SDN tries to make realization centralized like policies, but it is hard
-%to ensure link failures don't impact the controller's ability to update the
-%network to accommodate the failures; a distributed SDN controller doesn't fix
-%this problem. Legacy control planes are preferable from a failure
-%tolerance-perspective, but determining the appropriate distributed
-%realization of policies is hard.
-
 The global nature of network policies is one motivation for
 software-defined networking (SDN). SDN allows paths to be centrally
 computed over a global view of the network. However, it is difficult
@@ -26,17 +19,8 @@ distributed protocols to compute paths offer greater fault tolerance,
 but determining the appropriate distributed realization of policies is
 hard.
 
-%(3) Our goal is to automate the process of producing this distributed
-%realization. We want to handle a wide range of policies and leverage the many
-%protocols/mechanisms available in legacy control planes for realizing these
-%policies.
-
-
-%(4) We can view the control plane as a program whose input is set of
-%endpoints and the state of the links in the network and whose output is a set
-%of paths.  Our goal is to synthesize this program.
-
 Our goal is to {\em automate the process of creating a correct
+\loris{and failure-resilient}
   distributed realization of policies in a traditional control
   plane}. We wish to handle a wide range of policies, e.g.,
 reachability, service chaining, and traffic engineering, to meet
@@ -47,28 +31,20 @@ realizing hierarchical control planes to ensure scalability,
 necessitating the use of multiple intra- and inter-domain routing
 protocols (e.g., OSPF and BGP). 
 \loris{Finally, and most importantly, we want
-generated control planes that are tolerant to network malfunctions such as link
+configurations that are resilient to network malfunctions such as link
 failures.}
 Thus, our work contrasts with prior efforts~\cite{netegg,
   propane, merlin,simple,fattire, netkat, netkatcompiler, sol}, which
 generate SDN- or BGP-specific control planes for a limited range of
-policies (e.g., peering) and \loris{do note attempt to be resilient to failures}.
+policies (e.g., peering) and \loris{do not attempt to be resilient to failures}.
 
-%\kausik{Do we need this paragragh?}
-%Although a distributed control plane is composed of a collection of routing
-%processes running on individual switches, we can view the control plane as a
-%single program. The input is a set of endpoints plus the state of network
-%links; the output of this program is a set of paths that conform to the
-%policies encoded in the program. This view inspires us to explore {\em program
-%	synthesis} as a mechanism for generating a policy-compliance control plane.
 
 
 The problem of synthesizing router configurations
-for which the distributed control plane  
-generates policy- compliant paths 
+for which the distributed control plane 
+\loris{is fault-tolerant and it}
+generates policy-compliant paths 
 is computationally hard. 
-%In our setting, the specifications are the policies we want to realize and the programs 
-%are the control plane.
 First, even generating a set of policy-compliant 
 paths for a SDN  is 
 computationally hard---e.g., enforcing isolated
@@ -88,100 +64,99 @@ approaches that directly generate configurations  from policies
 do not scale to
 even moderately-sized networks or 
 sets of policies~\cite{synet}.
-\loris{Third, to generate control planes that are resilient to failures, one has to reason
-about how configurations of different protocols react to failures, 
+\loris{Third, to generate resilient control planes one has to reason
+about how different protocols react to failures, 
 which further complicates an already intractable synthesis
 problem. }
 
-%(6) We propose a two-phased approach that synthesizes a partially-correct
-%control plane from examples, and then applies a series of transformations to
-%produce a fully policy-compliant control plane.
 
 \loris{
 In this paper, we present \name, a new approach for synthesizing
 highly resilient policy-compliant configurations.}  
 Unlike previous approaches, \name uses a two-phased approach
 that does not attempt to generate 
-a policy-compliant control planes in a single step.
+a policy-compliant control plane in a single step.
 First, \name 
 uses the tool \genesis~\cite{genesis}
 to synthesize paths---i.e., the forwarding state---that are compliant
 with given policies, such as, waypoint, isolation,
 and traffic engineering.
-%a partially-correct control plane from a set of example paths, such
-%as those contained within a sample data plane. 
-Second, \name generates 
-%domain-level split of the routers in the network,
-%and corresponding 
+Using these paths, \name generates 
 intra- and inter-domain router configurations
 that induce the forwarding
-state synthesized by \genesis \loris{and provide high resilience} . 
-We show that this approach makes synthesis tractable and effective.
-%, and we can
-%perform multiple iterations to eventually produce policy-compliant
-%configurations.
-%% We present \name, 
-%% a framework to synthesize router configurations which 
-%% converge to a forwarding state such traffic is
-%% forwarded through the policy-compliant paths. 
-%% \name allows operators to use a combination of 
-%% protocols to impose a hierarchy of domains in their network.
-To elaborate, in \name, each router is mapped to a domain and runs
+state synthesized by \genesis \loris{and provide high resilience}. 
+In the hierarchical networks we consider, each router is mapped to a domain and runs
 OSPF for intra-domain routing, while domains use BGP for inter-domain
-routing. 
-We synthesize OSPF configurations using linear constraint solving to compute
-link weights and 
-a learning-based procedure for extracting more complex OSPF configurations from
-the unsatisfiable cores of the constraints.
-We compute BGP configuration directly from the domain mapping and the paths.
+routing. Moreover, routers can install static routes---i.e., default routes that can bypass the other two protocols.
+\loris{
+We investigate three different settings with different policies and resilience requirements
+and show how \genesis, using its two-phase approach can effectively generate
+highly-resilient and policy-compliant solutions.}
 
-\loris{We investigate two notions of resilience and provide modified versions of
-\name's basic synthesis algorithm that can generate highly
-resilient configurations.
-First, we consider a setting where the network operator wants to guarantee connectivity
-for most hosts when links fail.
-We present a modified algorithm that avoids placing unnecessary
-static routes and tries to avoid routing loops induced by such static routes,
-therefore improving connectivity under failure.
-In general, minimizing configuration overhead---i.e., number of static routes---also helps decreasing configuration complexity, thus, easing automated
+\todo{the following is all new}
+First, we consider a setting in which the operator 
+of a hierarchically structured network
+wants to 
+enforce a large set of complex policies such as waypoint-compliance, isolation, and traffic engineering.
+Given the complexity of the considered policies and the heterogeneity of the network structure,
+the operator understands that it might be impossible to generate configurations
+that guarantee that policies are note violated after some arbitrary link failure.
+However, the operator desires a notion of \emph{connectivity-resilience} that 
+guarantees that under most link failures the connectivity of the network is preserved---i.e.,
+all packets can reach their destination.
+In general, in the absence of static routes a network can support
+a number of link failures equal to the min-cut of the network, regardless
+of the OSPF and BGP configurations.
+However, we might need static routes to generate policy-compliant configurations.
+Static routes can cause unexpected network behaviors after a failure---e.g., a forwarding loop---and
+we argue that the \emph{connectivity-resilience} of a configuration is related to the its number of static routes.
+In general, minimizing configuration overhead---i.e., number of static routes---also helps decreasing configuration complexity, 
+thus, easing automated
 verification~\cite{batfish, arc, era} and improving readability for
 performing future manual changes.
-Second, we consider a setting where the network operator wants to guarantee
-that, even when a link fails, certain classes of traffic still traverse a certain
-set of waypoints--e.g., firewalls.
-We  leverage \genesis ability to 
-generate edge-disjoint paths, which we use to modify our linear constraints
+Therefore, \name aims at producing policy-compliant configurations with a small number of static routes.
+To do so, \name synthesizes OSPF configurations using linear constraint solving to compute
+link weights and  learns when it is necessary to introduce a static route from the unsatisfiable cores of the constraints.
+\name synthesizes BGP configuration directly from the domain mapping and the paths.
+Using these techniques, \name can generate configurations that are
+\loris{XX} more resilient than configurations that only static static routes.
+
+Second, we consider a setting in which the operator 
+wants to 
+enforce a restricted set of policies and wants to guarantee
+that, even when a link fails, the resulting configuration is still policy-compliant.
+We call this notion \emph{policy-resilience}.
+Given the complexity of this problem, we focus on a restricted class of policies
+based on waypoints.
+In particular, for each class of packets, we allow the operator to specify a set of waypoints---e.g.,
+a set of firewalls---and require that packets traverse at least one of the waypoints before reaching their destination.
+To generate policy-compliant configurations with high \emph{policy-resilience} we leverage \genesis ability to 
+generate edge-disjoint paths and we use to modify our linear constraints
 to guarantee that, under single failures traffic, still has traverses the given waypoints. 
-}
+Using this improved technique, \name can generate configurations that are
+\loris{XX} more policy-resilient than configurations generated with our first technique.
 
-% Further, \name allows operators to optimize two key management
-%objectives. \kausik{The first is maximizing endpoint  resilience, as \name
-%requires route filters to induce certain paths, thereby affecting
-%failure resilience. The second minimizing the configuration overhead imposed
-%by inter-domain routing (BGP and static routes), which helps decrease
-%configuration complexity, thus, easing automated
-%verification~\cite{batfish, arc, era} and improving readability for
-%performing future manual changes.}
-%}
 
-Finally, \kausik{in settings which offer flexibility in terms of domain assignments like datacenter networks}, we present a stochastic search technique 
-partitioning the network into multiple domains which satisfy hard
-operator policies on configurations such as  the size of each OSPF
-domain. 
-\loris{We also show how the search technique can be used to find
-configurations with improved resilience.}
+Third,  we consider a setting in which the operator has the flexibility to
+assign different routers to different domains and ask whether, using this flexibility, we can 
+generate domain assignments that have higher resilience.
+We present a stochastic search technique and use it to find
+partitions of the network into multiple domains so that resilience is improved.
+Using this search technique, \name can further improve the resilience of the configurations 
+configurations generated by the previous two techniques by
+\loris{XX}.
 
-We evaluate \name on medium-sized topologies and show that
-\name can synthesize OSPF configurations for 200 paths in 200
-seconds for a 40 node ISP topology, and achieve greater than 
-50\% resilience for fat-tree topologies.
-\todo{what does resilient mean here? this last para and contrib need to be rewritten
-after eval}
- On average, using MCMC, \name can increase
-endpoint resilience by $1.6\times$ and 
-reduce configuration overhead
-by $0.3\times$
-for a 125-node ISP topology.
+%We evaluate \name on medium-sized topologies and show that
+%\name can synthesize OSPF configurations for 200 paths in 200
+%seconds for a 40 node ISP topology, and achieve greater than 
+%50\% resilience for fat-tree topologies.
+%\todo{what does resilient mean here? this last para and contrib need to be rewritten
+%after eval}
+% On average, using MCMC, \name can increase
+%endpoint resilience by $1.6\times$ and 
+%reduce configuration overhead
+%by $0.3\times$
+%for a 125-node ISP topology.
 
 
 %% Automatically synthesizing distributed realizations 
@@ -194,7 +169,7 @@ for a 125-node ISP topology.
 %% contribution towards the vision of 
 %% intent-driven networking~\cite{intent}.
 
-\minisection{Contributions} We make the following contributions:
+\minisection{Contributions} We make the following contributions. \todo{after intro is approved}
 \begin{itemize}
 	\item \name: a modular framework 
 	for policy enforcement in `traditional' networks
