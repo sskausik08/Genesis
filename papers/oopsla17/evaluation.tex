@@ -34,20 +34,20 @@ and a single OSPF domain.
 The size of the topology is consistent with operator preferences to restrict
 the size of a domain to under 50 routers (OSPF does not scale
 well as domain size increases).
-We use \todo{name} to refer to the algorithm that handles complex policies and
+We use PC to refer to the algorithm that handles complex policies and
 can synthesize policy-compliant
 configurations with few static routes (\secref{sec:config-synthesis})
 and 
-\todo{name} to refer to the algorithm that handles waypoint policies and
+1-WC (resp. 2-WC) to refer to the version of  the algorithm that handles waypoint policies and
 can synthesize policy-compliant
-configurations with high policy-resilience (\secref{sec:waypointres}).
+configurations with high policy-resilience starting from 1 path (resp. 2 paths) per waypoint policy (\secref{sec:waypointres}).
 
 We consider two classes of policies.
 Our first class contains complex isolation policies that 
 existing tools cannot handle; for this class we can only evaluate algorithm \todo{alg1}.
 Our second class consists of
  waypoint policies of the form described in Section~\ref{sec:waypointres});
-for this class we evaluate both \todo{alg1} and \todo{alg2}.
+for this class we evaluate \todo{alg2.1} and \todo{alg2.2}.
 For each algorithm  we evaluate how much time is spent
 calling \genesis to generate policy-compliant paths
 and how much time \name takes to generate configurations from such paths.
