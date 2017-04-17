@@ -1,11 +1,12 @@
 \section{From Policies to Paths} \label{sec:architecture}
-Since
-directly generating policy-compliant configurations is a challenging
-problem, in all the settings we investigate, 
-our tool uses a two-phased approach in which we first synthesize
+Directly generating policy-compliant configurations is a challenging
+problem.
+Therefore, all the techniques we present in this paper 
+use a two-phased approach in which we first synthesize
 policy-compliant \emph{paths} using the tool \genesis~\cite{genesis}
 and then use the synthesized paths as \emph{hints} to synthesize resilient configurations. 
-In this section, we recall the features of \genesis and describe
+In this section, we recall the features of \genesis,
+ a tool for generating policy-compliant paths, and describe
 some modifications that are necessary to generate paths that
 can be realized by routing protocols. 
 
