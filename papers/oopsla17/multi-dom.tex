@@ -150,13 +150,13 @@ For all links that are not in $\pi'$
 we will require static routes.
 With abuse of notation, for every link $(r_1,r_2)\in\bigcup_{i< nl} \pi_i\cup \bigcup_{i< nl}\{l_i^{i+1}\}$ 
 we have
-$SR(r_1, \lambda) = \{r_2\}$. Note that the 
+$SR(r_1, \lambda) = \{r_2\}$. 
+For a domain assignment $\Theta$, the 
 inter-domain static routes we place
-for a domain assignment $\Theta$ is necessary, 
-finding optimal static routes for intra-domain  
-is hard. 
-\kausik{Done: clarify that hard part of static routes is intra domain
-	and the ones we place for inter are necessary}
+ are necessary, can be  computed easily, and cannot be further minimized.
+However, 
+finding optimal static routes for the intra-domain configurations remains a
+hard problem. 
 
 Finally, for each intra-domain subpath $\pi_i$ that is not statically routed by this algorithm---i.e., $i\geq nl$---\name applies
 OSPF synthesis for the domain $\Theta(\pi_i)$. 

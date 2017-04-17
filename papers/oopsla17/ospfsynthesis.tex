@@ -1,40 +1,61 @@
 \section{From Policies to Connectivity-Resilient  Configurations}
 \label{sec:config-synthesis}
 
-In this section, we present algorithms for 
-solving the path-compliance problem when the domain
-assignment function $\Theta$ is given to us.
+In this section, we present an algorithm
+for synthesizing distributed configurations
+that adhere to path policies like the one described in Figure~\ref{tab:policysupport}.
+In general, no existing tool for synthesizing distributed configurations
+can handle this heterogeneous set of these policies---e.g., isolation---and, even less so,
+generate resilient configurations.
+Due to the complexity of the problem, in this
+section, we focus on 
+synthesizing  configurations that are \emph{policy-compliant} and \emph{connectivity-resilient}.
+
+
+
+\subsection{A two-phased approach}
+Existing approaches to configuration synthesis
+try to directly generate configurations from the given policies~\cite{synet},
+but a direct approach leads to scalability issues as well as limitation
+in the set of supported policies.
+Instead of directly generating configurations from policies, 
+we proceed in two-steps:
+first we generate policy-compliant paths using the techniques presented
+in Section~\ref{sec:genesis}
+and then we synthesize distributed configurations that realize these paths
+and have high connectivity resilience.
+
+Since we showed how to generate policy-compliant paths in Section~\ref{sec:genesis},
+we are left with solving a path-compliance problem.
 Formally, we are given a set of paths $\Pi$,
 a topology $T=(V,L)$,
 a domain-assignment function $\Theta$, 
-and configuration policies $P$,
+%and configuration policies $P$,
 and we want to find functions $SR$,
 $IF$, $LP$, and $W$ such that for 
-$C=(\Theta,W,LP,IF,SR)$,
-$\paths^C(PC) = \Pi$, and
-$C$ satisfies $P$.
-In terms of resilience, our goal is to synthesize policy-compliant configurations
-with high
-\emph{connectivity-resilience} and for the moment, we do not care about 
-preserving policy-compliance under failure.
-
-\todo{use following text to argue about static route bad for resilience}
-We start by observing that 
-the intra-domain synthesis problem with static routes
-admits a trivial solution in which 
-static routes are used to enforce the exact set of input paths. 
+$C=(\Theta,W,LP,IF,SR)$, and
+$\paths^C(PC) = \Pi$.
+%., and
+%$C$ satisfies $P$.
+%Ideally, we want to directly generate configurations that maximize 
+%connectivity resilience, but already generating policy-compliant configuration is
+%a hard problem.
+This problem admits a trivial solution that uses
+static routes to exactly enforce the set of input paths. 
 This can be done by adding a 
 static route to $SR(\lambda)$ for every link $l$ in $\xi_\lambda$. 
-However, this solution will use more static routes than necessary. 
-Ideally, we would like to add fewer static routes, as they can 
-create routing loops if link weights are configured without taking 
-the static route into account (\secref{sec:loopavoidance}). 
-Since the problem of optimally placing static routes is computationally hard (Theorem~\ref{thm:ospfsynth}), 
-we propose a non-optimal greedy strategy that works well in practice.
-\todo{need to argue that minimizing static routes is the right thing to do}
+However, this solution will use more static routes than necessary
+and, in the presence of failures, static routes may
+create routing loops that make certain connections unreachable and reduce connectivity-resilience.
 Given the relation between the number of static routes and connectivity-resilience,
-we set as our goal that of generating configurations with as few static routes as possible.
+we set as our goal that of generating configurations with few static routes.
 
+We show how to synthesize  path-compliant  intra-domain configurations---i.e., when there
+is only a single domain---and then extend our technique to
+ intra-domain configurations---i.e., when
+there are multiple domains.
+
+\todo{move this to intro}
 For instance, in 2012,
 failure of a router in a Microsoft Azure data center 
 triggered previously unknown configuration errors on other 
@@ -44,38 +65,37 @@ hours~\cite{azure}; therefore, the end goal is
 to synthesize resilient and policy-compliant 
 configurations. 
 
-\todo{reiterate that going straight to policies is hard
-so instead we do path first and then look for path-compliant configs}
 
 
-In the next sections, 
-we  show how to solve the  path-compliance synthesis problem first for intra-domain configurations---i.e., when there
-is only a single domain---and then  for intra-domain configurations---i.e., when
-there are multiple domains.
+
 
 \subsection{Synthesising Path-compliant Intra-domain Configurations} \label{sec:intra-synthesis}
-In this section, we present an algorithm for 
-solving the path-compliance problem for 
-single-domain OSPF networks and, as mentioned before, the metric we try to minimize is the number of static routes.
+In this section, we show how to synthesize  path-compliant  intra-domain configurations that
+use low the number of static routes.
 To justify the complexity of the techniques we are going to present,
-we show that, even when policy-compliant paths are provided, 
+we show that
+%, even when policy-compliant paths are provided, 
 obtaining configurations with minimal numbers of static routes is a 
 computationally hard problem.
 \begin{theorem}[Hardness of synthesis]
 \label{thm:ospfsynth}
-If $P$ bounds the number of static routes ($sr\leq C_{sr}$) for a
-single domain network, i.e., $|\{\Theta(r) \mid r\in V\}|=1$, the path-compliance synthesis
-problem is NP-complete.
+Given a
+network with a single domain,
+and a positive number $Csc$,
+the problem generating
+a path-compliant configuration with at most $Csc$ static routes
+is NP-complete.
 \end{theorem}
 \iffull
 \input{route-filters-nphard}
 %\else
 %The reduction is from the vertex cover problem.
 \fi
-
-We first show how to solve when there exists a solution with no static routes
-and then
-extend our technique to handle static routes.
+Since the problem of optimally placing static routes is computationally hard, 
+%(Theorem~\ref{thm:ospfsynth}), 
+we propose a non-optimal greedy strategy that works well in practice.
+We first show how to solve the problem when there exists a solution with no static routes
+and then extend our technique to greedily add static routes when needed.
 			
 \subsubsection{Intra-domain Synthesis without Static Routes} \label{sec:ospf}
  
