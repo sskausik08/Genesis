@@ -1,25 +1,9 @@
 \section{Synthesising Domain Assignments}
 \label{sec:synth-dom-ass}
-Traditional hierarchical networks are partitioned primarily
-based on ownership of domains--- each autonomous system 
-is owned by a separate entity, or due to hardware 
-limitations--- the intra-domain routers  
-may not be equipped to run BGP. 
-Many networks today have well-defined routing hierarchies,
-but these are realized through careful painstaking
-engineering. For example, it is often difficult to determine
-which routers to include in an OSPF area, how many OSPF
-domains to create, etc. Enterprise and datacenter 
-networks offer flexibility in routing protocols run on each
-router (BGP/OSPF)
-and mechanisms to update domain assignments periodically.
-In such settings, \name can automatically find
-good routing domain hierarchies with increased
-resilience/decreased complexity. We envision that operators
-will synthesize ``one-shot'' domain assignments for their changing 
-input policies at coarse-grained timescales (days/weeks);
-operators need not synthesize these assignments for every 
-policy change. 
+Many networks today have well-defined routing hierarchies to realize a variety of administrative  policies or division of responsibilities. For example, a campus network may be hierarchically divided into multiple routing domains (e.g., OSPF Areas) corresponding to different departments. Often, these hierarchies are realized through careful planning, and require detailed configurations, e.g., to determine which routers to include in a particular OSPF routing domains, how many such domains to create, how big to make each domain etc. Unfortunately, this makes the hierarchical division painstaking and error-prone, but also the careful planning means that changes to the hierarchies, e.g., to accommodate more hosts or new policies, are difficult to implement.
+
+In such settings, Zeppelin can help by automating domain creation/restructuring. It can automatically find good routing domain hierarchies with increased resilience/decreased complexity and policy compliance. We envision that operators will synthesize “one-shot” domain assignments for their changing input policies at coarse-grained timescales (days/weeks) when there are significant changes to their networks or policies; operators need not resynthesize these assignments for every low-level policy change.
+
 
 In this section, we present an algorithm for 
 solving the path-compliance synthesis problem when a domain assignment is not given to us (Definition~\ref{def:pathcompliance}).
