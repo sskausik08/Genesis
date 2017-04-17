@@ -1,36 +1,25 @@
 \section{From Waypoint Policies to Policy-Resilient Configurations}
 
-A crucial aspect of consideration for tenants is 
-policy-compliance under failures (which are frequent in 
-datacenter networks), which can violate key security
-and availability properties. 
-For instance, in 2012,
-failure of a router in a Microsoft Azure data center 
-triggered previously unknown configuration errors on other 
-devices, degrading service 
-in the West Europe region for over 2
-hours~\cite{azure}; therefore, the end goal is 
-to synthesize resilient and policy-compliant 
-configurations. 
-However, providing compliance 
-guarantees for all policies
-under arbitary link failures is a difficult problem, 
-especially in a traditional control plane 
-which reacts to failures in a distributed fashion. 
-In \name, we tackle the synthesis of resilient policy-
-compliant control planes for a subset of policies: 
+In this section, we consider a setting in which the operator 
+wants to 
+enforce a restricted set of policies but also wants to guarantee
+that, even when a link fails, the resulting configuration is still policy-compliant---i.e.,
+the configuration has high policy-resilience.
+However, ensuring policy-resilience in the presence of complex and heterogeneous policies,
+providing  policy-resiliency is too difficult of a problem.
+Therefore, we focus our attention on a restricted but important class of
+policies: 
 \emph{waypoint traversals}.
 
-\loris{somewhere describe how it's a two-phase approach
-and now all the paper is about 1-resilience so don't say
-1 resilience everywhere}
-
-Middleboxes like firewalls,
+Waypoint policies 
+that require traffic to traverse
+firewalls,
 proxies, optimizers, and intrusion detection/prevention 
 systems 
- play a crucial role in enterprise and
+play a crucial role in enterprise and
 datacenter networks for security, performance,  
-and auditing considerations. Support for  
+and auditing considerations.
+Support for  
 middlebox traversals is commonly 
 provided by network operators.
 Network Function Virtualization (NFV) has been a 
@@ -39,52 +28,21 @@ guarantees under failures
 for middlebox traversals~\cite{opennf, netbricks}. 
 Using NFV technology, operators can replicate 
 their middleboxes across the network for providing 
-resilience guarantees. For waypoint policy-compliance, 
-we define a \emph{waypoint set} 
-which denotes the set of physical replicas of the 
-middlebox; the control plane under a bounded 
-number of failures must route traffic through a 
-path which traverses an element of the waypoint
-set. In the rest of this section, 
-we will describe the synthesis of resilient 
-waypoint-compliant network configurations. 
+resilience guarantees. 
 
-\subsection{Problem Statement}
-Let us consider an 
-unordered waypoint policy of the form: 
-\texttt{$\lambda$: s >> $\waypt$ >> t},
-where $\lambda$ is the destination IP subnet,  
+We therefore focus our attention on policies of the form 
+\texttt{$\lambda$: s >> $\waypt$ >> t}
+where $\lambda$ is a destination IP subnet,  
 $s$ and $t$ are the source and destination router respectively, 
-and $\waypt \subseteq V$ is the waypoint set. This
-policy is mapped to a packet class $pc \in \nat$. 
-
-\loris{the definition is now in sec 3, rewrite this to just
-use the notion of policy compliance and just say 
-we want to maximize, so we don't have to worry about soundness
-completenss}
-A configuration $C=(T,\Theta,W,LP,IF,SR)$ is 
-\emph{waypoint-compliant} with respect to $pc$ 
-iff, there exists a path from $s$ to $t$ in the 
-set of induced paths $\paths(pc)$ that traverses
-through a waypoint $w \in \waypt$
-(Definition~\ref{def:inducedpaths}). 
-A configuration $C$ is 
-\emph{1-resilient waypoint-compliant} 
-for packet class $pc$  
-iff,   
-$\forall T' = (V, L'), |L'| = |L| - 1$ (single link failures), 
-the configuration $C'
-=(T',\Theta,W,LP,IF,SR)$  
-is waypoint-compliant for packet class $pc$. 
-
-A caveat to note in our definition of waypoint-compliance 
-is the use of existential quantifier instead of universal 
-quantifier for the set of induced paths for $pc$, i.e.,
-the desired routing outcome is the existence of \emph{atleast}
-one waypoint-compliant path from $s$ to $t$, 
-however, it is possible to
-have paths from $s$ to $t$ which are not traversing through 
-a waypoint under some failure scenario. Our 
+and $\waypt \subseteq V$ is a waypoint set. 
+Each policy is mapped to a packet class and
+we say that a configuration complies to a policy of this form for the corresponding packet class
+$pc$ if
+at least one of the induced paths in $\paths^C(pc)$ 
+traverses one waypoint $w \in \waypt$.\footnote{
+The attentive reader will note that in our definition of waypoint-compliance 
+we do not require all induced paths for $pc$ to traverse the waypoints. 
+Our 
 definition can be realized by two mechanisms: 1) A router
 which has multiple routes for $\lambda$ will split the traffic
 among these routes, and 2) The waypoint can mark certain fields in
@@ -94,6 +52,56 @@ simple edge-based checks at the destination
 detect if a packet traversed the waypoint or not. Thus, only
 packets which traversed a waypoint-compliant path would be 
 accepted and forwarded to the tenant. 
+}
+Here the set $\waypt$
+represents the set of physical replicas of, e.g., a firewall.
+
+
+
+%; the control plane under a bounded 
+%number of failures must route traffic through a 
+%path which traverses an element of the waypoint
+%set. In the rest of this section, 
+%we will describe the synthesis of resilient 
+%waypoint-compliant network configurations. 
+
+ Given a set of such waypoint policies, our goal is to
+find a policy-compliant configuration $C=(T,\Theta,W,LP,IF,SR)$ 
+with high policy-resilience.
+
+%\emph{1-resilient waypoint-compliant} 
+%for packet class $pc$  
+%iff,   
+%$\forall T' = (V, L'), |L'| = |L| - 1$ (single link failures), 
+%the configuration $C'
+%=(T',\Theta,W,LP,IF,SR)$  
+%is waypoint-compliant for packet class $pc$. 
+
+
+
+
+%A crucial aspect of consideration for tenants is 
+%policy-compliance under failures (which are frequent in 
+%datacenter networks), which can violate key security
+%and availability properties. 
+
+
+\loris{somewhere describe how it's a two-phase approach
+and now all the paper is about 1-resilience so don't say
+1 resilience everywhere}
+
+
+
+%\subsection{Problem Statement}
+%Let us consider an 
+%unordered waypoint policy of the form: 
+%\texttt{$\lambda$: s >> $\waypt$ >> t},
+%where $\lambda$ is the destination IP subnet,  
+%$s$ and $t$ are the source and destination router respectively, 
+%and $\waypt \subseteq V$ is the waypoint set. This
+%policy is mapped to a packet class $pc \in \nat$. 
+
+
 
 \subsection{Intra-domain Resilient Waypoint Compliance}\label{sec:ospfwaypoint}
 Let us consider a waypoint policy for $\lambda$ which
