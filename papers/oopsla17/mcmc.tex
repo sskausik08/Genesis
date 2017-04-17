@@ -8,23 +8,19 @@ In such settings, Zeppelin can help by automating domain creation/restructuring.
 In this section, we present an algorithm for 
 solving the path-compliance synthesis problem when a domain assignment is not given to us (Definition~\ref{def:pathcompliance}).
 The algorithm searches the space of possible domain assignment $\Theta$ to find
-one that meets all configuration policies and has good quantitative properties---e.g., minimizes
+one that meets all configuration policies and increases resilience---e.g., minimizes
 the number of static routes. 
-%Formally, we are given 
-%a topology $T=(V,L)$, a set of paths $\Pi$ and
-%configuration policies $P$, 
-%we want to find functions
-%$W,RF,LP,IF,SR$ and $\Theta$ such that
-%$C=(\Theta,W,$ $RF,LP$,$IF,SR)$,
-%$C$
-%We call this problem the \emph{domain assignment problem}.
-%
-We first show that when the domain assignment is not given,
+
+Before proceeding, we first show that when the domain assignment is not given,
 even the simplest variant of the path-compliance assignment problem
 is computationally hard.
 \begin{theorem}
-If $P$ disallows the use of static routes ($sc \leq 0$)
-the path-compliance synthesis problem is NP-complete.
+Given a
+network and  set of paths  $\Pi$,
+the problem generating a domain assignment for which
+there exists a 
+configuration that path-compliant  with $\Pi$ with no static routes
+is NP-complete.
 \end{theorem}
 \iffull
 \input{dom-ass-nphard}
@@ -38,9 +34,9 @@ algorithm, a common technique used in several optimization
 problems~\cite{stoke}. 
 We first present the general structure of our search 
 algorithm and 
-then describe how the quantities 
-in Table~\ref{tab:configpolicysupport} can be computed
-or estimated to drive the search.
+then describe how, for a given a domain assignment,
+the resilience metrics can be
+estimated to drive the search.
 
 
 
