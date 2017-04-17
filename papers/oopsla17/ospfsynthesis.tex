@@ -67,12 +67,11 @@ configurations.
 
 
 
-
-
 \subsection{Synthesising Path-compliant Intra-domain Configurations} \label{sec:intra-synthesis}
 In this section, we show how to synthesize  path-compliant  intra-domain configurations that
-use low the number of static routes.
-To justify the complexity of the techniques we are going to present,
+use less number of static routes.
+To justify the complexity of the techniques 
+we are going to present,
 we show that
 %, even when policy-compliant paths are provided, 
 obtaining configurations with minimal numbers of static routes is a 
@@ -91,11 +90,18 @@ is NP-complete.
 %\else
 %The reduction is from the vertex cover problem.
 \fi
-Since the problem of optimally placing static routes is computationally hard, 
+Since the problem of optimally placing 
+static routes is computationally hard, 
 %(Theorem~\ref{thm:ospfsynth}), 
-we propose a non-optimal greedy strategy that works well in practice.
-We first show how to solve the problem when there exists a solution with no static routes
-and then extend our technique to greedily add static routes when needed.
+we propose a non-optimal greedy strategy 
+that works well in practice.
+We first show how to solve the problem when 
+there exists a solution with no static routes
+and then extend our technique to greedily 
+add static routes when needed. We use 
+efficient off-the-shelf linear programming (LP) 
+solvers for solving the system of constraints 
+which are presented in the following sections. 
 			
 \subsubsection{Intra-domain Synthesis without Static Routes} \label{sec:ospf}
  
@@ -104,14 +110,34 @@ In the absence of static routes,
  to choose the
  shortest weighted path for each pair of endpoints. 
 Our goal is to synthesize the weight function $W$.
-Consider the example in \Cref{fig:ospfexample}(a), if $\Pi$ 
- contains the 
+Consider the example in \Cref{fig:edgeweightexample}, 
+if $\Pi$ contains the 
  path $\pi=s\rightarrow r_1 \rightarrow t$ for
  destination IP $\lambda$, \name will assign
  edge weights such that $\pi$ has
  smaller weight than the path $\pi'=s \rightarrow t$ ---e.g., $W(\pi)=1+2$
   and $W(\pi')=5$. 
  
+\begin{wrapfigure}{r}{0.33\columnwidth}
+	\resizebox {0.33\columnwidth} {!} {
+		\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
+		square/.style={regular polygon,regular polygon sides=4}] 
+		\node[state] at (0,0) (s)  {$s$}; 
+		\node[state] at (1.8,1) (v1)  {$r_1$}; 
+		\node[state] at (3.6, 0)(t) {$t$};
+		\node[state, rectangle] at (5, 0) (d1) {$\lambda$};
+		\path[->] 
+		(s) edge [red] node [black] {1} (v1)
+		edge  node {5} (t)
+		(v1) edge [red] node [black] {2} (t)
+		(t) edge [red, dashed] node {} (d1);
+		\end{tikzpicture}
+	}
+	\compactcaption{OSPF edge weights
+		such that the routers forward traffic along
+		the colored path.}
+	\label{fig:edgeweightexample}
+\end{wrapfigure}
 The problem of synthesizing the weight function $W$ that
 realizes an input set of paths $\Pi$ is
 a
@@ -151,22 +177,6 @@ must traverse through one of neighbor routers of $s$,
 and thus, distance can be defined inductively as the 
 shortest among distances from the neighbors. 
 
-\begin{wrapfigure}{r}{0.33\columnwidth}
-	\resizebox {0.33\columnwidth} {!} {
-				\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
-				square/.style={regular polygon,regular polygon sides=4}] 
-				\node[state] at (0,0) (s)  {$s$}; 
-				\node[state] at (1.8,1) (v1)  {$r_1$}; 
-				\node[state] at (3.6, 0)(t) {$t$};
-				\node[state, rectangle] at (5, 0) (d1) {$\lambda$};
-				\path[->] 
-				(s) edge [red] node [black] {1} (v1)
-				edge  node {5} (t)
-				(v1) edge [red] node [black] {2} (t)
-				(t) edge [red, dashed] node {} (d1);
-				\end{tikzpicture}
-			}
-\end{wrapfigure}
 For each destination tree $\xi_\lambda\in\Delta$, we add equations to ensure 
 that the input paths with destination $\lambda$ are the shortest ones.
 Notice that, if a path $\pi$
@@ -270,8 +280,10 @@ cannot be solved without using static routes.
 			(t) edge [blue, dashed] node {} (d2);
 			\end{tikzpicture}
 	}
+	\compactcaption{An example of why static routes are needed.}
+	\label{fig:srexample}
 \end{wrapfigure}
-Consider the example in \Cref{fig:ospfexample}(b)
+Consider the example in \Cref{fig:srexample}
 where the two paths between $s$ and $t$ are used by 
 destinations $\lambda_1$ and $\lambda_2$. This
 set of input paths does not admit a solution. 
@@ -285,7 +297,7 @@ a static route at router $s$ to forward $\lambda_2$
 traffic to router $t$, this route will have a higher
 preference compared to the OSPF route
 through $r_1$ (static routes by default have the
-lowest administrative distance~\cite{admindistance}). \todo{broken citation}
+lowest administrative distance~\cite{admindistance}).
 Since there are no static routes for
 $\lambda_1$, the traffic to $\lambda_1$ will be forwarded to $t$
 through $r_1$ using the OSPF shortest path.
@@ -340,7 +352,7 @@ and the approach is repeated until a solution is found.
 
 %\minisection{Adding static routes using unsatisfiable cores}
 To choose what static route to place, we use
-LP-solvers ability to produce an
+LP-solvers' ability to produce an
 unsatisfiable core, also called IIS (Irreducible Inconsistent Subsystem)~\cite{chinneck2007feasibility}. 
 Intuitively, an IIS is a subset of the input constraints such that,
 if all constraints except those in the IIS are removed, the resulting set of
