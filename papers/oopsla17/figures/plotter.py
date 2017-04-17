@@ -159,12 +159,12 @@ fatSR = [1.761261467,0.9587403338,0.827105564,0.6978998297,0.6535906463]
 plt.xlim(xmin=190, xmax=1010)
 plt.ylim(ymin=0, ymax=2)
 
-plt.plot(x, fatBGP, '#4daf4a',marker="D", markersize=markersize, label="BGP Ratio (Fat-8)")
+plt.plot(x, fatBGP, '#4daf4a',marker="D", markersize=markersize, label="BGP Ratio")
 # plt.errorbar(x, ionTRL, color='#4daf4a', yerr=ionTRLDev, linestyle="None")
 # plt.plot(x, ionConf, '#377eb8',marker="^", markersize=markersize, label="Conf Ratio (Ion)")
 # plt.errorbar(x, ionConf, color='#377eb8', yerr=ionConfDev, linestyle="None")
 
-plt.plot(x, fatSR, '#ff7f00', marker="o", markersize=markersize, label="SR Ratio (Fat-8)")
+plt.plot(x, fatSR, '#ff7f00', marker="o", markersize=markersize, label="SR Ratio")
 # plt.errorbar(x, fatTRL, color='#ff7f00', yerr=fatTRLDev, linestyle="None")
 # plt.plot(x, fatConf, '#984ea3', marker="s", markersize=markersize, label="Conf Ratio (Fat-8)")
 # plt.errorbar(x, fatConf, color='#984ea3', yerr=fatConfDev, linestyle="None")

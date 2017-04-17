@@ -1,8 +1,6 @@
 \section{From Policies to Connectivity-Resilient  Configurations}
 \label{sec:config-synthesis}
 
-
-
 In this section, we present algorithms for 
 solving the path-compliance problem when the domain
 assignment function $\Theta$ is given to us.
@@ -133,6 +131,22 @@ must traverse through one of neighbor routers of $s$,
 and thus, distance can be defined inductively as the 
 shortest among distances from the neighbors. 
 
+\begin{wrapfigure}{r}{0.33\columnwidth}
+	\resizebox {0.33\columnwidth} {!} {
+				\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
+				square/.style={regular polygon,regular polygon sides=4}] 
+				\node[state] at (0,0) (s)  {$s$}; 
+				\node[state] at (1.8,1) (v1)  {$r_1$}; 
+				\node[state] at (3.6, 0)(t) {$t$};
+				\node[state, rectangle] at (5, 0) (d1) {$\lambda$};
+				\path[->] 
+				(s) edge [red] node [black] {1} (v1)
+				edge  node {5} (t)
+				(v1) edge [red] node [black] {2} (t)
+				(t) edge [red, dashed] node {} (d1);
+				\end{tikzpicture}
+			}
+\end{wrapfigure}
 For each destination tree $\xi_\lambda\in\Delta$, we add equations to ensure 
 that the input paths with destination $\lambda$ are the shortest ones.
 Notice that, if a path $\pi$
@@ -172,46 +186,46 @@ in $\xi_\lambda$, and
 thus, the synthesized edge weights will ensure 
 paths in $\xi_\lambda$ are the shortest. 
 
-\begin{figure}[!t]
-	\centering
-	\subfloat[Edge Weights]{
-		\raisebox{0.5cm}{\resizebox {0.33\columnwidth} {!} {
-				\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
-				square/.style={regular polygon,regular polygon sides=4}] 
-				\node[state] at (0,0) (s)  {$s$}; 
-				\node[state] at (1.8,1) (v1)  {$r_1$}; 
-				\node[state] at (3.6, 0)(t) {$t$};
-				\node[state, rectangle] at (5, 0) (d1) {$\lambda$};
-				\path[->] 
-				(s) edge [red] node [black] {1} (v1)
-				edge  node {5} (t)
-				(v1) edge [red] node [black] {2} (t)
-				(t) edge [red, dashed] node {} (d1);
-				\end{tikzpicture}
-			}}}
-			\subfloat[Static Routes]{
-				\resizebox {0.33\columnwidth} {!} {
-					\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
-					square/.style={regular polygon,regular polygon sides=4}] 
-					\node[state] at (0,0) (s)  {$s$}; 
-					\node[state] at (2, 1) (v1)  {$r_1$}; 
-					\node[state] at (4, 0)(t) {$t$};
-					\node[state, rectangle] at (5.5, 0.75) (d1) {$\lambda_1$};
-					\node[state, rectangle] at (5.5, -0.75) (d2) {$\lambda_2$};
-					\path[->] 
-					(s) edge [red] node [black] {1} (v1)
-					edge [blue] node [above, black] {5} node [below, black] {$sr((s,t),\lambda_2)$} (t)
-					(v1) edge [red] node [black] {2} (t)
-					(t) edge [red, dashed] node {} (d1)
-					(t) edge [blue, dashed] node {} (d2);
-					\end{tikzpicture}
-				}}
-						\compactcaption{OSPF edge weights and static routes
-							such that the routers forward traffic along
-							the colored paths.}
-						\label{fig:ospfexample}
-					\end{figure}
-					
+%\begin{figure}[!t]
+%	\centering
+%	\subfloat[Edge Weights]{
+%		\raisebox{0.5cm}{\resizebox {0.33\columnwidth} {!} {
+%				\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
+%				square/.style={regular polygon,regular polygon sides=4}] 
+%				\node[state] at (0,0) (s)  {$s$}; 
+%				\node[state] at (1.8,1) (v1)  {$r_1$}; 
+%				\node[state] at (3.6, 0)(t) {$t$};
+%				\node[state, rectangle] at (5, 0) (d1) {$\lambda$};
+%				\path[->] 
+%				(s) edge [red] node [black] {1} (v1)
+%				edge  node {5} (t)
+%				(v1) edge [red] node [black] {2} (t)
+%				(t) edge [red, dashed] node {} (d1);
+%				\end{tikzpicture}
+%			}}}
+%			\subfloat[Static Routes]{
+%				\resizebox {0.33\columnwidth} {!} {
+%					\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
+%					square/.style={regular polygon,regular polygon sides=4}] 
+%					\node[state] at (0,0) (s)  {$s$}; 
+%					\node[state] at (2, 1) (v1)  {$r_1$}; 
+%					\node[state] at (4, 0)(t) {$t$};
+%					\node[state, rectangle] at (5.5, 0.75) (d1) {$\lambda_1$};
+%					\node[state, rectangle] at (5.5, -0.75) (d2) {$\lambda_2$};
+%					\path[->] 
+%					(s) edge [red] node [black] {1} (v1)
+%					edge [blue] node [above, black] {5} node [below, black] {$sr((s,t),\lambda_2)$} (t)
+%					(v1) edge [red] node [black] {2} (t)
+%					(t) edge [red, dashed] node {} (d1)
+%					(t) edge [blue, dashed] node {} (d2);
+%					\end{tikzpicture}
+%				}}
+%						\compactcaption{OSPF edge weights and static routes
+%							such that the routers forward traffic along
+%							the colored paths.}
+%						\label{fig:ospfexample}
+%					\end{figure}
+%					
 \subsubsection{Intra-domain Synthesis with Static Routes} \label{sec:ospfsr}
 
 If the system of equations presented in Section~\ref{sec:ospf} admits a solution, 
@@ -219,6 +233,24 @@ the values of the $W_s^t$ variables are the weights we are trying to synthesize,
 otherwise the intra-domain synthesis problem 
 cannot be solved without using static routes.
 
+\begin{wrapfigure}{r}{0.33\columnwidth}
+	\resizebox {0.33\columnwidth} {!} {
+			\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
+			square/.style={regular polygon,regular polygon sides=4}] 
+			\node[state] at (0,0) (s)  {$s$}; 
+			\node[state] at (2, 1) (v1)  {$r_1$}; 
+			\node[state] at (4, 0)(t) {$t$};
+			\node[state, rectangle] at (5.5, 0.75) (d1) {$\lambda_1$};
+			\node[state, rectangle] at (5.5, -0.75) (d2) {$\lambda_2$};
+			\path[->] 
+			(s) edge [red] node [black] {1} (v1)
+			edge [blue] node [above, black] {5} node [below, black] {$sr((s,t),\lambda_2)$} (t)
+			(v1) edge [red] node [black] {2} (t)
+			(t) edge [red, dashed] node {} (d1)
+			(t) edge [blue, dashed] node {} (d2);
+			\end{tikzpicture}
+	}
+\end{wrapfigure}
 Consider the example in \Cref{fig:ospfexample}(b)
 where the two paths between $s$ and $t$ are used by 
 destinations $\lambda_1$ and $\lambda_2$. This
