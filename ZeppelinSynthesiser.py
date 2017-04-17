@@ -159,7 +159,10 @@ class ZeppelinSynthesiser(object) :
 
 		self.endpoints = copy.deepcopy(endpoints)
 		
-		self.waypoints = copy.deepcopy(waypoints)
+		if not self.waypointCompliance : 
+			self.waypoints = dict()
+		else : 
+			self.waypoints = copy.deepcopy(waypoints)
 
 		if backups != None : 
 			self.backups = copy.deepcopy(backups)
@@ -244,8 +247,9 @@ class ZeppelinSynthesiser(object) :
 		# else : 
 		# 	self.pdb.validateControlPlaneWaypointCompliance(self.topology, self.staticRoutes, self.waypoints, self.zeppelinPaths)
 		
-		# score = self.pdb.validateControlPlaneResilience(self.topology, self.staticRoutes, self.waypoints, self.zeppelinPaths)
-		score = [0,0]
+		score = self.pdb.validateControlPlaneResilience(self.topology, self.staticRoutes, self.waypoints, self.zeppelinPaths)
+		
+		baseline = self.pdb.generateBaslineConfigurationScore(self.topology, self.waypoints, self.zeppelinPaths)
 
 		srCount = 0
 		# Translate route filters to switch names
@@ -258,18 +262,16 @@ class ZeppelinSynthesiser(object) :
 				srNames.append([self.topology.getSwName(sr[0]), self.topology.getSwName(sr[1])])
 			self.staticRouteNames[subnet] = srNames
 
-		for dst in self.zeppelinPaths : 
-			print "D", dst, self.zeppelinPaths[dst]
 		self.zepFile = open("zeppelin-timing", 'a')
 		# self.zepFile.write("Topology Switches\t" +  str(swCount))
 		# self.zepFile.write("\n")
-		self.zepFile.write(str(len(self.waypointClasses)) + "\t" + str(self.pdb.getPacketClassRange()) + "\t" + str(end_t) + "\t" + str(self.SRCount) +"\t" + str(self.totalSRCount) + "\t" + str(self.waypointCompliance) + "\t" + str(self.resilience) + "\t" + str(score[0]) + "\t" + str(score[1]))
+		self.zepFile.write(str(len(self.waypointClasses)) + "\t" + str(self.pdb.getPacketClassRange()) + "\t" + str(end_t) + "\t" + str(self.SRCount) +"\t" + str(self.totalSRCount) + "\t" + str(self.waypointCompliance) + "\t" + str(self.resilience) + "\t" + str(score[0]) + "\t" + str(score[1]) + "\t" + str(baseline[0]) + "\t" + str(baseline[1]))
 		self.zepFile.write("\n")
 		self.zepFile.close()
 		# self.zepFile.write("Static Routes" + "\t" + str(self.pdb.getPacketClassRange()) + "\t" + str(srCount) + "\t")
 		# self.zepFile.write("\n")
 
-		return self.staticRouteNames
+		return [self.staticRouteNames, score[0]]
 
 	def removeViolations(self) : 
 		self.staticRoutesAdded = 0
