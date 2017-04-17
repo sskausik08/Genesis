@@ -1,13 +1,15 @@
-
-
-\section{Routing Model and Problem Definition}
-In this section, we formally define the problem addressed in this
+\section{Routing Model and Problem Definitions}
+In this section, we formally define the problems addressed in this
 paper.  We first describe the representation of different
 routing protocols; we model static
 routes, OSPF shortest-path routing, and BGP preference-based routing.
-Then, we formally define when a certain configuration meets a given
+Then, we define what it means for a configuration to meet a given
 set of policies and present the configuration synthesis problems
 we tackle.
+Finally, we formalize two resilience metrics called 
+connectivity-resilience and positive-resilience,
+which we will use in our experimental evaluation.
+
 
 \subsection{Routing Model}
 
@@ -254,7 +256,7 @@ Given a set of packet classes $PC$, the set of paths
 $\paths^C(PC) = \cup_{pc\in PC} \paths^C(pc)$.
 \end{definition}
 
-\subsection{Problem Definition}
+\subsection{Synthesis of policy-compliant configurations}
 \input{policy}
 
 
@@ -298,7 +300,7 @@ static routes---i.e., $sc=|\{(v, v', \lambda)\mid \exists v'. v' \in SR(v,\lambd
 BGP configurations---i.e., 
 $bc=|\bigcup_{v,\lambda\in V\times\Lambda} IF(v,\lambda)\cup \{(v,v',\lambda)\mid LP(v,v',\lambda)\neq \bot\}|\leq C_{bc}$.
 In general, it is desirable to limit the number of static routes since they
-can lead to undesired routing behaviors such as routing loops (more in\secref{sec:loopavoidance}), and to limit the number of BGP configurations
+can lead to undesired routing behaviors such as routing loops (more in~\secref{sec:loopavoidance}), and to limit the number of BGP configurations
 since they increase the complexity of the network.
 \name can  also try to minimize certain expressions over the quantities $sc$, and $bc$---e.g., $max(sc, bc)$. 
 
@@ -345,10 +347,27 @@ a configuration $C$ that is path-compliant with $(\Pi,P)$.
 \end{definition}
 
 \minisection{Resilience metrics}
-\todo{write resilience metrics here and some text like the following.}
-\kausik{Ideally, the most important metric we want to maximize is resilience---i.e.,
-the number of alternate paths between endpoints.
-However, this metric is too hard to handle as it depends on complex graph properties. 
-In practice, when we want improve resilience, we try to minimize
-the number of filters; we will show that this strategy is effective in our experiments. }
+One of the main focus of this paper is
+generate configurations that are highly resilient to failures.
+We present two different resilience metrics that we will use in the following section.
+
+
+The first metric describes how good a given configuration
+is at preserving policy-compliance upon a single link failure. 
+The \emph{policy-resilience} of a configuration
+is the quantity \todo{define}
+
+In general, generating configurations with high-policy resilience is hard
+since there may be only a few paths that satisfy a certain policy.
+Therefore we also consider a second more relaxed metric, which describes how good a given configuration
+is at preserving connectivity (but not policy compliance) upon a single link failure. 
+The \emph{connectivity-resilience} of a configuration
+is the quantity \todo{define}
+
+%\todo{write resilience metrics here and some text like the following.}
+%\kausik{Ideally, the most important metric we want to maximize is resilience---i.e.,
+%the number of alternate paths between endpoints.
+%However, this metric is too hard to handle as it depends on complex graph properties. 
+%In practice, when we want improve resilience, we try to minimize
+%the number of filters; we will show that this strategy is effective in our experiments. }
 
