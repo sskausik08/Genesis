@@ -26,9 +26,39 @@ Specifically, we ask the folloqing questions.\footnote{All experiments were cond
 
 \subsection{Single Domain End-to-end Performance with Genesis}\label{sec:ospfeval}
 
-%\setlength{\intextsep}{0pt}%
-%\setlength{\columnsep}{0pt}%
-\begin{wrapfigure}[12]{r}{0.6\columnwidth}
+
+We evaluate the end-to-end performance of our tool
+on a  fat-tree 
+topology comprising of 45 routers
+and a single OSPF domain. 
+The size of the topology is consistent with operator preferences to restrict
+the size of a domain to under 50 routers (OSPF does not scale
+well as domain size increases).
+We use \todo{name} to refer to the algorithm that handles complex policies and
+can synthesize policy-compliant
+configurations with few static routes (\secref{sec:config-synthesis})
+and 
+\todo{name} to refer to the algorithm that handles waypoint policies and
+can synthesize policy-compliant
+configurations with high policy-resilience (\secref{sec:waypointres}).
+
+We consider two classes of policies.
+Our first class contains complex isolation policies that 
+existing tools cannot handle; for this class we can only evaluate algorithm \todo{alg1}.
+Our second class consists of
+ waypoint policies of the form described in Section~\ref{sec:waypointres});
+for this class we evaluate both \todo{alg1} and \todo{alg2}.
+For each algorithm  we evaluate how much time is spent
+calling \genesis to generate policy-compliant paths
+and how much time \name takes to generate configurations from such paths.
+
+
+%of the path-compliance synthesis algorithm for tenant 
+%isolation workloads, and single-path waypoint-compliance 
+%synthesis for varying number of waypoint policies.
+
+
+\begin{wrapfigure}[14]{r}{0.6\columnwidth}
 	\includegraphics[width=0.58\columnwidth]{figures/ospfisolation.eps}
 	%	\subfloat[Number of Route Filters]
 	%	{\includegraphics[width=0.33\columnwidth]{figures/ospfRF.eps}}
@@ -38,51 +68,41 @@ Specifically, we ask the folloqing questions.\footnote{All experiments were cond
 	\compactcaption{\label{fig:ospfisolation}
 		End-to-end synthesis time for isolation workloads over the range of destinations and different tenant sizes.}
 \end{wrapfigure}
-
-We benchmark the end-to-end performance of Genesis and Zeppelin
-for a single OSPF domain configuration  synthesis on a fat-tree 
-topology comprising of 45 routers. We evaluate the performance
-of the path-compliance synthesis algorithm for tenant 
-isolation workloads, and single-path waypoint-compliance 
-synthesis for varying number of waypoint policies.
-The topology size is consistent with operator preferences to restrict
-the size of a domain to under 50 routers (OSPF does not scale
-well as domain size increases).
-
-\noindent\textbf{Path-Compliance.}~~~
-To benchmark the path-compliance 
-configuration synthesis (referred to as 1-PC) 
-for a single domain, we 
-model a multi-tenant 45 router topology with 
-isolation in tenants. For each 
-workload, we have $n$ tenant groups, 
-each group comprising of $g$ destinations. 
-The x-axis shows the number of paths $n * g$. 
-Within a tenant group, we add a policy to ensure
-each path with randomly generated endpoints 
-is isolated from other paths of the same tenant group 
-(to prevent interference by other traffic belonging to
-same tenant).  
-
+\paragraph{Isolation Policies.}
+We generate policies that operate 
+on a multi-tenant topology with 
+ different tenants.
+Within a  group of tenants, we add a policy to ensure
+each path  (with randomly generated endpoints)
+is isolated from other paths of the same tenant group.
+Here, isolation  prevents interference by other traffic belonging to
+same tenant.  
+\todo{I removed 1-PC from text not sure if used in graphs or later}
+ 
+For each 
+workload, we have $n$ tenant groups (between \todo{X and Y}), 
+each group comprised of $g$ destinations (between 10 and 20). 
 \Cref{fig:ospfisolation} 
-shows the end-to-end configuration synthesis time from policies 
-for increasing number of tenants and different group sizes ($g =
-\{10,20\}$). As the number of tenants increase, time to 
+shows the synthesis time 
+for \todo{alg1}.
+The x-axis shows the number of \loris{what paths} paths $n * g$. 
+ As the number of tenants increase, time to 
 synthesize the data plane increases linearly as we only 
 consider isolation policies within tenants, not amongst paths 
 of different tenants. Meanwhile, time taken to synthesize 
 OSPF configurations increases exponentially with increasing 
-number of tenants. This is because the complexity of computing 
-the unsat-core is exponential; with increasing number of 
-paths, we need to add more static routes for 
-path-compliance (each iteration of the unsat-core learning
-procedure adds one static route). Using our two-phased approach,
-we are able to synthesize configurations for 4 tenants, each with
-20 destinations in 77 seconds, where Genesis takes 35 seconds and
-Zeppelin takes 42 seconds on average. 
+number of tenants due to the exponential complexity of computing 
+the unsat-cores; with increasing number of 
+paths, \todo{alg1} needs to add more static routes  and requires more iterations of the unsat-core learning
+procedure. 
+For this workload, our tool can
+synthesize configurations for 4 tenants, each with
+20 destinations in 77 seconds, where \genesis takes 35 seconds and
+\name takes 42 seconds on average. 
 
+\todo{tool is zeppelin as well as genesis, we should change terminology}
 
-\begin{wrapfigure}{Hr}{0.6\columnwidth}
+\begin{wrapfigure}{r}{0.6\columnwidth}
 	\begin{center}
 		\includegraphics[width=0.6\columnwidth]{figures/ospfwaypoint.eps}
 		%	\subfloat[Number of Route Filters]
@@ -94,20 +114,23 @@ Zeppelin takes 42 seconds on average.
 		number of paths and different number of waypoint sets.}
 	\end{center} 
 \end{wrapfigure}
+\paragraph{Waypoint Policies.}
+We generate waypoint policy 
+workloads with varying number of destination IP addresses and 
+waypoint sets as follows. We create waypoint sets by generating
+random sets of routers of size 3 and vary the number of 
+unique waypoint sets in the topology across 2, 5, and 10 sets. 
+\todo{previous sentence is weird?}
+Each waypoint set can be 
+viewed as a class of replicated middleboxes (for e.g., firewall).
+We randomly generate policies that map each destination to one of the waypoint sets. 
 
-\noindent\textbf{Waypoint Compliance.}~~~
-We benchmark the end-to-end synthesis time for waypoint policy 
-workloads for varying number of destination IP addresses and 
-waypoint sets. In this setup, we randomly pick three routers
-and assign them to a waypoint set, and vary the number of 
-unique waypoint sets in the topology (2, 5, 10). Each set can be 
-considered as a class of replicated middleboxes (for e.g., firewall).
-For each destination, we map it to one of the waypoint sets as a
-Genesis waypoint policy. Genesis generates a single path for each 
-destination, and \name synthesizes waypoint-compliant OSPF 
-configurations ((referred to as 1-WC) ) 
-using the waypoint policies and paths generated by Genesis.  
+%Genesis generates a single path for each 
+%destination, and \name synthesizes waypoint-compliant OSPF 
+%configurations ((referred to as 1-WC) ) 
+%using the waypoint policies and paths generated by Genesis.  
 
+\todo{rewrite following as alg 1 and alg2}
 \Cref{fig:ospfwaypoint} shows the end-to-end synthesis
  time (log scale) for varying number of destinations paths and the 
  number of unique waypoint sets. Since, synthesizing paths
@@ -120,6 +143,10 @@ iteration to find a static route is more expensive with increasing
 number of sets. For 5 waypoint sets, \name takes 300 
 seconds on average to synthesize waypoint-compliant configurations. 
 
+
+In summary, the answer to \textbf{Q1} is that, for realistic workloads,
+\textbf{\name can synthesize configurations for medium size
+topologies} less than five minutes.
 
 %\begin{table}{l}{8em}
 %	\begin{footnotesize}
@@ -140,7 +167,7 @@ seconds on average to synthesize waypoint-compliant configurations.
 %\end{table} 
 
 \subsection{Resilience Performance of Intra-domain Synthesis} \label{sec:reseval}
-\noindent\textbf{Connectivity-resilience.}~~~
+\paragraph{Connectivity-resilience.}~~~
 We now evaluate the resilience of configurations 
 of \name's intra-domain synthesis (1-PC).
 For this, 
@@ -175,7 +202,7 @@ of 0.85.
 \end{wrapfigure}
 
 
-\noindent\textbf{Resilient Waypoint Compliance.}~~~
+\paragraph{Resilient Waypoint Compliance.}~~~
 We now evaluate the resilience obtained by \name's
 resilient waypoint-compliance synthesis (referred to as 2-WC)
 described in \secref{sec:waypointres}
@@ -265,7 +292,7 @@ conduct these experiments 20 times each,
 and report the average and
 standard deviation of the metrics.
 
-%\noindent\textbf{Configuration Overhead.}~~~
+%\paragraph{Configuration Overhead.}~~~
 %\Cref{fig:mcmceval}(a) shows the configuration overhead $bc$ 
 %incurred by \name for synthesizing inter-domain configurations.
 %For the Fat-8 topology which has greater path diversity, we incur more 
@@ -276,7 +303,7 @@ standard deviation of the metrics.
 %This illustrates
 %the effectiveness of MCMC sampling in finding configurations with lower overhead on average.
 %
-%\noindent\textbf{Endpoint Resilience.}~~~ \Cref{fig:mcmceval}(b) shows
+%\paragraph{Endpoint Resilience.}~~~ \Cref{fig:mcmceval}(b) shows
 %the loss in total endpoint resilience with varying number of paths
 %(the count of backup paths for endpoints filtered by the
 %configurations). For the Worst traces, we store the worst domain
