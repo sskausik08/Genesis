@@ -31,7 +31,6 @@ we say that a configuration complies to a policy
 $pc$ if
 at least one of the induced paths in $\paths^C(pc)$ 
 traverses one waypoint $w \in \waypt$.\footnote{
-\todo{Kausik read this and check}
 The attentive reader will note that in our definition of waypoint-compliance 
 we do not require all induced paths for $pc$ to traverse the waypoints. 
 Our 
@@ -50,31 +49,45 @@ can be the set of physical replicas of,  for example, a firewall.
 
 
  Given a set of such waypoint policies, our goal is to
-find a policy-compliant configuration $C=(T,\Theta,W,LP,IF,SR)$ 
-with high policy-resilience.
-In the following section, we focus on intra-domain configurations,
+find a policy-compliant configuration 
+$C=(T,\Theta,W,LP$, $IF,SR)$ 
+with high policy-resilience. Ideally, for 
+any single link failure, there is atleast 
+one path to $\lambda$ which is waypoint-compliant. 
+In the following section, we focus on 
+intra-domain configurations,
 and present an algorithm
-that solves this problem when the network has a single domain.
-When the network has multiple domains
-\todo{explain why we don't do inter, seems like first para from next section
-should be somewhere here}
+that solves this problem when the network 
+has a single domain.
+When the network has multiple domains, 
+we use the algorithm in the domain 
+which contains the waypoints in $\waypt$. 
+For this, we assume that all $w \in \waypt$ 
+belong to the same domain. This can be realized 
+by Network Function Virtualization~\cite{opennf, netbricks},
+which provides waypoint replication and 
+ flexible waypoint placement in the network.
+
+
+%\todo{explain why we don't do inter, seems like first para from next section
+%should be somewhere here}
 
 %
 %\loris{somewhere describe how it's a two-phase approach
 %and now all the paper is about 1-resilience so don't say
 %1 resilience everywhere}
 
-\todo{not sure where following text belongs}
-Support for  
-middlebox traversals is commonly 
-provided by network operators.
-Network Function Virtualization (NFV) has been a 
-major driving force for providing reliability 
-guarantees under failures  
-for middlebox traversals~\cite{opennf, netbricks}. 
-Using NFV technology, operators can replicate 
-their middleboxes across the network for providing 
-resilience guarantees. 
+%\todo{not sure where following text belongs}
+%Support for  
+%middlebox traversals is commonly 
+%provided by network operators.
+%Network Function Virtualization (NFV) has been a 
+%major driving force for providing reliability 
+%guarantees under failures  
+%for middlebox traversals~\cite{opennf, netbricks}. 
+%Using NFV technology, operators can replicate 
+%their middleboxes across the network for providing 
+%resilience guarantees. 
 
 
 
@@ -92,18 +105,12 @@ resilience guarantees.
 
 
 \subsection{Intra-domain Resilient Waypoint Compliance}\label{sec:ospfwaypoint}
-Let us consider a waypoint policy for $\lambda$ which
+Consider a waypoint policy for $\lambda$ which
 specifies that traffic to $\lambda$ from router $s$ 
 must traverse through
 one of the waypoints $w \in \waypt$. We assume that 
 all the waypoints belong in the same domain, i.e., 
-$|\{\Theta(w) | w \in W\}| = 1$. NFV provides 
-flexibility of waypoint placement in the network, 
-and we can ensure
-all replicas belong to the same domain.  
-Under any single link failure, we need atleast one path 
-to $\lambda$ which is waypoint-compliant. 
-
+$|\{\Theta(w) | w \in W\}| = 1$.
 We leverage \genesis's
 support for isolation to generate two edge-disjoint\footnote
 {The edge-disjoint paths will actually be vertex-disjoint (except the 
