@@ -69,10 +69,17 @@ about how different protocols react to failures,
 which further complicates an already intractable synthesis
 problem. 
 
+\begin{wrapfigure}{r}{0.5\columnwidth}
+	\includegraphics[width=0.49\columnwidth]{figures/architecture.pdf}
+	\compactcaption{Two-phase process for generating a control plane
+		with failure-tolerance properties}
+	\label{fig:architecture}
+\end{wrapfigure}
 
 In this paper, we present \name, a new approach for synthesizing
 highly resilient policy-compliant configurations.
-Unlike previous approaches, \name uses a two-phased approach
+Unlike previous approaches, \name uses a two-phased approach 
+(\Cref{fig:architecture}) 
 that does not attempt to generate 
 a policy-compliant control plane in a single step.
 First, \name 

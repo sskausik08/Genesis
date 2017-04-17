@@ -44,13 +44,7 @@ the router $r$ is reachable in the path from the source
 router of packet class $pc$ in exactly $k$ steps. Based on
 the input policies, \genesis generates constraints over the $Fwd$
 and $Reach$ relations. Finally, \genesis uses the solution to the relations to extracts the concrete paths.
-\begin{figure}
-	\centering
-	\includegraphics[width=0.5\columnwidth]{figures/architecture.pdf}
-	\compactcaption{Two-phase process for generating a control plane
-		with failure-tolerance properties}
-	\label{fig:architecture}
-\end{figure}
+
 \paragraph{Modifications to \genesis}
 OpenFlow switches~\cite{openflow} support match predicates for
 forwarding rules on different packet header fields such as source
