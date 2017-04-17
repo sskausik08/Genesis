@@ -1,6 +1,42 @@
-\begin{table}
-\begin{small}
-	\begin{center}
+%\begin{table}
+%\begin{small}
+%	\begin{center}
+%		\begin{tabular}{m{7.8em}  m{15.9em} } 
+%			{\bf Policy} & {\bf Description} \\ 
+%			\hline
+%			Reachability & There is a path from router $s$ to router $t$ for destination $\lambda$ \\ \hline
+%			Reachability with \newline Waypoints & The path  from $s$ to $t$ for destination $\lambda$ 
+%			traverses a set of waypoints in the path\\ \hline
+%			Traffic Isolation & Paths of two reachability policies $R1$ and $R2$ do not share  links \\ \hline
+%			Traffic Engineering  & Minimize total/max link utilization \\
+%		\end{tabular}
+%	\end{center}
+%	\caption{\genesis path-based policy support.} \label{tab:policysupport} 
+%\end{small}
+%\end{table}
+%\begin{table}[!t]
+%	\begin{small}
+%		\begin{center}
+%			\begin{tabular}{m{6.5em}  m{17.7em} } 
+%				{\bf Policy} & {\bf Description} \\ 
+%				\hline
+%				Count  & Number of OSPF domains: $c_1\leq N_D\leq c_2$  \\ \hline
+%				Domain Size  & Lower and upper
+%				limit of size of domain (number of routers): $l\leq ds\leq u$ \\ \hline
+%				BGP \newline Enable & Enable BGP on routers $B$ (hardware constraint) \\ \hline
+%				Static Route: ${sc}$ & Upper bound number of static route rules: $sc < C_{sc}$ \\ \hline
+%				BGP Config. Overhead: $bc$ & Upper bound the number of local preference entries and iBGP filters $bc < C_{bc}$ \\ \hline
+%				Cost Minimization & Minimize user-defined cost $expr(sc, bc)$
+%			\end{tabular}
+%		\end{center}
+%		\caption{\name configuration policy support.} \label{tab:configpolicysupport} 
+%	\end{small}
+%\end{table}
+
+\begin{figure*}
+\centering
+\subfloat[\genesis path-based policy support.]
+{
 		\begin{tabular}{m{7.8em}  m{15.9em} } 
 			{\bf Policy} & {\bf Description} \\ 
 			\hline
@@ -10,25 +46,19 @@
 			Traffic Isolation & Paths of two reachability policies $R1$ and $R2$ do not share  links \\ \hline
 			Traffic Engineering  & Minimize total/max link utilization \\
 		\end{tabular}
-	\end{center}
-	\caption{\genesis path-based policy support.} \label{tab:policysupport} 
-\end{small}
-\end{table}
-\begin{table}[!t]
-	\begin{small}
-		\begin{center}
-			\begin{tabular}{m{6.5em}  m{17.7em} } 
-				{\bf Policy} & {\bf Description} \\ 
-				\hline
-				Count  & Number of OSPF domains: $c_1\leq N_D\leq c_2$  \\ \hline
-				Domain Size  & Lower and upper
-				limit of size of domain (number of routers): $l\leq ds\leq u$ \\ \hline
-				BGP \newline Enable & Enable BGP on routers $B$ (hardware constraint) \\ \hline
-				Static Route: ${sc}$ & Upper bound number of static route rules: $sc < C_{sc}$ \\ \hline
-				BGP Config. Overhead: $bc$ & Upper bound the number of local preference entries and iBGP filters $bc < C_{bc}$ \\ \hline
-				Cost Minimization & Minimize user-defined cost $expr(sc, bc)$
-			\end{tabular}
-		\end{center}
-		\caption{\name configuration policy support.} \label{tab:configpolicysupport} 
-	\end{small}
-\end{table}
+}
+\subfloat[\name configuration policy support]
+{
+	\begin{tabular}{m{6.5em}  m{17.7em} } 
+		{\bf Policy} & {\bf Description} \\ 
+		\hline
+		Count  & Number of OSPF domains: $c_1\leq N_D\leq c_2$  \\ \hline
+		Domain Size  & Lower and upper
+		limit of size of domain (number of routers): $l\leq ds\leq u$ \\ \hline
+		BGP \newline Enable & Enable BGP on routers $B$ (hardware constraint) \\ \hline
+		Static Route: ${sc}$ & Upper bound number of static route rules: $sc < C_{sc}$ \\ \hline
+		BGP Config. Overhead: $bc$ & Upper bound the number of local preference entries and iBGP filters $bc < C_{bc}$ \\ \hline
+		Cost Minimization & Minimize user-defined cost $expr(sc, bc)$
+	\end{tabular}
+}
+\end{figure*}
