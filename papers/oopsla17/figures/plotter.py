@@ -315,7 +315,7 @@ ax1.legend(loc='upper left')
 
 #plt.legend(loc='best', frameon=False, fontsize=18)
 ax1.set_ylabel('Synthesis Time \n (log(s))', fontsize=13)
-ax1.set_xlabel('\#Paths', fontsize=13)
+ax1.set_xlabel('\#Paths \n (a) \#Sets: 2', fontsize=13)
 
 ax1.grid()
 
@@ -333,7 +333,7 @@ z = ax2.fill_between(x, genesisTime, totTime, color='#377eb8', alpha='0.5', labe
 g = ax2.fill_between(x, 1, genesisTime, color='#ff7f00', alpha='0.5', label="Genesis")
 
 #plt.legend(loc='best', frameon=False, fontsize=18)
-ax2.set_xlabel('\#Paths', fontsize=13)
+ax2.set_xlabel('\#Paths \n (b) \#Sets: 5', fontsize=13)
 ax2.grid()
 
 genesisTime = [1.686398292,4.115126556,6.254837424,8.705678749,11.5079913,14.68902937,17.80753183,21.22884498]
@@ -349,7 +349,7 @@ ax3.plot(x, totTime, '#377eb8',)
 ax3.fill_between(x, genesisTime, totTime, color='#377eb8', alpha='0.5', label="Zeppelin")
 ax3.fill_between(x, 1, genesisTime, color='#ff7f00', alpha='0.5', label="Genesis")
 
-ax3.set_xlabel('\#Paths', fontsize=13)
+ax3.set_xlabel('\#Paths \n (c) \#Sets: 10', fontsize=13)
 ax3.grid()
 
 plt.legend(['Genesis','Zeppelin'], fontsize=13,  ncol=2, loc='upper center', 
@@ -391,7 +391,7 @@ ax1.fill_between(x, 0, genesisTime, color='#ff7f00', alpha='0.5', label="Genesis
 
 #plt.legend(loc='best', frameon=False, fontsize=18)
 ax1.set_ylabel('Synthesis \n Time (s)', fontsize=13)
-ax1.set_xlabel('\#Paths', fontsize=13)
+ax1.set_xlabel('\#Paths \n (a) Tenant Size:10', fontsize=13)
 ax1.grid()
 x = range(20, 100, 20)
 genesisTime = [8.910769089,17.94230479,26.42362858,35.19051689]
@@ -409,7 +409,7 @@ z = ax2.fill_between(x, genesisTime, totTime, color='#377eb8', alpha='0.5', labe
 g = ax2.fill_between(x, 0, genesisTime, color='#ff7f00', alpha='0.5', label="Genesis")
 
 #plt.legend(loc='best', frameon=False, fontsize=18)
-ax2.set_xlabel('\#Paths', fontsize=13)
+ax2.set_xlabel('\#Paths \n (b) Tenant Size:20', fontsize=13)
 ax2.grid()
 plt.legend(['Genesis','Zeppelin'], fontsize=13,  ncol=2, loc='upper center', 
     bbox_to_anchor=[-0.095, 1.50], columnspacing=1.0, labelspacing=0.0,handletextpad=0.0, 

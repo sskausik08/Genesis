@@ -27,6 +27,20 @@ All experiments were conducted using a
 128GB of RAM.
 
 \subsection{Single Domain End-to-end Performance with Genesis}\label{sec:ospfeval}
+
+%\setlength{\intextsep}{0pt}%
+%\setlength{\columnsep}{0pt}%
+\begin{wrapfigure}[12]{r}{0.6\columnwidth}
+	\includegraphics[width=0.58\columnwidth]{figures/ospfisolation.eps}
+	%	\subfloat[Number of Route Filters]
+	%	{\includegraphics[width=0.33\columnwidth]{figures/ospfRF.eps}}
+	%	\subfloat[Endpoint Resilience]
+	%	{\includegraphics[width=0.32\columnwidth]{figures/ospfAvgRes.eps}}
+	\vspace{-8pt}
+	\compactcaption{\label{fig:ospfisolation}
+		End-to-end synthesis time for isolation workloads over the range of destinations and different tenant sizes.}
+\end{wrapfigure}
+
 We benchmark the end-to-end performance of Genesis and Zeppelin
 for a single OSPF domain configuration  synthesis on a fat-tree 
 topology comprising of 45 routers. We evaluate the performance
@@ -37,30 +51,38 @@ The topology size is consistent with operator preferences to restrict
 the size of a domain to under 50 routers (OSPF does not scale
 well as domain size increases).
 
-\begin{wrapfigure}{r}{0.6\columnwidth}
-	\includegraphics[width=0.58\columnwidth]{figures/ospfisolation.eps}
-	%	\subfloat[Number of Route Filters]
-	%	{\includegraphics[width=0.33\columnwidth]{figures/ospfRF.eps}}
-	%	\subfloat[Endpoint Resilience]
-	%	{\includegraphics[width=0.32\columnwidth]{figures/ospfAvgRes.eps}}
-	\compactcaption{\label{fig:ospfeval2}
-		OSPF Synthesis evaluation}
-\end{wrapfigure}
+\noindent\textbf{Path-Compliance}~~~
+To benchmark the path-compliance 
+configuration synthesis for a single domain, we 
+model a multi-tenant 45 router topology with 
+isolation in tenants. For each 
+workload, we have $n$ tenant groups, 
+each group comprising of $g$ destinations. 
+The x-axis shows the number of paths $n * g$. 
+Within a tenant group, we add a policy to ensure
+each path with randomly generated endpoints 
+is isolated from other paths of the same tenant group 
+(to prevent interference by other traffic belonging to
+same tenant).  
 
-\noindent\textbf{Path-Compliance}~~~\Cref{fig:ospfeval}(a) 
-shows the synthesis time for increasing number of paths. 
-The time taken for Fat-6 is much greater than Fat-4 or Geant
-due to have more links; therefore there are more link weights
-to synthesize, and greater alternate paths to add constraints for. 
-For Geant, we can synthesize weights and filters in 200 seconds 
-for 200 paths. Thus OSPF synthesis is effective for ISP topologies
-which have fewer links than datacenter topologies.
+\Cref{fig:ospfisolation} 
+shows the end-to-end configuration synthesis time from policies 
+for increasing number of tenants and different group sizes ($g =
+\{10,20\}$). As the number of tenants increase, time to 
+synthesize the data plane increases linearly as we only 
+consider isolation policies within tenants, not amongst paths 
+of different tenants. Meanwhile, time taken to synthesize 
+OSPF configurations increases exponentially with increasing 
+number of tenants. This is because the complexity of computing 
+the unsat-core is exponential; with increasing number of 
+paths, we need to add more static routes for 
+path-compliance (each iteration of the unsat-core learning
+procedure adds one static route). Using our two-phased approach,
+we are able to synthesize configurations for 4 tenants, each with
+20 destinations in 77 seconds, where Genesis takes 35 seconds and
+Zeppelin takes 42 seconds on average. 
 
-\Cref{fig:ospfeval}(b) shows the number of filters synthesized. 
-As the time taken is dependent on the number of iterations of
-the route-filter learning procedure, the number of filters
-shows a similar trend to OSPF synthesis time. On average, 2 route filters
-are required for each path in the Geant topology. 
+
 
 \begin{wrapfigure}{r}{0.6\columnwidth}
 	\begin{center}
