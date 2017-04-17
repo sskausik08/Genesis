@@ -18,13 +18,41 @@ with high
 \emph{connectivity-resilience} and for the moment, we do not care about 
 preserving policy-compliance under failure.
 
-\loris{need to argue that minimizing static routes is the right thing to do and then
-show the hardness result}
+\todo{use following text to argue about static route bad for resilience}
+We start by observing that 
+the intra-domain synthesis problem with static routes
+admits a trivial solution in which 
+static routes are used to enforce the exact set of input paths. 
+This can be done by adding a 
+static route to $SR(\lambda)$ for every link $l$ in $\xi_\lambda$. 
+However, this solution will use more static routes than necessary. 
+Ideally, we would like to add fewer static routes, as they can 
+create routing loops if link weights are configured without taking 
+the static route into account (\secref{sec:loopavoidance}). 
+Since the problem of optimally placing static routes is computationally hard (Theorem~\ref{thm:ospfsynth}), 
+we propose a non-optimal greedy strategy that works well in practice.
+\todo{need to argue that minimizing static routes is the right thing to do}
+Given the relation between the number of static routes and connectivity-resilience,
+we set as our goal that of generating configurations with as few static routes as possible.
 
-%We call this problem the \emph{routing configuration synthesis} problem.
-Before we present our techniques,
-we show that
-even the simplest variant of this problem is computationally hard.
+
+\todo{reiterate that going straight to policies is hard
+so instead we do path first and then look for path-compliant configs}
+
+
+In the next sections, 
+we  show how to solve the  path-compliance synthesis problem first for intra-domain configurations---i.e., when there
+is only a single domain---and then  for intra-domain configurations---i.e., when
+there are multiple domains.
+
+\subsection{Synthesising Path-compliant Intra-domain Configurations} \label{sec:intra-synthesis}
+In this section, we present an algorithm for 
+solving the path-compliance problem for 
+single-domain OSPF networks and, as mentioned before, the metric we try to minimize is the number of static routes.
+To justify the complexity of the techniques we are going to present,
+we show that, even when policy-compliant paths are provided, 
+obtaining configurations with minimal numbers of static routes is a 
+computationally hard problem.
 \begin{theorem}[Hardness of synthesis]
 \label{thm:ospfsynth}
 If $P$ bounds the number of static routes ($sr\leq C_{sr}$) for a
@@ -33,18 +61,10 @@ problem is NP-complete.
 \end{theorem}
 \iffull
 \input{route-filters-nphard}
-\else
-The reduction is from the vertex cover problem.
+%\else
+%The reduction is from the vertex cover problem.
 \fi
-In the next two sections, we first show how to solve the intra-domain synthesis problem---i.e., when there
-is only a single domain---and then how to solve the inter-domain synthesis problem---i.e., when
-there are multiple domains.
 
-\subsection{Synthesising Intra-domain Configurations} \label{sec:intra-synthesis}
-In this section, we present an algorithm for 
-solving the path-compliance problem for 
-single-domain OSPF networks. 
-In this setting, the metric we can minimize is the number of static routes.
 We first show how to solve the problem when
 we are not allowed to use static routes
 and then
@@ -93,7 +113,7 @@ shortest distance from $r_1$ to $r_2$.
 We add the equation $D_{s}^{s} = 0$ 
 for every $s\in S$ to denote that the distance
 from a node to itself is $0$.
-Equations~\ref{eq:distance} guarantees that $D_{s}^{t}$ is smaller or equal to
+\Cref{eq:distance} guarantees that $D_{s}^{t}$ is smaller or equal to
 the shortest distance from $s$ to $t$.
 \begin{equation} \label{eq:distance}
 \forall s, t. ~\forall r \in N(s).~
@@ -128,7 +148,7 @@ split the traffic among the two paths.
 \sum_{\mathclap{\substack{l_i=(r_1,r_2)}}} 
 W_{r_1}^{r_2} < W_{s}^{r}+ D_{r}^{R_\lambda}
 \end{equation}
-Equations~\ref{eq:unique} guarantee that 
+\Cref{eq:unique} guarantees that 
 the sum of the weights belonging to the path 
 from $s$ to $R_\lambda$ in $\xi_\lambda$ 
 is strictly smaller than 
@@ -204,24 +224,13 @@ a static route at router $s$ to forward $\lambda_2$
 traffic to router $t$, this route will have a higher
 preference compared to the OSPF route
 through $r_1$ (static routes by default have the
-lowest administrative distance~\cite{admindistance}). 
+lowest administrative distance~\cite{admindistance}). \todo{broken citation}
 Since there are no static routes for
 $\lambda_1$, the traffic to $\lambda_1$ will be forwarded to $t$
 through $r_1$ using the OSPF shortest path.
 
 
-We start by observing that 
-the intra-domain synthesis problem with static routes
-admits a trivial solution in which 
-static routes are used to enforce the exact set of input paths. 
-This can be done by adding a 
-static route to $SR(\lambda)$ for every link $l$ in $\xi_\lambda$. 
-However, this solution will use more static routes than necessary. 
-Ideally, we would like to add fewer static routes, as they can 
-create routing loops if link weights are configured without taking 
-the static route into account (\secref{sec:loopavoidance}). 
-Since the problem of optimally placing static routes is computationally hard (Theorem~\ref{thm:ospfsynth}), 
-we propose a non-optimal greedy strategy that works well in practice.
+
 
 Our algorithm starts by trying to synthesize a solution
 that does not use static routes using the equations proposed in \secref{sec:ospf}. 
@@ -267,9 +276,7 @@ on the unsatisfiable core.
 %number of route filters, this is not a problem.}
 
 
-%% We discuss two schemes  to add route filters:
-%% the first scheme 
-\minisection{Adding filters using unsatisfiable cores}
+\minisection{Adding static routes using unsatisfiable cores}
 LP-solvers have practically efficient procedures to return an
 unsatisfiable core, also called IIS (Irreducible Inconsistent Subsystem)~\cite{chinneck2007feasibility}. 
 Intuitively, an IIS is a subset of the input constraints such that,

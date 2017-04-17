@@ -1,9 +1,9 @@
-\subsection{Synthesizing Inter-domain Configurations}
+\subsection{Synthesizing Path-compliant  Inter-domain Configurations}
 \label{sec:inter-synthesis}
 
 
-Next, we present an algorithm for 
-solving the path-compliance problem in the presence
+Next, we extend our algorithm to
+solve the path-compliance problem in the presence
 of multiple domains---i.e., $|\{\Theta(r) \mid r\in V\}|>1$.
 First, our algorithm determines the 
 BGP configuration and static routes to ensure that the 
@@ -103,8 +103,8 @@ as it is the closest gateway.
 		inter-domain routing given a domain assignment $\Theta$.}
 \end{figure*}
 
-\minisection{Static Routes} \label{sec:static}
-Next we describe a case in which standard BGP cannot enforce
+%\minisection{Static Routes} \label{sec:static}
+Finally, we describe a case in which standard BGP cannot enforce
 the desired path, therefore requiring the use of static routes.
 Consider the path for destination $\lambda$ 
 shown in \Cref{fig:bgpexample}(c). BGP Gateway $g_1$, which is in
