@@ -128,7 +128,7 @@ destination comprises of a domain-level path to the destination
 domain and, by default, a BGP router will forward a packet through the path that traverses fewer domains.
 
 \input{bgp-routing-algorithm} 
-To support policy routing  \todo{What is policy routing?}, BGP routers can be configured with a
+BGP routers can be configured with a
 \emph{local preference} variable to assign higher priorities to
 specific routes for a particular destination. We define the local
 preference function $LP: V \times V \times \Lambda \mapsto \nat$ as
@@ -207,11 +207,11 @@ router and that has no static routes, $r$ uses OSPF to route traffic to the clos
 gateway router in $G (\theta, \lambda)$, which in turn will forward  the traffic to its neighbouring domains and so on till it reaches the internal domain of $\lambda$.  Thus, the modified OSPF routing 
 function $\route^C_{ospf}$ for an external destination $\lambda$
 is defined as follows: 
-\[
-\route_{ospf}^C(r,\lambda) = \{~~r_1 \mid r_1 \in N(r) \wedge \exists g_1 \in G (\theta, \lambda). ~\forall r_2 \in N(s), g_2 \in G (\theta, \lambda). ~~
+\begin{multline*}
+\route_{ospf}^C(r,\lambda) = \{~~r_1 \mid r_1 \in N(r) \wedge \exists g_1 \in G (\theta, \lambda). ~\forall r_2 \in N(s), g_2 \in G (\theta, \lambda). \\
 W(r, r_1) + D(r_1, g_1) \leq
-W(r, r_2) + D(r_2, g_2~~)\}
-\]
+W(r, r_2) + D(r_2, g_2)\}
+\end{multline*}
 Piecing together the different routing protocols and their 
 interactions, the routing function 
 $\route^C$ for the hierarchical domain network configuration $C$ is defined as follows: 
@@ -298,7 +298,7 @@ Certain
 Finally, \name provides ways to specify upper bounds on the number of
 static routes---i.e., $sc=|\{(v, v', \lambda)\mid \exists v'. v' \in SR(v,\lambda)\}|\leq C_{sc}$--- and
 BGP configurations---i.e., 
-$bc=|\bigcup_{v,\lambda\in V\times\Lambda} IF(v,\lambda)\cup \{(v,v',\lambda)\mid LP(v,v',\lambda)\neq \bot\}|\leq C_{bc}$.
+$bc=|\bigcup_{v,\lambda\in V\times\Lambda} IF(v,\lambda)\cup \{(v,v',\lambda)\mid LP(v,v',\lambda)$ $\neq \bot\}|\leq C_{bc}$.
 In general, it is desirable to limit the number of static routes since they
 can lead to undesired routing behaviors such as routing loops (more in~\secref{sec:loopavoidance}), and to limit the number of BGP configurations
 since they increase the complexity of the network.
@@ -347,23 +347,47 @@ a configuration $C$ that is path-compliant with $(\Pi,P)$.
 \end{definition}
 
 \minisection{Resilience metrics}
-One of the main focus of this paper is
+One of the main considerations in this paper is to 
 generate configurations that are highly resilient to failures.
-We present two different resilience metrics that we will use in the following section.
+For a packet class $pc$ and configuration $C$, we define 
+the set of \emph{affecting links} $\links(pc)$ as follows: 
+$\links(pc) = \{l \mid l \in L.~\exists \pi \in \paths^C(pc).~l \in \pi  \}$.
+For a single link $l$ failure, a packet class $pc$ is affected 
+only if $l \in \links(pc)$. 
+We present two different resilience metrics that we will use in the following sections. 
 
 
 The first metric describes how good a given configuration
-is at preserving policy-compliance upon a single link failure. 
-The \emph{policy-resilience} of a configuration
-is the quantity \todo{define}
+is at preserving policy-compliance under an 
+arbitrary single link failure. 
+The \emph{policy-resilience} score of a configuration 
+$C=((V,L), \Theta,W,LP,IF,SR)$
+is defined as follows:
+\[
+\frac{\sum_{\forall pc} |\{ l \mid l \in \links(pc) ~\wedge~ ((V, L\setminus \{l\}),\Theta,W,LP,IF,SR) \models (\Psi_{pc}, P) \}|}
+{\sum_{\forall pc} |\links(pc)|}
+\]
+where $C \models (\Psi_{pc}, P)$ denotes that $C$ is 
+compliant for policies $\Psi_{pc}$ which affect packet class $pc$.
 
 \loris{ugly name, open to suggestions} 
-In general, generating configurations with high-policy resilience is hard
+In general, generating configurations with high policy-resilience is hard,
 since there may be only a few paths that satisfy a certain policy.
-Therefore we also consider a second more relaxed metric, which describes how good a given configuration
-is at preserving connectivity (but not policy compliance) upon a single link failure. 
-The \emph{connectivity-resilience} of a configuration
-is the quantity \todo{define}
+Therefore, we also consider a second 
+more relaxed metric, which describes how 
+good a given configuration
+is at preserving connectivity
+(but not policy compliance) upon a single link failure. 
+The \emph{connectivity-resilience} 
+score of a configuration $C=((V,L), \Theta,W,LP,IF,SR)$
+is defined as follows:
+\[
+\frac{\sum_{\forall pc} |\{ l \mid l \in \links(pc) ~\wedge~ 
+	C'= ((V, L\setminus \{l\}),\Theta,W,LP,IF,SR) ~\wedge~ 
+	\paths^{C'}(pc) \not= \emptyset  \}|}
+{\sum_{\forall pc} |\links(pc)|}
+\]
+ 
 
 %\todo{write resilience metrics here and some text like the following.}
 %\kausik{Ideally, the most important metric we want to maximize is resilience---i.e.,
