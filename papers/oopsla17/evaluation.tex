@@ -10,7 +10,7 @@
 enterprise-scale data
 center fat-tree topologies~\cite{fattree} of different 
 sizes. 
-Specifically, we ask the folloqing questions.\footnote{All experiments were conducted using a
+Specifically, we ask the following questions.\footnote{All experiments were conducted using a
 32-core Intel-Xeon 2.40GHz CPU machine and
 128GB of RAM.}
 
@@ -24,7 +24,7 @@ Specifically, we ask the folloqing questions.\footnote{All experiments were cond
 \end{tabular}
 
 
-\subsection{Single Domain End-to-end Performance with Genesis}\label{sec:ospfeval}
+\subsection{Single Domain End-to-end Performance}\label{sec:ospfeval}
 
 
 We evaluate the end-to-end performance of our tool
@@ -44,13 +44,16 @@ configurations with high policy-resilience starting from 1 path (resp. 2 paths) 
 
 We consider two classes of policies.
 Our first class contains complex isolation policies that 
-existing tools cannot handle; for this class we can only evaluate algorithm \todo{alg1}.
+existing tools cannot handle; 
+for this class we can only 
+evaluate algorithm PC.
 Our second class consists of
- waypoint policies of the form described in Section~\ref{sec:waypointres});
-for this class we evaluate \todo{alg2.1} and \todo{alg2.2}.
-For each algorithm  we evaluate how much time is spent
+ waypoint policies of the form described in ~\secref{sec:waypointres});
+for this class we evaluate 1-WC and 2-WC.
+For each algorithm  we evaluate how much time is spent 
 calling \genesis to generate policy-compliant paths
-and how much time \name takes to generate configurations from such paths.
+and how much time \name takes to generate configurations 
+from such paths.
 
 
 %of the path-compliance synthesis algorithm for tenant 
@@ -77,15 +80,15 @@ each path  (with randomly generated endpoints)
 is isolated from other paths of the same tenant group.
 Here, isolation  prevents interference by other traffic belonging to
 same tenant.  
-\todo{I removed 1-PC from text not sure if used in graphs or later}
  
 For each 
-workload, we have $n$ tenant groups (between \todo{X and Y}), 
+workload, we have $n$ tenant groups (between 1 to 8), 
 each group comprised of $g$ destinations (between 10 and 20). 
 \Cref{fig:ospfisolation} 
 shows the synthesis time 
-for \todo{alg1}.
-The x-axis shows the number of \loris{what paths} paths $n * g$. 
+for PC.
+The x-axis shows the number of paths $n * g$ 
+to different destination IP addresses. 
  As the number of tenants increase, time to 
 synthesize the data plane increases linearly as we only 
 consider isolation policies within tenants, not amongst paths 
@@ -93,34 +96,33 @@ of different tenants. Meanwhile, time taken to synthesize
 OSPF configurations increases exponentially with increasing 
 number of tenants due to the exponential complexity of computing 
 the unsat-cores; with increasing number of 
-paths, \todo{alg1} needs to add more static routes  and requires more iterations of the unsat-core learning
+paths, PC needs to add more static routes 
+and requires more iterations of the unsat-core learning
 procedure. 
-For this workload, our tool can
+For this workload, \name can
 synthesize configurations for 4 tenants, each with
-20 destinations in 77 seconds, where \genesis takes 35 seconds and
-\name takes 42 seconds on average. 
+20 destinations in 77 seconds, where \genesis takes 35 seconds
+for synthesizing paths and synthesizing configurations
+takes 42 seconds on average. 
 
-\todo{tool is zeppelin as well as genesis, we should change terminology}
 
-\begin{wrapfigure}{r}{0.6\columnwidth}
+\begin{figure*}
 	\begin{center}
-		\includegraphics[width=0.6\columnwidth]{figures/ospfwaypoint.eps}
-		%	\subfloat[Number of Route Filters]
-		%	{\includegraphics[width=0.33\columnwidth]{figures/ospfRF.eps}}
-		%	\subfloat[Endpoint Resilience]
-		%	{\includegraphics[width=0.32\columnwidth]{figures/ospfAvgRes.eps}}
+		\subfloat[1-WC]
+		{\includegraphics[width=0.5\columnwidth]{figures/ospfwaypoint.eps}}
+		\subfloat[2-WC]
+		{\includegraphics[width=0.5\columnwidth]{figures/ospfwaypoint2.eps}}
 		\compactcaption{\label{fig:ospfwaypoint}
-		End-to-end synthesis time (log (s)) for waypoint policy workloads for varying 
-		number of paths and different number of waypoint sets.}
+			End-to-end synthesis time (log (s)) for waypoint policy workloads for varying 
+			number of paths and different number of waypoint sets. \todo{Graph is incomplete}}
 	\end{center} 
-\end{wrapfigure}
+\end{figure*}
 \paragraph{Waypoint Policies.}
 We generate waypoint policy 
 workloads with varying number of destination IP addresses and 
-waypoint sets as follows. We create waypoint sets by generating
-random sets of routers of size 3 and vary the number of 
-unique waypoint sets in the topology across 2, 5, and 10 sets. 
-\todo{previous sentence is weird?}
+waypoint sets as follows. 
+We vary the total number of unique waypoint 
+sets to 2 and 5. For each waypoint set, we pick 3 routers randomly.  
 Each waypoint set can be 
 viewed as a class of replicated middleboxes (for e.g., firewall).
 We randomly generate policies that map each destination to one of the waypoint sets. 
@@ -130,23 +132,27 @@ We randomly generate policies that map each destination to one of the waypoint s
 %configurations ((referred to as 1-WC) ) 
 %using the waypoint policies and paths generated by Genesis.  
 
-\todo{rewrite following as alg 1 and alg2}
 \Cref{fig:ospfwaypoint} shows the end-to-end synthesis
- time (log scale) for varying number of destinations paths and the 
- number of unique waypoint sets. Since, synthesizing paths
+ time for varying number of destinations paths and the 
+ number of unique waypoint sets (2 and 5). 
+ Since, synthesizing paths
  for waypoint policies can be synthesized independently,
-Genesis synthesis time is $<20s$. \name's 1-WC synthesis 
+Genesis synthesis time is small compared to the OSPF synthesis. 
+\name's 1-WC and 2-WC synthesis 
 time increases as we increase the number of waypoint sets,
 as we need to add constraints corresponding to $D_s^t(\waypt)$ 
 for each set, and thus, computing the unsat-core in each
 iteration to find a static route is more expensive with increasing
-number of sets. For 5 waypoint sets, \name takes 300 
-seconds on average to synthesize waypoint-compliant configurations. 
+number of sets. 
+For 5 waypoint sets and 40 destinations, \name takes 120 
+seconds on average to synthesize waypoint-compliant configurations
+and 1800 seconds to synthesize policy-resilient configurations.
 
 
 In summary, the answer to \textbf{Q1} is that, for realistic workloads,
 \textbf{\name can synthesize configurations for medium size
-topologies} less than five minutes.
+topologies} in less than 5 minutes; synthesizing resilient 
+configurations is more expensive. 
 
 %\begin{table}{l}{8em}
 %	\begin{footnotesize}
@@ -202,9 +208,9 @@ $(8 \pm 0.5)$\% of the static routes required by the baseline configuration.
 
 
 \paragraph{Policy-resilience.}
-We measure the connectivity-resilience of the configurations 
+We measure the policy-resilience of the configurations 
 generated using algorithms  1-WC and 2-WC on the waypoint workload described in
-\secref{sec:ospfeval}. \todo{clarify what waypoint size}
+\secref{sec:ospfeval} with 5 waypoint sets. 
 For each workload, we run each algorithm 
 3 times with a different random seed, and report the most-resilient configuration it obtains.
 For our baseline, we use the configurations generated by the algorithm PC, which
@@ -230,7 +236,7 @@ the path given by \genesis to be the shortest one.
 
 \begin{figure*}
 	\centering
-	\subfloat[2-WC vs. 1-PC]
+	\subfloat[2-WC vs. PC]
 	{\includegraphics[width=0.49\columnwidth]{figures/ospfresilience2.eps}}
 	\subfloat[2-WC vs. 1-WC]
 	{\includegraphics[width=0.5\columnwidth]{figures/ospfresilience.eps}}
@@ -239,7 +245,7 @@ the path given by \genesis to be the shortest one.
 	%	\subfloat[Endpoint Resilience]
 	%	{\includegraphics[width=0.32\columnwidth]{figures/ospfAvgRes.eps}}
 	\compactcaption{\label{fig:ospfres}
-		Policy-resilience scores obtained by 2-WC, 1-WC and 1-PC synthesis 
+		Policy-resilience scores obtained by 2-WC, 1-WC and PC synthesis 
 		for varying waypoint policy workloads.}
 \end{figure*}
 
