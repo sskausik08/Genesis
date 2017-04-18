@@ -262,11 +262,9 @@ chooses the correct gateway:
 \sum_{\mathclap{\substack{(r_1,r_2) \in r \rightarrow^+_{\xi_{\lambda}} g }}}~~~~~W_{r_1}^{r_2} < 
 W_r^{r'} + D_{r'}^{g'} 
 \end{equation}
-If the generated system of
-constraints is inconsistent, Zeppelin adds
-static routes to eliminate constraints
-and filter shorter routes to gateways which are
-not on the input path. For Equation~\ref{eq:gateway},
-adding the static route $(r, N_{\xi_\lambda}(r))$ to $SR(\lambda)$
- eliminates the infeasibility caused by this constraint.
- \todo{what constraint are you referring two here? qualify}
+If one of the constraints of Equation~\ref{eq:gateway}
+is part of an unsat-core, 
+adding the static route $(r, N_{\xi_\lambda}(r))$ 
+to $SR(\lambda)$ eliminates the unsatisfiability caused by  
+the constraint. Effectively, while $g'$ is closer to
+$r$ than $g$, we use the static route to steer traffic toward $g$. 

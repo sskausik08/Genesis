@@ -50,10 +50,11 @@ evaluate algorithm PC.
 Our second class consists of
  waypoint policies of the form described in ~\secref{sec:waypointres};
 for this class we evaluate 1-WC and 2-WC.
-For each algorithm  we evaluate how much time is spent 
+For each algorithm we evaluate how much time is spent 
 calling \genesis to generate policy-compliant forwarding paths
 and how much time \name takes to generate configurations 
-from such paths.
+from such paths. 
+We set a timeout of 2000 seconds for each workload.
 
 
 %of the path-compliance synthesis algorithm for tenant 
@@ -113,8 +114,8 @@ takes 42 seconds on average.
 		\subfloat[2-WC]
 		{\includegraphics[width=0.5\columnwidth]{figures/ospfwaypoint2.eps}}
 		\compactcaption{\label{fig:ospfwaypoint}
-			End-to-end synthesis time (log (s)) for waypoint policy workloads for varying 
-			number of paths and different number of waypoint sets. \todo{Graph is incomplete}}
+			End-to-end synthesis time for waypoint policy workloads for varying 
+			number of paths and different number of waypoint sets.}
 	\end{center} 
 \end{figure*}
 \paragraph{Waypoint Policies.}
@@ -150,7 +151,7 @@ and 1800 seconds to synthesize policy-resilient configurations.
 
 
 In summary, the answer to \textbf{Q1} is that, for realistic workloads,
-\textbf{\name can synthesize configurations for medium size
+\textbf{\name can synthesize path-compliant configurations for medium size
 topologies} in less than 5 minutes; synthesizing resilient 
 configurations is more expensive. 
 

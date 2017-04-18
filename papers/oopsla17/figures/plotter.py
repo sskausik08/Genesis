@@ -184,7 +184,7 @@ ax1.set_ylabel('Ratio', fontsize=13)
 ax1.grid()
 plt.savefig('ratioMCMC.eps', format='eps', dpi=1000, bbox_inches='tight')
 
-label_size = 12
+label_size = 14
 matplotlib.rcParams['xtick.labelsize'] = label_size 
 matplotlib.rcParams['ytick.labelsize'] = label_size 
 
@@ -303,8 +303,8 @@ matplotlib.rcParams['ytick.labelsize'] = label_size
 # plt.savefig('ospfAvgRes.eps',  format='eps', dpi=1000, bbox_inches='tight')
 
 #ospfWaypointFig = plt.figure(1)
-ospfWaypointFig, (ax1, ax2, ax3) = plt.subplots(1, 3, sharey=True)
-adjustFigAspect(ospfWaypointFig, 4.5)
+ospfWaypointFig, (ax1, ax2) = plt.subplots(1, 2, sharey=True)
+adjustFigAspect(ospfWaypointFig, 4)
 x = range(10, 90, 10)
 xticks = range(10, 90, 20)
 yticks = [0, 1, 10, 100, 1000]
@@ -315,18 +315,17 @@ totTime = [2.650796689,5.545891339,15.29532384,31.4204547,97.32999361,209.955762
 
 ax1.set_xlim([10, 80])
 ax1.set_xticks(xticks)
-ax1.set_yscale('log')
 
 ax1.plot(x, genesisTime, '#ff7f00')
 ax1.plot(x, totTime, '#377eb8',)
 
 ax1.fill_between(x, genesisTime, totTime, color='#377eb8', alpha='0.5', label="Zeppelin")
-ax1.fill_between(x, 1, genesisTime, color='#ff7f00', alpha='0.5', label="Genesis")
+ax1.fill_between(x, 0, genesisTime, color='#ff7f00', alpha='0.5', label="Genesis")
 ax1.legend(loc='upper left')
 
 #plt.legend(loc='best', frameon=False, fontsize=18)
-ax1.set_ylabel('Synthesis Time \n (log(s))', fontsize=13)
-ax1.set_xlabel('\#Paths \n (a) \#Sets: 2', fontsize=13)
+ax1.set_ylabel('Synthesis \n Time (s)', fontsize=14)
+ax1.set_xlabel('\#Paths \n (a) \#Sets: 2', fontsize=14)
 
 ax1.grid()
 
@@ -335,36 +334,19 @@ totTime = [3.339358291,8.092288089,30.90892007,101.4620721,284.8738477,531.96632
 
 ax2.set_xlim([10, 80])
 ax2.set_xticks(xticks)
-ax2.set_yscale('log')
 
 ax2.plot(x, genesisTime, '#ff7f00')
 ax2.plot(x, totTime, '#377eb8',)
 
 z = ax2.fill_between(x, genesisTime, totTime, color='#377eb8', alpha='0.5', label="Zeppelin")
-g = ax2.fill_between(x, 1, genesisTime, color='#ff7f00', alpha='0.5', label="Genesis")
+g = ax2.fill_between(x, 0, genesisTime, color='#ff7f00', alpha='0.5', label="Genesis")
 
 #plt.legend(loc='best', frameon=False, fontsize=18)
-ax2.set_xlabel('\#Paths \n (b) \#Sets: 5', fontsize=13)
+ax2.set_xlabel('\#Paths \n (b) \#Sets: 5', fontsize=14)
 ax2.grid()
 
-genesisTime = [1.686398292,4.115126556,6.254837424,8.705678749,11.5079913,14.68902937,17.80753183,21.22884498]
-totTime = [4.920500342,13.93155347,47.64036253,181.4483577,448.8050332,921.0370142,1526.903791,2082.716671]
-
-ax3.set_xlim([10, 80])
-ax3.set_xticks(xticks)
-ax3.set_yscale('log')
-
-ax3.plot(x, genesisTime, '#ff7f00')
-ax3.plot(x, totTime, '#377eb8',)
-
-ax3.fill_between(x, genesisTime, totTime, color='#377eb8', alpha='0.5', label="Zeppelin")
-ax3.fill_between(x, 1, genesisTime, color='#ff7f00', alpha='0.5', label="Genesis")
-
-ax3.set_xlabel('\#Paths \n (c) \#Sets: 10', fontsize=13)
-ax3.grid()
-
-plt.legend(['Genesis','Zeppelin'], fontsize=13,  ncol=2, loc='upper center', 
-    bbox_to_anchor=[-0.7, 1.50], columnspacing=1.0, labelspacing=0.0,handletextpad=0.0, 
+plt.legend(['Genesis','Zeppelin'], fontsize=14,  ncol=2, loc='upper center', 
+    bbox_to_anchor=[-0.095, 1.50], columnspacing=1.0, labelspacing=0.0,handletextpad=0.0, 
     handlelength=1.5, fancybox=True)
 
 leg = plt.gca().get_legend()
@@ -379,6 +361,73 @@ llines = leg.get_lines()  # all the lines.Line2D instance in the legend
 plt.setp(llines, linewidth=7)      # the legend linewidth
 #leg.draw_frame(False)           # don't draw the legend frame
 plt.savefig('ospfwaypoint.eps', format='eps', dpi=1000, bbox_inches='tight')
+
+#############################################################################
+
+ospfWaypointFig2, (ax1, ax2) = plt.subplots(1, 2, sharey=True)
+adjustFigAspect(ospfWaypointFig2, 4)
+x = range(10, 60, 10)
+genesisTime = [13.22395077,  24.42584836, 97.5888415,  216.4309352, 661.514916]
+zepTime = [58.84612486, 237.091137,  477.554593,  864.4207624, 1270.605623]
+totTime = [a + b for a,b in zip(genesisTime,zepTime)]
+
+ax1.set_xlim([10, 50])
+ax1.set_xticks(x)
+ax1.set_ylim([0, 2000])
+
+ax1.plot(x, genesisTime, '#ff7f00')
+ax1.plot(x, totTime, '#377eb8',)
+
+ax1.fill_between(x, genesisTime, totTime, color='#377eb8', alpha='0.5', label="Zeppelin")
+ax1.fill_between(x, 0, genesisTime, color='#ff7f00', alpha='0.5', label="Genesis")
+
+#plt.legend(loc='best', frameon=False, fontsize=18)
+ax1.set_ylabel('Synthesis \n Time (s)', fontsize=14)
+ax1.set_xlabel('\#Paths \n (a) \#Sets: 2', fontsize=14)
+
+ax1.grid()
+
+x = range(10, 50, 10)
+
+genesisTime = [10.657,26.624,70.97,214.161]
+zepTime = [122.16,430.03,905.98,1642.731939]
+totTime = [a + b for a,b in zip(genesisTime,zepTime)]
+
+ax2.set_xlim([10, 40])
+ax2.set_xticks(x)
+ax2.set_ylim([0, 2000])
+
+
+ax2.plot(x, genesisTime, '#ff7f00')
+ax2.plot(x, totTime, '#377eb8',)
+
+z = ax2.fill_between(x, genesisTime, totTime, color='#377eb8', alpha='0.5', label="Zeppelin")
+g = ax2.fill_between(x, 0, genesisTime, color='#ff7f00', alpha='0.5', label="Genesis")
+
+#plt.legend(loc='best', frameon=False, fontsize=18)
+ax2.set_xlabel('\#Paths \n (b) \#Sets: 5', fontsize=14)
+ax2.grid()
+
+
+plt.legend(['Genesis','Zeppelin'], fontsize=14,  ncol=2, loc='upper center', 
+    bbox_to_anchor=[-0.095, 1.50], columnspacing=1.0, labelspacing=0.0,handletextpad=0.0, 
+    handlelength=1.5, fancybox=True)
+
+leg = plt.gca().get_legend()
+# ltext  = leg.get_texts()  # all the text.Text instance in the legend
+llines = leg.get_lines()  # all the lines.Line2D instance in the legend
+# frame  = leg.get_frame()  # the patch.Rectangle instance surrounding the legend
+
+# see text.Text, lines.Line2D, and patches.Rectangle for more info on
+# the settable properties of lines, text, and rectangles
+# frame.set_facecolor('0.80')      # set the frame face color to light gray
+# plt.setp(ltext, fontsize='small')    # the legend text fontsize
+plt.setp(llines, linewidth=7)      # the legend linewidth
+#leg.draw_frame(False)           # don't draw the legend frame
+plt.savefig('ospfwaypoint2.eps', format='eps', dpi=1000, bbox_inches='tight')
+
+
+#################################################################
 
 ospfIsolationFig, (ax1, ax2) = plt.subplots(1, 2, sharey=True)
 adjustFigAspect(ospfIsolationFig, 4)
@@ -401,8 +450,8 @@ ax1.fill_between(x, genesisTime, totTime, color='#377eb8', alpha='0.5', label="Z
 ax1.fill_between(x, 0, genesisTime, color='#ff7f00', alpha='0.5', label="Genesis")
 
 #plt.legend(loc='best', frameon=False, fontsize=18)
-ax1.set_ylabel('Synthesis \n Time (s)', fontsize=13)
-ax1.set_xlabel('\#Paths \n (a) Tenant Size:10', fontsize=13)
+ax1.set_ylabel('Synthesis \n Time (s)', fontsize=14)
+ax1.set_xlabel('\#Paths \n (a) Tenant Size:10', fontsize=14)
 ax1.grid()
 x = range(20, 100, 20)
 genesisTime = [8.910769089,17.94230479,26.42362858,35.19051689]
@@ -420,9 +469,9 @@ z = ax2.fill_between(x, genesisTime, totTime, color='#377eb8', alpha='0.5', labe
 g = ax2.fill_between(x, 0, genesisTime, color='#ff7f00', alpha='0.5', label="Genesis")
 
 #plt.legend(loc='best', frameon=False, fontsize=18)
-ax2.set_xlabel('\#Paths \n (b) Tenant Size:20', fontsize=13)
+ax2.set_xlabel('\#Paths \n (b) Tenant Size:20', fontsize=14)
 ax2.grid()
-plt.legend(['Genesis','Zeppelin'], fontsize=13,  ncol=2, loc='upper center', 
+plt.legend(['Genesis','Zeppelin'], fontsize=14,  ncol=2, loc='upper center', 
     bbox_to_anchor=[-0.095, 1.50], columnspacing=1.0, labelspacing=0.0,handletextpad=0.0, 
     handlelength=1.5, fancybox=True)
 
@@ -502,7 +551,7 @@ ax1.set_ylim([0, 1])
 
 ax1.scatter(zepres10P, zepres10WR, marker="x", s=20, color='#377eb8')
 ax1.plot([0.0, 1.0], linestyle='--', color="black") 
-ax1.set_xlabel('1-PC Score \n \#Policies:10', fontsize=13)
+ax1.set_xlabel('PC Score \n \#Policies:10', fontsize=13)
 ax1.set_ylabel('2-WC Score', fontsize=13)
 ax1.grid()
 
@@ -519,7 +568,7 @@ ax2.set_ylim([0, 1])
 
 ax2.scatter(zepres20P, zepres20WR, marker="x", s=20, color='#377eb8')
 ax2.plot([0.0, 1.0], linestyle='--', color="black") 
-ax2.set_xlabel('1-PC Score \n \#Policies:20', fontsize=13)
+ax2.set_xlabel('PC Score \n \#Policies:20', fontsize=13)
 # ax2.set_ylabel('2-WC Score', fontsize=13)
 ax2.grid()
 #ax2.scatter(zepres20P, zepres20WR, marker="^", s=3, color='#377eb8')
@@ -536,7 +585,7 @@ ax3.set_ylim([0, 1])
 
 ax3.scatter(zepres40P, zepres40WR, marker="x", s=20, color='#377eb8')
 ax3.plot([0.0, 1.0], linestyle='--', color="black") 
-ax3.set_xlabel('1-PC Score \n \#Policies:40', fontsize=13)
+ax3.set_xlabel('PC Score \n \#Policies:40', fontsize=13)
 # ax3.set_ylabel('2-WC Score', fontsize=13)
 ax3.grid()
 
@@ -561,7 +610,7 @@ ax1.scatter(zepBaseline, zepConRes, marker="x", s=16, color='#377eb8', label='Sc
 #ax1.scatter(zepBaselineF, zepConF, marker="x", s=16, color='#ff7f00', label='Fraction')
 ax1.plot([0.0, 1.0], linestyle='--', color="black") 
 ax1.set_xlabel('Baseline Score', fontsize=12)
-ax1.set_ylabel('1-PC Score', fontsize=12)
+ax1.set_ylabel('PC Score', fontsize=12)
 ax1.grid()
 
 #plt.legend(loc='lower right', ncol=1, frameon=False, fontsize=8)
