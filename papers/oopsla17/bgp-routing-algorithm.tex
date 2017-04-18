@@ -1,6 +1,6 @@
-\begin{wrapfigure}{r}{0.5\textwidth}
-	\vspace{-6mm}
-	\begin{minipage}{0.5\textwidth}
+\begin{wrapfigure}{r}{0.49\textwidth}
+	\vspace{-7mm}
+	\begin{minipage}{\linewidth}
 		\begin{algorithm}[H]
 			\begin{footnotesize} 
 				\caption{BGP Best Path Selection at router $r$ for  $\lambda$}
@@ -12,23 +12,21 @@
 					\State{$\Upsilon_{ibgp}$ = $\bigcup$ Route from internal BGP router $r_1$:
 						$r \not\in IF(r_1, \lambda)$}
 					\State{$\Upsilon = \Upsilon_{ebgp}\cup \Upsilon_{ibgp}$}
-					\\
 					\State{$\Upsilon_{lp} = \{\gamma \in \Upsilon \mid \forall \gamma_1 \in \Upsilon. ~\gamma.local\_pref \geq \gamma_1.local\_pref\}$}
 					\If{$|\Upsilon_{lp}| = 1$}
 					\State{$\gamma_{best} = \gamma \in \Upsilon_{lp}$}
 					\Else \newline
 					\hspace*{0.7cm}\indent [Prefer the path with the smallest \emph{AS Path length}]
 					\State{$\Upsilon_{as} = \{\gamma \in \Upsilon_{lp}  \mid \forall \gamma_1 \in \Upsilon_{lp}. ~\gamma.len \leq \gamma_1.len\} $}
-					\If{$|\Upsilon_{as}| = 1$}
-					\State{$\gamma_{best} = \gamma \in \Upsilon_{as}$}	
-					\EndIf
+%					\If{}
+					\State{\textbf{if} $|\Upsilon_{as}| = 1$ \textbf{then} $\gamma_{best} = \gamma \in \Upsilon_{as}$}	
+%					\EndIf
 					\EndIf
 					\If{$\gamma_{best} \in \Upsilon_{ebgp}$}
 					\State{$\route_{bgp}(r, \lambda) = \gamma_{best}.nexthop$}
 					\State{Redistribute $\gamma_{best}$ to OSPF domain}
-					\Else \\
-					\hspace*{0.7cm}\indent [Traffic for $\lambda$ will not exit domain through $r$]
-					\State{$\route_{bgp}(r, \lambda) = \bot$}
+					\Else 
+					\State{$\route_{bgp}(r, \lambda) = \bot$ [Traffic for $\lambda$ will not exit through $r$]}
 					\EndIf
 					\EndProcedure
 					%				\State{ . }
