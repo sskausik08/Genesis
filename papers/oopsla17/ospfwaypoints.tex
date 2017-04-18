@@ -138,27 +138,50 @@ guarantee that a single waypoint-compliant path is shorter
 than any path which does \emph{not} traverse a waypoint. 
 
 We define $D_s^t(\waypt)$ to be the 
-distance between $s$ and $t$ such that the path does not
- traverse through any waypoint $w \in \waypt$. Intuitively, we
-  can add constraints to represent these distances by
+distance between $s$ and $t$ for path that \emph{do not}
+ traverse any waypoint $w \in \waypt$.
+We call  $D_s^t(\waypt)$ the \emph{non-waypoint distance}.
+  We
+   add constraints to represent these distances by
   considering a network topology where all the  
   waypoints $w \in \waypt$ are removed. Formally, for a topology 
- $T = (V,L)$, the following distance equations 
- capture the distances of the paths which are policy-compliant 
- for a waypoint set $\waypt$:
+ $T = (V,L)$, we add the following equations:
 \begin{equation} \label{eq:wdistance}
 \forall s, t \in V \setminus \waypt. ~\forall r \in N(s) \setminus \waypt.~
 D_s^t(\waypt) \leq W_s^r + D_r^t(\waypt)
 \end{equation}
-These constraints are similar to the constraints specified in
-\Cref{eq:distance}, but for an ``altered'' topology where all
-the waypoint routers are removed, and thus, any path in this 
-topology is not compliant with the waypoint policy. 
-Similar to $D_s^t$ variables, 
+%These constraints are similar to the constraints specified in
+%\Cref{eq:distance}, but for an ``altered'' topology where all
+%the waypoint routers are removed, and thus, any path in this 
+%topology is not compliant with the waypoint policy. 
+Using these equations,
 $D_s^t(\waypt)$ is upper bounded by the actual shortest non-waypoint distance from $s$ to $t$.
 
 \definecolor{orange}{RGB}{255, 157, 30} 
-\begin{wrapfigure}{Hr}{0.39\columnwidth}
+
+
+Given a destination tree $\xi_\lambda$, we can use
+non-waypoint distances to enforce waypoint-compliance. Consider a 
+router in $r$ such the waypoint $w \in \waypt$ is downstream to $r$ in $\xi_\lambda$---i.e.,
+there exists a path from $r$ to $w$ in $\xi_\lambda$.
+The path from $r$ must traverse through 
+a waypoint in $\waypt$.  
+Suppose, the sum of weights of the edges of
+the path in the tree $W(r \rightarrow^+_{\xi_\lambda} R_\lambda)$  
+is strictly smaller than the non-waypoint 
+distance from $r$ to $R_\lambda$. This property ensures that 
+the any path from $r$ to $R_\lambda$ that does not go through
+any $w \in \waypt$ has a distance strictly greater than the path through
+$\xi_\lambda$.
+Hence, the path from $r$ to $R_\lambda$ is guaranteed to traverse
+a waypoint $w \in \waypt$. These constraints are expressed as follows:
+\begin{equation} \label{eq:waypoint}
+\forall r' \in N(s) \setminus N_{\xi_\lambda}(r).~~ \sum_{\mathclap{\substack{l_i=(r_1,r_2)}}} 
+W_{r_1}^{r_2} < 
+W_{r}^{r'}+ D_{r'}^{R_\lambda}(\waypt) 
+\end{equation}
+\begin{wrapfigure}{r}{0.38\columnwidth}
+		\vspace{-2mm}
 			\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
 			square/.style={regular polygon,regular polygon sides=4}] 
 			\node[state] at (0,0) (s)  {$s$}; 
@@ -174,96 +197,36 @@ $D_s^t(\waypt)$ is upper bounded by the actual shortest non-waypoint distance fr
 			(v2) edge  node [black] {1} (t)
 			(t) edge [red, dashed] node {} (d1);
 			\end{tikzpicture}
-			\compactcaption{OSPF edge weights such that the path is waypoint-compliant.} 
+			\compactcaption{Waypoint-compliant edge weights.} 
 			\label{fig:ospfwayptexample}
 \end{wrapfigure}
-
-Given a destination tree $\xi_\lambda$, we will use the 
-non-waypoint distances to enforce waypoint-compliance. Consider a 
-router in $r$ such the waypoint $w \in \waypt$ is downstream to $r$ in $\xi_\lambda$
-(there exists a path from $r$ to $w$ in $\xi_\lambda$), therefore,
-the path from $r$ must traverse through 
-a waypoint in $\waypt$.  
-Suppose, the sum of weights of the edges of
-the path in the tree $W(r \rightarrow^+_{\xi_\lambda} R_\lambda)$  
-is strictly smaller than the non-waypoint 
-distance from $r$ to $R_\lambda$. This will ensure that 
-the shortest path from $r$ to $R_\lambda$ which does not go through
-any $w \in \waypt$ will have a distance strictly greater than the path through
-$\xi_\lambda$, thus, the path from $r$ to $R_\lambda$ will traverse
-through a waypoint $w \in \waypt$. These constraints are expressed as follows:
-\begin{equation} \label{eq:waypoint}
-\forall r' \in N(s) \setminus N_{\xi_\lambda}(r).~~ \sum_{\mathclap{\substack{l_i=(r_1,r_2)}}} 
-W_{r_1}^{r_2} < 
-W_{r}^{r'}+ D_{r'}^{R_\lambda}(\waypt) 
-\end{equation}
-Note that, unlike Equations~\ref{eq:unique}, in this case, 
-router $r$ will not necessarily forward traffic to  
-$N_{\xi_\lambda}(r)$, but the path chosen will be waypoint-compliant. 
+These equations do \emph{not} guarantee that
+router $r$ will forward traffic to  
+$N_{\xi_\lambda}(r)$, but they still guarantee that the generated path is  waypoint-compliant. 
 Consider the example in \Cref{fig:ospfwayptexample} where traffic for
-$\lambda$ must traverse through one of the waypoints $\{r_1, r_2\}$. 
-Observe that while \genesis provided the path $s \rightarrow 
-r_1 \rightarrow t$, in the solution provided by Zeppelin, 
+$\lambda$ must traverse through one of the waypoints in $\{r_1, r_2\}$. 
+In this case,  \genesis provided the path $s \rightarrow 
+r_1 \rightarrow t$, but in the solution provided by Zeppelin, 
 the shortest path is $s \rightarrow r_2
-\rightarrow t$, and both waypoint-compliant paths are shorter 
+\rightarrow t$.
+However, both of the waypoint-compliant paths are shorter 
 than $s \rightarrow t$, the shortest non-waypoint path.
 
-If one of these constraints was part of an unsatisfiable  
-core, we can add the static route $(r, N_{\xi_\lambda}(r))$ to
-$SR(\lambda)$ to eliminate the equations at router $r$. 
 
-
-%\begin{figure}[!t] 
-%	\centering
-%	\subfloat[Edge Weights]{
-%		\resizebox {0.33\columnwidth} {!} {
-%			\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
-%			square/.style={regular polygon,regular polygon sides=4}] 
-%			\node[state] at (0,0) (s)  {$s$}; 
-%			\node[state, fill=orange] at (1.8,1) (v1)  {$r_1$}; 
-%			\node[state, fill=orange] at (1.8,-1) (v2)  {$r_2$}; 
-%			\node[state] at (3.6, 0)(t) {$t$};
-%			\node[state, rectangle] at (5, 0) (d1) {$\lambda$};
-%			\path[->] 
-%			(s) edge [red] node [black] {1} (v1)
-%			(s) edge  node {1} (v2)
-%			edge  node [above] {10} (t)
-%			(v1) edge [red] node [black] {5} (t)
-%			(v2) edge  node [black] {1} (t)
-%			(t) edge [red, dashed] node {} (d1);
-%			\end{tikzpicture}
-%		}}
-%		\hspace*{1cm}
-%		\subfloat[Routing Loop]{
-%			\raisebox{0.7cm}{\resizebox {0.33\columnwidth} {!} {
-%					\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
-%					square/.style={regular polygon,regular polygon sides=4}] 
-%					\node[state] at (0,0) (s)  {$s$}; 
-%					\node[state] at (1.8,1) (v1)  {$r_1$}; 
-%					\node[state] at (3.6, 0)(t) {$t$};
-%					\node[state, rectangle] at (5, 0) (d1) {$\lambda$};
-%					\path[->] 
-%					(s) edge [red] node [black, sloped, anchor=center, above]
-%					{$sr(\lambda)$} node
-%					[black, sloped, anchor=center, below] {1} (v1)
-%					edge  node [below] {5} (t)
-%					(v1) edge [red] node [black] {50} (t)
-%					(t) edge [red, dashed] node {} (d1);
-%					\end{tikzpicture}
-%				}}}
-%				\label{fig:ospfw}
-%			\end{figure}
 			
 \paragraph{Avoiding Routing Loops} \label{sec:loopavoidance}
-Since we are not enforcing a particular path in the network 
-for waypoint-compliance, adding
+If one of the constraints in \Cref{eq:waypoint} is part of an unsatisfiable  
+core, \name adds the static route $(r, N_{\xi_\lambda}(r))$ to
+$SR(\lambda)$ to eliminate the equations at router $r$. 
+However, since \Cref{eq:waypoint} does not guarantee that the path generated
+by \genesis is indeed the shortest path, adding
 static routes can lead to undesired behaviors like routing loops.  
 Consider the example configuration shown in \Cref{fig:ospfloop}. 
 Traffic for $\lambda$ at router $s$ is forwarded to $r_1$ because of the
 static route at $s$. At router $r_1$, the shortest OSPF route to
 $\lambda$ is $r_1 \rightarrow s \rightarrow t$ with weight 6 (compared 
 to $r_1 \rightarrow t$ of weight 50). Thus, $r_1$ will send the 
-packet back to $s$, and thus, causing a routing loop as $s$ will send
+packet back to $s$  causing a routing loop as $s$ will send
 it back to $r_1$ and back and forth till the \emph{ttl} (time to live) of the
 packet expires. 
 
@@ -286,31 +249,30 @@ packet expires.
 \end{wrapfigure}
 
 
-In each iteration of
-Zeppelin's unsat-core learning procedure: 
-Zeppelin picks a static route $(r, r')$
-for $\lambda$ and removes the constraints pertaining to 
-the static route. It then \emph{adds} new constraints to avoid
-causing routing loops due to the newly added static route. This
-lazy approach ensures we do not add superfluous constraints for links
-that do not contain a static route in the final configuration 
-and will not cause routing loops. 
-
-Suppose, Zeppelin added a static route $(sr_1, sr_2)$ for destination
+Whenever \name adds a static route to resolve an unsat-core,
+it removes the constraints pertaining to 
+the static route and \emph{adds} new constraints to prevent
+routing loops. 
+%This
+% approach ensures we do not add superfluous constraints for links
+%that do not contain a static route in the final configuration 
+%and cannot cause routing loops. 
+Suppose \name added a static route $(sr_1, sr_2)$ for destination
 $\lambda$ where $sr_2 = N_{\xi_\lambda}(sr_1)$ (because we do not add
-static routes on any other links except $\xi_\lambda$). We need to
-ensure that for any router in $\xi_\lambda$ which does not 
+static routes on any other links except $\xi_\lambda$). \name needs to
+ensure that, for any router $r\in\xi_\lambda$ that does not 
 lie in the downstream path $sr_2 \rightarrow^+_{\xi_\lambda} R_\lambda$, 
-the shortest path from $sr_2$ to $R_\lambda$ must not traverse through 
-it, for that could potentially cause a routing loop. For example, in \Cref{fig:ospfexample}(c), the shortest path from $r_1$ to $t$ was
-going through $s$ (which is upstream of $r_1$), therefore, causing 
-a routing loop. 
+the shortest path from $sr_2$ to $R_\lambda$ does not traverse through 
+$r$. For example, 
+\todo{broken ref}
+in \Cref{fig:ospfexample}(c), there is a routing loop because
+ the shortest path from $r_1$ to $t$ goes through $s$, which is upstream of $r_1$. 
 
-To prevent routing loops, \name adds constraints to 
+Formally, \name adds constraints to 
 ensure that the weight
 of path $l_0...l_k$
 from $sr_2$ to $R_\lambda$ is 
-strictly smaller than any path from $sr_2$ which traverses a
+strictly smaller than any path from $sr_2$ that traverses a
 router $r'$ not in the downstream path from $sr_2$: 
 \begin{equation}
 \forall r' \in \xi_\lambda. ~sr_2 \not\rightarrow_{\xi_\lambda}^+ r'. 
@@ -318,15 +280,15 @@ router $r'$ not in the downstream path from $sr_2$:
 W_{r_1}^{r_2} < D^{r'}_{sr_2} + D_{r'}^{R_\lambda} 
 \end{equation}
 If one of these constraints is part of an unsatisfiable
-core, we need to add another static route to eliminate the 
-unsatisfiability. When the constraint is part of the 
-unsatisfiable core, it means that there is a routing 
-loop caused at $sr_2$. By adding a static route 
-$(sr_2, N_{\xi_\lambda}(sr_2))$ to $SR(\lambda)$, we prevent
-the occurrence of the routing loop from $sr_2$ and thus, can
-remove these constraints. After we add the static route,
-we add loop avoidance constraints for the new static
-route, and continue with the unsat-core learning algorithm. 
+core, then there is a routing 
+loop caused at $sr_2$. 
+\name 
+prevents
+the occurrence of the routing loop from $sr_2$
+by adding a static route 
+$(sr_2, N_{\xi_\lambda}(sr_2))$ to $SR(\lambda)$. 
+\name then adds loop-avoidance constraints for the new static
+route and continues with the unsat-core learning algorithm. 
 
 \subsubsection{Configurations for Two Paths} \label{sec:ospfresilience}
 To guarantee policy-resilience, we use \genesis to provide two waypoint-compliant 
