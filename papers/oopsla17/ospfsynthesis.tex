@@ -10,23 +10,21 @@ distributed configurations
 can handle this heterogeneous set of 
 these policies---e.g., isolation---and, even less so,
 generate resilient configurations.
-Due to the complexity of the problem, in this
-section, we focus on 
+Due to the complexity of the problem, we focus on 
 synthesizing  configurations that 
-are \emph{policy-compliant} and \emph{connectivity-resilient}.
+are \emph{policy-compliant} and have high \emph{connectivity-resilience}.
 
 
 
-\subsection{A two-phased approach}
+\subsection{A two-phase approach}
 Existing approaches to configuration synthesis
 try to directly generate configurations from the given policies~\cite{synet},
 but a direct approach leads to scalability issues as well as limitation
 in the set of supported policies.
 Instead of directly generating configurations from policies, 
-we proceed in two-steps:
-first we generate policy-compliant paths using the techniques presented
-in Section~\ref{sec:genesis}
-and then we synthesize distributed configurations that realize these paths
+\name proceeds in two-steps:
+first it generates policy-compliant paths
+and then it synthesizes distributed configurations that realize these paths
 and have high connectivity resilience.
 
 Since we showed how to generate policy-compliant paths in Section~\ref{sec:genesis},
@@ -35,28 +33,27 @@ Formally, we are given a set of paths $\Pi$,
 a topology $T=(V,L)$,
 a domain-assignment function $\Theta$, 
 %and configuration policies $P$,
-and we want to find functions $SR$,
-$IF$, $LP$, and $W$ such that for 
-$C=(\Theta,W,LP,IF,SR)$, and
+and we want to find functions a configuration
+$C=(\Theta,W,LP,IF,SR)$ such that
 $\paths^C(PC) = \Pi$.
 %., and
 %$C$ satisfies $P$.
 %Ideally, we want to directly generate configurations that maximize 
 %connectivity resilience, but already generating policy-compliant configuration is
 %a hard problem.
-This problem admits a trivial solution that uses
-static routes to exactly enforce the set of input paths. 
-This can be done by adding a 
+This problem admits a trivial solution that 
+enforces the set of input paths
+ by adding a 
 static route to $SR(\lambda)$ for every link $l$ in 
-the paths in $\Pi$. 
-However, this solution will use more static routes than necessary
+set of the paths $\Pi$. 
+However, this solution uses more static routes than necessary
 and, in the presence of failures, static routes may
 create routing loops that make certain connections 
-unreachable and reduce connectivity-resilience.
+unreachable, hence reducing connectivity-resilience.
 Given the relation between the number of static 
 routes and connectivity-resilience,
 we set as our goal that of generating configurations 
-with fewer static routes.
+with few static routes.
 
 We show how to synthesize 
 path-compliant intra-domain 
@@ -67,7 +64,7 @@ there are multiple domains.
 
 \subsection{Synthesising Path-compliant Intra-domain Configurations} \label{sec:intra-synthesis}
 In this section, we show how to synthesize  path-compliant  intra-domain configurations that
-use less number of static routes.
+use few static routes.
 To justify the complexity of the techniques 
 we are going to present,
 we show that
@@ -91,8 +88,7 @@ is NP-complete.
 Since the problem of optimally placing 
 static routes is computationally hard, 
 %(Theorem~\ref{thm:ospfsynth}), 
-we propose a non-optimal greedy strategy 
-that works well in practice.
+we propose a non-optimal greedy strategy.
 We first show how to solve the problem when 
 there exists a solution with no static routes
 and then extend our technique to greedily 
@@ -111,8 +107,8 @@ Our goal is to synthesize the weight function $W$.
 Consider the example in \Cref{fig:edgeweightexample}, 
 if $\Pi$ contains the 
  path $\pi=s\rightarrow r_1 \rightarrow t$ for
- destination IP $\lambda$, \name will assign
- edge weights such that $\pi$ has
+ destination IP $\lambda$, \name assigns
+ edge weights so that $\pi$ has
  smaller weight than the path $\pi'=s \rightarrow t$ ---e.g., $W(\pi)=1+2$
   and $W(\pi')=5$. 
  
@@ -171,7 +167,7 @@ the shortest distance from $s$ to $t$.
 D_s^t \leq W_s^r + D_r^t
 \end{equation}
 Intuitively, the shortest path connecting $s$ to $t$
-must traverse through one of neighbor routers of $s$,
+must traverse through one of the neighbor routers of $s$,
 and thus, distance can be defined inductively as the 
 shortest among distances from the neighbors. 
 
@@ -186,7 +182,7 @@ next-hop neighbour of router $s$ in the destination tree $\xi_\lambda$---i.e., t
 of $s$ in the tree or no node if $s$ is the root of the tree. We denote the
 router directly connected to $\lambda$ (the root of the tree $\xi_\lambda$) by $R_\lambda$.
 
-The following equations ensures that, for any node $s$ in 
+The following equation ensures that, for any node $s$ in 
 $\xi_\lambda$, 
 the path $l_0\cdots l_k$ from $s$ to $R_\lambda$ 
 in $\xi_\lambda$ is the 
@@ -259,9 +255,10 @@ paths in $\xi_\lambda$ are the shortest.
 If the system of equations presented in Section~\ref{sec:ospf} admits a solution, 
 the values of the $W_s^t$ variables are the weights we are trying to synthesize,
 otherwise the intra-domain synthesis problem 
-cannot be solved without using static routes.
+cannot be solved without static routes.
 
 \begin{wrapfigure}{r}{0.33\columnwidth}
+\vspace{-1mm}
 	\resizebox {0.33\columnwidth} {!} {
 			\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
 			square/.style={regular polygon,regular polygon sides=4}] 
@@ -303,7 +300,7 @@ through $r_1$ using the OSPF shortest path.
 
 
 Since the problem of minimizing the number of static routes
-is NP-complete (Theorem~\ref{thm:ospfsynth}), we opt to place static routes using a best-effort approach.
+is NP-complete, we opt to place static routes using a best-effort approach.
 Our algorithm starts by trying to synthesize a solution
 that does not use static routes using the equations 
 proposed in \secref{sec:ospf}. 

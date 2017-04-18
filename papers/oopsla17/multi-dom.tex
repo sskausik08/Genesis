@@ -244,8 +244,8 @@ Assume we are given the input subpath $\pi_i=r \rightarrow^+ g_1$ in
 the domain $d=\Theta(\pi_i)$ for some destination $\lambda$ outside
 of $d$; this path should exit through gateway $g_1$. 
 \name adds additional
-constraints ensuring the distance to $g_2$ from routers
-on the path $\pi_i$ is strictly
+constraints to ensure the distance  from routers
+on the path $\pi_i$ to $g_2$ is strictly
 greater than the distance to $g_1$. 
 
 Let $G(\theta, \lambda)$ be the set of gateway
@@ -262,10 +262,11 @@ chooses the correct gateway:
 \sum_{\mathclap{\substack{(r_1,r_2) \in r \rightarrow^+_{\xi_{\lambda}} g }}}~~~~~W_{r_1}^{r_2} < 
 W_r^{r'} + D_{r'}^{g'} 
 \end{equation}
-If the system of
-constraints generated is inconsistent, Zeppelin will add 
+If the generated system of
+constraints is inconsistent, Zeppelin adds
 static routes to eliminate constraints
 and filter shorter routes to gateways which are
 not on the input path. For Equation~\ref{eq:gateway},
 adding the static route $(r, N_{\xi_\lambda}(r))$ to $SR(\lambda)$
-will eliminate the infeasibility caused due to this constraint.
+ eliminates the infeasibility caused by this constraint.
+ \todo{what constraint are you referring two here? qualify}
