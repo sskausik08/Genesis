@@ -5,27 +5,36 @@ the first systems, RCP~\cite{rcp}, supported logically central BGP
 configuration. The more recent Fibbing~\cite{fibbing} system provides
 centralized control over distributed routing by creating fake nodes
 and fake links to steer the traffic in the network through paths that
-are not the shortest. However, these fake advertisements can create
-forwarding loops in the network during failures, and the centralized
-controller has to respond to failures (response to failures can
-precomputed), thus making the controller a central point of
-failure. In contrast, our approach to distributed control plane
-synthesis can provide the same expressive power as Fibbing but avoids
-any centralized component by engineering the control plane parameters
-to match the input specifications.  Fibbing also does not take into
+are not the shortest, similar to how \name uses static routes. 
+However, the algorithms to solve the synthesis problem 
+in this work is different from ours.  
+Both appproaches face the issue of  
+forwarding loops in the network during failures. 
+One merit of our work over Fibbing is that by using 
+static routes for steering, we do not increase the 
+traffic in the network, unlike the fake advertisements 
+which is used in Fibbing. Fibbing also does not take into
 account inter-domain routing.
+
+%However, these fake advertisements can create
+%forwarding loops in the network during failures, and the centralized
+%controller has to respond to failures (response to failures can
+%precomputed), thus making the controller a central point of
+%failure. In contrast, our approach to distributed control plane
+%synthesis can provide the same expressive power as Fibbing but avoids
+%any centralized component by engineering the control plane parameters
+%to match the input specifications.  
 
 
 \paragraph{Configuration synthesis} 
 ConfigAssure~\cite{configassure}
 uses a combination of logic programming and SAT solving to synthesize
 network configurations for security, 
-\todo{what is connectivity here?}
-connectivity, performance and
+functionality, performance and
 reliability requirements specified as constraints; 
-\todo{but it supports connectivity??}
 but it does not
-support resilience or hierarchical domain splitting.  Fortz
+support any notion of policy-resilience 
+or hierarchical domain splitting.  Fortz
 et. al~\cite{ospf-te} tackle the problem of optimizing OSPF weights
 for performing traffic engineering, but their work is tailor-made
 to just this specific problem.
@@ -34,7 +43,7 @@ Propane~\cite{propane} tackles the specific problem of synthesizing
 BGP configurations to ensure network-wide objectives hold even under
 failures. The policy language of Propane is suited to specify
 preferences on paths and peering policies among different autonomous
-systems, but it does not support fine-grained policies over paths---e.g.,  isolation and traffic engineering. Propane translates policies
+systems. Propane translates policies
 to a graph-based intermediate representation, which is then compiled
 to device-level BGP configurations. It is unclear how to extend
 Propane to incorporate domains, configuration complexity, or OSPF.
@@ -52,10 +61,13 @@ The
 largest topology considered by El-Hassany et. al has 16 nodes (we handle 45)
 and the policy language does not support isolation or
 traffic engineering, 
-features that contribute to make our synthesis problem challenging.  
+features that contribute to make our synthesis 
+problem challenging (however \genesis could be used 
+as a frontend for their approach).  
 On the technical side, our approach is different because
-it first   synthesizes policy-compliant paths and then uses
-LP-solvers (which are faster and parallelizable) to tackle configuration
+it first synthesizes policy-compliant paths and then uses
+LP-solvers (which are faster and parallelizable) 
+to tackle configuration
 synthesis.  
 Finally, El-Hassany et. al can only perform synthesis for a
 static domain assignment, where the input specifies if a router runs
@@ -94,7 +106,8 @@ and programs on virtual topologies; it uses
 BDDs and symbolic automata to translate global programs to local
 switch programs~\cite{netkatcompiler}.
 
-Both Merlin and NetKAT  do not support traffic isolation, which is needed for the 
+Both Merlin and NetKAT  do not support link-isolation 
+to produce edge-disjoint paths, which is needed for the 
 our waypoint-compliance algorithm presented in Section~\ref{sec:waypointres}.
 As future work, we will consider how to apply these other front-ends to \name.
 
