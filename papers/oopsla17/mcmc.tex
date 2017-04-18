@@ -7,21 +7,21 @@ In such settings, Zeppelin can help by automating domain creation/restructuring.
 
 In this section, we present an algorithm for 
 solving the path-compliance synthesis problem when a domain assignment is not given to us (Definition~\ref{def:pathcompliance}).
-The algorithm searches the space of possible domain assignment $\Theta$ to find
+The algorithm searches the space of possible domain assignments $\Theta$ to find
 one that meets all configuration policies and increases 
 connectivity-resilience. Instead of directly reasoning about 
 resilience which is hard, we try to minimize the number of static routes, 
 which leads to greater connectivity-resilience scores.
 
 Before proceeding, we first show that when the domain assignment is not given,
-even the simplest variant of the path-compliance assignment problem
+even the simplest variant of the path-compliant domain assignment problem
 is computationally hard.
 \begin{theorem}
 Given a
 network and  set of paths  $\Pi$,
-the problem generating a domain assignment for which
+the problem of generating a domain assignment for which
 there exists a 
-configuration that path-compliant  with $\Pi$ with no static routes
+configuration that is path-compliant with $\Pi$ with no static routes
 is NP-complete.
 \end{theorem}
 \iffull
