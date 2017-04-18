@@ -105,43 +105,37 @@ a technique for providing waypoint replication and
 
 
 
-\subsection{Intra-domain Resilient Waypoint Compliance}\label{sec:ospfwaypoint}
-In this section, we consider a waypoint policy for $\lambda$ which
-specifies that traffic to $\lambda$ from router $s$ 
-must traverse through
-one of the waypoints $w \in \waypt$. We assume that 
-all the waypoints belong in the same domain, i.e., 
-$|\{\Theta(w) \mid w \in W\}| = 1$.
-To achieve 1-resilient waypoint-compliance, we use \genesis's
+\subsection{Intra-domain Policy-Resilient Waypoint Compliance}\label{sec:ospfwaypoint}
+To achieve 1-resilient waypoint-compliance within the domain
+in which the waypoints are located, we use \genesis's
 support for isolation to generate two edge-disjoint\footnote
 {The edge-disjoint paths will actually be vertex-disjoint (except the 
 	source and destination) due to the destination-tree constraints
 	in \genesis.} paths
 which are waypoint-compliant with respect to $\waypt$. A single link
-failure will not disable both these paths, so if traffic to $\lambda$ 
-would 
-traverse one of these two paths under failures, 
-we would achieve 1-resilient
-waypoint-compliance. However, enforcing the control plane to 
+failure will not disable both these paths
+and we could guarantee policy-resilience by 
+guaranteeing that, under any link failure,
+traffic to $\lambda$ 
+traverses one of these two paths. However, enforcing the control plane to 
 always route through one of the two paths is difficult and overly 
 restrictive. 
-Instead, if we relax our constraints such that the weight
-of these two paths is shorter than any non-compliant path in 
-the network, the existence of two such paths will guarantee
-that traffic to $\lambda$ will not traverse a non-compliant
-path under any single-link failure. 
-We will now discuss the
+Instead, we relax our constraints to guarantee that
+the two paths are shorter than any non-compliant path in 
+the network. The existence of two such paths still guarantees that,
+under any link failure,
+ traverses a waypoint. 
+We now discuss the
 constraints we use to generate 
-a waypoint-compliant path, and then 
+a waypoint-compliant path, and then show
 how to use the two edge-disjoint 
-paths to provide 1-resilience. 
+paths to provide policy-resilience. 
 
 
 \subsubsection{Waypoint-Compliance Constraints}
-In the first phase, \genesis provides a path which
-satisfies the waypoint policy. Our constraints need to
-guarantee that the path provided by \genesis is shorter
-than any path which does traverse the waypoint. 
+In this section, we show how to generate constraints that
+guarantee that a single waypoint-compliant path is shorter
+than any path which does \emph{not} traverse a waypoint. 
 
 We define $D_s^t(\waypt)$ to be the 
 distance between $s$ and $t$ such that the path does not
@@ -260,7 +254,7 @@ $SR(\lambda)$ to eliminate the equations at router $r$.
 %				\label{fig:ospfw}
 %			\end{figure}
 			
-\minisection{Avoiding Routing Loops} \label{sec:loopavoidance}
+\paragraph{Avoiding Routing Loops} \label{sec:loopavoidance}
 Since we are not enforcing a particular path in the network 
 for waypoint-compliance, adding
 static routes can lead to undesired behaviors like routing loops.  
@@ -334,8 +328,8 @@ remove these constraints. After we add the static route,
 we add loop avoidance constraints for the new static
 route, and continue with the unsat-core learning algorithm. 
 
-\subsubsection{Resilience Constraints} \label{sec:ospfresilience}
-For 1-resilience, we use Genesis to provide two waypoint-compliant 
+\subsubsection{Configurations for Two Paths} \label{sec:ospfresilience}
+To guarantee policy-resilience, we use \genesis to provide two waypoint-compliant 
 edge-disjoint paths $\pi_1$ amd $\pi_2$ from $s$ to $t$.
 Equation~\ref{eq:waypoint} ensures that the edge weights 
 of the path provided by Genesis are strictly shorter than 
@@ -355,7 +349,7 @@ $\pi_1$ is affected, OSPF will not route traffic through a
 non-waypoint-compliant path, as the weight of $\pi_2$ is shorter than any path which is not waypoint-compliant due to the constraints generated 
 by \name.
 
-\minisection{Resilience with Static Routes}
+\paragraph{Resilience with Static Routes}
 Suppose there are static routes in the OSPF domain. 
 Consider the example in \Cref{fig:ospfres} where 
 $\pi_1=s\rightarrow r_0 \rightarrow r_1 \rightarrow t$ 
