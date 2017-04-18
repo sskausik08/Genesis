@@ -73,8 +73,7 @@ We define the static route partial
 function $SR: V \times \Lambda \mapsto 2^V$ with the following meaning:  
 given a router $r$
 and destination $\lambda$, if $SR(r,\lambda)=\{r_1, r_2\}$, then router
-$r$ forwards traffic for 
-destination $\lambda$ to routers 
+$r$ forwards traffic for $\lambda$ to routers 
 $r_1$ and $r_2$.    
 
 \paragraph{OSPF} Open Shortest Path First (OSPF) is a routing
@@ -118,8 +117,6 @@ shortest distance to router $r_\lambda$. This is expressed as follows.
 \route_{ospf}(r,\lambda) = \{r_1 ~|~ r_1 \in N(r)\wedge \forall r_2 \in N(s) .~W(r, r_1) + D(r_1, r_\lambda) \le 
 W(r, r_2) + D(r_2, r_\lambda)\}
 \]
-
-
 \paragraph{BGP} BGP is a path-vector inter-domain routing protocol
 that connects different domains (also called autonomous systems), where each domain
 comprises of one or more routers typically managed by a single
@@ -128,7 +125,6 @@ send iBGP routes, external peers send eBGP routes. Each route for
 a certain
 destination comprises of a domain-level path to the destination
 domain and, by default, a BGP router will forward a packet through the path that traverses fewer domains.
-
 \input{bgp-routing-algorithm} 
 BGP routers can be configured with a
 \emph{local preference} variable to assign higher priorities to
@@ -170,9 +166,9 @@ $\route_{bgp}(r,\lambda)$
  the BGP
 router $r$ when forwarding traffic for a destination $\lambda$. 
 
-\paragraph{OSPF+BGP+Static Routes} We now describe how routing
-happens in hierarchical domains when all the previously described protocols
-are present at the same time.
+\paragraph{OSPF+BGP+SR} We now describe how routing
+happens in hierarchical networks with all the previously described protocols
+used together.
 We express the complete network configuration $C$
 as a tuple $(T, \Theta,W,LP,IF,SR)$, where $T$ is the 
 network topology, $\Theta$ is
@@ -370,7 +366,7 @@ is at preserving policy-compliance under an
 arbitrary single link failure. 
 The \emph{policy-resilience} score of a configuration 
 $C=((V,L), \Theta,W,LP,IF,SR)$
-is defined as follows:
+is defined as:
 \[
 PR(C)=\frac{\sum_{\forall pc} |\{ l \mid l \in \links(pc) ~\wedge~ C_l \models (\Psi_{pc}, P) \}|}
 {\sum_{\forall pc} |\links(pc)|}
