@@ -87,12 +87,11 @@ too; existing frameworks offer perhaps less rich policy support but better
 performance. %% Other works on
 %% centralized policy enforcement for SDN are Merlin~\cite{merlin} and
 %% NetKAT~\cite{netkat}.
-
 In Merlin~\cite{merlin}, data planes that adhere to policies expressed
 using regular expressions are synthesized by first intersecting the
 topology with the regular expressions appearing in the policies and
 then encoding reachability in the intersected graph using mixed
-integer linear programming (ILP).  Merlin supports minimum and maximum
+integer linear programming (ILP).  Merlin supports min and max
 bandwidth guarantees.
 
 NetKAT~\cite{netkat} is a domain-specific language and logic for 
@@ -105,11 +104,11 @@ reachability, waypoints using regular expressions for describing the paths,
 and programs on virtual topologies; it uses
 BDDs and symbolic automata to translate global programs to local
 switch programs~\cite{netkatcompiler}.
-
 Both Merlin and NetKAT  do not support link-isolation 
-to produce edge-disjoint paths, which is needed for the 
+to produce edge-disjoint paths, which is needed for  
 our waypoint-compliance algorithm presented in Section~\ref{sec:waypointres}.
-As future work, we will consider how to apply these other front-ends to \name.
+As future work, we will consider 
+how to apply these other front-ends to \name.
 
 %% However, the NetKAT semantics
 %% cannot be used to express policies based on hyperproperties
