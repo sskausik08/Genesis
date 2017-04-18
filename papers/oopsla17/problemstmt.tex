@@ -13,7 +13,7 @@ which we will use in our experimental evaluation.
 
 \subsection{Routing Model}
 
-\minisection{Preliminaries}
+\paragraph{Preliminaries}
 We represent the physical router topology as a directed graph $T=(V, L)$,
 where $V$ is the set of routers and $L\subseteq V\times V$ is the set of links. 
 Throughout the paper we assume $T$ is fixed.
@@ -63,7 +63,7 @@ and then show how protocols can be combined.
 %When synthesizing $C$, we will ensure that this property is satisfied.}
 
 
-\minisection{Static Routes} Static routing refers to a router using a
+\paragraph{Static Routes} Static routing refers to a router using a
 manually-configured routing entry, rather than information from
 dynamic protocols like OSPF or BGP.  Static routing is useful to enforce certain
 paths that are not realizable using routing protocols because 
@@ -77,7 +77,7 @@ $r$ forwards traffic for
 destination $\lambda$ to routers 
 $r_1$ and $r_2$.    
 
-\minisection{OSPF} Open Shortest Path First (OSPF) is a routing
+\paragraph{OSPF} Open Shortest Path First (OSPF) is a routing
 protocol commonly used inside a domain. In OSPF, routers receive link
 state information from other routers and use it to create a map of
 the network. Each link is associated with a positive weight and traffic from a router $r$ to
@@ -120,7 +120,7 @@ W(r, r_2) + D(r_2, r_\lambda)\}
 \]
 
 
-\minisection{BGP} BGP is a path-vector inter-domain routing protocol
+\paragraph{BGP} BGP is a path-vector inter-domain routing protocol
 that connects different domains (also called autonomous systems), where each domain
 comprises of one or more routers typically managed by a single
 entity. A BGP router receives routes from BGP peers: internal peers
@@ -170,7 +170,7 @@ $\route_{bgp}(r,\lambda)$
  the BGP
 router $r$ when forwarding traffic for a destination $\lambda$. 
 
-\minisection{OSPF+BGP+Static Routes} We now describe how routing
+\paragraph{OSPF+BGP+Static Routes} We now describe how routing
 happens in hierarchical domains when all the previously described protocols
 are present at the same time.
 We express the complete network configuration $C$
@@ -235,7 +235,7 @@ SR(r, \lambda) & \text{if } SR(r, \lambda) \not= \emptyset, \\
 %\end{array}
 %\]
 
-\minisection{Induced paths}
+\paragraph{Induced paths}
 In the following, we assume a finite set of packet classes $PC = \{0, \ldots, C_{pc}\}$ 
 and map each reachability
 policy that requires the existence of a path between two endpoints
@@ -262,7 +262,7 @@ $\paths^C(PC) = \cup_{pc\in PC} \paths^C(pc)$.
 \input{policy}
 
 
-\minisection{Policies}
+\paragraph{Policies}
 \Cref{tab:policysupport} describes the path policies supported by \name.
 Given  a set $\Psi$ of
 path policies, we say that
@@ -325,7 +325,7 @@ since they increase the complexity of the network.
 
 
 
-\minisection{Synthesis problems}
+\paragraph{Synthesis problems}
 \noindent We now define when a configuration $C$ is policy-compliant, present our synthesis problems, and introduce two definition of resilience we will use throughout the paper.
 \begin{definition}[Policy-Compliance and Synthesis] \label{def:policycompliance}
 	Given a set of path policies $\Psi$ and a set of configuration policies $P$,
@@ -348,7 +348,7 @@ and a set of paths $\Pi$ over packet classes $PC$,
 a configuration $C$ that is path-compliant with $(\Pi,P)$.
 \end{definition}
 
-\minisection{Resilience metrics}
+\paragraph{Resilience metrics}
 One of the main goals of this paper is to 
 generate configurations that are highly resilient to failures.
 For a packet class $pc$ and configuration $C$, we define 
