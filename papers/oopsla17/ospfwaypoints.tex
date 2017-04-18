@@ -105,13 +105,13 @@ which provides waypoint replication and
 
 
 \subsection{Intra-domain Resilient Waypoint Compliance}\label{sec:ospfwaypoint}
-Consider a waypoint policy for $\lambda$ which
+In this section, we consider a waypoint policy for $\lambda$ which
 specifies that traffic to $\lambda$ from router $s$ 
 must traverse through
 one of the waypoints $w \in \waypt$. We assume that 
 all the waypoints belong in the same domain, i.e., 
-$|\{\Theta(w) | w \in W\}| = 1$.
-We leverage \genesis's
+$|\{\Theta(w) \mid w \in W\}| = 1$.
+To achieve 1-resilient waypoint-compliance, we use \genesis's
 support for isolation to generate two edge-disjoint\footnote
 {The edge-disjoint paths will actually be vertex-disjoint (except the 
 	source and destination) due to the destination-tree constraints
@@ -121,22 +121,26 @@ failure will not disable both these paths, so if traffic to $\lambda$
 would 
 traverse one of these two paths under failures, 
 we would achieve 1-resilient
-waypoint-compliance. However, enforcing the two paths exactly
-is difficult. Instead, if we can ensure that the weight
+waypoint-compliance. However, enforcing the control plane to 
+always route through one of the two paths is difficult and overly 
+restrictive. 
+Instead, if we relax our constraints such that the weight
 of these two paths is shorter than any non-compliant path in 
-the network, $\lambda$ traffic will have atleast two edge-disjoint 
-compliant paths to traverse 
-before it traverses a non-compliant path. We will now discuss the
-constraints to generate a waypoint-compliant path, and then 
-how to use the two edge-disjoint paths to provide 1-resilience. 
+the network, the existence of two such paths will guarantee
+that traffic to $\lambda$ will not traverse a non-compliant
+path under any single-link failure. 
+We will now discuss the
+constraints we use to generate 
+a waypoint-compliant path, and then 
+how to use the two edge-disjoint 
+paths to provide 1-resilience. 
 
 
 \subsubsection{Waypoint-Compliance Constraints}
 In the first phase, \genesis provides a path which
-satisfies the waypoint policy. We use this path as a 
-``hint'' to incorporate waypoint-compliance in the OSPF 
-configuration synthesis without 
-enforcing the exact path.
+satisfies the waypoint policy. Our constraints need to
+guarantee that the path provided by \genesis is shorter
+than any path which does traverse the waypoint. 
 
 We define $D_s^t(\waypt)$ to be the 
 distance between $s$ and $t$ such that the path does not
@@ -145,7 +149,7 @@ distance between $s$ and $t$ such that the path does not
   considering a network topology where all the  
   waypoints $w \in \waypt$ are removed. Formally, for a topology 
  $T = (V,L)$, the following distance equations 
- capture the non-waypoint distances 
+ capture the distances of the paths which are policy-compliant 
  for a waypoint set $\waypt$:
 \begin{equation} \label{eq:wdistance}
 \forall s, t \in V \setminus \waypt. ~\forall r \in N(s) \setminus \waypt.~
@@ -201,7 +205,7 @@ W_{r}^{r'}+ D_{r'}^{R_\lambda}(\waypt)
 Note that, unlike Equations~\ref{eq:unique}, in this case, 
 router $r$ will not necessarily forward traffic to  
 $N_{\xi_\lambda}(r)$, but the path chosen will be waypoint-compliant. 
-Consider the example in \Cref{fig:ospfw}(a) where traffic for
+Consider the example in \Cref{fig:ospfwayptexample} where traffic for
 $\lambda$ must traverse through one of the waypoints $\{r_1, r_2\}$. 
 Observe that while \genesis provided the path $s \rightarrow 
 r_1 \rightarrow t$, in the solution provided by Zeppelin, 
@@ -255,11 +259,11 @@ $SR(\lambda)$ to eliminate the equations at router $r$.
 %				\label{fig:ospfw}
 %			\end{figure}
 			
-\minisection{Routing Loop Avoidance Constraints} \label{sec:loopavoidance}
-Since we are not enforcing a particular path in the network for waypoint-
-compliance, adding
+\minisection{Avoiding Routing Loops} \label{sec:loopavoidance}
+Since we are not enforcing a particular path in the network 
+for waypoint-compliance, adding
 static routes can lead to undesired behaviors like routing loops.  
-Consider the example configuration shown in \Cref{fig:ospfw}(b). 
+Consider the example configuration shown in \Cref{fig:ospfloop}. 
 Traffic for $\lambda$ at router $s$ is forwarded to $r_1$ because of the
 static route at $s$. At router $r_1$, the shortest OSPF route to
 $\lambda$ is $r_1 \rightarrow s \rightarrow t$ with weight 6 (compared 
@@ -287,17 +291,15 @@ packet expires.
 \end{wrapfigure}
 
 
-Zeppelin adds additional constraints to mitigate the creation of prevention
-of routing loops when static routes are added. In each iteration of
+In each iteration of
 Zeppelin's unsat-core learning procedure: 
 Zeppelin picks a static route $(r, r')$
 for $\lambda$ and removes the constraints pertaining to 
-the static route. It also \emph{adds} new constraints to avoid
+the static route. It then \emph{adds} new constraints to avoid
 causing routing loops due to the newly added static route. This
 lazy approach ensures we do not add superflous constraints for links
 that do not contain a static route in the final configuration 
-and will not cause routing loops. \name does not sacrifice 
-soundness by lazily adding the loop avoidance constraints. 
+and will not cause routing loops. 
 
 Suppose, Zeppelin added a static route $(sr_1, sr_2)$ for destination
 $\lambda$ where $sr_2 = N_{\xi_\lambda}(sr_1)$ (because we do not add
@@ -309,20 +311,19 @@ it, for that could potentially cause a routing loop. For example, in \Cref{fig:o
 going through $s$ (which is upstream of $r_1$), therefore, causing 
 a routing loop. 
 
-Therefore, to prevent routing loops, we ensure that the weight
-of path $W(sr_2 \rightarrow^+_{\xi_\lambda} R_\lambda)$ is 
+To prevent routing loops, \name adds constraints to 
+ensure that the weight
+of path $l_0...l_k$
+from $sr_2$ to $R_\lambda$ is 
 strictly smaller than any path from $sr_2$ which traverses a
-router $r'$ not in the downstream path from $sr_2$. Zeppelin
-adds the following constraints to ensure that the path $l_0...l_k$
-from $sr_2$ to $R_\lambda$ is shorter than the paths which reach 
-$R_\lambda$ through $r'$: 
+router $r'$ not in the downstream path from $sr_2$: 
 \begin{equation}
 \forall r' \in \xi_\lambda. ~sr_2 \not\rightarrow_{\xi_\lambda}^+ r'. 
 ~~~~~\sum_{\mathclap{\substack{l_i=(r_1,r_2)}}} 
 W_{r_1}^{r_2} < D^{r'}_{sr_2} + D_{r'}^{R_\lambda} 
 \end{equation}
 If one of these constraints is part of an unsatisfiable
-core, we need to add a static route to eliminate the 
+core, we need to add another static route to eliminate the 
 unsatisfiability. When the constraint is part of the 
 unsatisfiable core, it means that there is a routing 
 loop caused at $sr_2$. By adding a static route 
@@ -335,7 +336,7 @@ route, and continue with the unsat-core learning algorithm.
 \subsubsection{Resilience Constraints} \label{sec:ospfresilience}
 For 1-resilience, we use Genesis to provide two waypoint-compliant 
 edge-disjoint paths $\pi_1$ amd $\pi_2$ from $s$ to $t$.
-Equations~\ref{eq:waypoint} ensure that the edge weights 
+Equation~\ref{eq:waypoint} ensures that the edge weights 
 of the path provided by Genesis are strictly shorter than 
 the non-waypoint distance for $\lambda$. 
 Let us assume there are no static routes in the 
@@ -347,7 +348,7 @@ ordering of the weight of $\pi_1$ and $\pi_2$ is irrelevant.
 \begin{equation} \label{eq:resilience}
 W(\pi_1) < D^t_s(\waypt) ~\wedge~ W(\pi_2) < D^t_s(\waypt) 
 \end{equation}
-Thus, if a single link fails, only one 
+Thus, if a single link fails, at most one 
 of these paths is affected. Suppose
 $\pi_1$ is affected, OSPF will not route traffic through a  
 non-waypoint-compliant path, as the weight of $\pi_2$ is shorter than any path which is not waypoint-compliant due to the constraints generated 
@@ -361,7 +362,7 @@ and $\pi_2=s\rightarrow r_2 \rightarrow t$
 are two edge disjoint paths 
 connecting the routers $s$ to $t$. In this example, 
 $\pi_1$ is the 
-chosen primary path and it use a static routes 
+chosen primary path and it uses a static route
 for $r_0 \rightarrow r_1$. 
 Ideally, we want to ensure 
 that if any link on $\pi_1$ fails, 
@@ -464,7 +465,7 @@ For soundness, we use $W(\pi_2)$ which is an upper bound
 for the OSPF distance corresponding to 
 $\pi_2$. 
 } 
-is lesser than or equal to 
+is smaller or equal to 
 the estimated OSPF distance corresponding to $\pi_1$: 
 \begin{equation}
 	W(\pi_2) \leq \sum_{i=1}^{\alpha - 1} W_{u_i}^{v_i} + D_{u_\alpha}^t	
@@ -476,9 +477,9 @@ paths for $\lambda$. However, if one of these constraints is part of
 an unsatisfiable core, we cannot add a static route to eliminate 
 this unsatisfiability. \name lazily eliminates these constraints from the
 system of equations depending on whether these constraints are part of 
-an unsat-core which cannot be eliminated by a static route. Thus, 
-our resilience synthesis is not sound and for certain failure scenarios, 
-the paths generated are not waypoint-compliant. However, 
+an unsat-core which cannot be eliminated by a static route, and thus,
+the synthesized configuration does not achieve best  
+policy-resilience. However, 
 judging by our experiments (\secref{sec:reseval}), 
 this technique generates highly resilient configurations 
 in practice. 
