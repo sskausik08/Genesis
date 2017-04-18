@@ -7,19 +7,18 @@ for complex types of policies and at the same time can achieve good
 connectivity resilience.
 In this section, we present a different algorithm that, for a restricted set of policies,
 can synthesize configurations with high \emph{policy-resilience}.
-In particular, we focus our attention on an important class of
-policies:  \emph{waypoint traversals}.
-
-\subsection{Problem Setup}
-Waypoint policies 
+In particular, we focus on \emph{waypoint policies}
 that require traffic to traverse
 firewalls,
 proxies, optimizers, and intrusion detection/prevention 
-systems 
+systems and
 play a crucial role in enterprise and
 datacenter networks for security, performance,  
-and auditing considerations.
-We therefore focus our attention on policies of the form 
+and auditing.
+
+\subsection{Problem Setup}
+
+We consider policies of the form 
 \texttt{$\lambda$: s >> $\waypt$ >> t}
 where $\lambda$ is a destination IP subnet,  
 $s$ and $t$ are the source and destination router respectively, 
@@ -44,7 +43,7 @@ detect if a packet traversed the waypoint or not. Thus, only
 packets which traversed a waypoint-compliant path would be 
 accepted and forwarded to the tenant. 
 }
-Here the set $\waypt$
+Here, $\waypt$
 can be the set of physical replicas of,  for example, a firewall.
 
 
@@ -52,7 +51,7 @@ can be the set of physical replicas of,  for example, a firewall.
 find a policy-compliant configuration 
 $C=(T,\Theta,W,LP$, $IF,SR)$ 
 with high policy-resilience. Ideally, for 
-any single link failure, there is atleast 
+any single link failure, there should be at least 
 one path to $\lambda$ which is waypoint-compliant. 
 In the following section, we focus on 
 intra-domain configurations,
@@ -60,12 +59,14 @@ and present an algorithm
 that solves this problem when the network 
 has a single domain.
 When the network has multiple domains, 
-we use the algorithm in the domain 
-which contains the waypoints in $\waypt$. 
-For this, we assume that all $w \in \waypt$ 
-belong to the same domain. This can be realized 
-by Network Function Virtualization~\cite{opennf, netbricks},
-which provides waypoint replication and 
+we assume that all waypoints
+belong to the same domain and
+use our new algorithm in the domain 
+which contains the waypoints.
+\todo{say what you do in other domains or for inter domain}. 
+Our assumption that all waypoints lie in the same domain can be realized
+through Network Function Virtualization~\cite{opennf, netbricks},
+a technique for providing waypoint replication and 
  flexible waypoint placement in the network.
 
 
