@@ -297,7 +297,8 @@ Certain
 	Formally, for every $r\in V\setminus B$,
 	there does not exist a router $r'\in N(r)$ such that $\Theta(r) \not= \Theta(r')$
 
-Finally, \name provides ways to specify upper bounds on the number of
+Finally, \name provides ways to specify upper bounds on the number 
+of
 static routes---i.e., $sc=|\{(v, v', \lambda)\mid \exists v'. v' \in SR(v,\lambda)\}|\leq C_{sc}$--- and
 BGP configurations---i.e., 
 $bc=|\bigcup_{v,\lambda\in V\times\Lambda} IF(v,\lambda)\cup \{(v,v',\lambda)\mid LP(v,v',\lambda)$ $\neq \bot\}|\leq C_{bc}$.
@@ -348,12 +349,12 @@ a configuration $C$ that is path-compliant with $(\Pi,P)$.
 \end{definition}
 
 \minisection{Resilience metrics}
-One of the main considerations in this paper is to 
+One of the main goals of this paper is to 
 generate configurations that are highly resilient to failures.
 For a packet class $pc$ and configuration $C$, we define 
-the set of \emph{affecting links} $\links(pc)$ as follows: 
+the set of links \emph{affecting} $pc$ as 
 $\links(pc) = \{l \mid \exists \pi \in \paths^C(pc).~l \in \pi  \}$.
-For a single link $l$ failure, a packet class $pc$ is affected 
+For a single failure of a link $l$, a packet class $pc$ is affected 
 if only if $l \in \links(pc)$. 
 Given a configuration
 $C=((V,L), \Theta,W,LP,IF,SR)$ and a link $l\in L$,
@@ -374,10 +375,10 @@ is defined as follows:
 PR(C)=\frac{\sum_{\forall pc} |\{ l \mid l \in \links(pc) ~\wedge~ C_l \models (\Psi_{pc}, P) \}|}
 {\sum_{\forall pc} |\links(pc)|}
 \]
-where $C \models (\Psi_{pc}, P)$ denotes that $C$ is 
-compliant for policies $\Psi_{pc}$ which affect packet class $pc$.
-The score measures, for each policy $pc$, what percentage of the failing links of $pc$
-will cause the policy to stop holding.
+where $C \models (\Psi_{pc}, P)$ means that $C$ is 
+compliant for the set of policies $\Psi_{pc}$ that affect packet class $pc$.
+The score measures, for each policy $pc$, what percentage of the links affecting $pc$
+causes a policy to stop holding when failing.
 
 In general, generating configurations with high policy-resilience is hard,
 since there may be only a few paths that satisfy a certain policy.
