@@ -206,7 +206,7 @@ gateway router in $G (\theta, \lambda)$, which in turn will forward  the traffic
 function $\route^C_{ospf}$ for an external destination $\lambda$
 is defined as follows: 
 \begin{multline*}
-\route_{ospf}^C(r,\lambda) = \{~~r_1 \mid r_1 \in N(r) \wedge \exists g_1 \in G (\theta, \lambda). ~\forall r_2 \in N(s), g_2 \in G (\theta, \lambda). ~W(r, r_1) + D(r_1, g_1) \leq
+\route_{ospf}^C(r,\lambda) = \{~~r_1 \mid r_1 \in N(r) \wedge \exists g_1 \in G (\theta, \lambda). ~\forall r_2 \in N(s), g_2 \in G (\theta, \lambda). \\ ~W(r, r_1) + D(r_1, g_1) \leq
 W(r, r_2) + D(r_2, g_2)\}
 \end{multline*}
 Piecing together the different routing protocols and their 
