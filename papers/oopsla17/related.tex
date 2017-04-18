@@ -1,5 +1,5 @@
 \section{Related Work}\label{sec:related}
-\minisection{Centralized control} Programming routers for centralized
+\paragraph{Centralized control} Programming routers for centralized
 control has been an active area of research in recent times. One of
 the first systems, RCP~\cite{rcp}, supported logically central BGP
 configuration. The more recent Fibbing~\cite{fibbing} system provides
@@ -15,10 +15,16 @@ any centralized component by engineering the control plane parameters
 to match the input specifications.  Fibbing also does not take into
 account inter-domain routing.
 
-\minisection{Configuration synthesis} ConfigAssure~\cite{configassure}
+
+\paragraph{Configuration synthesis} 
+ConfigAssure~\cite{configassure}
 uses a combination of logic programming and SAT solving to synthesize
-network configurations for security, connectivity, performance and
-reliability requirements specified as constraints; but it does not
+network configurations for security, 
+\todo{what is connectivity here?}
+connectivity, performance and
+reliability requirements specified as constraints; 
+\todo{but it supports connectivity??}
+but it does not
 support resilience or hierarchical domain splitting.  Fortz
 et. al~\cite{ospf-te} tackle the problem of optimizing OSPF weights
 for performing traffic engineering, but their work is tailor-made
@@ -34,28 +40,37 @@ to device-level BGP configurations. It is unclear how to extend
 Propane to incorporate domains, configuration complexity, or OSPF.
 
 El-Hassany et. al~\cite{synet} tackle network-wide configuration
-synthesis (\Cref{def:policycompliance}) in an elegant manner by
+synthesis (Definition \ref{def:policycompliance}) in an elegant manner by
 modeling the behavior and interactions of the routing protocols as a
 stratified Datalog program, and using SMT to synthesize the Datalog
 input such that the fixed point of the Datalog program (which
 represents the network's forwarding state after the protocols have
-converged) satisfies certain policies.  An earlier iteration of our
-work considered synthesizing network configurations directly from
-policies using SMT; however, we found that encoding OSPF's shortest
-path-based constraints in SMT was time-consuming for modern SMT
-solvers~\cite{z3} and does not scale well to larger networks (the
-largest topology considered by El-Hassany et. al is 16). Instead, we
-split the problem by synthesizing policy-compliant paths, and can use
-LP-solvers (which are faster and parallelizable) to tackle OSPF
-synthesis.  El-Hassany's policy language does not support isolation or
-traffic engineering, and the routing model does not handle OSPF route filters; 
-these features contribute to make our synthesis problem challenging.  
-Moreover, El-Hassany et. al perform synthesis for a
+converged) satisfies certain policies.  
+Their approach does not deal with resilience, a key aspect we tackle 
+in this paper.
+The
+largest topology considered by El-Hassany et. al has 16 nodes (we handle 45)
+and the policy language does not support isolation or
+traffic engineering, 
+features that contribute to make our synthesis problem challenging.  
+On the technical side, our approach is different because
+it first   synthesizes policy-compliant paths and then uses
+LP-solvers (which are faster and parallelizable) to tackle configuration
+synthesis.  
+Finally, El-Hassany et. al can only perform synthesis for a
 static domain assignment, where the input specifies if a router runs
-BGP or not, therefore providing the domain assignment.
+BGP or not. Our MCMC algorithm can also look for domain assignments.
 
-\minisection{Policy languages} While \name uses \genesis in its first
-phase, it could use other policy language frameworks as a front-end
+%
+%An earlier iteration of our
+%work considered synthesizing network configurations directly from
+%policies using SMT; however, we found that encoding OSPF's shortest
+%path-based constraints in SMT was time-consuming for modern SMT
+%solvers~\cite{z3} and does not scale well to larger networks 
+
+\paragraph{Policy languages} While \name uses \genesis 
+to synthesize policy-compliant paths, in the future it could use
+other policy language frameworks as a front-end
 too; existing frameworks offer perhaps less rich policy support but better
 performance. %% Other works on
 %% centralized policy enforcement for SDN are Merlin~\cite{merlin} and
@@ -66,7 +81,7 @@ using regular expressions are synthesized by first intersecting the
 topology with the regular expressions appearing in the policies and
 then encoding reachability in the intersected graph using mixed
 integer linear programming (ILP).  Merlin supports minimum and maximum
-bandwidth guarantees, but it does not support traffic isolation.
+bandwidth guarantees.
 
 NetKAT~\cite{netkat} is a domain-specific language and logic for 
 specifying and verifying network packet-processing functions
@@ -78,8 +93,9 @@ reachability, waypoints using regular expressions for describing the paths,
 and programs on virtual topologies; it uses
 BDDs and symbolic automata to translate global programs to local
 switch programs~\cite{netkatcompiler}.
-NetKAT  does not support traffic isolation.
 
+Both Merlin and NetKAT  do not support traffic isolation, which is needed for the 
+our waypoint-compliance algorithm presented in Section~\ref{sec:waypointres}.
 As future work, we will consider how to apply these other front-ends to \name.
 
 %% However, the NetKAT semantics
