@@ -62,8 +62,9 @@ When the network has multiple domains,
 we assume that all waypoints
 belong to the same domain and
 use our new algorithm in the domain 
-which contains the waypoints.
-\todo{say what you do in other domains or for inter domain}. 
+which contains the waypoints. For the
+other domains and the inter-domain configurations,
+ we use the algorithms presented in \secref{sec:config-synthesis}. 
 Our assumption that all waypoints lie in the same domain can be realized
 through Network Function Virtualization~\cite{opennf, netbricks},
 a technique for providing waypoint replication and 
@@ -159,7 +160,6 @@ $D_s^t(\waypt)$ is upper bounded by the actual shortest non-waypoint distance fr
 
 \definecolor{orange}{RGB}{255, 157, 30} 
 
-
 Given a destination tree $\xi_\lambda$, we can use
 non-waypoint distances to enforce waypoint-compliance. Consider a 
 router in $r$ such the waypoint $w \in \waypt$ is downstream to $r$ in $\xi_\lambda$---i.e.,
@@ -180,8 +180,47 @@ a waypoint $w \in \waypt$. These constraints are expressed as follows:
 W_{r_1}^{r_2} < 
 W_{r}^{r'}+ D_{r'}^{R_\lambda}(\waypt) 
 \end{equation}
-\begin{wrapfigure}{r}{0.38\columnwidth}
-		\vspace{-2mm}
+%\begin{figure*}
+%		\subfloat[Waypoint-compliant edge weights] {
+%			\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
+%			square/.style={regular polygon,regular polygon sides=4}] 
+%			\node[state] at (0,0) (s)  {$s$}; 
+%			\node[state, fill=orange] at (1.8,1) (v1)  {$r_1$}; 
+%			\node[state, fill=orange] at (1.8,-1) (v2)  {$r_2$}; 
+%			\node[state] at (3.6, 0)(t) {$t$};
+%			\node[state, rectangle] at (5, 0) (d1) {$\lambda$};
+%			\path[->] 
+%			(s) edge [red] node [black] {1} (v1)
+%			(s) edge  node {1} (v2)
+%			edge  node [above] {10} (t)
+%			(v1) edge [red] node [black] {5} (t)
+%			(v2) edge  node [black] {1} (t)
+%			(t) edge [red, dashed] node {} (d1);
+%			\end{tikzpicture}
+%	}
+%		\subfloat[Routing Loop] {
+%			\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
+%			square/.style={regular polygon,regular polygon sides=4}] 
+%			\node[state] at (0,0) (s)  {$s$}; 
+%			\node[state] at (1.8,1) (v1)  {$r_1$}; 
+%			\node[state] at (3.6, 0)(t) {$t$};
+%			\node[state, rectangle] at (5, 0) (d1) {$\lambda$};
+%			\path[->] 
+%			(s) edge [red] node [black, sloped, anchor=center, above]
+%			{$sr(\lambda)$} node
+%			[black, sloped, anchor=center, below] {1} (v1)
+%			edge  node [below] {5} (t)
+%			(v1) edge [red] node [black] {50} (t)
+%			(t) edge [red, dashed] node {} (d1);
+%			\end{tikzpicture}
+%		}
+%			\compactcaption{. Example of routing loop caused by a static route.} \label{fig:ospfloop}
+%			%\label{fig:ospfwayptexample}	
+%\end{figure*}
+\begin{figure}[!t] 
+	\centering
+	\subfloat[Waypoint-compliant edge weights]{
+		\resizebox {0.33\columnwidth} {!} {
 			\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
 			square/.style={regular polygon,regular polygon sides=4}] 
 			\node[state] at (0,0) (s)  {$s$}; 
@@ -197,9 +236,31 @@ W_{r}^{r'}+ D_{r'}^{R_\lambda}(\waypt)
 			(v2) edge  node [black] {1} (t)
 			(t) edge [red, dashed] node {} (d1);
 			\end{tikzpicture}
-			\compactcaption{Waypoint-compliant edge weights.} 
-			\label{fig:ospfwayptexample}
-\end{wrapfigure}
+		}}
+		\hspace*{1cm}
+		\subfloat[Routing Loop]{
+			\raisebox{0.7cm}{\resizebox {0.33\columnwidth} {!} {
+					\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
+					square/.style={regular polygon,regular polygon sides=4}] 
+					\node[state] at (0,0) (s)  {$s$}; 
+					\node[state] at (1.8,1) (v1)  {$r_1$}; 
+					\node[state] at (3.6, 0)(t) {$t$};
+					\node[state, rectangle] at (5, 0) (d1) {$\lambda$};
+					\path[->] 
+					(s) edge [red] node [black, sloped, anchor=center, above]
+					{$sr(\lambda)$} node
+					[black, sloped, anchor=center, below] {1} (v1)
+					edge  node [below] {5} (t)
+					(v1) edge [red] node [black] {50} (t)
+					(t) edge [red, dashed] node {} (d1);
+					\end{tikzpicture}
+				}}}
+				\compactcaption{Example of waypoint-compliant edge weights 
+					and example of a routing loop caused by a static route.} \label{fig:ospfloop}
+\end{figure}
+
+
+
 These equations do \emph{not} guarantee that
 router $r$ will forward traffic to  
 $N_{\xi_\lambda}(r)$, but they still guarantee that the generated path is  waypoint-compliant. 
@@ -230,24 +291,6 @@ packet back to $s$  causing a routing loop as $s$ will send
 it back to $r_1$ and back and forth till the \emph{ttl} (time to live) of the
 packet expires. 
 
-\begin{wrapfigure}{r}{0.37\columnwidth}
-	\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
-				square/.style={regular polygon,regular polygon sides=4}] 
-				\node[state] at (0,0) (s)  {$s$}; 
-				\node[state] at (1.8,1) (v1)  {$r_1$}; 
-				\node[state] at (3.6, 0)(t) {$t$};
-				\node[state, rectangle] at (5, 0) (d1) {$\lambda$};
-				\path[->] 
-				(s) edge [red] node [black, sloped, anchor=center, above]
-				{$sr(\lambda)$} node
-				[black, sloped, anchor=center, below] {1} (v1)
-				edge  node [below] {5} (t)
-				(v1) edge [red] node [black] {50} (t)
-				(t) edge [red, dashed] node {} (d1);
-				\end{tikzpicture}
-				\compactcaption{Example of routing loop caused by a static route.} \label{fig:ospfloop}
-\end{wrapfigure}
-
 
 Whenever \name adds a static route to resolve an unsat-core,
 it removes the constraints pertaining to 
@@ -264,8 +307,7 @@ ensure that, for any router $r\in\xi_\lambda$ that does not
 lie in the downstream path $sr_2 \rightarrow^+_{\xi_\lambda} R_\lambda$, 
 the shortest path from $sr_2$ to $R_\lambda$ does not traverse through 
 $r$. For example, 
-\todo{broken ref}
-in \Cref{fig:ospfexample}(c), there is a routing loop because
+in \Cref{fig:ospfloop}(b), there is a routing loop because
  the shortest path from $r_1$ to $t$ goes through $s$, which is upstream of $r_1$. 
 
 Formally, \name adds constraints to 
@@ -408,8 +450,7 @@ $\forall \beta. ~1 \leq \beta < \alpha. ~(u_\beta, v_\beta) \not\in SR(\lambda)$
 Therefore, all routers between $s$ and $u_\alpha$ did
 not require any static routes to steer traffic along a 
 non-shortest path. 
-Using this property we can  estimate 
-\todo{over or underapproximate?}
+Using this property we overapproximate
 the
 actual shortest OSPF distance  between $s$ to $t$ 
 corresponding to $\pi_1$ 
