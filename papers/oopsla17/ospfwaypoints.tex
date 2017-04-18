@@ -264,7 +264,7 @@ W_{r}^{r'}+ D_{r'}^{R_\lambda}(\waypt)
 These equations do \emph{not} guarantee that
 router $r$ will forward traffic to  
 $N_{\xi_\lambda}(r)$, but they still guarantee that the generated path is  waypoint-compliant. 
-Consider the example in \Cref{fig:ospfwayptexample} where traffic for
+Consider the example in \Cref{fig:ospfloop}(a) where traffic for
 $\lambda$ must traverse through one of the waypoints in $\{r_1, r_2\}$. 
 In this case,  \genesis provided the path $s \rightarrow 
 r_1 \rightarrow t$, but in the solution provided by Zeppelin, 
@@ -282,7 +282,7 @@ $SR(\lambda)$ to eliminate the equations at router $r$.
 However, since \Cref{eq:waypoint} does not guarantee that the path generated
 by \genesis is indeed the shortest path, adding
 static routes can lead to undesired behaviors like routing loops.  
-Consider the example configuration shown in \Cref{fig:ospfloop}. 
+Consider the example configuration shown in \Cref{fig:ospfloop}(b). 
 Traffic for $\lambda$ at router $s$ is forwarded to $r_1$ because of the
 static route at $s$. At router $r_1$, the shortest OSPF route to
 $\lambda$ is $r_1 \rightarrow s \rightarrow t$ with weight 6 (compared 
