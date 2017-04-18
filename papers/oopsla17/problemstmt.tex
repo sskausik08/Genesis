@@ -351,10 +351,16 @@ One of the main considerations in this paper is to
 generate configurations that are highly resilient to failures.
 For a packet class $pc$ and configuration $C$, we define 
 the set of \emph{affecting links} $\links(pc)$ as follows: 
-$\links(pc) = \{l \mid l \in L.~\exists \pi \in \paths^C(pc).~l \in \pi  \}$.
+$\links(pc) = \{l \mid \exists \pi \in \paths^C(pc).~l \in \pi  \}$.
 For a single link $l$ failure, a packet class $pc$ is affected 
-only if $l \in \links(pc)$. 
-We present two different resilience metrics that we will use in the following sections. 
+if only if $l \in \links(pc)$. 
+Given a configuration
+$C=((V,L), \Theta,W,LP,IF,SR)$ and a link $l\in L$,
+we write $C_l$ 
+to denote the configuration
+$C=((V,L\setminus\{l\}), \Theta,W,LP,IF,SR)$
+in which the link $l$ has been removed from the topology.
+We present two different resilience metrics we will use in the following sections. 
 
 
 The first metric describes how good a given configuration
@@ -364,13 +370,14 @@ The \emph{policy-resilience} score of a configuration
 $C=((V,L), \Theta,W,LP,IF,SR)$
 is defined as follows:
 \[
-\frac{\sum_{\forall pc} |\{ l \mid l \in \links(pc) ~\wedge~ ((V, L\setminus \{l\}),\Theta,W,LP,IF,SR) \models (\Psi_{pc}, P) \}|}
+PR(C)=\frac{\sum_{\forall pc} |\{ l \mid l \in \links(pc) ~\wedge~ C_l \models (\Psi_{pc}, P) \}|}
 {\sum_{\forall pc} |\links(pc)|}
 \]
 where $C \models (\Psi_{pc}, P)$ denotes that $C$ is 
 compliant for policies $\Psi_{pc}$ which affect packet class $pc$.
+The score measures, for each policy $pc$, what percentage of the failing links of $pc$
+will cause the policy to stop holding.
 
-\loris{ugly name, open to suggestions} 
 In general, generating configurations with high policy-resilience is hard,
 since there may be only a few paths that satisfy a certain policy.
 Therefore, we also consider a second 
@@ -382,9 +389,7 @@ The \emph{connectivity-resilience}
 score of a configuration $C=((V,L), \Theta,W,LP,IF,SR)$
 is defined as follows:
 \[
-\frac{\sum_{\forall pc} |\{ l \mid l \in \links(pc) ~\wedge~ 
-	C'= ((V, L\setminus \{l\}),\Theta,W,LP,IF,SR) ~\wedge~ 
-	\paths^{C'}(pc) \not= \emptyset  \}|}
+CR(C)=\frac{\sum_{\forall pc} |\{ l \mid l \in \links(pc) ~\wedge~\paths^{C_l }(pc) \not= \emptyset  \}|}
 {\sum_{\forall pc} |\links(pc)|}
 \]
  
