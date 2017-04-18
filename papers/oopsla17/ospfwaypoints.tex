@@ -292,7 +292,7 @@ Zeppelin picks a static route $(r, r')$
 for $\lambda$ and removes the constraints pertaining to 
 the static route. It then \emph{adds} new constraints to avoid
 causing routing loops due to the newly added static route. This
-lazy approach ensures we do not add superflous constraints for links
+lazy approach ensures we do not add superfluous constraints for links
 that do not contain a static route in the final configuration 
 and will not cause routing loops. 
 
@@ -323,14 +323,14 @@ unsatisfiability. When the constraint is part of the
 unsatisfiable core, it means that there is a routing 
 loop caused at $sr_2$. By adding a static route 
 $(sr_2, N_{\xi_\lambda}(sr_2))$ to $SR(\lambda)$, we prevent
-the occurence of the routing loop from $sr_2$ and thus, can
+the occurrence of the routing loop from $sr_2$ and thus, can
 remove these constraints. After we add the static route,
 we add loop avoidance constraints for the new static
 route, and continue with the unsat-core learning algorithm. 
 
 \subsubsection{Configurations for Two Paths} \label{sec:ospfresilience}
 To guarantee policy-resilience, we use \genesis to provide two waypoint-compliant 
-edge-disjoint paths $\pi_1$ amd $\pi_2$ from $s$ to $t$.
+edge-disjoint paths $\pi_1$ and $\pi_2$ from $s$ to $t$.
 Equation~\ref{eq:waypoint} ensures that the edge weights 
 of the path provided by Genesis are strictly shorter than 
 the non-waypoint distance for $\lambda$. 
@@ -408,7 +408,7 @@ However, the static route can lead to a loop under certain
 failures. 
 Since we impose a partial order on $\pi_1$ and $\pi_2$ (\Cref{eq:resilience}), 
 when the primary path $\pi_1$ fails, the 
-failover path $\pi_2$ may not be chosen always. 
+other path $\pi_2$ may not be chosen always. 
 Instead, we try to split the traffic
 along $\pi_1$ and $\pi_2$ even under non-failure scenarios,
 therefore, a failure to $\pi_1$
