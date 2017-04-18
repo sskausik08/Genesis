@@ -194,7 +194,7 @@ On average, PC places
 $(8 \pm 0.5)$\% of the static routes required by the baseline configuration. 
 
 
-\begin{wrapfigure}{r}{0.20\columnwidth}
+\begin{wrapfigure}{r}{0.21\columnwidth}
 	\begin{center}
 		\includegraphics[width=0.20\columnwidth]{figures/ospfbaselineresilience.eps}
 		%	\subfloat[Number of Route Filters]
@@ -202,12 +202,9 @@ $(8 \pm 0.5)$\% of the static routes required by the baseline configuration.
 		%	\subfloat[Endpoint Resilience]
 		%	{\includegraphics[width=0.32\columnwidth]{figures/ospfAvgRes.eps}}
 		\compactcaption{\label{fig:ospfbaselineresilience}
-			Connectivity-resilience for 1-PC configurations compared to the baseline 
-			configurations.}
+			Connectivity-resilience for PC vs baseline configurations.}
 	\end{center} 
 \end{wrapfigure}
-
-
 \paragraph{Policy-resilience.}
 We measure the policy-resilience of the configurations 
 generated using algorithms  1-WC and 2-WC on the waypoint workload described in
@@ -255,11 +252,6 @@ In summary, the answer to \textbf{Q2} is that
 
 
 \subsection{Dynamic Domain Assignment Performance} \label{sec:mcmceval}
-\begin{wrapfigure}{r}{0.3\columnwidth}
-	\includegraphics[width=0.29\columnwidth]{figures/ratioMCMC.eps}
-	\compactcaption{\label{fig:mcmceval}
-		MCMC Evaluation for varying number of paths.}
-\end{wrapfigure}
 
 In this section, we measure whether,
 useingthe MCMC algorithm presented in \secref{sec:synth-dom-ass}, 
@@ -278,6 +270,12 @@ vs static routes is set to 1. For the input, we generate $n$ (between
 path length between 3 and 10.  We require \name to split the network
 into 5 OSPF domains each with size in range between 4 and 10.
 
+\begin{wrapfigure}{r}{0.3\columnwidth}
+\vspace{-2.5mm}
+	\includegraphics[width=0.29\columnwidth]{figures/ratioMCMC.eps}
+	\compactcaption{\label{fig:mcmceval}
+		MCMC Evaluation for varying number of paths.}
+\end{wrapfigure}
 We conduct each experiment 20 times and report averages and standard
 deviations.  For each MCMC run, we collect the domain assigments with
 worst and best scores.  For these assignments, we use the algorithm PC
