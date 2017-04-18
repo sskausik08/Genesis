@@ -70,15 +70,15 @@ is isolated from other paths of the same group of tenants.
 Here, isolation  prevents interference between traffic from
 same tenants.  
  
- \begin{wrapfigure}[14]{r}{0.5\columnwidth}
- 	\includegraphics[width=0.5\columnwidth]{figures/ospfisolation.eps}
+ \begin{wrapfigure}[12]{r}{0.44\columnwidth}
+ 	\includegraphics[width=\linewidth]{figures/ospfisolation.eps}
  	%	\subfloat[Number of Route Filters]
  	%	{\includegraphics[width=0.33\columnwidth]{figures/ospfRF.eps}}
  	%	\subfloat[Endpoint Resilience]
  	%	{\includegraphics[width=0.32\columnwidth]{figures/ospfAvgRes.eps}}
  	\vspace{-8pt}
  	\compactcaption{\label{fig:ospfisolation}
- 		End-to-end synthesis time for isolation workloads over the range of destinations and different tenant sizes.}
+ 		Synthesis time for isolation workloads.}
  \end{wrapfigure}
  
 For each 
@@ -176,15 +176,16 @@ configurations takes less than an hour.
 
 \subsection{Resilience of Synthesized Intra-domain Configurations} \label{sec:reseval}
 
-\begin{wrapfigure}{r}{0.21\columnwidth}
+\begin{wrapfigure}[11]{r}{0.21\columnwidth}
 	\begin{center}
+	\vspace{-5mm}
 		\includegraphics[width=0.20\columnwidth]{figures/ospfbaselineresilience.eps}
 		%	\subfloat[Number of Route Filters]
 		%	{\includegraphics[width=0.33\columnwidth]{figures/ospfRF.eps}}
 		%	\subfloat[Endpoint Resilience]
 		%	{\includegraphics[width=0.32\columnwidth]{figures/ospfAvgRes.eps}}
 		\compactcaption{\label{fig:ospfbaselineresilience}
-			Connectivity-resilience for PC vs baseline configurations.}
+			Connectivity-resilience: PC vs baseline.}
 	\end{center} 
 \end{wrapfigure}
 \paragraph{Connectivity-resilience.}
