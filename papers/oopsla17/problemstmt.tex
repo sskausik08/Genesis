@@ -19,11 +19,13 @@ where $V$ is the set of routers and $L\subseteq V\times V$ is the set of links.
 Throughout the paper we assume $T$ is fixed.
 We use the neighbour function $N(s) = \{s'\ | \ (s,s') \in L \}$ to denote 
 the set of neighbour routers of $s$. 
-We define $\Lambda$ to denote the set of destination IP subnets;
+We define $\Lambda \subset IP$ to denote the set of 
+destination IP addresses;
 distributed protocols make forwarding decisions based on the 
 destination address/subnet.
 
-A path $\pi = (u_1,v_1) (u_2, v_2) \cdots (u_n, v_n) \in L^*$ is a loop-free valid path if
+A path $\pi = (u_1,v_1) (u_2, v_2) \cdots (u_n, v_n) \in L^*$ is a 
+loop-free valid path if
 a  vertex is not visited more than once---i.e.,
 $u_1\neq v_n\wedge\forall i,j \leq n. 
 ~i \not= j \rightarrow u_i \not= u_j$---and all adjacent links in the
@@ -354,7 +356,8 @@ the set of \emph{affecting links} $\links(pc)$ as follows:
 $\links(pc) = \{l \mid l \in L.~\exists \pi \in \paths^C(pc).~l \in \pi  \}$.
 For a single link $l$ failure, a packet class $pc$ is affected 
 only if $l \in \links(pc)$. 
-We present two different resilience metrics that we will use in the following sections. 
+We present two different resilience metrics 
+that we will use in the following sections. 
 
 
 The first metric describes how good a given configuration
