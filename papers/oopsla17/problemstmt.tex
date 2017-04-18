@@ -13,7 +13,6 @@ which we will use in our experimental evaluation.
 
 \subsection{Routing Model}
 
-\paragraph{Preliminaries}
 We represent the physical router topology as a directed graph $T=(V, L)$,
 where $V$ is the set of routers and $L\subseteq V\times V$ is the set of links. 
 Throughout the paper we assume $T$ is fixed.
@@ -258,7 +257,6 @@ $\paths^C(PC) = \cup_{pc\in PC} \paths^C(pc)$.
 \input{policy}
 
 
-\paragraph{Policies}
 \Cref{tab:policysupport} describes the path policies supported by \name.
 Given  a set $\Psi$ of
 path policies, we say that
@@ -320,8 +318,6 @@ since they increase the complexity of the network.
 %to ensure path-compliance.
 
 
-
-\paragraph{Synthesis problems}
 \noindent We now define when a configuration $C$ is policy-compliant, present our synthesis problems, and introduce two definition of resilience we will use throughout the paper.
 \begin{definition}[Policy-Compliance and Synthesis] \label{def:policycompliance}
 	Given a set of path policies $\Psi$ and a set of configuration policies $P$,
@@ -335,7 +331,7 @@ a configuration $C$ that is policy compliant with $(\Psi,P)$.
 Our approach will proceed in two phases,
 one of which solves the following sub-problem.  
 \begin{definition}[Path-Compliance and Synthesis] \label{def:pathcompliance}
-Given a set of configuration policies $P$
+Given configuration policies $P$
 and a set of paths $\Pi$ over packet classes $PC$,
 	a configurations $C$ is path-compliant with 
 	$(\Pi,P)$,
@@ -344,7 +340,7 @@ and a set of paths $\Pi$ over packet classes $PC$,
 a configuration $C$ that is path-compliant with $(\Pi,P)$.
 \end{definition}
 
-\paragraph{Resilience metrics}
+\minisection{Resilience metrics}
 One of the main goals of this paper is to 
 generate configurations that are highly resilient to failures.
 For a packet class $pc$ and configuration $C$, we define 
