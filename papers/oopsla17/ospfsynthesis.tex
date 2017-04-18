@@ -1,7 +1,7 @@
 \section{From Policies to Connectivity-Resilient  Configurations}
 \label{sec:config-synthesis}
 
-In this section, we present an algorithm
+We now present an algorithm
 for synthesizing distributed configurations
 that adhere to path policies like the one described 
 in Figure~\ref{tab:policysupport}.
@@ -104,15 +104,16 @@ In the absence of static routes,
  to choose the
  shortest weighted path for each pair of endpoints. 
 Our goal is to synthesize the weight function $W$.
-Consider the example in \Cref{fig:edgeweightexample}, 
+Consider the \Cref{fig:edgeweightexample} example, 
 if $\Pi$ contains the 
  path $\pi=s\rightarrow r_1 \rightarrow t$ for
  destination IP $\lambda$, \name assigns
  edge weights so that $\pi$ has
- smaller weight than the path $\pi'=s \rightarrow t$ ---e.g., $W(\pi)=1+2$
+ smaller weight than the path $\pi'=s \rightarrow t$ ---e.g., $W(\pi)=3$
   and $W(\pi')=5$. 
  
 \begin{wrapfigure}{r}{0.33\columnwidth}
+	%\vspace{-4mm}
 	\resizebox {0.33\columnwidth} {!} {
 		\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
 		square/.style={regular polygon,regular polygon sides=4}] 
@@ -127,6 +128,7 @@ if $\Pi$ contains the
 		(t) edge [red, dashed] node {} (d1);
 		\end{tikzpicture}
 	}
+	\vspace{-3mm}
 	\compactcaption{OSPF edge weights
 		such that the routers forward traffic along
 		the colored path.}
@@ -141,7 +143,7 @@ For a destination IP $\lambda$, we call $\xi_\lambda$
 the directed tree of $T$ 
 obtained by only keeping the nodes and edges 
 that are traversed by paths in $\Pi$ for 
-destination IP $\lambda$; the root of the tree
+$\lambda$; the root of the tree
 is the destination router connected to $\lambda$. 
  This destination tree
  property is due to the modifications to \genesis
@@ -258,7 +260,7 @@ otherwise the intra-domain synthesis problem
 cannot be solved without static routes.
 
 \begin{wrapfigure}{r}{0.33\columnwidth}
-\vspace{-1mm}
+\vspace{-8mm}
 	\resizebox {0.33\columnwidth} {!} {
 			\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
 			square/.style={regular polygon,regular polygon sides=4}] 
@@ -275,6 +277,7 @@ cannot be solved without static routes.
 			(t) edge [blue, dashed] node {} (d2);
 			\end{tikzpicture}
 	}
+	\vspace{-3mm}
 	\compactcaption{An example of why static routes are needed.}
 	\label{fig:srexample}
 \end{wrapfigure}
@@ -291,11 +294,10 @@ install a static route. For example, if we install
 a static route at router $s$ to forward $\lambda_2$ 
 traffic to router $t$, this route will have a higher
 preference compared to the OSPF route
-through $r_1$ (static routes by default have the
-lowest administrative distance~\cite{admindistance}).
-Since there are no static routes for
-$\lambda_1$, the traffic to $\lambda_1$ will be forwarded to $t$
-through $r_1$ using the OSPF shortest path.
+through $r_1$~\cite{admindistance}.
+%Since there are no static routes for
+%$\lambda_1$, the traffic to $\lambda_1$ will be forwarded to $t$
+%through $r_1$ using the OSPF shortest path.
 
 
 

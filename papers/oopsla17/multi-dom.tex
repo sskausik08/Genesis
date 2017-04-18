@@ -11,7 +11,7 @@ Second, we show how to modify the
 techniques given in Section~\ref{sec:intra-synthesis}
 to determine the edge weights and static routes
  in each domain to guarantee that paths traverse
-the correct gateway routers.
+the correct gateways.
 
 
 \subsubsection{Configuring BGP and Static Routes}
@@ -248,15 +248,13 @@ constraints to ensure the distance  from routers
 on the path $\pi_i$ to $g_2$ is strictly
 greater than the distance to $g_1$. 
 
-Let $G(\theta, \lambda)$ be the set of gateway
-routers for destination $\lambda$ in a given domain $\theta$. 
-We define the relation $r_1 \rightarrow^+_{\xi_{\lambda}} r_2$, which holds if
+For the set of gateway
+routers $G(\theta, \lambda)$ for destination $\lambda$ in a given domain $\theta$, 
+we define the relation $r_1 \rightarrow^+_{\xi_{\lambda}} r_2$, which holds if
 $r_2$ is reachable from $r_1$ in the destination tree $\xi_\lambda$.
 For each subpath $r \rightarrow^+_{\xi_{\lambda}} g$ to destination $\lambda$
 and for each $g' \in G(\theta, \lambda)$ such that $g\neq g'$,
-\name adds the following constraint
-to ensure that the  router $r$
-chooses the correct gateway: 
+\name adds the following constraints to choose the correct gateway:
 \begin{equation} \label{eq:gateway}
 \forall r' \in N(r) \setminus N_{\xi_\lambda}(r).~
 \sum_{\mathclap{\substack{(r_1,r_2) \in r \rightarrow^+_{\xi_{\lambda}} g }}}~~~~~W_{r_1}^{r_2} < 
