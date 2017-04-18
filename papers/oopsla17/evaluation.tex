@@ -61,17 +61,6 @@ We set a timeout of 2000 seconds for each workload.
 %isolation workloads, and single-path waypoint-compliance 
 %synthesis for varying number of waypoint policies.
 
-
-\begin{wrapfigure}[14]{r}{0.6\columnwidth}
-	\includegraphics[width=0.58\columnwidth]{figures/ospfisolation.eps}
-	%	\subfloat[Number of Route Filters]
-	%	{\includegraphics[width=0.33\columnwidth]{figures/ospfRF.eps}}
-	%	\subfloat[Endpoint Resilience]
-	%	{\includegraphics[width=0.32\columnwidth]{figures/ospfAvgRes.eps}}
-	\vspace{-8pt}
-	\compactcaption{\label{fig:ospfisolation}
-		End-to-end synthesis time for isolation workloads over the range of destinations and different tenant sizes.}
-\end{wrapfigure}
 \paragraph{Isolation Policies.}
 We generate policies that operate 
 on a multi-tenant topology with 
@@ -81,6 +70,17 @@ each path  (with randomly generated endpoints)
 is isolated from other paths of the same tenant group.
 Here, isolation  prevents interference by other traffic belonging to
 same tenant.  
+ 
+ \begin{wrapfigure}[14]{r}{0.5\columnwidth}
+ 	\includegraphics[width=0.5\columnwidth]{figures/ospfisolation.eps}
+ 	%	\subfloat[Number of Route Filters]
+ 	%	{\includegraphics[width=0.33\columnwidth]{figures/ospfRF.eps}}
+ 	%	\subfloat[Endpoint Resilience]
+ 	%	{\includegraphics[width=0.32\columnwidth]{figures/ospfAvgRes.eps}}
+ 	\vspace{-8pt}
+ 	\compactcaption{\label{fig:ospfisolation}
+ 		End-to-end synthesis time for isolation workloads over the range of destinations and different tenant sizes.}
+ \end{wrapfigure}
  
 For each 
 workload, we have $n$ tenant groups (between 1 to 8), 
@@ -105,6 +105,7 @@ synthesize configurations for 4 tenants, each with
 20 destinations in 77 seconds, where \genesis takes 35 seconds
 for synthesizing paths and synthesizing configurations
 takes 42 seconds on average. 
+
 
 
 \begin{figure*}
