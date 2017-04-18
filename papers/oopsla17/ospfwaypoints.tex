@@ -291,49 +291,53 @@ $(sr_2, N_{\xi_\lambda}(sr_2))$ to $SR(\lambda)$.
 route and continues with the unsat-core learning algorithm. 
 
 \subsubsection{Configurations for Two Paths} \label{sec:ospfresilience}
-To guarantee policy-resilience, we use \genesis to provide two waypoint-compliant 
-edge-disjoint paths $\pi_1$ and $\pi_2$ from $s$ to $t$.
-Equation~\ref{eq:waypoint} ensures that the edge weights 
-of the path provided by Genesis are strictly shorter than 
+To guarantee policy-resilience, \name
+uses \genesis to generate two waypoint-compliant 
+edge-disjoint paths $\pi_1$ and $\pi_2$ from $s$ to $t$
+and
+adds the following constraints
+ to ensure that the  weights 
+of both paths are strictly shorter than 
 the non-waypoint distance for $\lambda$. 
-Let us assume there are no static routes in the 
-OSPF domain. By adding these
-constraints for both paths $\pi_1$ and $\pi_2$, 
-we enforce a \emph{partial order}: there are two paths to $\lambda$
-which are shorter than non waypoint distance, the 
-ordering of the weight of $\pi_1$ and $\pi_2$ is irrelevant. 
+%Let us assume, for simplicity, that there are no static routes in the 
+%OSPF domain. 
+%\name  adds the following constraints
+%constraints for both paths $\pi_1$ and $\pi_2$, 
+%we enforce a \emph{partial order}: there are two paths to $\lambda$
+%which are shorter than non waypoint distance, the 
+%ordering of the weight of $\pi_1$ and $\pi_2$ is irrelevant. 
 \begin{equation} \label{eq:resilience}
 W(\pi_1) < D^t_s(\waypt) ~\wedge~ W(\pi_2) < D^t_s(\waypt) 
 \end{equation}
-Thus, if a single link fails, at most one 
-of these paths is affected. Suppose
+Notice that the constraints do not enforce an order between the weights of $\pi_1$ and $\pi_2$.
+Since the paths are disjoints, if a single link fails, at most one 
+of the paths is affected. Suppose
 $\pi_1$ is affected, OSPF will not route traffic through a  
-non-waypoint-compliant path, as the weight of $\pi_2$ is shorter than any path which is not waypoint-compliant due to the constraints generated 
-by \name.
+non-waypoint-compliant path, as the weight of $\pi_2$ is shorter than any path which is not waypoint-compliant.
+We next show how \name handles static routes.
 
 \paragraph{Resilience with Static Routes}
-Suppose there are static routes in the OSPF domain. 
-Consider the example in \Cref{fig:ospfres} where 
+\name only adds static routes on the paths obtained from \genesis.
+Consider the example in \Cref{fig:ospfresexample} where 
 $\pi_1=s\rightarrow r_0 \rightarrow r_1 \rightarrow t$ 
 and $\pi_2=s\rightarrow r_2 \rightarrow t$ 
 are two edge disjoint paths 
 connecting the routers $s$ to $t$. In this example, 
-$\pi_1$ is the 
-chosen primary path and it uses a static route
+$\pi_1$ is path selected by the configuration and it uses a static route
 for $r_0 \rightarrow r_1$. 
 Ideally, we want to ensure 
 that if any link on $\pi_1$ fails, 
 then the network must switch over to $\pi_2$. 
 When link $r_1 \rightarrow t$ fails,
-router $s$ forwards to $r_0$ (
-path weight 5: $ s \rightarrow r_0 \rightarrow r_2 \rightarrow t$)
+router $s$ forwards to $r_0$ (path weight 5: $ s \rightarrow r_0 \rightarrow r_2 \rightarrow t$)
 over $r_2$ (path weight 6: $s \rightarrow r_2 \rightarrow t$). 
 Because of the static route at $r_0$, traffic is forwarded
 to $r_1$ which sends it back to $r_0$ through $r_3$, 
-causing a routing loop. Note that, both paths $\pi_1$
-and $\pi_2$ have weights smaller than the shortest non-waypoint
- distance, which is $\infty$ for this example, as all paths
- go through $r_1$ or $r_2$. 
+causing a routing loop. 
+
+
+
+
 
 \begin{figure}
 	\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
@@ -364,49 +368,54 @@ and $\pi_2$ have weights smaller than the shortest non-waypoint
 \end{figure}
 
 
-When \name adds static routes on the paths, it 
-adds loop avoidance constraints assuming no failures. 
-However, the static route can lead to a loop under certain
-failures. 
-Since we impose a partial order on $\pi_1$ and $\pi_2$ (\Cref{eq:resilience}), 
-when the primary path $\pi_1$ fails, the 
-other path $\pi_2$ may not be chosen always. 
-Instead, we try to split the traffic
-along $\pi_1$ and $\pi_2$ even under non-failure scenarios,
-therefore, a failure to $\pi_1$
-will still ensure that traffic will be 
-sent through $\pi_2$. Therefore, we add constraints 
-to ensure the following property of splitting 
-the traffic among both $\pi_1$ and $\pi_2$. With 
-static routes in play, the routes seen at $s$ may not 
-correspond to weights $W(\pi_1)$ and  $W(\pi_2)$, thus
+In this case, the problem is caused by the fact that
+path chosen by the configuration, $\pi_1$,
+contains a static route in the middle of it.
+Upon a failure, even though there exists another
+a waypoint-compliant path, $r_2$, the configuration will not switch to it.
+%but ``worse'' than
+% $\pi_1$ and that  traverses a static route.
+%Essentially there is a path that is longer than $\pi_1$,
+%but shorter than $\pi_2$.
+To avoid this problem, when this happens,
+\name modifies the configurations to ensure that traffic is split.
+When dealing with static routes,
+the routes seen at $s$ may not 
+correspond to the ones with shorter, thus simply 
 the constraint $W(\pi_1) = W(\pi_2)$ does not ensure the 
-traffic split (\Cref{fig:ospfresexample}).
+traffic will split (see \Cref{fig:ospfresexample}).
 
-A static route $(r_1, r_2)$ on path $\pi$ for destination $\lambda$ implies that OSPF routing at $r_1$ is sending traffic to a 
-router $r' \not= r_2$. Instead, the static route circumvents 
-the OSPF shortest route at $r_1$ and \emph{steers} $\lambda$ 
-traffic to $r_2$ and not $r'$. Therefore, for a 
-path $\pi$ connecting routers $s$ and $t$ such that it 
-has a static route on one of its links, 
-$W(\pi)$ is greater than or equal to the 
+Consider a path $\pi$ (different from $\pi_1$) for destination $\lambda$
+that has  a  static route $(r_1, r_2)$ on one of its links.
+\name would only have added this static route
+if the shortest path from $r_1$ for location $\lambda$
+was going through  a
+router $r' \not= r_2$. 
+%Instead, the static route circumvents 
+%the OSPF shortest route at $r_1$ and \emph{steers} $\lambda$ 
+%traffic to $r_2$ and not $r'$. 
+Therefore, the weight of $\pi$,
+$W(\pi)$, is greater or equal than the 
 actual OSPF distance
 between $s$ and $t$ corresponding to $\pi_1$. 
-Let us suppose $\pi = l_1 \ldots l_k = (u_1, v_1) \ldots (u_k, v_k)$ 
+Suppose $\pi = l_1 \ldots l_k = (u_1, v_1) \ldots (u_k, v_k)$ 
 and 
 there exists a $\alpha \leq k$ such that 
 $l_\alpha = (u_\alpha, v_\alpha)$  
 is the first 
-static route from the source in $\pi$, i.e., 
+static route in $\pi$---i.e., 
 $\forall \beta. ~1 \leq \beta < \alpha. ~(u_\beta, v_\beta) \not\in SR(\lambda)$.
 Therefore, all routers between $s$ and $u_\alpha$ did
 not require any static routes to steer traffic along a 
-non-shortest path. Therefore, our estimate
+non-shortest path. 
+Using this property we can  estimate 
+\todo{over or underapproximate?}
+the
 actual shortest OSPF distance  between $s$ to $t$ 
 corresponding to $\pi_1$ 
 as the sum of weights till $u_\alpha$ plus the distance
 from $u_\alpha$ to $t$. In our running example, 
-$u_\alpha = r_0$, the distance between $s$ to $t$ 
+$u_\alpha = r_0$, and the distance between $s$ to $t$ 
 is estimated as $W_s^{r_0} + D_{r_0}^t = 1 + (1 + 1 + 1)$
 which is the shortest OSPF distance. 
 
@@ -435,7 +444,7 @@ an unsatisfiable core, we cannot add a static route to eliminate
 this unsatisfiability. \name lazily eliminates these constraints from the
 system of equations depending on whether these constraints are part of 
 an unsat-core which cannot be eliminated by a static route, and thus,
-the synthesized configuration does not achieve best  
+the synthesized configuration may not achieve the best 
 policy-resilience. However, 
 judging by our experiments (\secref{sec:reseval}), 
 this technique generates highly resilient configurations 
