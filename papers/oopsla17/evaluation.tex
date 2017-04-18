@@ -29,7 +29,7 @@ Specifically, we ask the following questions.\footnote{All experiments were cond
 
 We evaluate the end-to-end performance of our tool
 on a  fat-tree 
-topology comprising of 45 routers
+topology with 45 routers
 and a single OSPF domain. 
 The size of the topology is consistent with operator preferences to restrict
 the size of a domain to under 50 routers (OSPF does not scale
@@ -50,11 +50,11 @@ evaluate algorithm PC.
 Our second class consists of
  waypoint policies of the form described in ~\secref{sec:waypointres};
 for this class we evaluate 1-WC and 2-WC.
-For each algorithm we evaluate how much time is spent 
+For each algorithm we report the time spent 
 calling \genesis to generate policy-compliant forwarding paths
-and how much time \name takes to generate configurations 
+and the time \name takes to generate configurations 
 from such paths. 
-We set a timeout of 2000 seconds for each workload.
+We set a timeout of 2,000 seconds for each workload.
 
 
 %of the path-compliance synthesis algorithm for tenant 
@@ -63,13 +63,12 @@ We set a timeout of 2000 seconds for each workload.
 
 \paragraph{Isolation Policies.}
 We generate policies that operate 
-on a multi-tenant topology with 
- different tenants.
-Within a  group of tenants, we add a policy to ensure
+on a multi-tenant topology and,
+within a  group of tenants, we add a policy to ensure
 each path  (with randomly generated endpoints)
-is isolated from other paths of the same tenant group.
-Here, isolation  prevents interference by other traffic belonging to
-same tenant.  
+is isolated from other paths of the same group of tenants.
+Here, isolation  prevents interference between traffic from
+same tenants.  
  
  \begin{wrapfigure}[14]{r}{0.5\columnwidth}
  	\includegraphics[width=0.5\columnwidth]{figures/ospfisolation.eps}
@@ -92,9 +91,10 @@ The x-axis shows the number of paths $n * g$
 to different destination IP addresses. 
  As the number of tenants increase, time to 
 synthesize the data plane increases linearly as we only 
-consider isolation policies within tenants, not amongst paths 
+consider isolation policies within tenants 
+and not amongst paths 
 of different tenants. Meanwhile, time taken to synthesize 
-OSPF configurations increases exponentially with increasing 
+OSPF configurations increases exponentially with the 
 number of tenants due to the exponential complexity of computing 
 the unsat-cores; with increasing number of 
 paths, PC needs to add more static routes 
@@ -123,8 +123,8 @@ takes 42 seconds on average.
 We generate waypoint policy 
 workloads with varying number of destination IP addresses and 
 waypoint sets as follows. 
-We vary the total number of unique waypoint 
-sets to 2 and 5. For each waypoint set, we pick 3 routers randomly.  
+We consider workloads with 2 and 5 unique waypoint 
+sets where each set contains 3 randomly picked routers.  
 Each waypoint set can be 
 viewed as a class of replicated middleboxes (e.g., firewalls).
 We randomly generate policies that map each destination to one of the waypoint sets. 
@@ -140,21 +140,21 @@ We randomly generate policies that map each destination to one of the waypoint s
  Since synthesizing paths
  for waypoint policies can be done independently,
 Genesis synthesis time is small compared to OSPF synthesis. 
-\name's 1-WC and 2-WC synthesis 
-time increases as we increase the number of waypoint sets,
-as we need to add constraints corresponding to $D_s^t(\waypt)$ 
-for each set, and thus, computing the unsat-core in each
-iteration to find a static route is more expensive with increasing
-number of sets. 
+The synthesis times of 1-WC and 2-WC 
+increase with the number of waypoint sets because
+the algorithms 
+need to add constraints corresponding to $D_s^t(\waypt)$ 
+for each set. Hence, computing the unsat-core in each
+iteration to find static routes is more expensive. 
 For 5 waypoint sets and 40 destinations, \name takes 120 
 seconds on average to synthesize waypoint-compliant configurations
 and 1800 seconds to synthesize policy-resilient configurations.
 
 
-In summary, the answer to \textbf{Q1} is that, for realistic workloads,
-\textbf{\name can synthesize path-compliant configurations for medium size
-topologies} in less than 5 minutes; synthesizing resilient 
-configurations is more expensive. 
+In summary, the answer to \textbf{Q1} is that,
+\textbf{\name can synthesize policy-compliant configurations for medium size
+topologies} in less than 5 minutes and synthesizing policy-resilient 
+configurations takes less than an hour.
 
 %\begin{table}{l}{8em}
 %	\begin{footnotesize}
@@ -175,6 +175,18 @@ configurations is more expensive.
 %\end{table} 
 
 \subsection{Resilience of Synthesized Intra-domain Configurations} \label{sec:reseval}
+
+\begin{wrapfigure}{r}{0.21\columnwidth}
+	\begin{center}
+		\includegraphics[width=0.20\columnwidth]{figures/ospfbaselineresilience.eps}
+		%	\subfloat[Number of Route Filters]
+		%	{\includegraphics[width=0.33\columnwidth]{figures/ospfRF.eps}}
+		%	\subfloat[Endpoint Resilience]
+		%	{\includegraphics[width=0.32\columnwidth]{figures/ospfAvgRes.eps}}
+		\compactcaption{\label{fig:ospfbaselineresilience}
+			Connectivity-resilience for PC vs baseline configurations.}
+	\end{center} 
+\end{wrapfigure}
 \paragraph{Connectivity-resilience.}
 We measure the connectivity-resilience of the configurations 
 generated using the algorithm PC on the isolation workload described in
@@ -191,21 +203,11 @@ the baseline algorithm.
 PC provides an average connectivity-resilience score 
 of 0.95 over the baseline score 
 of 0.85.
-On average, PC places
+Moreover, PC places
 $(8 \pm 0.5)$\% of the static routes required by the baseline configuration. 
 
 
-\begin{wrapfigure}{r}{0.21\columnwidth}
-	\begin{center}
-		\includegraphics[width=0.20\columnwidth]{figures/ospfbaselineresilience.eps}
-		%	\subfloat[Number of Route Filters]
-		%	{\includegraphics[width=0.33\columnwidth]{figures/ospfRF.eps}}
-		%	\subfloat[Endpoint Resilience]
-		%	{\includegraphics[width=0.32\columnwidth]{figures/ospfAvgRes.eps}}
-		\compactcaption{\label{fig:ospfbaselineresilience}
-			Connectivity-resilience for PC vs baseline configurations.}
-	\end{center} 
-\end{wrapfigure}
+
 \paragraph{Policy-resilience.}
 We measure the policy-resilience of the configurations 
 generated using algorithms  1-WC and 2-WC on the waypoint workload described in
@@ -213,9 +215,9 @@ generated using algorithms  1-WC and 2-WC on the waypoint workload described in
 For each workload, we run each algorithm 
 3 times with a different random seed, and report the most-resilient configuration it obtains.
 For our baseline, we use the configurations generated by the algorithm PC, which
-only tries to reduce the number of placed static routes.
+only tries to reduce the number of static routes.
 
-\Cref{fig:ospfbaselineresilience}
+\Cref{fig:ospfres}
 shows the results
 for varying number of policies (10, 20 and 40), each policy mapped 
 to a particular destination IP address. 
@@ -225,12 +227,12 @@ denotes a benchmark in which 2-WC
 generated a configuration with higher policy-resilience than
 PC (resp. 1-WC).
 For 40 policies, 
-we can observe that 2-WC is able to synthesize 
+2-WC can synthesize 
 configurations with high policy-resilience
 (average 0.98) over PC (average 0.41) and 1-WC (average 0.51). 
 Although not as good as 2-WC, 1-WC is able to provide 
 higher policy-resilience than
-PC thanks to the relaxed constraints used that do not require
+PC thanks to the relaxed constraints that do not require
 the path given by \genesis to be the shortest one.
 
 \begin{figure*}
@@ -249,16 +251,17 @@ the path given by \genesis to be the shortest one.
 \end{figure*}
 
 In summary, the answer to \textbf{Q2} is that
-\textbf{\name can synthesize configurations with high resilience} compared to existing approaches.
+\textbf{\name can synthesize configurations with high resilience}.
 
 
 \subsection{Dynamic Domain Assignment Performance} \label{sec:mcmceval}
 
-In this section, we measure whether,
-useingthe MCMC algorithm presented in \secref{sec:synth-dom-ass}, 
-\name can 
+In this section, we measure whether
+when \name  is allowed to explore different domain assignments,
+the MCMC algorithm presented in \secref{sec:synth-dom-ass}
+can 
 generate configurations
-with higher resilience when it is allowed to explore different domain assignments.
+with higher resilience. 
 % the advantages of using MCMC sampling
 %to find a domain assignment which can  
 %reduce both configuration overhead and number of static routes, 
