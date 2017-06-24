@@ -1,0 +1,146 @@
+\begin{proof}
+We show that the decision version of the minimum 
+vertex cover problem, i.e., there exists a vertex cover
+of size $ \leq k$, which is NP-complete, 
+reduces to finding a set of static routes 
+of size $ \leq k$ \
+and OSPF weights for a network with only one domain. 
+The latter is also in NP, so after the reduction we 
+can conclude that it is also NP-complete.
+
+Let $G = (V,E)$ be an instance of the 
+minimum vertex cover problem. A set of
+vertices $VC \subseteq V$ is the vertex cover
+if $\forall (v_1, v_2) \in E. ~v_1 \in VC \vee v_2 \in VC$. 
+
+We now show how to construct a topology $T=(S,L)$ 
+and a corresponding set of paths $P$ that can be 
+which require static routes $SR$ such that $|SR| \leq k$  
+iff the corresponding $VC(SR)$ is a vertex cover of 
+the graph $G$ and $|VC(SR)| \leq k$.
+
+For every vertex $v \in V$: add a vertices $r_v$ 
+
+For every edge $(u,v) \in E$: add two vertices $s_{uv}$
+and $t_{uv}$ to $S$. Add edges
+connecting $s_{uv} \rightarrow r_{u}$, $s_{uv} \rightarrow r_{v}$,
+$r_{u} \rightarrow t_{uv}$ and $r_{v} \rightarrow t_{uv}$. 
+\Cref{fig:rfcomplexity} illustrates this construction.
+\begin{figure}[H]
+	\centering
+	\begin{tikzpicture}[shorten >=0.5pt,node distance=1.5cm,on grid,auto,
+	square/.style={regular polygon,regular polygon sides=4}] 
+	\node[state] at (0,0) (s)  {$s_{uv}$}; 
+	\node[state] at (3,-1) (v)  {$r_v$}; 
+	\node[state] at (3,1) (u)  {$r_u$}; 
+	\node[state] at (6,0) (t) {$t_{uv}$}; 	
+	\node[state] (s1) [below=of s] {$s_{vw}$}; 	
+	\node[state] (t1) [below=of t] {$t_{vw}$}; 	
+	\path[-] 
+	(s) edge  node {} (v)
+	edge  node {} (u)
+	edge [blue, dashed, bend right=40] node {} (t)
+	edge [red, dashed, bend left=40] node {} (t)
+	(u) edge node {} (t)
+	(v) edge node {} (t)
+	edge node {} (t1)
+	edge node {} (s1);
+	\path[->]
+	(s)
+	edge [blue, dashed, bend right=40] node {} (t)
+	edge [red, dashed, bend left=40] node {} (t);
+%	\path[-] (s) edge node[above] {} +(1,-0.1);
+%	\path[-] (t1) edge node[above] {} +(-1,-0.1);
+	\end{tikzpicture}
+	\caption{Construction}
+	\label{fig:rfcomplexity}
+\end{figure}
+If there was another edge $(v,w) \in E$, then
+$s_{vw}$ and $t_{vw}$ have an edge connecting to $r_v$(shown
+in \Cref{fig:rfcomplexity}). 
+
+For each edge $(u,v) \in E$, we add two paths in $P$: 
+$s_{uv} \rightarrow r_u^1 \rightarrow r_u^2 \rightarrow t_{uv}$
+for destination host $d_v$ and 
+$~s_{uv} \rightarrow r_v^1 \rightarrow r_v^2 \rightarrow t_{uv}$ 
+for destination host $d_u$.
+(dashed paths in \Cref{fig:rfcomplexity}). 
+
+We now prove that if there exists a set of static routes
+$SR$ such that $|SR| \leq k$ such that the resulting configurations
+forwards traffic along $P$, then there exists a vertex cover $VC$
+of $G$ such that $|VC| \leq k$. 
+
+For each static route $sr \in SR$, the static route
+has to be placed at the source, either going to $r_u$
+or $r_v$ (structure of topology $T$). 
+We construct a set $VC(SR)$ by adding the vertex $v$ 
+based on the endpoints of each static route $sr \in SR$.
+To show that $VC(SR)$ is a vertex cover of $G$, we first
+prove \Cref{lemma:diamond}.
+
+\begin{lemma} \label{lemma:diamond}
+	 For each diamond formed by the input paths, atleast 1 
+	 static route on one of the edges of the paths of the diamond 
+	 is required to find a valid solution to the
+	 OSPF edge weights.  
+\end{lemma}
+
+\begin{proof}
+Consider the following diamond % in \Cref{fig:diamond}
+constructed by paths $\pi_1$: $s \rightarrow r_1 \rightarrow t$ 
+for destination $d_1$ and $\pi_2$:$s \rightarrow r_2 \rightarrow t$ 
+for destination $d_2$. Let us assume there exists a solution 
+for the OSPF edge weights without any static routes. 
+
+As we will describe in \Cref{sec:intra-synthesis}, 
+to ensure $p_1$ is the shortest path from $s$ to $t$, the following
+linear inequality is added to ensure $\pi_1$ is shorter than the
+path from $s$ to $t$ via $r_2$: 
+\begin{equation} \label{eq:diamond1}
+	e(s,r_1) + e(r_1, t) < e(s, r_2) + e(r_2,t)
+\end{equation}
+$e(s,r_1)$ denotes the weight of edge $s \rightarrow r_1$.
+Since $\pi_2$ is also the shortest path from $s$ 
+to $t$, the linear inequality added is:
+\begin{equation}  \label{eq:diamond2}
+e(s,r_2) + e(r_2, t) < e(s, r_1) + e(r_1,t)
+\end{equation}
+Since there are no static routes on the edges
+of $\pi_1$ and $\pi_2$, none of the above equations are 
+eliminated. 
+Adding equations \ref{eq:diamond1} and  \ref{eq:diamond2} 
+yields the inequality $0 < 0$, which is inconsistent 
+and therefore, no solution to 
+the edge weights exists for this system of equations, 
+which contradicts our assumption. Therefore,
+for each diamond formed by the input paths, atleast 1 
+static route on one of the edges of the paths of the diamond 
+is required to find a valid solution to the
+OSPF edge weights.  
+\end{proof}
+
+For every edge $(u,v) \in E$, the constructed paths from 
+$s_{uv}$ to $t_{uv}$ form a diamond. Thus, by lemma 1, 
+the diamond corresponding to each edge in $G$ 
+requires atleast one static route to eliminate
+the inconsistency caused by the diamond, thus, one 
+of vertices $\{u,v\}$ will be in $VC(SR)$, and edge $(u,v)$
+is covered. Thus, if $SR$ eliminates all diamond inconsistencies
+to find a solution to the OSPF weights, the corresponding set
+$VC(SR)$ covers all edges in $E$. Therefore, $VC(SR)$ is a vertex
+cover. 
+
+Thus, by finding a set of static routes $SR$ such that $|SR| \leq k$
+such that all the diamond inconsistencies are eliminated, and there
+exists OSPF weights $W$ such that the configurations forward traffic
+along $P$, we can find a vertex cover $VC$ for graph $G$ such that
+$|VC| \leq k$. 
+
+This transformation is polynomial, the constructed 
+network topology $T$ has $|V| + 2|E|$ nodes, 
+$4|E|$ links and $2|E|$ paths. Therefore, OSPF
+configuration synthesis with number of static routes $\leq k$ is
+NP-complete. Thus, OSPF synthesis with minimal number of 
+static routes is NP-hard. 
+\end{proof}

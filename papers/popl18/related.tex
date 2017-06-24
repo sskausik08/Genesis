@@ -1,0 +1,135 @@
+\section{Related Work}\label{sec:related}
+\paragraph{Centralized control} Programming routers for centralized
+control has been an active area of research in recent times. One of
+the first systems, RCP~\cite{rcp}, supported logically central BGP
+configuration. The more recent Fibbing~\cite{fibbing} system provides
+centralized control over distributed routing by creating fake nodes
+and fake links to steer the traffic in the network through paths that
+are not the shortest, similar to how \name uses static routes. 
+However, the algorithms to solve the synthesis problem 
+in this work is different from ours.  
+Both approaches face the issue of  
+forwarding loops in the network during failures. 
+One merit of our work over Fibbing is that by using 
+static routes for steering, we do not increase the 
+traffic in the network, unlike the fake advertisements 
+which are used in Fibbing. Fibbing also does not take into
+account inter-domain routing.
+
+%However, these fake advertisements can create
+%forwarding loops in the network during failures, and the centralized
+%controller has to respond to failures (response to failures can
+%precomputed), thus making the controller a central point of
+%failure. In contrast, our approach to distributed control plane
+%synthesis can provide the same expressive power as Fibbing but avoids
+%any centralized component by engineering the control plane parameters
+%to match the input specifications.  
+
+
+\paragraph{Configuration synthesis} 
+ConfigAssure~\cite{configassure}
+uses a combination of logic programming and SAT solving to synthesize
+network configurations for security, 
+functionality, performance and
+reliability requirements specified as constraints; 
+but it does not
+support any notion of policy-resilience 
+or hierarchical domain splitting.  Fortz
+et. al~\cite{ospf-te} tackle the problem of optimizing OSPF weights
+for performing traffic engineering, but their work is tailor-made
+to just this specific problem.
+
+Propane~\cite{propane} tackles the specific problem of synthesizing
+BGP configurations to ensure network-wide objectives hold even under
+failures. The policy language of Propane is suited to specify
+preferences on paths and peering policies among different autonomous
+systems. Propane translates policies
+to a graph-based intermediate representation, which is then compiled
+to device-level BGP configurations. It is unclear how to extend
+Propane to incorporate domains, configuration complexity, or OSPF.
+
+El-Hassany et. al~\cite{synet} tackle network-wide configuration
+synthesis (Definition \ref{def:policycompliance}) in an elegant manner by
+modeling the behavior and interactions of the routing protocols as a
+stratified Datalog program, and using SMT to synthesize the Datalog
+input such that the fixed point of the Datalog program (which
+represents the network's forwarding state after the protocols have
+converged) satisfies certain policies.  
+Their approach does not deal with resilience, a key aspect we tackle 
+in this paper.
+The
+largest topology considered by El-Hassany et. al has 16 nodes (we handle 45)
+and the policy language does not support isolation or
+traffic engineering, 
+features that contribute to make our synthesis 
+problem challenging (however \genesis could be used 
+as a front-end for their approach).  
+On the technical side, our approach is different because
+it first synthesizes policy-compliant paths and then uses
+LP-solvers (which are faster and parallelizable) 
+to tackle configuration
+synthesis.  
+Finally, El-Hassany et. al can only perform synthesis for a
+static domain assignment, where the input specifies if a router runs
+BGP or not. Our MCMC algorithm can also look for domain assignments.
+
+%
+%An earlier iteration of our
+%work considered synthesizing network configurations directly from
+%policies using SMT; however, we found that encoding OSPF's shortest
+%path-based constraints in SMT was time-consuming for modern SMT
+%solvers~\cite{z3} and does not scale well to larger networks 
+
+\paragraph{Policy languages} While \name uses \genesis 
+to synthesize policy-compliant paths, in the future it could use
+other policy language frameworks as a front-end
+too; existing frameworks offer perhaps less rich policy support but better
+performance. %% Other works on
+%% centralized policy enforcement for SDN are Merlin~\cite{merlin} and
+%% NetKAT~\cite{netkat}.
+In Merlin~\cite{merlin}, data planes that adhere to policies expressed
+using regular expressions are synthesized by first intersecting the
+topology with the regular expressions appearing in the policies and
+then encoding reachability in the intersected graph using mixed
+integer linear programming (ILP).  Merlin supports min and max
+bandwidth guarantees.
+
+NetKAT~\cite{netkat} is a domain-specific language and logic for 
+specifying and verifying network packet-processing functions
+for SDN, based on Kleene algebra with tests (KAT). Semantically,
+a NetKAT predicate and policy is a function that takes a packet
+history and produces a set of (possibly empty) packet histories. 
+NetKAT can be used to express certain network-wide policies like 
+reachability, waypoints using regular expressions for describing the paths, 
+and programs on virtual topologies; it uses
+BDDs and symbolic automata to translate global programs to local
+switch programs~\cite{netkatcompiler}.
+Both Merlin and NetKAT  do not support link-isolation 
+to produce edge-disjoint paths, which is needed for  
+our waypoint-compliance algorithm presented in Section~\ref{sec:waypointres}.
+As future work, we will consider 
+how to apply these other front-ends to \name.
+
+%% However, the NetKAT semantics
+%% cannot be used to express policies based on hyperproperties
+%% ~\cite{hyperproperties}, i.e., 
+%% the packet processing function requires multiple packet histories
+%% as input. Traffic engineering or isolated paths are policies
+%% based on hyperproperties.
+
+%% While Genesis supports richer policies, its SMT-based approach is slower in synthesis. As part of future work, we will consider how
+
+%Fine-grained traffic engineering based on online demand/flow size estimation and 
+%rapid rerouting is also crucial for datacenter workloads, and extending \name's
+%TE policies to fine-grained timescales is subject of future work.
+%Also, the performance
+%of SMT solvers with optimization objectives is quite slow, and calls for 
+%domain-specific techniques to speed up the synthesis. Also, datacenter
+%networks are highly symmetrical, and this symmetry can be leveraged
+%to speed up synthesis (similar to the work of Plotkin et. al~\cite{symmetry} to
+%speed up network verification using symmetry). The main challenges of
+%using symmetry in synthesis is considering two aspects of symmetry: network
+%symmetry and policy symmetry. Also, our treatment of resilience synthesis
+%is preliminary and future work will be geared towards synthesizing resilient
+%forwarding planes incorporating capacity constraints and traffic engineering.
+ 

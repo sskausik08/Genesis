@@ -1,0 +1,388 @@
+\section{From Policies to Connectivity-Resilient  Configurations}
+\label{sec:config-synthesis}
+
+We now present an algorithm
+for synthesizing distributed configurations
+that adhere to path policies like the one described 
+in Figure~\ref{tab:policysupport}.
+In general, no existing tool for synthesizing 
+distributed configurations
+can handle this heterogeneous set of 
+these policies---e.g., isolation---and, even less so,
+generate resilient configurations.
+Due to the complexity of the problem, we focus on 
+synthesizing  configurations that 
+are \emph{policy-compliant} and have high \emph{connectivity-resilience}.
+
+
+
+\subsection{A two-phase approach}
+Existing approaches to configuration synthesis
+try to directly generate configurations from the given policies~\cite{synet},
+but a direct approach leads to scalability issues as well as limitation
+in the set of supported policies.
+Instead of directly generating configurations from policies, 
+\name proceeds in two-steps:
+first it generates policy-compliant paths
+and then it synthesizes distributed configurations that realize these paths
+and have high connectivity resilience.
+
+Since we showed how to generate policy-compliant paths in Section~\ref{sec:genesis},
+we are left with solving a path-compliance problem.
+Formally, we are given a set of paths $\Pi$,
+a topology $T=(V,L)$,
+a domain-assignment function $\Theta$, 
+%and configuration policies $P$,
+and we want to find functions of the configuration
+$C=(\Theta,W,LP,IF,SR)$ such that
+$\paths^C(PC) = \Pi$.
+%., and
+%$C$ satisfies $P$.
+%Ideally, we want to directly generate configurations that maximize 
+%connectivity resilience, but already generating policy-compliant configuration is
+%a hard problem.
+This problem admits a trivial solution that 
+enforces the set of input paths
+ by adding a 
+static route to $SR(\lambda)$ for every link $l$ in 
+set of the paths $\Pi$. 
+However, this solution uses more static routes than necessary
+and, in the presence of failures, static routes may
+create routing loops that make certain connections 
+unreachable, hence reducing connectivity-resilience.
+Given the relation between the number of static 
+routes and connectivity-resilience,
+we set as our goal that of generating configurations 
+with few static routes.
+
+We show how to synthesize 
+path-compliant intra-domain 
+configurations---i.e., when there
+is only a single domain---and then extend our technique to
+ inter-domain configurations---i.e., when
+there are multiple domains.
+
+\subsection{Synthesising Path-compliant Intra-domain Configurations} \label{sec:intra-synthesis}
+In this section, we show how to synthesize  path-compliant  intra-domain configurations that
+use few static routes.
+To justify the complexity of the techniques 
+we are going to present,
+we show that
+%, even when policy-compliant paths are provided, 
+obtaining configurations with minimal numbers of static routes is a 
+computationally hard problem.
+\begin{theorem}[Hardness of synthesis]
+\label{thm:ospfsynth}
+Given a
+network with a single domain,
+and a positive number $C_{sc}$,
+the problem generating
+a path-compliant configuration with at most $C_{sc}$ static routes
+is NP-complete.
+\end{theorem}
+\iffull
+\input{route-filters-nphard}
+%\else
+%The reduction is from the vertex cover problem.
+\fi
+Since the problem of optimally placing 
+static routes is computationally hard, 
+%(Theorem~\ref{thm:ospfsynth}), 
+we propose a non-optimal greedy strategy.
+We first show how to solve the problem when 
+there exists a solution with no static routes
+and then extend our technique to greedily 
+add static routes when needed. We use 
+efficient off-the-shelf linear programming (LP) 
+solvers for solving the system of constraints 
+which are presented in the following sections. 
+			
+\subsubsection{Intra-domain Synthesis without Static Routes} \label{sec:ospf}
+ 
+In the absence of static routes,
+ OSPF routers use edge weights
+ to choose the
+ shortest weighted path for each pair of endpoints. 
+Our goal is to synthesize the weight function $W$.
+Consider the \Cref{fig:edgeweightexample} example, 
+if $\Pi$ contains the 
+ path $\pi=s\rightarrow r_1 \rightarrow t$ for
+ destination IP $\lambda$, \name assigns
+ edge weights so that $\pi$ has
+ smaller weight than the path $\pi'=s \rightarrow t$ ---e.g., $W(\pi)=3$
+  and $W(\pi')=5$. 
+ 
+\begin{wrapfigure}{r}{0.33\columnwidth}
+	%\vspace{-4mm}
+	\resizebox {0.33\columnwidth} {!} {
+		\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
+		square/.style={regular polygon,regular polygon sides=4}] 
+		\node[state] at (0,0) (s)  {$s$}; 
+		\node[state] at (1.8,1) (v1)  {$r_1$}; 
+		\node[state] at (3.6, 0)(t) {$t$};
+		\node[state, rectangle] at (5, 0) (d1) {$\lambda$};
+		\path[->] 
+		(s) edge [red] node [black] {1} (v1)
+		edge  node {5} (t)
+		(v1) edge [red] node [black] {2} (t)
+		(t) edge [red, dashed] node {} (d1);
+		\end{tikzpicture}
+	}
+	\vspace{-3mm}
+	\compactcaption{OSPF edge weights
+		such that the routers forward traffic along
+		the colored path.}
+	\label{fig:edgeweightexample}
+\end{wrapfigure}
+The problem of synthesizing the weight function $W$ that
+realizes an input set of paths $\Pi$ is
+a
+variation of the so-called {\em inverse shortest path} 
+problem~\cite{isp}. 
+For a destination IP $\lambda$, we call $\xi_\lambda$ 
+the directed tree of $T$ 
+obtained by only keeping the nodes and edges 
+that are traversed by paths in $\Pi$ for 
+$\lambda$; the root of the tree
+is the destination router connected to $\lambda$. 
+ This destination tree
+ property is due to the modifications to \genesis
+ to support OSPF's destination-based forwarding. We
+ define $\Delta=\{\xi_\lambda\mid \lambda \in \Lambda\}$ to be 
+the set of all destination trees. 
+
+Given a set of input paths $\Pi$, \name 
+generates a set of linear constraints to 
+find weights 
+for each $(r_1, r_2) \in L$.
+The constraints use the variable $W_{r_1}^{r_2}$
+to denote the weight of the edge $(r_1, r_2)$, and the variable
+$D_{r_1}^{r_2}$ to denote the 
+shortest distance from $r_1$ to $r_2$.
+We add the equation $D_{s}^{s} = 0$
+for every $s\in S$, to denote that the distance
+from a node to itself is $0$.
+\Cref{eq:distance} guarantees that $D_{s}^{t}$ is smaller or equal to
+the shortest distance from $s$ to $t$.
+\begin{equation} \label{eq:distance}
+\forall s, t. ~\forall r \in N(s).~
+D_s^t \leq W_s^r + D_r^t
+\end{equation}
+Intuitively, the shortest path connecting $s$ to $t$
+must traverse through one of the neighbor routers of $s$,
+and thus, distance can be defined inductively as the 
+shortest among distances from the neighbors. 
+
+For each destination tree $\xi_\lambda\in\Delta$, we add equations to ensure 
+that the input paths with destination $\lambda$ are the shortest ones.
+Notice that, if a path $\pi$
+is the shortest path between its endpoints, every 
+subpath of $\pi$ also has to be the shortest path between its endpoints.
+For each tree $\xi_\lambda$, we define the neighbour
+ $N_{\xi_\lambda}(s)$ to denote the 
+next-hop neighbour of router $s$ in the destination tree $\xi_\lambda$---i.e., the parent
+of $s$ in the tree or no node if $s$ is the root of the tree. We denote the
+router directly connected to $\lambda$ (the root of the tree $\xi_\lambda$) by $R_\lambda$.
+
+The following equation ensures that, for any node $s$ in 
+$\xi_\lambda$, 
+the path $l_0\cdots l_k$ from $s$ to $R_\lambda$ 
+in $\xi_\lambda$ is the 
+\emph{unique shortest path}\footnote{
+If two paths have the same weight, then OSPF will 
+split the traffic among the two paths.
+} from $s$ to $R_\lambda$ in $T$.
+\begin{equation} \label{eq:unique}
+\forall r \in N(s) \setminus N_{\xi_\lambda}(s).~~
+\sum_{\mathclap{\substack{l_i=(r_1,r_2)}}} 
+W_{r_1}^{r_2} < W_{s}^{r}+ D_{r}^{R_\lambda}
+\end{equation}
+\Cref{eq:unique} guarantees that 
+the sum of the weights belonging to the path 
+from $s$ to $R_\lambda$ in $\xi_\lambda$ 
+is strictly smaller than 
+any path that goes to $R_\lambda$ via 
+a node $n'$ that is a neighbour of $s$ in $T$ but not 
+the next-hop in $\xi_\lambda$. Note that,
+while $D_{r}^{R_\lambda}$ can be smaller 
+than the actual shortest
+distance from $r$ to $R_\lambda$, 
+$D_{r}^{R_\lambda}$ is used to upper bound the sum of edge weights 
+in $\xi_\lambda$, and  
+thus, the solution to the edge weights will ensure 
+paths in $\xi_\lambda$ are the shortest. 
+
+%\begin{figure}[!t]
+%	\centering
+%	\subfloat[Edge Weights]{
+%		\raisebox{0.5cm}{\resizebox {0.33\columnwidth} {!} {
+%				\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
+%				square/.style={regular polygon,regular polygon sides=4}] 
+%				\node[state] at (0,0) (s)  {$s$}; 
+%				\node[state] at (1.8,1) (v1)  {$r_1$}; 
+%				\node[state] at (3.6, 0)(t) {$t$};
+%				\node[state, rectangle] at (5, 0) (d1) {$\lambda$};
+%				\path[->] 
+%				(s) edge [red] node [black] {1} (v1)
+%				edge  node {5} (t)
+%				(v1) edge [red] node [black] {2} (t)
+%				(t) edge [red, dashed] node {} (d1);
+%				\end{tikzpicture}
+%			}}}
+%			\subfloat[Static Routes]{
+%				\resizebox {0.33\columnwidth} {!} {
+%					\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
+%					square/.style={regular polygon,regular polygon sides=4}] 
+%					\node[state] at (0,0) (s)  {$s$}; 
+%					\node[state] at (2, 1) (v1)  {$r_1$}; 
+%					\node[state] at (4, 0)(t) {$t$};
+%					\node[state, rectangle] at (5.5, 0.75) (d1) {$\lambda_1$};
+%					\node[state, rectangle] at (5.5, -0.75) (d2) {$\lambda_2$};
+%					\path[->] 
+%					(s) edge [red] node [black] {1} (v1)
+%					edge [blue] node [above, black] {5} node [below, black] {$sr((s,t),\lambda_2)$} (t)
+%					(v1) edge [red] node [black] {2} (t)
+%					(t) edge [red, dashed] node {} (d1)
+%					(t) edge [blue, dashed] node {} (d2);
+%					\end{tikzpicture}
+%				}}
+%						\compactcaption{OSPF edge weights and static routes
+%							such that the routers forward traffic along
+%							the colored paths.}
+%						\label{fig:ospfexample}
+%					\end{figure}
+%					
+\subsubsection{Intra-domain Synthesis with Static Routes} \label{sec:ospfsr}
+
+If the system of equations presented in Section~\ref{sec:ospf} admits a solution, 
+the values of the $W_s^t$ variables are the weights we are trying to synthesize,
+otherwise the intra-domain synthesis problem 
+cannot be solved without static routes.
+
+\begin{wrapfigure}{r}{0.33\columnwidth}
+\vspace{-8mm}
+	\resizebox {0.33\columnwidth} {!} {
+			\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
+			square/.style={regular polygon,regular polygon sides=4}] 
+			\node[state] at (0,0) (s)  {$s$}; 
+			\node[state] at (2, 1) (v1)  {$r_1$}; 
+			\node[state] at (4, 0)(t) {$t$};
+			\node[state, rectangle] at (5.5, 0.75) (d1) {$\lambda_1$};
+			\node[state, rectangle] at (5.5, -0.75) (d2) {$\lambda_2$};
+			\path[->] 
+			(s) edge [red] node [black] {1} (v1)
+			edge [blue] node [above, black] {5} node [below, black] {$sr((s,t),\lambda_2)$} (t)
+			(v1) edge [red] node [black] {2} (t)
+			(t) edge [red, dashed] node {} (d1)
+			(t) edge [blue, dashed] node {} (d2);
+			\end{tikzpicture}
+	}
+	\vspace{-3mm}
+	\compactcaption{An example of why static routes are needed.}
+	\label{fig:srexample}
+\end{wrapfigure}
+Consider the example in \Cref{fig:srexample}
+where the two paths between $s$ and $t$ are used by 
+destinations $\lambda_1$ and $\lambda_2$. This
+set of input paths does not admit a solution. 
+The following is required for $\lambda_1$: 
+$W(s \rightarrow r_1 \rightarrow t) < W(s \rightarrow t)$, 
+and vice-versa for $\lambda_2$. 
+To steer the traffic for a particular destination
+to a next-hop router not on the OSPF shortest path, we can 
+install a static route. For example, if we install
+a static route at router $s$ to forward $\lambda_2$ 
+traffic to router $t$, this route will have a higher
+preference compared to the OSPF route
+through $r_1$~\cite{admindistance}.
+%Since there are no static routes for
+%$\lambda_1$, the traffic to $\lambda_1$ will be forwarded to $t$
+%through $r_1$ using the OSPF shortest path.
+
+
+
+Since the problem of minimizing the number of static routes
+is NP-complete, we opt to place static routes using a best-effort approach.
+Our algorithm starts by trying to synthesize a solution
+that does not use static routes using the equations 
+proposed in \secref{sec:ospf}. 
+In the case of a failure, the algorithm uses the ``proof of unsatisfiability''---i.e., the unsatisfiable core---generated by 
+the constraint solver 
+to greedily add a small set of static routes. 
+Certain equations are eliminated 
+to model the added static routes 
+and the approach is repeated until a solution is found.
+%We now propose a
+%technique for choosing the static routes based 
+%on the unsatisfiable core. 
+
+%\kausik{Equations with static routes:
+%%\loris{why do we need to modify \eqref{eq:dist}? Can't we just add $D_s^t(d)\geq D_s^t$ for
+%%all $d$}
+%We assume we are given a route-filter function $RF$ and 
+%use $s\rightarrow_d^* t$ to denote that $s$ can reach $t$
+%without using any edge in $RF(d)$.
+%We use the variable $D_{r_1}^{r_2}(d)$ to denote the shortest distance from $r_1$ to $r_2$
+%using only edges that are not filtered for destination $d$.
+%We can revise equation \eqref{eq:dist}   to restrict the values of 
+%each variable $D_{r_1}^{r_2}(d)$
+%by  ignoring all the filtered edges---i.e., only consider a switch $r\in N(s)$ if
+%$(s,r)$ is not in $RF(d)$. 
+%In summary, we need to add one modified version of equation \eqref{eq:dist} 
+%and equation  \eqref{eq:unique} for each destination $d$.
+%If the encoding without route filters produces $n$ equations, this
+%encoding produces $kn$ equations where $k$ is the total number of destinations.  
+%To mitigate this problem, we observe that the shortest distance $D_s^t(d)$ between two
+%nodes $s$ and $t$ without using edges filtered for $d$ is
+%greater or equal to the distance $D_s^t$ obtained without route filters.  
+%We use this property to simplify the
+%encoding by only computing $D_s^t$ and by replacing each instance of
+%$D_s^t(d)$ with $D_s^t$ in the equations.  It is easy to see that 
+%if the set of constraints with variables $D_s^t(d)$ admits a solution,
+%the corresponding set of constraints with variables $D_s^t$ 
+%also admits a solution (because $D_s^t\leq
+%D_s^t(d)$).  However, the reverse is not true and the set of
+%simplified equations can be unsatisfiable in cases in which the
+%original set is satisfiable, causing addition of unnecessary filters.
+%Since our algorithm is already greedy and it does not try to compute the optimal 
+%number of route filters, this is not a problem.}
+
+
+%\minisection{Adding static routes using unsatisfiable cores}
+To choose what static route to place, we use
+LP-solvers' ability to produce an
+unsatisfiable core, also called IIS (Irreducible Inconsistent Subsystem)~\cite{chinneck2007feasibility}. 
+Intuitively, an IIS is a subset of the input constraints such that,
+if all constraints except those in the IIS are removed, the resulting set of
+linear equations is still unsatisfiable. Moreover, the set is irreducible---i.e., removing 
+any one constraint from the IIS produces a satisfiable set of constraints. 
+In our case, an IIS cannot consist of only 
+constraints from \Cref{eq:distance} as these constraints
+admit a trivial solution with all variables set to 0. 
+Therefore, an IIS must contain some constraint of the form
+given in  Equations~(\ref{eq:unique})
+that was added in to reason about a destination tree $\xi_\lambda$. 
+\[
+\sum_{\mathclap{\substack{l_i=(r_1,r_2)}}} 
+W_{r_1}^{r_2} < W_s^r + D_r^{R_\lambda}  
+\]	
+This constraint is added to ensure 
+that router $s$ forwards to traffic to  
+$N_{\xi_\lambda}$ and not $r$, based on OSPF weights,
+but the path through $r$ is causing the unsatisfiability. 
+To remove this inequality from the set of constraints, 
+we add the static route $(s,N_{\xi_\lambda})$ to $SR(\lambda)$.
+As a result of adding of static route, \name removes 
+all constraints of \Cref{eq:unique} as router $s$ 
+will forward $\lambda$ traffic  to 
+next-hop $N_{\xi_\lambda}$ irrespective of
+the OSPF distances to the destination; the 
+unsatisfiability caused by this IIS is eliminated. 
+However, the new set of
+constraints may still be unsatisfiable due to other IISes.
+We repeat the procedure and add static routes
+until we obtain a satisfiable set of
+constraints. 
+In each iteration, there can be more than one way to place a static route and
+\name picks one randomly. 
+

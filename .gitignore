@@ -111,3 +111,11 @@ papers/oopsla/paper.blg
 papers/oopsla/paper.bbl
 papers/oopsla/paper.synctex.gz
 papers/oopsla/paper.rtf
+
+papers/popl*/paper.out
+papers/popl*/paper.pdf
+papers/popl*/paper.ps
+papers/popl*/paper.blg
+papers/popl*/paper.bbl
+papers/popl*/paper.synctex.gz
+papers/popl*/paper.rtf
