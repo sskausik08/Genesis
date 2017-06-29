@@ -16,11 +16,46 @@ can be realized by routing protocols.
 %configuration synthesis is complicated or not possible. Thus, we
 %propose ways to restart the algorithm by computing new paths.
 
-%\subsection{\genesis: From Policies to Paths} \label{sec:genesis}
+\subsection{\genesis: From Policies to Paths} \label{sec:genesis}
 \genesis is a network management
 system which synthesizes forwarding tables enforcing some input policies. 
 Some of the policies supported by \genesis are specified in 
-\Cref{tab:policysupport}. 
+\Cref{tab:policysupport}. These policies are suited for the 
+management of multi-tenant datacenters, where each tenant is 
+an entity which offloaded their 
+onsite network infrastructure to the datacenter. Examples of the 
+tenant policies are as follows. 
+
+\minisection{Reachability w/o Waypoints.}
+This policy enables network communication
+  between pairs of tenant's virtual instances (VM), 
+  applications, or hosts.  
+  \kausik{Any communication that is not defined by a
+  reachability policy has to be explicitly blocked using ACLs 
+  (i.e., all communication is ``default on'').} 
+The tenant may wish that the flow
+  between two of her end hosts, or from another tenant, must traverse
+  specific middleboxes, which we also refer to as ``waypoints'' in
+  this paper. Middleboxes are custom processing appliances often used
+  for security, access control, or performance reasons (e.g.,
+  firewalls, intrusion prevention systems, monitoring/accounting
+  gateways, proxies, and load balancers). 
+
+  \minisection{Isolation.} Tenants may require various
+  Quality-of-Service (QoS) or security guarantees since the 
+  underlying infrastructure is shared among tenants. In the extreme, a
+  tenant could require that her flows are not affected in any manner
+  by any other tenant by strictly isolating the path of the tenant's
+  flows from others' flows. 
+
+  \minisection{Traffic Engineering.}
+   While support for the above policies can be used to satisfy tenant 
+  requirements, network operators need to 
+  carefully manage constrained resources. Operators may also want
+  to balance load on their network infrastructure. This is often done
+  by optimizing a network-wide objective such as total or maximum
+  utilization of network links due to traffic induced by all tenants. 
+
 %Due to the rich policy language, generating policy-compliant paths is an NP-complete problem;
 %\genesis mitigates this problem by leveraging the power of SMT solvers.
 % to provide
@@ -44,7 +79,7 @@ router of packet class $pc$ in exactly $k$ steps.
 %the input policies, \genesis generates constraints over the $Fwd$
 %and $Reach$ relations. Finally, \genesis uses the solution to the relations to extracts the concrete paths.
 
-\paragraph{Modifications to \genesis}
+\subsection{Modifications to \genesis}
 OpenFlow switches~\cite{openflow} support predicates for
 forwarding rules on different packet header fields such as source
 and/or destination IP address, ports etc. However, legacy protocols
