@@ -11,7 +11,7 @@ connectivity-resilience and positive-resilience,
 which we will use in our experimental evaluation.
 
 
-\subsection{Routing Model}
+\subsection{Routing Model} \label{sec:routingmodel}
 
 We represent the physical router topology as a directed graph $T=(V, L)$,
 where $V$ is the set of routers and $L\subseteq V\times V$ is the set of links. 
@@ -236,7 +236,7 @@ and map each reachability
 policy that requires the existence of a path between two endpoints
 to a unique integer in $PC$. The rest of the policies specify 
 properties on these paths. Each packet class $pc$ is associated
-with a tuple ($s_{pc}, d_{pc}, \lambda_pc)$ which specifies 
+with a tuple ($s_{pc}, d_{pc}, \lambda_{pc})$ which specifies 
 the path from $s_{pc}$ to $d_{pc}$ for destination IP $\lambda_{pc}$.
 
 \begin{definition}[Induced Paths] \label{def:inducedpaths}
