@@ -212,6 +212,62 @@ in $\xi_\lambda$, and
 thus, the solution to the edge weights will ensure 
 paths in $\xi_\lambda$ are the shortest. 
 
+\begin{theorem}[Correctness]
+%For a OSPF configuration $C$ with edge weights $W$ and no 
+%static routes, and for a packet class $pc$, source router $s_{pc}$, destination router $d_{pc}$ and destination $\lambda_{pc}$ and the path provided by Genesis $\pi_{pc}$, if $W$ satisfy constraints \cref{equations}, then $\pi_{pc}$ 
+%is in the set of induced paths of $C$, i.e., $~~\pi_{pc} \in \paths^C(pc)$
+For a set of paths $\Pi$, if edge weights 
+$W$ satisfy constraints (\ref{eq:distance}) and (\ref{eq:unique}), then 
+each path $\pi \in \Pi$ is the unique shortest path between its endpoints. 
+\end{theorem}
+\begin{proof}
+	Let us assume there exists a path $\pi
+	= (s, s_1)(s_1, s_2) 
+	\ldots (s_n, d)$ in $Pi$ such that $\pi$ is \emph{not} the shortest 
+	path between $s$ and $d$. Let us denote the shortest
+	 path by $\overline{\pi} = (s, r_1)(r_1, r_2)\ldots (r_m,
+	 d)$. 
+    Without loss of generality, we assume $s_1 \not= r_1$, 
+	else, we can consider the source to be 
+	the first switch where the paths diverge. 
+	
+	\noindent Since, $\overline{\pi}$ is the shortest weighted path: 
+	\begin{equation} \label{eq:assumption}
+	\sum_{\pi} W(s_i, s_j) > \sum_{\overline{\pi}} W(r_i, r_j)
+	\end{equation}
+	
+	The constraints (\ref{eq:unique}) impose $\pi$ to be the
+	unique shortest path by ensuring the edge weights of $\pi$
+	are smaller than any path going through a neighbouring 
+	router of $s$ other than $s_1$. Let us consider the 
+	neighbour router $r_1$ in $\overline{\pi}$:
+	\[
+	\sum_{\mathclap{\substack{\pi}}} 
+	W(s_i,s_j) < W(s, r_1)+ D(r_1, d)
+	\]
+	Using constraint (\ref{eq:distance}) to expand the term $D(r_k, d)$ for $k <= m$: 
+	\[
+	\sum_{\mathclap{\substack{\pi}}} 
+	W(s_i,s_j) < W(s, r_1)+ W(r_1, r_2) + D(r_2, d)
+	\] 
+	\begin{center}
+		$\ldots$
+	\end{center}
+	\[
+	\sum_{\mathclap{\substack{\pi}}} 
+	W(s_i,s_j) < W(s, r_1)+ W(r_1, r_2) + \ldots W(r_{m}, d) + D(d, d)
+	\] 
+	\[
+	\sum_{\mathclap{\substack{\pi}}} 
+	W(s_i,s_j) < 
+	\sum_{\mathclap{\substack{\overline{\pi}}}} 
+	W(r_i,r_j)
+	\]
+	This contradicts assumption (\ref{eq:assumption}) that 
+	$\overline{\pi}$ is the shortest path from $s$ to $d$. 
+	Hence, proved.
+\end{proof}
+
 %\begin{figure}[!t]
 %	\centering
 %	\subfloat[Edge Weights]{
