@@ -62,12 +62,12 @@ However, this contradicts the assumption (\ref{eq:assumption}) that
 $\overline{\pi_{pc}}$ is the shortest path from $s_{pc}$ to $d_{pc}$. Hence, proved 
 $\pi_{pc} \in \paths^C(pc)$.
 \end{proof}
-\kausik{Write unsat-learning as an algorithm}
-\begin{corollary}[Correctness with static routes]
+
+\begin{theorem}[Correctness with static routes]
 	For a OSPF configuration $C$ with edge weights $W$ and
 	static routes $SR$, and for a packet class $pc$, source router $s_{pc}$, destination router $d_{pc}$ and destination $\lambda_{pc}$ and the path provided by Genesis $\pi_{pc}$, \Cref{alg:unsat} produces $W$ and $SR$ 
 	such that $GP$	is in the set of induced paths of $C$, i.e., $~~\pi_{pc} \in \paths^C(pc)$
-\end{corollary}
+\end{theorem}
 \begin{proof}
 Let us assume that $\pi_{pc} \not\in \paths^C(pc)$. 
 Let us denote the 

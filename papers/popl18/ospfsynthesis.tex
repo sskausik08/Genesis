@@ -346,7 +346,28 @@ and the approach is repeated until a solution is found.
 %original set is satisfiable, causing addition of unnecessary filters.
 %Since our algorithm is already greedy and it does not try to compute the optimal 
 %number of route filters, this is not a problem.}
-
+\begin{wrapfigure}{r}{0.5\textwidth}
+	\vspace{-7mm}
+	\begin{minipage}{\linewidth}
+		\begin{algorithm}[H]
+			\begin{footnotesize} 
+				\caption{OSPF Synthesis with Static Routes}
+				\label{alg:unsat}
+				\begin{algorithmic}[1]
+					\Procedure{OSPFSynthesis}{} 
+					\State{$\Psi:$ Constraints generated from (\ref{eq:distance}) and (\ref{eq:unique})} 
+					\While{$\Psi$ is \emph{unsat}} 
+					\State{Extract unsat core $C$ from LP Solver}
+					\State{Pick one static route $sr$ from $C$ constraints}
+					\State{Add $sr$ to static routes $SR$}
+					\State{$\Psi = \Psi \setminus C$}
+					\EndWhile 
+					\EndProcedure
+				\end{algorithmic}
+			\end{footnotesize}
+		\end{algorithm}
+	\end{minipage}
+\end{wrapfigure}
 
 %\minisection{Adding static routes using unsatisfiable cores}
 To choose what static route to place, we use
@@ -385,4 +406,3 @@ until we obtain a satisfiable set of
 constraints. 
 In each iteration, there can be more than one way to place a static route and
 \name picks one randomly. 
-
