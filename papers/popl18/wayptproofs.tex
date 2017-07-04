@@ -1,64 +1,63 @@
-\begin{theorem}[Correctness without static routes]
-	For a OSPF configuration $C$ with edge weights $W$ and no 
-	static routes, and for a packet class $pc$, source router $s_{pc}$, destination router $d_{pc}$, destination $\lambda_{pc}$, waypoint set $\waypt$ and the path provided by Genesis $\pi_{pc}$, if $W$ satisfy constraints (\ref{eq:wdistance}) and (\ref{eq:waypoint}), then each path in 
-	the set of induced paths traverses through one of waypoints in $\waypt$.
+\begin{theorem}[Correctness]
+	For a set of waypoint paths $\{(\pi_{pc}, \waypt_{pc}) ~|~ pc\}$, if edge weights 
+	$W$ satisfy constraints (\ref{eq:wdistance}) and (\ref{eq:waypoint}), then for
+	each packet class, the shortest path 
+	traverses through one of waypoints in $\waypt$.
 \end{theorem}
 \begin{proof}
-	Let us assume $\overline{\pi_{pc}} \in \paths^C(pc)$ such that $\forall w \in \waypt.~
-	w \not\in \overline{\pi_{pc}}$. We denote $\overline{\pi_{pc}} =  (s_{pc}, r_1)$ $(r_1, r_2)\ldots (r_m, d_{pc})$ and the Genesis path $\pi_{pc}$ as $(s_{pc}, s_1)(s_1, s_2) \
-	\ldots (s_n, d_{pc})$. Without loss of generality, we assume $s_1 \not= r_1$, 
-	else, we can consider the source to the first switch where the paths diverge. 
+	Let us assume there exists a packet class $pc$ with waypoint set $\waypt_{pc}$ 
+	and waypoint path $\pi_{pc} = (s_{pc}, s_1)(s_1, s_2)\ldots (s_n, d_{pc})$, 
+	such that for $pc$, the 
+	shortest path $\sigma_{pc}=(s_{pc}, r_1)$ $(r_1, r_2)\ldots (r_m, d_{pc})$ 
+	is not waypoint-compliant, i.e.,  
+	$\forall w \in \waypt.~w \not\in \sigma_{pc}$. 
+	Let $s_i \not= r_i$ be the first point divergence of the paths ($s_{i-1} = r_{i-1}$).
 	
-	\noindent Since there are no static routes, OSPF will forward 
-	traffic through the shortest weighted path $\overline{\pi_{pc}}$:
+	
+	Since $\sigma_{pc}$ is the shortest weighted path: 
 	\begin{equation} \label{eq:wassumption}
-	\sum_{\pi_{pc}} W(s_i, s_j) > \sum_{\overline{\pi_{pc}}} W(r_i, r_j)
+	\sum_{\pi_{pc}} W \geq \sum_{\sigma_{pc}} W
 	\end{equation}
 	
-%The distance constraints (\ref{eq:distance}) are as follows:  
-%	\[
-%\forall s, t. ~\forall r \in N(s).~
-%D(s,t) \leq W(s,r) + D(r,t)
-%\]
-%\[
-%	D_{s_2}^{R_\lambda} \leq W_{s_2}^{s_3} + D_{s_3}^{R_\lambda} 
-%\]
-%\begin{center}
-%	$\ldots$
-%\end{center}
-%\[
-%D_{s_n}^{R_\lambda} \leq W_{s_n}^{R_\lambda} + D_{R_\lambda}^{R_\lambda} 
-%\]
-The constraints (\ref{eq:waypoint}) impose that $\pi_{pc}$ to be 
+Consider router $s_{i-1}$. 
+Constraints (\ref{eq:waypoint}) impose 
+$(s_{i-1}, s_i)\ldots(s_n, d)$ to be 
 shorter than any path which is not waypoint-compliant. 
-Let us consider the neighbour router $r_1$ in $\overline{\pi_{pc}}$:
-\[
+Let us consider the neighbour router $r_1$ in $\sigma_{pc}$:
+	\[
+	\sum_{\mathclap{\substack{(s_{i-1}, s_i)\cdots(s_n, d)}}} 
+	W < W(s_{i-1}, r_i)+ D(r_i, d, \waypt_{pc})
+	\]
+	Since $\sigma_{pc}$ does not traverse any waypoint in $\waypt_{pc}$,
+	we use constraints (\ref{eq:wdistance}) 
+	to expand the terms $D(r_k, d_{pc}, \waypt_{pc})$ for $i \leq k \leq m$:
+	\[
+	\sum_{\mathclap{\substack{(s_{i-1}, s_i)\cdots(s_n, d)}}} 
+	W < W(s_{i-1}, r_i)+ W(r_i, r_{i+1}) + D(r_{i+1}, d,\waypt_{pc})
+	\] 
+	\begin{center}
+		$\ldots$
+	\end{center}
+	\[
+	\sum_{\mathclap{\substack{(s_{i-1}, s_i)\cdots(s_n, d)}}} 
+	W < W(s_{i-1}, r_i)+ W(r_i, r_{i+1}) + \ldots W(r_{m}, d) + D(d, d, \waypt_{pc})
+	\] 
+	\[
+	\sum_{\mathclap{\substack{(s_{i-1}, s_i)\cdots(s_n, d)}}} 
+	W \hspace{0.4cm}< \hspace{0.4cm}
+	\sum_{\mathclap{\substack{(r_{i-1}, r_i)\cdots(r_m, d)}}} 
+	W
+	\]
+	Adding $\Sigma_{(s, s_1)\cdots(s_{i-2},s_{i-1})}$ to both sides:
+	\[
 	\sum_{\mathclap{\substack{\pi_{pc}}}} 
-	W(s_i,s_j) < W(s_{pc}, r_1)+ D(r_1, d_{pc}, \waypt)
-\]
-Since $\overline{\pi_{pc}}$ does not traverse any waypoint in $\waypt$,
-we use constraints (\ref{eq:wdistance}) 
-to expand the terms $D(r_k, d_{pc})$ for $k <= m$:
-\[
-\sum_{\mathclap{\substack{\pi_{pc}}}} 
-W(s_i,s_j) < W(s_{pc}, r_1)+ W(r_1, r_2) + D(r_2, d_{pc}, \waypt)
-\] 
-\begin{center}
-$\ldots$
-\end{center}
-\[
-\sum_{\mathclap{\substack{\pi_{pc}}}} 
-W(s_i,s_j) < W(s_{pc}, r_1)+ W(r_1, r_2) + \ldots W(r_{m}, d_{pc}) + D(d_{pc}, d_{pc}, \waypt)
-\] 
-\[
-\sum_{\mathclap{\substack{\pi_{pc}}}} 
-W(s_i,s_j) < 
-\sum_{\mathclap{\substack{\overline{\pi_{pc}}}}} 
-W(r_i,r_j)
-\]
+	W < 
+	\sum_{\mathclap{\substack{\sigma_{pc}}}} 
+	W
+	\] 
 However, this contradicts the assumption (\ref{eq:wassumption}) that 
-$\overline{\pi_{pc}}$ is the shortest path from $s_{pc}$ to $d_{pc}$. Hence, proved, there is no path $\overline{\pi_{pc}} \in \paths^C(pc)$ such that $\forall w \in \waypt.~
-w \not\in \overline{\pi_{pc}}$. 
+$\sigma_{pc}$ is the shortest path from $s_{pc}$ to $d_{pc}$. Hence, proved, there is no path $\sigma_{pc} \in \paths^C(pc)$ such that $\forall w \in \waypt.~
+w \not\in \sigma_{pc}$. 
 \end{proof}
 
 %\begin{theorem}[Correctness with static routes]

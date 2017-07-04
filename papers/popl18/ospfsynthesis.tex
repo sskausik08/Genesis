@@ -252,7 +252,7 @@ each path $\pi \in \Pi$ is the unique shortest path between its endpoints.
 	and obtain the following: 
 	\[
 	\sum_{\mathclap{\substack{(s_{i-1}, s_i)\cdots(s_n, d)}}} 
-	W < W(s_{i-1}, r_i)+ W(r_i, r_{i+1}) + D(r_2, d)
+	W < W(s_{i-1}, r_i)+ W(r_i, r_{i+1}) + D(r_{i+1}, d)
 	\] 
 	\begin{center}
 		$\ldots$
@@ -267,7 +267,7 @@ each path $\pi \in \Pi$ is the unique shortest path between its endpoints.
 	\sum_{\mathclap{\substack{(r_{i-1}, r_i)\cdots(r_m, d)}}} 
 	W
 	\]
-	Adding $\Sigma_{(s, s_1)\cdots(s_{i-2},s_{i-1})}$ to both sides:
+	Adding $\Sigma_{(s, s_1)\cdots(s_{i-2},s_{i-1})}W$ to both sides:
 	\[
 	\sum_{\mathclap{\substack{\pi}}} 
 	W < 
@@ -430,7 +430,7 @@ and the approach is repeated until a solution is found.
 					\While{$\Psi$ is \emph{unsat}} 
 					\State{Extract unsat core $uc$ from LP Solver}
 					\State{Pick static route $sr(s, t, \lambda)$ from $uc$ constraints}
-					\State{Add $sr$ to static routes $SR$ \label{line:staticroute}}
+					\State{Add $sr$ to static routes $SR$ \label{linstaticroute}}
 					\State{$\Psi = \Psi \setminus \Psi_U(s, \lambda)$ \label{line:removeconstraint}}
 					\EndWhile
 					\State{Obtain $W$ from solution model of $\Psi$}

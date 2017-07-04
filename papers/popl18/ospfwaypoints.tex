@@ -331,6 +331,7 @@ by adding a static route
 $(sr_2, N_{\xi_\lambda}(sr_2))$ to $SR(\lambda)$. 
 \name then adds loop-avoidance constraints for the new static
 route and continues with the unsat-core learning algorithm. 
+\kausik{Do we need a theorem for this?}
 
 \subsubsection{Configurations for Two Paths} \label{sec:ospfresilience}
 To guarantee policy-resilience, \name
@@ -378,9 +379,6 @@ to $r_1$ which sends it back to $r_0$ through $r_3$,
 causing a routing loop. 
 
 
-
-
-
 \begin{figure}
 	\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
 	square/.style={regular polygon,regular polygon sides=4}] 
@@ -423,7 +421,8 @@ To avoid this problem, when this happens,
 \name modifies the configurations to ensure that traffic is split.
 When dealing with static routes,
 the routes seen at $s$ may not 
-correspond to the ones with shorter, thus simply 
+correspond to weights of $\pi_1$ and $\pi_2$, 
+thus simply 
 the constraint $W(\pi_1) = W(\pi_2)$ does not ensure the 
 traffic will split (see \Cref{fig:ospfresexample}).
 
