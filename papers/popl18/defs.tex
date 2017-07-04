@@ -73,7 +73,8 @@
 \algtext*{EndIf}% Remove "end if" text
 \algtext*{EndProcedure}% Remove "end while" text
 \algtext*{EndFor}% Remove "end while" text
-
+\let\oldReturn\Return
+\renewcommand{\Return}{\State\oldReturn}
 \makeatletter
 \lst@InstallKeywords k{attributes}{attributestyle}\slshape{attributestyle}{}ld
 \makeatother

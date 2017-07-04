@@ -223,9 +223,9 @@ each path $\pi \in \Pi$ is the unique shortest path between its endpoints.
 \begin{proof}
 	Let us assume there exists a path $\pi
 	= (s, s_1)(s_1, s_2) 
-	\ldots (s_n, d)$ in $Pi$ such that $\pi$ is \emph{not} the shortest 
-	path between $s$ and $d$. Let us denote the shortest
-	 path by $\overline{\pi} = (s, r_1)(r_1, r_2)\ldots (r_m,
+	\ldots (s_n, d)$ in $Pi$ such that $\pi$ is \emph{not} the unique 
+	shortest path between $s$ and $d$. Let one of the shortest
+	 paths be $\overline{\pi} = (s, r_1)(r_1, r_2)\ldots (r_m,
 	 d)$. 
     Without loss of generality, we assume $s_1 \not= r_1$, 
 	else, we can consider the source to be 
@@ -233,13 +233,13 @@ each path $\pi \in \Pi$ is the unique shortest path between its endpoints.
 	
 	\noindent Since, $\overline{\pi}$ is the shortest weighted path: 
 	\begin{equation} \label{eq:assumption}
-	\sum_{\pi} W(s_i, s_j) > \sum_{\overline{\pi}} W(r_i, r_j)
+	\sum_{\pi} W(s_i, s_j) \geq \sum_{\overline{\pi}} W(r_i, r_j)
 	\end{equation}
 	
 	The constraints (\ref{eq:unique}) impose $\pi$ to be the
 	unique shortest path by ensuring the edge weights of $\pi$
 	are smaller than any path going through a neighbouring 
-	router of $s$ other than $s_1$. Let us consider the 
+	router of $s$ other than $s_1$. Consider the 
 	neighbour router $r_1$ in $\overline{\pi}$:
 	\[
 	\sum_{\mathclap{\substack{\pi}}} 
@@ -264,8 +264,9 @@ each path $\pi \in \Pi$ is the unique shortest path between its endpoints.
 	W(r_i,r_j)
 	\]
 	This contradicts assumption (\ref{eq:assumption}) that 
-	$\overline{\pi}$ is the shortest path from $s$ to $d$. 
-	Hence, proved.
+	$\overline{\pi}$ is one of the shortest paths from $s$ to $d$. 
+	Hence, proved, all paths in $\Pi$ are the unique shortest paths if $W$
+	satisfy constraints (\ref{eq:distance}) and (\ref{eq:unique}).
 \end{proof}
 
 %\begin{figure}[!t]
@@ -410,14 +411,19 @@ and the approach is repeated until a solution is found.
 				\caption{OSPF Synthesis with Static Routes}
 				\label{alg:unsat}
 				\begin{algorithmic}[1]
-					\Procedure{OSPFSynthesis}{} 
-					\State{$\Psi:$ Constraints generated from (\ref{eq:distance}) and (\ref{eq:unique})} 
+					\Procedure{OSPF_SYNTH}{$\Pi$} 
+					\State{$\Psi_D:$ Distance constraints (\ref{eq:distance})}
+					\State{$\Psi_U:$ Shortest path constraints generated for $\Pi$ 
+						(\ref{eq:unique})}
+					\State{$\Psi = \Psi_D \cup \Psi_U$} 
 					\While{$\Psi$ is \emph{unsat}} 
-					\State{Extract unsat core $C$ from LP Solver}
-					\State{Pick one static route $sr$ from $C$ constraints}
+					\State{Extract unsat core $uc$ from LP Solver}
+					\State{Pick static route $sr(s, t, \lambda)$ from $uc$ constraints}
 					\State{Add $sr$ to static routes $SR$}
-					\State{$\Psi = \Psi \setminus C$}
-					\EndWhile 
+					\State{$\Psi = \Psi \setminus \Psi_U(s, \lambda)$}
+					\EndWhile
+					\State{Obtain $W$ from solution model of $\Psi$}
+					\Return{Configuration $C(W,SR)$} 
 					\EndProcedure
 				\end{algorithmic}
 			\end{footnotesize}
@@ -437,22 +443,25 @@ In our case, an IIS cannot consist of only
 constraints from \Cref{eq:distance} as these constraints
 admit a trivial solution with all variables set to 0. 
 Therefore, an IIS must contain some constraint of the form
-given in  Equations~(\ref{eq:unique})
-that was added in to reason about a destination tree $\xi_\lambda$. 
+given in Equations~(\ref{eq:unique})
+that was added in to reason about a destination tree $\xi_\lambda$
+at router $s$. Let us denote 
+this set of constraints as $\Psi_U(s, \lambda)$:
 \[
-\sum_{\mathclap{\substack{l_i=(r_1,r_2)}}} 
-W_{r_1}^{r_2} < W_s^r + D_r^{R_\lambda}  
+[\sum_{\mathclap{\substack{l_i=(r_1,r_2)}}} 
+W(r_1, r_2) < W(s, r) + D(r, R_\lambda) ] \in \Psi_U(s, \lambda)
 \]	
 This constraint is added to ensure 
-that router $s$ forwards to traffic to  
-$N_{\xi_\lambda}$ and not $r$, based on OSPF weights,
+that router $s$ forwards to traffic to next-hop
+$N_{\xi_\lambda}(s)$ and not some neighbor router 
+$r$, based on OSPF weights,
 but the path through $r$ is causing the unsatisfiability. 
 To remove this inequality from the set of constraints, 
-we add the static route $(s,N_{\xi_\lambda})$ to $SR(\lambda)$.
+we add the static route $(s,N_{\xi_\lambda}(s))$ to $SR(\lambda)$.
 As a result of adding of static route, \name removes 
-all constraints of \Cref{eq:unique} as router $s$ 
+the $\Psi_U(s, \lambda)$ constraints as router $s$ 
 will forward $\lambda$ traffic  to 
-next-hop $N_{\xi_\lambda}$ irrespective of
+next-hop $N_{\xi_\lambda}(s)$ irrespective of
 the OSPF distances to the destination; the 
 unsatisfiability caused by this IIS is eliminated. 
 However, the new set of
@@ -461,4 +470,5 @@ We repeat the procedure and add static routes
 until we obtain a satisfiable set of
 constraints. 
 In each iteration, there can be more than one way to place a static route and
-\name picks one randomly. 
+\name picks one randomly. ~\Cref{alg:unsat} illustrates
+this unsat-core based approach of finding the static routes and edge weights.
