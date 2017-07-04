@@ -1,9 +1,10 @@
 
 We will now present the correctness result of \Cref{alg:unsat}. 
 \begin{theorem}[Correctness]
-	For the input set of paths $\Pi$, {\small \sc OSPF_SYNTH} outputs
-	configuration $C(W,SR)$ such that, every path in $\Pi$ is
-	induced by the network configuration $C$. 
+	Given a set of paths $\Pi$, \Cref{alg:unsat} outputs
+	a configuration $C(W,SR)$ such that, every path in $\Pi$ is
+	induced by the network configuration $C$.
+	\loris{why not "such that $\Pi\subseteq\paths^C(pc)$"?}
 %	For a OSPF configuration $C$ with edge weights $W$ and
 %	static routes $SR$, and for a packet class $pc$, source router $s_{pc}$, destination router $d_{pc}$ and destination $\lambda_{pc}$ and the path provided by Genesis $\pi_{pc}$, \Cref{alg:unsat} produces $W$ and $SR$ 
 %	such that $GP$	is in the set of induced paths of $C$, i.e., $~~\pi_{pc} \in \paths^C(pc)$
@@ -11,14 +12,14 @@ We will now present the correctness result of \Cref{alg:unsat}.
 \begin{proof}
 Let us assume there exists a packet class $pc$ whose path $\pi_{pc} =
 (s_{pc}, s_1)$ $ (s_1, s_2) \
-\ldots (s_n, d_{pc})$ is not induced by $C$, i.e.,
+\ldots (s_n, d_{pc})$ is not induced by $C$---i.e.,
 $\pi_{pc} \not\in \paths^C(pc)$. Let the destination IP of $pc$ be
 $\lambda_{pc}$.
 
 Given the routing function $\route^C$ constructed from $SR$ and
-$W$ (\secref{sec:routingmodel}), let the first router where routing diverges from $GP$ be $s_p$, i.e.,  
+$W$ (\secref{sec:routingmodel}), let the first router where routing diverges from $GP$ be $s_p$---i.e.,  
 $s_{p+1} \not\in \route^C(s_{p}, \lambda_{pc})$. Let us consider  $r \in \route^C(s_{p}, \lambda_{pc})$.  
-{\small \sc OSPF_SYNTH} adds thje following
+\Cref{alg:unsat} on line \loris{??} adds the following \loris{is the following (4) or (6)? Reword}
 constraint (\ref{eq:unique}) to ensure the sub-path of $\pi_{pc}$ 
 from $s_{p}$ to $d_{pc}$ is the unique shortest path: 
 \begin{equation} \label{eq:uniq}
@@ -26,15 +27,16 @@ from $s_{p}$ to $d_{pc}$ is the unique shortest path:
 W(s_i, s_j) < W(s_{p}, r) + D(r, d_{pc})
 \end{equation}
 
-{\small \sc OSPF_SYNTH} 
+\Cref{alg:unsat}
 only removes a subset of the shortest path 
 constraints (\ref{eq:unique}) and 
 not the distance constraints (\ref{eq:distance}). We consider 
-two cases: whether {\small \sc OSPF_SYNTH} 
+two cases: whether \Cref{alg:unsat}
 removes Constraint (\ref{eq:uniq}) or not. 
+\loris{in the following, refer to line numbers to help the reader understand}
 
 \paragraph{Case 1:} 
-{\small \sc OSPF_SYNTH} does not remove Constraint (\ref{eq:uniq}). 
+\Cref{alg:unsat} does not remove Constraint (\ref{eq:uniq}). 
 Thus, there is no static route $(s_p, s_{p+1})$ for
 $\lambda_{pc}$, and OSPF-based forwarding occurs at $s_{p}$. 
 For any path $(r, r_1), (r_1, r_2) \ldots (r_m, d_{pc})$, 
@@ -58,12 +60,9 @@ path, therefore, $r$ cannot be in $R^C_{ospf}(s_p, \lambda_{pc})$,
 which is a contradiction. 
 
 \paragraph{Case 2:}  
-{\small \sc OSPF_SYNTH} removes Constraint (\ref{eq:uniq}) 
+\Cref{alg:unsat} removes Constraint (\ref{eq:uniq}) 
 and $SR(s_p, \lambda_{pc}) = \{s_{p+1}\}$. 
 Thus, $s_{p+1} \in \route^C(s_{p}, \lambda_{pc})$ as static routes 
 have the higher priority than OSPF. This contradicts our assumption
 that $s_{p+1} \not\in \route^C(s_{p}, \lambda_{pc})$. 
-
-Hence, proved for all packet classes 
-$pc. ~\pi_{pc} \in \paths^C(pc)$.
 \end{proof}
