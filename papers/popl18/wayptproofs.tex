@@ -1,20 +1,23 @@
+\loris{All the theorems are just soundness not correctness}
+
 \begin{theorem}[Correctness]
 	For a set of waypoint paths $\{(\pi_{pc}, \waypt_{pc}) ~|~ pc\}$, if edge weights 
 	$W$ satisfy constraints (\ref{eq:wdistance}) and (\ref{eq:waypoint}), then for
-	each packet class, the shortest path 
-	traverses through one of waypoints in $\waypt$.
+	each packet class, the shortest path  \loris{from where to where?}
+	traverses through one of the waypoints in $\waypt$.
 \end{theorem}
 \begin{proof}
 	Let us assume there exists a packet class $pc$ with waypoint set $\waypt_{pc}$ 
 	and waypoint path $\pi_{pc} = (s_{pc}, s_1)(s_1, s_2)\ldots (s_n, d_{pc})$, 
 	such that for $pc$, the 
 	shortest path $\sigma_{pc}=(s_{pc}, r_1)$ $(r_1, r_2)\ldots (r_m, d_{pc})$ 
-	is not waypoint-compliant, i.e.,  
-	$\forall w \in \waypt.~w \not\in \sigma_{pc}$. 
-	Let $s_i \not= r_i$ be the first point divergence of the paths ($s_{i-1} = r_{i-1}$).
+	is not waypoint-compliant---i.e.,  
+	$\forall w \in \waypt.~w \not\in \sigma_{pc}$ \loris{doesn't typecheck, $\sigma_{pc}$ is a list of links not a set}. 
+	Let $s_i \not= r_i$ be the first point of divergence of the paths ($s_{i-1} = r_{i-1}$).
 	
 	
 	Since $\sigma_{pc}$ is the shortest weighted path: 
+	\loris{define the following notation somewhere}
 	\begin{equation} \label{eq:wassumption}
 	\sum_{\pi_{pc}} W \geq \sum_{\sigma_{pc}} W
 	\end{equation}
@@ -56,8 +59,9 @@ Let us consider the neighbour router $r_1$ in $\sigma_{pc}$:
 	W
 	\] 
 However, this contradicts the assumption (\ref{eq:wassumption}) that 
-$\sigma_{pc}$ is the shortest path from $s_{pc}$ to $d_{pc}$. Hence, proved, there is no path $\sigma_{pc} \in \paths^C(pc)$ such that $\forall w \in \waypt.~
-w \not\in \sigma_{pc}$. 
+$\sigma_{pc}$ is the shortest path from $s_{pc}$ to $d_{pc}$. 
+%Hence, proved, there is no path $\sigma_{pc} \in \paths^C(pc)$ such that $\forall w \in \waypt.~
+%w \not\in \sigma_{pc}$. 
 \end{proof}
 
 %\begin{theorem}[Correctness with static routes]
