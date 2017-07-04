@@ -76,7 +76,7 @@ computationally hard problem.
 Given a
 network with a single domain,
 and a positive number $C_{sc}$,
-the problem generating
+the problem of generating
 a path-compliant configuration with at most $C_{sc}$ static routes
 is NP-complete.
 \end{theorem}
@@ -223,10 +223,10 @@ each path $\pi \in \Pi$ is the unique shortest path between its endpoints.
 \begin{proof}
 	Let us assume there exists a path $\pi
 	= (s, s_1)(s_1, s_2) 
-	\ldots (s_n, d)$ in $Pi$ such that $\pi$ is \emph{not} the unique 
-	shortest path between $s$ and $d$. Let one of the shortest
-	 paths be $\overline{\pi} = (s, r_1)(r_1, r_2)\ldots (r_m,
-	 d)$. 
+	\ldots (s_n, d)$ in $\Pi$ such that $\pi$ is \emph{not} the unique 
+	shortest path between $s$ and $d$. Let  $\overline{\pi} = (s, r_1)(r_1, r_2)\ldots (r_m,
+	 d)$ be one of the shortest path that is different from $\pi$. 
+	 \loris{just assume $s_i \neq r_i$ is the first point of divergence and change rest of proof}
     Without loss of generality, we assume $s_1 \not= r_1$, 
 	else, we can consider the source to be 
 	the first switch where the paths diverge. 
@@ -236,7 +236,7 @@ each path $\pi \in \Pi$ is the unique shortest path between its endpoints.
 	\sum_{\pi} W(s_i, s_j) \geq \sum_{\overline{\pi}} W(r_i, r_j)
 	\end{equation}
 	
-	The constraints (\ref{eq:unique}) impose $\pi$ to be the
+	Constraints (\ref{eq:unique}) impose $\pi$ to be the
 	unique shortest path by ensuring the edge weights of $\pi$
 	are smaller than any path going through a neighbouring 
 	router of $s$ other than $s_1$. Consider the 
@@ -245,7 +245,7 @@ each path $\pi \in \Pi$ is the unique shortest path between its endpoints.
 	\sum_{\mathclap{\substack{\pi}}} 
 	W(s_i,s_j) < W(s, r_1)+ D(r_1, d)
 	\]
-	Using constraint (\ref{eq:distance}) to expand the term $D(r_k, d)$ for $k <= m$: 
+	Using constraint (\ref{eq:distance}) to expand the term $D(r_k, d)$ for $k \leq m$: 
 	\[
 	\sum_{\mathclap{\substack{\pi}}} 
 	W(s_i,s_j) < W(s, r_1)+ W(r_1, r_2) + D(r_2, d)
