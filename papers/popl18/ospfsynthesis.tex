@@ -226,7 +226,10 @@ each path $\pi \in \Pi$ is the unique shortest path between its endpoints.
 	\ldots (s_n, d)$ in $\Pi$ such that $\pi$ is \emph{not} the unique 
 	shortest path between $s$ and $d$. Let  $\overline{\pi} = (s, r_1)(r_1, r_2)\ldots (r_m,
 	 d)$ be one of the shortest path that is different from $\pi$. 
-	 \loris{just assume $s_i \neq r_i$ is the first point of divergence and change rest of proof}
+	 \loris{just assume $s_i \neq r_i$ is the first point of divergence and change rest of proof.
+	However, you need to modify eq 4 to say that you do also for things that are not $r_1$,
+	or at least say it in the text. Right now eq 4 really only works for $r_1$.
+	 }
     Without loss of generality, we assume $s_1 \not= r_1$, 
 	else, we can consider the source to be 
 	the first switch where the paths diverge. 
@@ -239,13 +242,18 @@ each path $\pi \in \Pi$ is the unique shortest path between its endpoints.
 	Constraints (\ref{eq:unique}) impose $\pi$ to be the
 	unique shortest path by ensuring the edge weights of $\pi$
 	are smaller than any path going through a neighbouring 
-	router of $s$ other than $s_1$. Consider the 
+	router of $s$ other than $s_1$. 
+	\loris{you switched notation: $W_s^t$ vs $W(s,t)$	}
+	Consider the 
 	neighbour router $r_1$ in $\overline{\pi}$:
+   \loris{you mean $W(s_i,s_{i+1}) < W(s, r_1)+ W(r_1, r_2) + D(r_2, d)$?
+   Also the notation $\sum_\pi$ is never used before.}
 	\[
 	\sum_{\mathclap{\substack{\pi}}} 
 	W(s_i,s_j) < W(s, r_1)+ D(r_1, d)
 	\]
-	Using constraint (\ref{eq:distance}) to expand the term $D(r_k, d)$ for $k \leq m$: 
+	We can then use constraint (\ref{eq:distance}) to expand the term $D(r_k, d)$ for $k \leq m$
+	and obtain the following: 
 	\[
 	\sum_{\mathclap{\substack{\pi}}} 
 	W(s_i,s_j) < W(s, r_1)+ W(r_1, r_2) + D(r_2, d)
