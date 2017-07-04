@@ -1,26 +1,24 @@
 
 We will now present the correctness result of \Cref{alg:unsat}. 
 \begin{theorem}[Correctness]
-	Given a set of paths $\Pi$, \Cref{alg:unsat} outputs
-	a configuration $C(W,SR)$ such that, every path in $\Pi$ is
-	induced by the network configuration $C$.
-	\loris{why not "such that $\Pi\subseteq\paths^C(pc)$"?}
+	Given a set of packet classes $PC$ and paths $\Pi$, \Cref{alg:unsat} outputs
+	a configuration $C(W,SR)$ such that $\Pi\subseteq\paths^C(PC)$.
 %	For a OSPF configuration $C$ with edge weights $W$ and
 %	static routes $SR$, and for a packet class $pc$, source router $s_{pc}$, destination router $d_{pc}$ and destination $\lambda_{pc}$ and the path provided by Genesis $\pi_{pc}$, \Cref{alg:unsat} produces $W$ and $SR$ 
-%	such that $GP$	is in the set of induced paths of $C$, i.e., $~~\pi_{pc} \in \paths^C(pc)$
+%	such that $\pi_{pc}$	is in the set of induced paths of $C$, i.e., $~~\pi_{pc} \in \paths^C(pc)$
 \end{theorem}
 \begin{proof}
-Let us assume there exists a packet class $pc$ whose path $\pi_{pc} =
-(s_{pc}, s_1)$ $ (s_1, s_2) \
-\ldots (s_n, d_{pc})$ is not induced by $C$---i.e.,
+Let us assume there exists a packet class $pc$ in $PC$ whose path $\pi_{pc} =
+(s_{pc}, s_1)$ $ (s_1, s_2)$ 
+$\ldots (s_n, d_{pc})$ is not induced by $C$---i.e.,
 $\pi_{pc} \not\in \paths^C(pc)$. Let the destination IP of $pc$ be
 $\lambda_{pc}$.
 
 Given the routing function $\route^C$ constructed from $SR$ and
-$W$ (\secref{sec:routingmodel}), let the first router where routing diverges from $GP$ be $s_p$---i.e.,  
-$s_{p+1} \not\in \route^C(s_{p}, \lambda_{pc})$. Let us consider  $r \in \route^C(s_{p}, \lambda_{pc})$.  
-\Cref{alg:unsat} on line \loris{??} adds the following \loris{is the following (4) or (6)? Reword}
-constraint (\ref{eq:unique}) to ensure the sub-path of $\pi_{pc}$ 
+$W$ (\secref{sec:routingmodel}), let the first router where routing diverges from $\pi_{pc}$ be $s_p$---i.e.,  
+$s_{p+1} \not\in \route^C(s_{p}, \lambda_{pc})$. Let  $r \in \route^C(s_{p}, \lambda_{pc})$.  
+\Cref{alg:unsat} on line \ref{line:unique} adds the following
+constraint to ensure the sub-path of $\pi_{pc}$ 
 from $s_{p}$ to $d_{pc}$ is the unique shortest path: 
 \begin{equation} \label{eq:uniq}
 \sum_{\mathclap{\substack{(s_{p},s_{p+1})\ldots(s_{n},d_{pc})}}} 
@@ -29,16 +27,16 @@ W(s_i, s_j) < W(s_{p}, r) + D(r, d_{pc})
 
 \Cref{alg:unsat}
 only removes a subset of the shortest path 
-constraints (\ref{eq:unique}) and 
-not the distance constraints (\ref{eq:distance}). We consider 
+constraints and 
+not the distance constraints (\ref{line:removeconstraint}). We consider 
 two cases: whether \Cref{alg:unsat}
 removes Constraint (\ref{eq:uniq}) or not. 
-\loris{in the following, refer to line numbers to help the reader understand}
 
 \paragraph{Case 1:} 
 \Cref{alg:unsat} does not remove Constraint (\ref{eq:uniq}). 
 Thus, there is no static route $(s_p, s_{p+1})$ for
-$\lambda_{pc}$, and OSPF-based forwarding occurs at $s_{p}$. 
+$\lambda_{pc}$ (line \ref{line:staticroute}), and 
+OSPF-based forwarding occurs at $s_{p}$. 
 For any path $(r, r_1), (r_1, r_2) \ldots (r_m, d_{pc})$, 
 using the distance constraints (\ref{eq:distance}) to
 expand $D(r, d_{pc})$, we get the following: 
@@ -61,7 +59,7 @@ which is a contradiction.
 
 \paragraph{Case 2:}  
 \Cref{alg:unsat} removes Constraint (\ref{eq:uniq}) 
-and $SR(s_p, \lambda_{pc}) = \{s_{p+1}\}$. 
+and $SR(s_p, \lambda_{pc}) = \{s_{p+1}\}$ (lines \ref{line:staticroute}-\ref{line:removeconstraint}). 
 Thus, $s_{p+1} \in \route^C(s_{p}, \lambda_{pc})$ as static routes 
 have the higher priority than OSPF. This contradicts our assumption
 that $s_{p+1} \not\in \route^C(s_{p}, \lambda_{pc})$. 

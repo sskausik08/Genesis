@@ -184,18 +184,22 @@ next-hop neighbour of router $s$ in the destination tree $\xi_\lambda$---i.e., t
 of $s$ in the tree or no node if $s$ is the root of the tree. We denote the
 router directly connected to $\lambda$ (the root of the tree $\xi_\lambda$) by $R_\lambda$.
 
+For a path $\pi$, 
+$\sum_{\pi} W$ denotes the sum of weights of all 
+links in $\pi$. 
 The following equation ensures that, for any node $s$ in 
 $\xi_\lambda$, 
-the path $l_0\cdots l_k$ from $s$ to $R_\lambda$ 
+the path $(s,r_1)\cdots (r_n,R_\lambda)$ from $s$ to $R_\lambda$ 
 in $\xi_\lambda$ is the 
 \emph{unique shortest path}\footnote{
 If two paths have the same weight, then OSPF will 
 split the traffic among the two paths.
-} from $s$ to $R_\lambda$ in $T$.
+} from $s$ to $R_\lambda$ in $T$. 
 \begin{equation} \label{eq:unique}
+\forall s \in \xi_\lambda. ~
 \forall r \in N(s) \setminus N_{\xi_\lambda}(s).~~
-\sum_{\mathclap{\substack{l_i=(r_1,r_2)}}} 
-W_{r_1}^{r_2} < W_{s}^{r}+ D_{r}^{R_\lambda}
+\sum_{\mathclap{\substack{(s,r_1)\cdots (r_n,R_\lambda)}}} 
+W < W_{s}^{r}+ D_{r}^{R_\lambda}
 \end{equation}
 \Cref{eq:unique} guarantees that 
 the sum of the weights belonging to the path 
@@ -224,55 +228,54 @@ each path $\pi \in \Pi$ is the unique shortest path between its endpoints.
 	Let us assume there exists a path $\pi
 	= (s, s_1)(s_1, s_2) 
 	\ldots (s_n, d)$ in $\Pi$ such that $\pi$ is \emph{not} the unique 
-	shortest path between $s$ and $d$. Let  $\overline{\pi} = (s, r_1)(r_1, r_2)\ldots (r_m,
+	shortest path between $s$ and $d$. Let  $\sigma = (s, r_1)(r_1, r_2)\ldots (r_m,
 	 d)$ be one of the shortest path that is different from $\pi$. 
-	 \loris{just assume $s_i \neq r_i$ is the first point of divergence and change rest of proof.
-	However, you need to modify eq 4 to say that you do also for things that are not $r_1$,
-	or at least say it in the text. Right now eq 4 really only works for $r_1$.
-	 }
-    Without loss of generality, we assume $s_1 \not= r_1$, 
-	else, we can consider the source to be 
-	the first switch where the paths diverge. 
+	 Let $s_i \not= r_i$ be the first point divergence of the paths ($s_{i-1} = r_{i-1}$).
 	
-	\noindent Since, $\overline{\pi}$ is the shortest weighted path: 
+	\noindent Since, $\sigma$ is the shortest weighted path: 
 	\begin{equation} \label{eq:assumption}
-	\sum_{\pi} W(s_i, s_j) \geq \sum_{\overline{\pi}} W(r_i, r_j)
+	\sum_{\pi} W \geq \sum_{\sigma} W
 	\end{equation}
 	
-	Constraints (\ref{eq:unique}) impose $\pi$ to be the
-	unique shortest path by ensuring the edge weights of $\pi$
+	Consider router $s_{i-1}$. Constraints (\ref{eq:unique}) 
+	impose $(s_{i-1}, s_i)\ldots(s_n, d)$ to be the
+	unique shortest path by ensuring the edge weights of the path
 	are smaller than any path going through a neighbouring 
-	router of $s$ other than $s_1$. 
-	\loris{you switched notation: $W_s^t$ vs $W(s,t)$	}
+	router other than $s_i$. 
 	Consider the 
-	neighbour router $r_1$ in $\overline{\pi}$:
-   \loris{you mean $W(s_i,s_{i+1}) < W(s, r_1)+ W(r_1, r_2) + D(r_2, d)$?
-   Also the notation $\sum_\pi$ is never used before.}
+	neighbour router $r_i$ in $\sigma$:
 	\[
-	\sum_{\mathclap{\substack{\pi}}} 
-	W(s_i,s_j) < W(s, r_1)+ D(r_1, d)
+	\sum_{\mathclap{\substack{(s_{i-1}, s_i)\cdots(s_n, d)}}} 
+	W < W(s_{i-1}, r_i)+ D(r_i, d)
 	\]
-	We can then use constraint (\ref{eq:distance}) to expand the term $D(r_k, d)$ for $k \leq m$
+	We can then use constraint (\ref{eq:distance}) to expand the term $D(r_k, d)$ for $i \leq k \leq m$
 	and obtain the following: 
 	\[
-	\sum_{\mathclap{\substack{\pi}}} 
-	W(s_i,s_j) < W(s, r_1)+ W(r_1, r_2) + D(r_2, d)
+	\sum_{\mathclap{\substack{(s_{i-1}, s_i)\cdots(s_n, d)}}} 
+	W < W(s_{i-1}, r_i)+ W(r_i, r_{i+1}) + D(r_2, d)
 	\] 
 	\begin{center}
 		$\ldots$
 	\end{center}
 	\[
-	\sum_{\mathclap{\substack{\pi}}} 
-	W(s_i,s_j) < W(s, r_1)+ W(r_1, r_2) + \ldots W(r_{m}, d) + D(d, d)
+	\sum_{\mathclap{\substack{(s_{i-1}, s_i)\cdots(s_n, d)}}} 
+	W < W(s_{i-1}, r_i)+ W(r_i, r_{i+1}) + \ldots W(r_{m}, d) + D(d, d)
 	\] 
 	\[
-	\sum_{\mathclap{\substack{\pi}}} 
-	W(s_i,s_j) < 
-	\sum_{\mathclap{\substack{\overline{\pi}}}} 
-	W(r_i,r_j)
+	\sum_{\mathclap{\substack{(s_{i-1}, s_i)\cdots(s_n, d)}}} 
+	W \hspace{0.4cm}< \hspace{0.4cm}
+	\sum_{\mathclap{\substack{(r_{i-1}, r_i)\cdots(r_m, d)}}} 
+	W
 	\]
+	Adding $\Sigma_{(s, s_1)\cdots(s_{i-2},s_{i-1})}$ to both sides:
+	\[
+	\sum_{\mathclap{\substack{\pi}}} 
+	W < 
+	\sum_{\mathclap{\substack{\sigma}}} 
+	W
+	\] 
 	This contradicts assumption (\ref{eq:assumption}) that 
-	$\overline{\pi}$ is one of the shortest paths from $s$ to $d$. 
+	$\sigma$ is one of the shortest paths from $s$ to $d$. 
 	Hence, proved, all paths in $\Pi$ are the unique shortest paths if $W$
 	satisfy constraints (\ref{eq:distance}) and (\ref{eq:unique}).
 \end{proof}
@@ -422,13 +425,13 @@ and the approach is repeated until a solution is found.
 					\Procedure{OSPF_SYNTH}{$\Pi$} 
 					\State{$\Psi_D:$ Distance constraints (\ref{eq:distance})}
 					\State{$\Psi_U:$ Shortest path constraints generated for $\Pi$ 
-						(\ref{eq:unique})}
+						(\ref{eq:unique}) \label{line:unique} }
 					\State{$\Psi = \Psi_D \cup \Psi_U$} 
 					\While{$\Psi$ is \emph{unsat}} 
 					\State{Extract unsat core $uc$ from LP Solver}
 					\State{Pick static route $sr(s, t, \lambda)$ from $uc$ constraints}
-					\State{Add $sr$ to static routes $SR$}
-					\State{$\Psi = \Psi \setminus \Psi_U(s, \lambda)$}
+					\State{Add $sr$ to static routes $SR$ \label{line:staticroute}}
+					\State{$\Psi = \Psi \setminus \Psi_U(s, \lambda)$ \label{line:removeconstraint}}
 					\EndWhile
 					\State{Obtain $W$ from solution model of $\Psi$}
 					\Return{Configuration $C(W,SR)$} 
