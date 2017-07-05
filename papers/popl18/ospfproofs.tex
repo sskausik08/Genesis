@@ -29,8 +29,8 @@ W(s_i, s_j) < W(s_{p}, r) + D(r, d_{pc})
 only removes a subset of the shortest path 
 constraints and 
 not the distance constraints (\ref{line:removeconstraint}). We consider 
-two cases: whether \Cref{alg:unsat}
-removes Constraint (\ref{eq:uniq}) or not. 
+two cases: when \Cref{alg:unsat}
+does not remove Constraint (\ref{eq:uniq}) and when it does. 
 
 \paragraph{Case 1:} 
 \Cref{alg:unsat} does not remove Constraint (\ref{eq:uniq}). 
@@ -52,10 +52,10 @@ W(s_i, s_j) < W(s_{p}, r) + W(r, r_{1}) + D(r_{1}, d_{pc})
 W(s_i, s_j) < W(s_{p}, r) + W(r, r_{1}) + \ldots W(r_{m}, d_{pc}) + D(d_{pc}, d_{pc})
 \]
 Therefore, the weight of any path through $r$ is greater than 
-the path through $s_{p}$. However, 
+the path through $s_{p}$ and, since
 OSPF sends traffic through the shortest weighted
-path, therefore, $r$ cannot be in $R^C_{ospf}(s_p, \lambda_{pc})$,
-which is a contradiction. 
+path, $r$ cannot be in $R^C_{ospf}(s_p, \lambda_{pc})$.
+Hence a contradiction. 
 
 \paragraph{Case 2:}  
 \Cref{alg:unsat} removes Constraint (\ref{eq:uniq}) 
