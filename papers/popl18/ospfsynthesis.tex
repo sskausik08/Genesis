@@ -235,7 +235,8 @@ each path $\pi \in \Pi$ is the unique shortest path between its endpoints.
 	\sum_{\pi} W \geq \sum_{\sigma} W
 	\end{equation}
 	
-    Let $s_i \not= r_i$ be the first point divergence of the paths ($s_{i-1} = r_{i-1}$). Constraints (\ref{eq:unique}) 
+	Let $s_i \not= r_i$ be the first point of divergence of the paths---i.e., for every $j<i$, $s_{j} = r_{j}$.
+    Constraints (\ref{eq:unique}) 
 	impose $(s_{i-1}, s_i)\ldots(s_n, d)$ to be the
 	unique shortest path by ensuring the edge weights of the path
 	are smaller than any path going through a neighbouring 

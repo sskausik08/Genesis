@@ -14,8 +14,8 @@
 	a link $l$ failure 
 	such that for $pc$, the 
 	shortest path $\sigma_{pc}=(s_{pc}, r_1)$ $(r_1, r_2)\ldots (r_m, d_{pc})$ 
-	is not waypoint-compliant---i.e.,  
-	$\forall w \in \waypt_{pc}$, there doesn't exist a $p$ such that $r_p = w$. 
+	is not waypoint-compliant------i.e.,  
+	for every $i$, we have $r_i\not\in \waypt$.
 	
 	A single link $l$ failure cannot disable both $\pi_{pc}^1$ and $\pi_{pc}^2$ as they are 
 	edge-disjoint. 
@@ -46,7 +46,7 @@
 	\paragraph{Case 3:} Link $l$ is not in path $\pi_{pc}^1$ or $\pi_{pc}^2$. Using \Cref{thm:waypoint}, 
 	$\sigma_{pc}$ cannot be the shortest path as it does not traverse any waypoint in $\waypt_{pc}$. 
 	
-	Hence proved, under any arbitrary link failure, the shortest path between each packet class's 
+	Hence proved, under any arbitrary single-link failure, the shortest path between each packet class's 
 	endpoints traverses one of the waypoints in $\waypt_{pc}$.
 \end{proof}
 
