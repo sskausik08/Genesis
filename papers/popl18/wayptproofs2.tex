@@ -27,16 +27,47 @@ the theorem is correct.}
 	is a routing loop caused by static routes (OSPF forwarding
 	is loop-free).
 	We denote the set of static routes for $\lambda$ be $SR(\lambda)$. Note that
-	multiple packet classes can share the same destination IP, and we 
+	multiple packet classes can share the same destination IP
+	and destination router, and we 
 	construct a destination-based tree from these paths, denoted by 
-	$\xi_lambda$. 
+	$\xi_\lambda$ 
 
-	Let us assume the routing loop to be 
-	$(r_1, r_2) (r_2, r_3) \ldots (r_n, r_1)$.
-	Let $r_i$ and $r_j$ with $i < j$ be two routers
-	such that 
+	Let us denote the routing loop as 
+	$(r_0, r_1) (r_1, r_2) \ldots (r_{n-1}, r_0)$.
+	Since, the path is a loop with atleast one static route,
+	there must exist one router $r_i$ in the loop
+	such that $(r_{i-1}, r_i) \in SR(\lambda)$ and the
+	next router in the loop $r_j$ which has a static route
+	$(r_j, r_{j+1}) \in SR(\lambda)$ and $r_j$ is not downstream
+	to $r_i$ in $\xi_\lambda$ (meaning there is no directed path 
+	from $r_i$ to $r_j$ in $\xi_\lambda$). 
 
-	\kausik{More involved than I expected!}
+	Consider $r_i$. The path from $r_i$ to $r_j$ is 
+	due to OSPF forwarding, therefore, there exists a 
+	path $\sigma =
+	(r_i, r_{i+1})\ldots(r_{j-1}, r_j)(r_j, l_1) \ldots (l_{o}, d_{pc})$
+	which is the shortest path  from $r_i$ to $d_{pc}$. 
+
+	Since static routes are only added on edges in $\xi_\lambda$, 
+	let us denote the path from $r_{i}$ to $d_{pc}$ in 
+	$\xi_\lambda$ as $(r_{i}, u_1)(u_1, u_2)\ldots(u_p, d_{pc})$. 
+	Consider constraint (\ref{eq:rla}) which is added for static route 
+	$(r_{i-1}, r_i)$ and non-downstream router $r_j$:
+	\[
+	\sum_{\mathclap{\substack{(r_{i}, u_1)\ldots(u_p, d_{pc})}}} 
+	W < D(r_i, r_j) + D(r_j, d_{pc}) 
+	\]
+	Using distance constraints (\ref{eq:distance}), we can expand 
+	$D(r_i, r_j)$ and $D(r_j, d_{pc})$ along the paths 
+	$(r_i, r_{i+1})\ldots(r_{j-1}, r_j)$ and $(r_j, l_1) \ldots (l_{o}, d_{pc})$
+	respectively. 
+	\[
+	\sum_{\mathclap{\substack{(r_{i}, u_1)\ldots(u_p, d_{pc})}}} 
+	W < \hspace{0.8cm} \sum_{\mathclap{\substack{(r_i, r_{i+1})\ldots(r_{j-1}, r_j)}}}W \hspace{0.6cm} + 
+	\hspace{0.6cm} \sum_{\mathclap{\substack{(r_j, l_1) \ldots (l_{o}, d_{pc})}}}W  
+	\]
+	However, this contradicts the assumption that $\sigma$ is 
+	the shortest path from $r_i$ to $d_{pc}$. 
 
 	\paragraph{Case 2:} All paths in $\paths^C(pc)
 	\not=\emptyset$ are not waypoint-compliant. 
@@ -60,7 +91,7 @@ the theorem is correct.}
 	two cases: whether \Cref{alg:wayptunsat}
 	removes Constraint (\ref{eq:wuniq}) or not. 
 
-	\paragraph{Case 1:} 
+	\paragraph{Case 2A:} 
 	\Cref{alg:wayptunsat} does not remove Constraint (\ref{eq:wuniq}). 
 	Thus, there is no static route $(s_p, s_{p+1})$ for
 	$\lambda_{pc}$ (line \ref{line:wstaticroute}), and 
@@ -80,18 +111,20 @@ the theorem is correct.}
 	\sum_{\mathclap{\substack{(s_{p}, s_{p+1})\cdots(s_n, d_{pc})}}} 
 	W < W(s_{p}, r_{p+1})+ \ldots + W(r_{m}, d_{pc}) + D(d_{pc}, d_{pc}, \waypt_{pc})
 	\]
-	By adding weights of $(s_{pc}, s_1)\ldots(s_{p-1}, s_p)$, we obtain that weight of $\sigma_{pc}$ is smaller than. 
+	By adding weights of $(s_{pc}, s_1)\ldots(s_{p-1}, s_p)$, we obtain that weight of $\sigma_{pc}$ 
+	is greater than $\pi_{pc}$. If there is no static route on $\sigma_{pc}$, then, this is a contradiction
+	as OSPF has a shorter path $\pi_{pc}$ to send traffic to.  If $\sigma_{pc}$ has a static route on the
+	path, we consider the first divergence from the static route and use (\ref{eq:wdistance}) from that
+	router. 
+	\kausik{Very sketchy. }
 	
-	Therefore, the weight of any path through $r$ is greater than 
-	the path through $s_{p}$. However, 
-	OSPF sends traffic through the shortest weighted
-	path, therefore, $r$ cannot be in $R^C_{ospf}(s_p, \lambda_{pc})$,
-	which is a contradiction. 
-
-	\paragraph{Case 2:}  
-	\Cref{alg:wayptunsat} removes Constraint (\ref{eq:uniq}) 
-	and $SR(s_p, \lambda_{pc}) = \{s_{p+1}\}$ (lines \ref{line:staticroute}-\ref{line:removeconstraint}). 
+	\paragraph{Case 2B:}  
+	\Cref{alg:wayptunsat} removes Constraint (\ref{eq:waypoint}) 
+	and $SR(s_p, \lambda_{pc}) = \{s_{p+1}\}$ (lines \ref{line:wstaticroute}-\ref{line:wremoveconstraint}). 
 	Thus, $s_{p+1} \in \route^C(s_{p}, \lambda_{pc})$ as static routes 
 	have the higher priority than OSPF. This contradicts our assumption
 	that $s_{p+1} \not\in \route^C(s_{p}, \lambda_{pc})$. 
+	
+	Hence proved, for every packet class, 
+	there exists a path in the set of induced paths which traverses through one of the waypoints. 
 	\end{proof}
