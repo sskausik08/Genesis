@@ -140,10 +140,10 @@ In this section, we show how to generate constraints that
 guarantee that a single waypoint-compliant path is shorter
 than any path which does \emph{not} traverse a waypoint. 
 
-We define $D_s^t(\waypt)$ to be the 
+We define $D(s,t,\waypt)$ to be the 
 distance between $s$ and $t$ for path that \emph{do not}
  traverse any waypoint $w \in \waypt$.
-We call  $D_s^t(\waypt)$ the \emph{non-waypoint distance}.
+We call  $D(s,t,\waypt)$ the \emph{non-waypoint distance}.
   We
    add constraints to represent these distances by
   considering a network topology where all the  
@@ -151,14 +151,14 @@ We call  $D_s^t(\waypt)$ the \emph{non-waypoint distance}.
  $T = (V,L)$, we add the following equations:
 \begin{equation} \label{eq:wdistance}
 \forall s, t \in V \setminus \waypt. ~\forall r \in N(s) \setminus \waypt.~
-D_s^t(\waypt) \leq W_s^r + D_r^t(\waypt)
+D(s, t, \waypt) \leq W(s, r) + D(r,t,\waypt)
 \end{equation}
 %These constraints are similar to the constraints specified in
 %\Cref{eq:distance}, but for an ``altered'' topology where all
 %the waypoint routers are removed, and thus, any path in this 
 %topology is not compliant with the waypoint policy. 
 Using these equations,
-$D_s^t(\waypt)$ is upper bounded by the actual shortest non-waypoint distance from $s$ to $t$.
+$D(s,t,\waypt)$ is upper bounded by the actual shortest non-waypoint distance from $s$ to $t$.
 
 \definecolor{orange}{RGB}{255, 157, 30} 
 
@@ -169,7 +169,7 @@ there exists a path from $r$ to $w$ in $\xi_\lambda$.
 The path from $r$ must traverse through 
 a waypoint in $\waypt$.  
 Suppose, the sum of weights of the edges of
-the path in the tree $W(r \rightarrow^+_{\xi_\lambda} R_\lambda)$  
+the path in the tree $r \rightarrow^+_{\xi_\lambda} R_\lambda$  
 is strictly smaller than the non-waypoint 
 distance from $r$ to $R_\lambda$. This property ensures that 
 the any path from $r$ to $R_\lambda$ that does not go through
@@ -178,9 +178,9 @@ $\xi_\lambda$.
 Hence, the path from $r$ to $R_\lambda$ is guaranteed to traverse
 a waypoint $w \in \waypt$. These constraints are expressed as follows:
 \begin{equation} \label{eq:waypoint}
-\forall r' \in N(s) \setminus N_{\xi_\lambda}(r).~~ \sum_{\mathclap{\substack{l_i=(r_1,r_2)}}} 
-W_{r_1}^{r_2} < 
-W_{r}^{r'}+ D_{r'}^{R_\lambda}(\waypt) 
+\forall r' \in N(s) \setminus N_{\xi_\lambda}(r).~~ \sum_{\mathclap{\substack{r \rightarrow^+_{\xi_\lambda} R_\lambda}}} 
+W < 
+W(r, r')+ D(r', R_\lambda, \waypt) 
 \end{equation}
 %\begin{figure*}
 %		\subfloat[Waypoint-compliant edge weights] {
@@ -480,7 +480,7 @@ router $r' \not= r_2$.
 %the OSPF shortest route at $r_1$ and \emph{steers} $\lambda$ 
 %traffic to $r_2$ and not $r'$. 
 Therefore, the weight of $\pi$,
-$W(\pi)$, is greater or equal than the 
+ is greater or equal than the 
 actual OSPF distance
 between $s$ and $t$ corresponding to $\pi_1$. 
 Suppose $\pi = l_1 \ldots l_k = (u_1, v_1) \ldots (u_k, v_k)$ 
@@ -500,25 +500,25 @@ corresponding to $\pi_1$
 as the sum of weights till $u_\alpha$ plus the distance
 from $u_\alpha$ to $t$. In our running example, 
 $u_\alpha = r_0$, and the distance between $s$ to $t$ 
-is estimated as $W_s^{r_0} + D_{r_0}^t = 1 + (1 + 1 + 1)$
+is estimated as $W(s, r_0) + D(r_0, t) = 1 + (1 + 1 + 1)$
 which is the shortest OSPF distance. 
 
 To enforce splitting amongst
 $\pi_1$ and $\pi_2$, we ensure that the weight 
-of the path $W(\pi_2)$\footnote{
+of the path $\pi_2$\footnote{
 Note that ideally, the OSPF distance corresponding to 
 $\pi_2$ would also depend on the first static route on
 $\pi_2$, our distance variables are upper bounded by actual
 distances and may not be equal, and thus, upper bounding 
 those variables in these constraints do not ensure soundness.
-As an approximation, we use $W(\pi_2)$ which is an upper bound
+As an approximation, we use $\sum_{\pi_2}$ which is an upper bound
 for the OSPF distance corresponding to 
 $\pi_2$. 
 } 
 is smaller or equal to 
 the estimated OSPF distance corresponding to $\pi_1$: 
 \begin{equation}
-	W(\pi_2) \leq \sum_{i=1}^{\alpha - 1} W_{u_i}^{v_i} + D_{u_\alpha}^t	
+	\sum_{\pi_2} W \leq \sum_{i=1}^{\alpha - 1} W_{u_i}^{v_i} + D_{u_\alpha}^t	
 \end{equation}
 
 Similar to the routing loop avoidance constraints, we add the
@@ -533,3 +533,5 @@ policy-resilience. However,
 judging by our experiments (\secref{sec:reseval}), 
 this technique generates highly resilient configurations 
 in practice. 
+
+\kausik{This is incomplete}

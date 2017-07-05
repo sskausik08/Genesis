@@ -155,18 +155,18 @@ Given a set of input paths $\Pi$, \name
 generates a set of linear constraints to 
 find weights 
 for each $(r_1, r_2) \in L$.
-The constraints use the variable $W_{r_1}^{r_2}$
+The constraints use the variable $W(r_1, r_2)$
 to denote the weight of the edge $(r_1, r_2)$, and the variable
-$D_{r_1}^{r_2}$ to denote the 
+$D(r_1, r_2)$ to denote the 
 shortest distance from $r_1$ to $r_2$.
-We add the equation $D_{s}^{s} = 0$
+We add the equation $D(s, s) = 0$
 for every $s\in S$, to denote that the distance
 from a node to itself is $0$.
-\Cref{eq:distance} guarantees that $D_{s}^{t}$ is smaller or equal to
+\Cref{eq:distance} guarantees that $D(s,t)$ is smaller or equal to
 the shortest distance from $s$ to $t$.
 \begin{equation} \label{eq:distance}
 \forall s, t. ~\forall r \in N(s).~
-D_s^t \leq W_s^r + D_r^t
+D(s,t) \leq W(s,r) + D(r,t)
 \end{equation}
 Intuitively, the shortest path connecting $s$ to $t$
 must traverse through one of the neighbor routers of $s$,
@@ -199,7 +199,7 @@ split the traffic among the two paths.
 \forall s \in \xi_\lambda. ~
 \forall r \in N(s) \setminus N_{\xi_\lambda}(s).~~
 \sum_{\mathclap{\substack{(s,r_1)\cdots (r_n,R_\lambda)}}} 
-W < W_{s}^{r}+ D_{r}^{R_\lambda}
+W < W(s,r) + D(r, R_\lambda)
 \end{equation}
 \Cref{eq:unique} guarantees that 
 the sum of the weights belonging to the path 
@@ -208,10 +208,10 @@ is strictly smaller than
 any path that goes to $R_\lambda$ via 
 a node $n'$ that is a neighbour of $s$ in $T$ but not 
 the next-hop in $\xi_\lambda$. Note that,
-while $D_{r}^{R_\lambda}$ can be smaller 
+while $D(r, R_\lambda)$ can be smaller 
 than the actual shortest
 distance from $r$ to $R_\lambda$, 
-$D_{r}^{R_\lambda}$ is used to upper bound the sum of edge weights 
+$D(r, R_\lambda)$ is used to upper bound the sum of edge weights 
 in $\xi_\lambda$, and  
 thus, the solution to the edge weights will ensure 
 paths in $\xi_\lambda$ are the shortest. 
@@ -279,10 +279,12 @@ each path $\pi \in \Pi$ is the unique shortest path between its endpoints.
 	satisfy constraints (\ref{eq:distance}) and (\ref{eq:unique}).
 \end{proof}
 					
+\kausik{This is complete as well.}
+
 \subsubsection{Intra-domain Synthesis with Static Routes} \label{sec:ospfsr}
 
 If the system of equations presented in Section~\ref{sec:ospf} admits a solution, 
-the values of the $W_s^t$ variables are the weights we are trying to synthesize,
+the values of the $W(s,t)$ variables are the weights we are trying to synthesize,
 otherwise the intra-domain synthesis problem 
 cannot be solved without static routes.
 
