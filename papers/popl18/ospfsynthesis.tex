@@ -229,15 +229,13 @@ each path $\pi \in \Pi$ is the unique shortest path between its endpoints.
 	= (s, s_1)(s_1, s_2) 
 	\ldots (s_n, d)$ in $\Pi$ such that $\pi$ is \emph{not} the unique 
 	shortest path between $s$ and $d$. Let  $\sigma = (s, r_1)(r_1, r_2)\ldots (r_m,
-	 d)$ be one of the shortest path that is different from $\pi$. 
-	 Let $s_i \not= r_i$ be the first point divergence of the paths ($s_{i-1} = r_{i-1}$).
-	
+	 d)$ be one of the shortest path that is different from $\pi$. 	
 	\noindent Since, $\sigma$ is the shortest weighted path: 
 	\begin{equation} \label{eq:assumption}
 	\sum_{\pi} W \geq \sum_{\sigma} W
 	\end{equation}
 	
-	Consider router $s_{i-1}$. Constraints (\ref{eq:unique}) 
+    Let $s_i \not= r_i$ be the first point divergence of the paths ($s_{i-1} = r_{i-1}$). Constraints (\ref{eq:unique}) 
 	impose $(s_{i-1}, s_i)\ldots(s_n, d)$ to be the
 	unique shortest path by ensuring the edge weights of the path
 	are smaller than any path going through a neighbouring 
