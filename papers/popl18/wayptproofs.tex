@@ -1,10 +1,8 @@
-\loris{All the theorems are just soundness not correctness}
-
-\begin{theorem}[Correctness]
+\begin{theorem}[Soundness] \label{thm:waypoint}
 	For a set of waypoint paths $\{(\pi_{pc}, \waypt_{pc}) ~|~ pc\}$, if edge weights 
 	$W$ satisfy constraints (\ref{eq:wdistance}) and (\ref{eq:waypoint}), then for
-	each packet class, the shortest path  \loris{from where to where?}
-	traverses through one of the waypoints in $\waypt$.
+	each packet class, the shortest path between its endpoints
+	traverses one of the waypoints in $\waypt_{pc}$.
 \end{theorem}
 \begin{proof}
 	Let us assume there exists a packet class $pc$ with waypoint set $\waypt_{pc}$ 
@@ -12,7 +10,7 @@
 	such that for $pc$, the 
 	shortest path $\sigma_{pc}=(s_{pc}, r_1)$ $(r_1, r_2)\ldots (r_m, d_{pc})$ 
 	is not waypoint-compliant---i.e.,  
-	$\forall w \in \waypt.~w \not\in \sigma_{pc}$ \loris{doesn't typecheck, $\sigma_{pc}$ is a list of links not a set}. 
+	$\forall w \in \waypt$, there doesn't exist a $p$ such that $r_p = w$.
 	Let $s_i \not= r_i$ be the first point of divergence of the paths ($s_{i-1} = r_{i-1}$).
 	
 	
