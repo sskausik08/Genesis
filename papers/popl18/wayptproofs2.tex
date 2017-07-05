@@ -1,0 +1,98 @@
+%!TEX root=paper.tex
+\begin{theorem}[Soundness]
+	Given a set of waypoint paths $\{(\pi_{pc}, \waypt_{pc}) ~|~ pc\}$,
+	\Cref{alg:wayptunsat} outputs a configuration $C(W,SR)$ 
+	such that for every packet class, 
+	there exists a path in $\paths^C(pc)$ which
+	traverses one of the waypoints in $\waypt_{pc}$.
+\end{theorem}
+\kausik{This proof is quite long, and is complicated
+by the fact that we dont enforce a particular path, 
+and static routes, which force me to enumerate a lot of 
+cases, I will think if there is an easier proof than the 
+half-completed one I have below. But I am pretty sure that 
+the theorem is correct.}
+\begin{proof}
+	Let us assume there exists a packet class $pc$ 
+	with destination $\lambda$, 
+	waypoint set $\waypt_{pc}$ 
+	and waypoint path $\pi_{pc} = (s_{pc}, s_1)(s_1, s_2)\ldots (s_n, d_{pc})$, 
+	such that for $pc$, 
+	there exists no path in $\paths^C(pc)$
+	which is waypoint-compliant. There are two
+	cases: either there exists no path in $\paths^C(pc)$ 
+	or the paths do not traverse any waypoint in $\waypt_{pc}$.
+
+	\paragraph{Case 1:} $\paths^C(pc) = \emptyset$---i.e., there
+	is a routing loop caused by static routes (OSPF forwarding
+	is loop-free).
+	We denote the set of static routes for $\lambda$ be $SR(\lambda)$. Note that
+	multiple packet classes can share the same destination IP, and we 
+	construct a destination-based tree from these paths, denoted by 
+	$\xi_lambda$. 
+
+	Let us assume the routing loop to be 
+	$(r_1, r_2) (r_2, r_3) \ldots (r_n, r_1)$.
+	Let $r_i$ and $r_j$ with $i < j$ be two routers
+	such that 
+
+	\kausik{More involved than I expected!}
+
+	\paragraph{Case 2:} All paths in $\paths^C(pc)
+	\not=\emptyset$ are not waypoint-compliant. 
+	Let $\sigma_{pc} = (s_{pc}, r_1)(r_1, r_2) \ldots
+	(r_n, d_{pc}$ be one such path in $\paths^C(pc)$.
+	Given the routing function $\route^C$ constructed from $SR$ and
+	$W$ (\secref{sec:routingmodel}), let the first router where routing diverges from $\pi_{pc}$ be $s_p$---i.e.,  
+	$s_{p+1} \not\in \route^C(s_{p}, \lambda_{pc})$. 
+	\Cref{alg:wayptunsat} on line \ref{line:waypoint} adds the following
+	constraint to ensure the sub-path of $\pi_{pc}$ 
+	from $s_{p}$ to $d_{pc}$ is shorter than non-waypoint paths:
+	\begin{equation} \label{eq:wuniq}
+	\sum_{\mathclap{\substack{(s_{p}, s_{p+1})\cdots(s_n, d_{pc})}}} 
+	W < W(s_{p}, r_{p+1})+ D(r_{p+1}, d_{pc}, \waypt_{pc})
+	\end{equation}
+
+	\Cref{alg:wayptunsat}
+	only removes a subset of the waypoint and loop constraints
+	constraints and 
+	not the distance constraints (\ref{line:wremoveconstraint}). We consider 
+	two cases: whether \Cref{alg:wayptunsat}
+	removes Constraint (\ref{eq:wuniq}) or not. 
+
+	\paragraph{Case 1:} 
+	\Cref{alg:wayptunsat} does not remove Constraint (\ref{eq:wuniq}). 
+	Thus, there is no static route $(s_p, s_{p+1})$ for
+	$\lambda_{pc}$ (line \ref{line:wstaticroute}), and 
+	OSPF-based forwarding occurs at $s_{p}$. 
+	Since $\sigma_{pc}$ does not traverse any 
+	waypoint in $\waypt_{pc}$,
+	we use constraints (\ref{eq:wdistance}) 
+	to expand the terms $D(r_k, d_{pc}, \waypt_{pc})$ for $p+1 \leq k \leq m$:
+	\[
+	\sum_{\mathclap{\substack{(s_{p}, s_{p+1})\cdots(s_n, d_{pc})}}} 
+	W < W(s_{p}, r_{p+1})+ W(r_{p+1}, r_{p+2}) + D(r_{p+2}, d_{pc},\waypt_{pc})
+	\] 
+	\begin{center}
+		$\ldots$
+	\end{center}
+	\[
+	\sum_{\mathclap{\substack{(s_{p}, s_{p+1})\cdots(s_n, d_{pc})}}} 
+	W < W(s_{p}, r_{p+1})+ \ldots + W(r_{m}, d_{pc}) + D(d_{pc}, d_{pc}, \waypt_{pc})
+	\]
+	By adding weights of $(s_{pc}, s_1)\ldots(s_{p-1}, s_p)$, we obtain that weight of $\sigma_{pc}$ is smaller than 
+	$\$ 
+	
+	Therefore, the weight of any path through $r$ is greater than 
+	the path through $s_{p}$. However, 
+	OSPF sends traffic through the shortest weighted
+	path, therefore, $r$ cannot be in $R^C_{ospf}(s_p, \lambda_{pc})$,
+	which is a contradiction. 
+
+	\paragraph{Case 2:}  
+	\Cref{alg:wayptunsat} removes Constraint (\ref{eq:uniq}) 
+	and $SR(s_p, \lambda_{pc}) = \{s_{p+1}\}$ (lines \ref{line:staticroute}-\ref{line:removeconstraint}). 
+	Thus, $s_{p+1} \in \route^C(s_{p}, \lambda_{pc})$ as static routes 
+	have the higher priority than OSPF. This contradicts our assumption
+	that $s_{p+1} \not\in \route^C(s_{p}, \lambda_{pc})$. 
+	\end{proof}
