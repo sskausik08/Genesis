@@ -331,7 +331,8 @@ by adding a static route
 $(sr_2, N_{\xi_\lambda}(sr_2))$ to $SR(\lambda)$. 
 \name then adds loop-avoidance constraints for the new static
 route and continues with the unsat-core learning algorithm. 
-\kausik{Do we need a theorem for this?}
+
+\input{wayptproofs2}
 
 \subsubsection{Configurations for Two Paths} \label{sec:ospfresilience}
 To guarantee policy-resilience, \name
@@ -350,13 +351,17 @@ the non-waypoint distance for $\lambda$.
 %which are shorter than non waypoint distance, the 
 %ordering of the weight of $\pi_1$ and $\pi_2$ is irrelevant. 
 \begin{equation} \label{eq:resilience}
-W(\pi_1) < D^t_s(\waypt) ~\wedge~ W(\pi_2) < D^t_s(\waypt) 
+\sum_{\pi_1}W < D(s,t,\waypt) ~\wedge~ \sum_{\pi_2}W < D(s,t,\waypt) 
 \end{equation}
 Notice that the constraints do not enforce an order between the weights of $\pi_1$ and $\pi_2$.
 Since the paths are edge-disjoint, if a single link fails, at most one 
 of the paths is affected. Suppose
 $\pi_1$ is affected, OSPF will not route traffic through a  
-non-waypoint-compliant path, as the weight of $\pi_2$ is shorter than any path which is not waypoint-compliant.
+non-waypoint-compliant path, as the weight of $\pi_2$ is shorter than any path which is not waypoint-compliant. For a OSPF configuration with no static routes,
+the synthesized configuration is policy-resilient. 
+
+\input{wayptproofs3}
+
 We next show how \name handles static routes.
 
 \paragraph{Resilience with Static Routes}
@@ -466,8 +471,8 @@ Note that ideally, the OSPF distance corresponding to
 $\pi_2$ would also depend on the first static route on
 $\pi_2$, our distance variables are upper bounded by actual
 distances and may not be equal, and thus, upper bounding 
-those variables in these constraints do not ensure correctness.
-For soundness, we use $W(\pi_2)$ which is an upper bound
+those variables in these constraints do not ensure soundness.
+As an approximation, we use $W(\pi_2)$ which is an upper bound
 for the OSPF distance corresponding to 
 $\pi_2$. 
 } 
