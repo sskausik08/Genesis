@@ -231,7 +231,7 @@ SR(r, \lambda) & \text{if } SR(r, \lambda) \not= \emptyset, \\
 \minisection{Induced paths}
 In the following, we assume a finite set of packet classes $PC = \{0, \ldots, C_{pc}\}$ 
 and map each reachability
-policy that requires the existence of a path between two endpoints
+policy that requires the existanence of a path between two endpoints
 to a unique integer in $PC$. The rest of the policies specify 
 properties on these paths. Each packet class $pc$ is associated
 with a tuple ($s_{pc}, d_{pc}, \lambda_{pc})$ which specifies 
@@ -251,35 +251,50 @@ Given a set of packet classes $PC$, the set of paths
 $\paths^C(PC) = \cup_{pc\in PC} \paths^C(pc)$.
 \end{definition}
 
-\subsection{Synthesis of policy-compliant configurations}
+\subsection{Policy Support}
+One of the foremost tasks in network management in enterprise 
+and multi-tenant datacenters\footnote{
+In a multi-tenant datacenter, different entities ("tenants") share the datacenter's 
+infrastructure (compute, network etc.).
+} 
+is programming 
+networks to forward traffic in a manner consistent with user- and
+application-induced high-level policies for performance and security considerations. 
+Unlike SDN, ``traditional'' networks are  heterogeneous and run different kinds of 
+protocols, and thus, operators require support to enforce and/or optimize different
+configuration structure and properties. 
+We classify Zeppelin's policy support into two categories: 
+(1) \emph{path policies}: high-level intents on paths of different traffic classes, and 
+(2) \emph{configuration policies}: low-level intents on the deployed router configurations. 
 
-\subsubsection{Policy Support}
 \Cref{tab:policysupport} describes 
-the common tenant and operator path policies 
-supported by \name. 
+the common path policies 
+supported by \name, particularly suited for operators 
+of a multi-tenant datacenter. 
 Given  a set $\Psi$ of
 path policies, we say that
-a set of paths $\Pi$ is policy-compliant with respect to $\Psi$, denoted 
-$\Pi \models \Psi$,
+a set of paths $\Pi$ is policy-compliant with respect to $\Psi$, 
+denoted  $\Pi \models \Psi$,
 if the paths in $\Pi$ satisfy all the policies in $\Psi$ (see~\cite{genesis} for the formal definition). 
-
 
 
 \minisection{Reachability w/o Waypoints}
 \input{policy}
 This policy enables network communication
-between pairs of tenant's virtual instances (VM), 
+between pairs of an tenant entity's virtual instances (VM), 
 applications, or hosts.  
-\kausik{Any communication that is not defined by a
-	reachability policy has to be explicitly blocked using ACLs 
-	(i.e., all communication is ``default on'').} 
 The tenant may wish that the flow
 between two of her end hosts, or from another tenant, must traverse
 specific middleboxes, which we also refer to as ``waypoints'' in
 this paper. Middleboxes are custom processing appliances often used
 for security, access control, or performance reasons (e.g.,
 firewalls, intrusion prevention systems, monitoring/accounting
-gateways, proxies, and load balancers). 
+gateways, proxies, and load balancers). Note that, \name 
+primarily supports routing policies for traffic allowed in the network.
+For access control policies of the form "host A cannot talk to B", operators
+can use \emph{admission control mechanisms} at endpoints 
+to disallow traffic blocked by policies. Supporting access control policies 
+in configurations is a subject for future work.    
 
 \minisection{Isolation} Tenants may require various
 Quality-of-Service (QoS) or security guarantees since the 
@@ -296,8 +311,13 @@ to balance load on their network infrastructure. This is often done
 by optimizing a network-wide objective such as total or maximum
 utilization of network links due to traffic induced by all tenants. 
 
-
-\Cref{tab:configpolicysupport} describes all the configuration policies supported by \name.
+The high-level path policies are enforced by different low-level 
+configuration constructs pertaining to routing protocols like OSPF and BGP, 
+and ideally, the operator requires support to impose constraints on the structure 
+and properties of the deployed configurations. 
+\Cref{tab:configpolicysupport} 
+describes all the configuration policies supported by \name for hierarchical 
+control planes. 
 A configuration $C$ satisfies a set of configuration policies $P$
 if $C$ satisfies every constraint in $P$.
 For each configuration policy 
@@ -325,7 +345,6 @@ for every domain $i$, we have $l\leq |\{r \mid \Theta(r)=i\}|\leq u$.
 	there does not exist a router $r'\in N(r)$ such that $\Theta(r) \not= \Theta(r')$
 
 \input{zeppelinPolicy}
-
 \minisection{Configuration Metrics}
 Finally, \name provides ways to specify upper bounds on the number of
 static routes---i.e., $sc=|\{(v, v', \lambda)\mid \exists v'. v' \in SR(v,\lambda)\}|\leq C_{sc}$--- and
@@ -351,9 +370,8 @@ since they increase the complexity of the network.
 %Therefore,
 %another objective \name considers is the configuration overhead
 %to ensure path-compliance.
-\subsubsection{Configuration Synthesis}
-
-\noindent We now define when a configuration $C$ is policy-compliant, present our synthesis problems, and introduce two definition of resilience we will use throughout the paper.
+\subsection{Synthesis of policy-compliant configurations}
+We now define when a configuration $C$ is policy-compliant, present our synthesis problems, and introduce two definition of resilience we will use throughout the paper.
 \begin{definition}[Policy-Compliance and Synthesis] \label{def:policycompliance}
 	Given a set of path policies $\Psi$ and a set of configuration policies $P$,
 	a configuration $C$ is policy-compliant with $(\Psi,P)$,  
@@ -375,9 +393,10 @@ and a set of paths $\Pi$ over packet classes $PC$,
 a configuration $C$ that is path-compliant with $(\Pi,P)$.
 \end{definition}
 
-\minisection{Resilience metrics}
+\minisection{1-Resilience metrics}
 One of the main goals of this paper is to 
-generate configurations that are highly resilient to failures.
+generate configurations that are highly resilient to failures. In this
+work, we focus on resilient configurations for single link failures. 
 For a packet class $pc$ and configuration $C$, we define 
 the set of links \emph{affecting} $pc$ as 
 $\links(pc) = \{l \mid \exists \pi \in \paths^C(pc).~l \in \pi  \}$.
@@ -389,8 +408,8 @@ we write $C_l$
 to denote the configuration
 $C=((V,L\setminus\{l\}), \Theta,W,LP,IF,SR)$
 in which the link $l$ has been removed from the topology.
-We present two different resilience metrics we will use in the following sections. 
-
+We present two different resilience metrics 
+we will use in the following sections. 
 
 The first metric describes how good a given configuration
 is at preserving policy-compliance under an 
@@ -405,7 +424,7 @@ PR(C)=\frac{\sum_{\forall pc} |\{ l \mid l \in \links(pc) ~\wedge~ C_l \models (
 where $C \models (\Psi_{pc}, P)$ means that $C$ is 
 compliant for the set of policies $\Psi_{pc}$ that affect packet class $pc$.
 The score measures, for each policy $pc$, what percentage of the links affecting $pc$
-causes a policy to stop holding when failing.
+causes a policy to still hold when failing.
 
 In general, generating configurations with high policy-resilience is hard,
 since there may be only a few paths that satisfy a certain policy.
@@ -422,7 +441,12 @@ CR(C)=\frac{\sum_{\forall pc} |\{ l \mid l \in \links(pc) ~\wedge~\paths^{C_l }(
 {\sum_{\forall pc} |\links(pc)|}
 \]
  
-
+Ideally, operators desire a resilience score of 1 (perfectly resilient for policy-compliance or
+preserving connectivity). However, achieving this in practice is difficult due to the 
+increased complexity of enumerating routing under 1-link failures for synthesizing 
+the configurations. We show in our experiments how we can synthesize configurations 
+with high resilience scores, and operators can run \name to generate different configurations upto 
+a threshold score is crossed. 
 %\todo{write resilience metrics here and some text like the following.}
 %\kausik{Ideally, the most important metric we want to maximize is resilience---i.e.,
 %the number of alternate paths between endpoints.
