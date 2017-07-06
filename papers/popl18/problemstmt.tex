@@ -271,15 +271,15 @@ We classify Zeppelin's policy support into two categories:
 the common path policies 
 supported by \name, particularly suited for operators 
 of a multi-tenant datacenter. 
+\loris{clarify we have a language to write them}
 Given  a set $\Psi$ of
 path policies, we say that
 a set of paths $\Pi$ is policy-compliant with respect to $\Psi$, 
 denoted  $\Pi \models \Psi$,
 if the paths in $\Pi$ satisfy all the policies in $\Psi$ (see~\cite{genesis} for the formal definition). 
 
-
-\minisection{Reachability w/o Waypoints}
 \input{policy}
+\minisection{Reachability and Waypoints}
 This policy enables network communication
 between pairs of an tenant entity's virtual instances (VM), 
 applications, or hosts.  
@@ -293,7 +293,7 @@ gateways, proxies, and load balancers). Note that, \name
 primarily supports routing policies for traffic allowed in the network.
 For access control policies of the form "host A cannot talk to B", operators
 can use \emph{admission control mechanisms} at endpoints 
-to disallow traffic blocked by policies. Supporting access control policies 
+to disallow traffic blocked by policies \loris{add citation}. Supporting access control policies 
 in configurations is a subject for future work.    
 
 \minisection{Isolation} Tenants may require various
@@ -324,18 +324,17 @@ For each configuration policy
 we define what it means for  a configuration $C=(T,\Theta,W,LP,IF,SR)$ to satisfy it.
 
 \minisection{OSPF Domains and Sizes}
-The first type of policy restricts how many OSPF domains $N_D$ a
+The first type of policy restricts how many OSPF domains $N_D= |\{\Theta(r)\mid r\in V\}|$ a
 configuration might have
-and it is satisfied by $C$ iff $c_1\leq |\{\Theta(r)\mid r\in V\}|\leq
+and it is satisfied by $C$ iff $c_1\leq N_D \leq
 c_2$.  This policy is useful for avoiding situations resulting in too
 many domains in the hierarchical split which can be difficult to
 administer.  The second type of policy allows the operator to restrict
-the size $ds$ of each OSPF domain, $l\leq ds\leq u$, because OSPF does
-not scale gracefully with network size.  This policy is satisfied if
-for every domain $i$, we have $l\leq |\{r \mid \Theta(r)=i\}|\leq u$.
+the size $ds=|\{r \mid \Theta(r)=i\}|$ of each OSPF domain, $l\leq ds\leq u$, because OSPF does
+not scale gracefully with network size.  
 
 
-\minisection{Resource Constraints.} Certain 
+\minisection{Resource Constraints} Certain 
 	routers may not be suited to run BGP due to resource
 	constraints. Thus, the operator can specify what set of 
 	routers $B\subseteq V$ is BGP-compatible.  
