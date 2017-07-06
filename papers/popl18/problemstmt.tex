@@ -101,8 +101,6 @@ to any router in the domain as $r$, then $G(\Theta(r),\lambda)$ is
 determined by the BGP configuration, which we will talk about later. 
 
 
-
-
 We now define the OSPF routing function $\route_{ospf}: 
 V \times \Lambda \mapsto 2^V$ so that
 $\route_{ospf}(r,\lambda)$
@@ -127,7 +125,6 @@ domain and, by default, a BGP router will forward a packet through the path that
 BGP routers can be configured with a
 \emph{local preference} variable to assign higher priorities to
 specific routes for a 
-\input{bgp-routing-algorithm} 
 particular destination. We define the local
 preference function $LP: V \times V \times \Lambda \mapsto \nat$ as
 follows.  Given a BGP router $r$, a neighbouring router $r'$, and  
@@ -149,6 +146,7 @@ such that,
 if a BGP router $r_1$ belongs to  $IF(r_2, \lambda)$, then
 the router $r_2$ will not advertise a route for $\lambda$ to
 $r_1$ through iBGP. 
+\input{bgp-routing-algorithm} s
  
 Algorithm~\ref{alg:bgppathrules} defines the BGP routing function
 based on the best path selection at each BGP router. 
@@ -254,7 +252,6 @@ $\paths^C(PC) = \cup_{pc\in PC} \paths^C(pc)$.
 \end{definition}
 
 \subsection{Synthesis of policy-compliant configurations}
-\input{policy}
 
 \subsubsection{Policy Support}
 \Cref{tab:policysupport} describes 
@@ -269,6 +266,7 @@ if the paths in $\Pi$ satisfy all the policies in $\Psi$ (see~\cite{genesis} for
 
 
 \minisection{Reachability w/o Waypoints}
+\input{policy}
 This policy enables network communication
 between pairs of tenant's virtual instances (VM), 
 applications, or hosts.  
@@ -325,6 +323,8 @@ for every domain $i$, we have $l\leq |\{r \mid \Theta(r)=i\}|\leq u$.
 	is a gateway router.
 	Formally, for every $r\in V\setminus B$,
 	there does not exist a router $r'\in N(r)$ such that $\Theta(r) \not= \Theta(r')$
+
+\input{zeppelinPolicy}
 
 \minisection{Configuration Metrics}
 Finally, \name provides ways to specify upper bounds on the number of
