@@ -413,6 +413,9 @@ we will use in the following sections.
 The first metric describes how good a given configuration
 is at preserving policy-compliance under an 
 arbitrary single link failure. 
+The score measures, for each policy $pc$, what percentage of the links affecting $pc$
+causes a policy to still hold when failing.
+\begin{definition}
 The \emph{policy-resilience} score of a configuration 
 $C=((V,L), \Theta,W,LP,IF,SR)$
 is defined as:
@@ -422,8 +425,7 @@ PR(C)=\frac{\sum_{\forall pc} |\{ l \mid l \in \links(pc) ~\wedge~ C_l \models (
 \]
 where $C \models (\Psi_{pc}, P)$ means that $C$ is 
 compliant for the set of policies $\Psi_{pc}$ that affect packet class $pc$.
-The score measures, for each policy $pc$, what percentage of the links affecting $pc$
-causes a policy to still hold when failing.
+\end{definition}
 
 In general, generating configurations with high policy-resilience is hard,
 since there may be only a few paths that satisfy a certain policy.
@@ -432,6 +434,7 @@ more relaxed metric, which describes how
 good a given configuration
 is at preserving connectivity
 (but not policy compliance) upon a single link failure. 
+\begin{definition}
 The \emph{connectivity-resilience} 
 score of a configuration $C=((V,L), \Theta,W,LP,IF,SR)$
 is defined as follows:
@@ -439,12 +442,15 @@ is defined as follows:
 CR(C)=\frac{\sum_{\forall pc} |\{ l \mid l \in \links(pc) ~\wedge~\paths^{C_l }(pc) \not= \emptyset  \}|}
 {\sum_{\forall pc} |\links(pc)|}
 \]
+\end{definition}
  
 Ideally, operators desire a resilience score of 1 (perfectly resilient for policy-compliance or
-preserving connectivity). However, achieving this in practice is difficult due to the 
-increased complexity of enumerating routing under 1-link failures for synthesizing 
-the configurations. We show in our experiments how we can synthesize configurations 
-with high resilience scores, and operators can run \name to generate different configurations upto 
+preserving connectivity). However, achieving this objective is in practice difficult  
+due to the 
+increased number of configurations one needs to consider,
+and sometimes impossible due to the structure of the network.
+In practice, \name can synthesize configurations 
+with high resilience scores and operators can run it to generate different configurations upto 
 a threshold score is crossed. 
 %\todo{write resilience metrics here and some text like the following.}
 %\kausik{Ideally, the most important metric we want to maximize is resilience---i.e.,
