@@ -259,11 +259,13 @@ Formally, even if $\pi_{pc}$ is greater than the non-waypoint distance between t
 violating constraints (\ref{eq:waypoint}), the shortest path could still traverse one of the waypoints in $\waypt_{pc}$.
 
 \subsubsection{Avoiding Routing Loops} \label{sec:loopavoidance}
+\Cref{alg:wayptunsat} presents the OSPF 
+synthesis algorithm with static
 \iffull
 \begin{figure}[t]
 \else
-\begin{wrapfigure}{r}{0.5\textwidth}
-	\vspace{-7mm}
+\begin{wrapfigure}{r}{0.52\textwidth}
+	\vspace{-6mm}
 	\fi
 	\begin{minipage}{\linewidth}
 		\begin{algorithm}[H]
@@ -295,8 +297,7 @@ violating constraints (\ref{eq:waypoint}), the shortest path could still travers
 \else
 \end{wrapfigure}
 \fi
-\Cref{alg:wayptunsat} presents the OSPF 
-synthesis algorithm with static routes.  
+routes.  
 If one of the constraints in \Cref{eq:waypoint} is part of an unsatisfiable  
 core, \name adds the static route $(r, N_{\xi_\lambda}(r))$ to
 $SR(\lambda)$ to eliminate the equations at router $r$. 
