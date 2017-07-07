@@ -240,6 +240,7 @@ For a set of paths $\Pi$, if edge weights
 $W$ satisfy constraints (\ref{eq:distance}) and (\ref{eq:unique}), then 
 each path $\pi \in \Pi$ is the unique shortest path between its endpoints. 
 \end{theorem}
+\iffull
 \begin{proof}
 	Let us assume there exists a path $\pi
 	= (s, s_1)(s_1, s_2) 
@@ -294,12 +295,24 @@ each path $\pi \in \Pi$ is the unique shortest path between its endpoints.
 	Hence, proved, all paths in $\Pi$ are the unique shortest paths if $W$
 	satisfy constraints (\ref{eq:distance}) and (\ref{eq:unique}).
 \end{proof}
-\kausik{
+\fi
+
 OSPF synthesis is complete as well---i.e., a solution for the OSPF weights
 such that all paths in $\Pi$ are the unique shortest paths, will satisfy constraints 
 (\ref{eq:distance}) and (\ref{eq:unique}).
-}
-\loris{unfortunately, this needs a proof...}
+\begin{theorem}[Completeness]
+For a set of paths $\Pi$ and edge weights $W$,
+if every path $\pi \in \Pi$ is the unique shortest path between its endpoints. 
+then
+$W$ satisfy constraints (\ref{eq:distance}) and (\ref{eq:unique}). 
+\end{theorem}
+\loris{complete proof in full version}
+\iffull
+\begin{proof}
+\loris{TODO}
+\end{proof}
+\fi
+
 
 \subsubsection{Intra-domain Synthesis with Static Routes} \label{sec:ospfsr}
 

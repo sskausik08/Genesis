@@ -7,6 +7,7 @@ We will now present the soundness result of \Cref{alg:unsat}.
 %	static routes $SR$, and for a packet class $pc$, source router $s_{pc}$, destination router $d_{pc}$ and destination $\lambda_{pc}$ and the path provided by Genesis $\pi_{pc}$, \Cref{alg:unsat} produces $W$ and $SR$ 
 %	such that $\pi_{pc}$	is in the set of induced paths of $C$, i.e., $~~\pi_{pc} \in \paths^C(pc)$
 \end{theorem}
+\iffull
 \begin{proof}
 Let us assume there exists a packet class $pc$ in $PC$ whose path $\pi_{pc} =
 (s_{pc}, s_1)$ $ (s_1, s_2)$ 
@@ -64,6 +65,7 @@ Thus, $s_{p+1} \in \route^C(s_{p}, \lambda_{pc})$ as static routes
 have the higher priority than OSPF. This contradicts our assumption
 that $s_{p+1} \not\in \route^C(s_{p}, \lambda_{pc})$. 
 \end{proof}
+\fi
 
 \paragraph{Completeness}
 For any input $(PC, \Pi)$, there is a trivial configuration of using static
