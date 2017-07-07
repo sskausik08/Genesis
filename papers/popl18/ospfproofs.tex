@@ -65,10 +65,15 @@ have the higher priority than OSPF. This contradicts our assumption
 that $s_{p+1} \not\in \route^C(s_{p}, \lambda_{pc})$. 
 \end{proof}
 
-\kausik{
+\paragraph{Completeness}
 For any input $(PC, \Pi)$, there is a trivial configuration of using static
 routes along each path to find a configuration $C$ such that  
-$\Pi\subseteq\paths^C(PC)$. However, if there is a configuration policy 
+$\Pi\subseteq\paths^C(PC)$. Therefore, without constraints on the
+number of static routes, \name is guaranteed to find a solution.
+However, if there is a configuration policy 
 upper bounding the number of static routes, \Cref{alg:unsat} is not guaranteed 
-to find $C$ if one exists. If we run \Cref{alg:unsat} multiple times, we are eventually 
-guaranteed to find a solution if one exists for the input $(PC, \Pi)$.}
+to find a compliant configurations, if one exists. 
+Completeness is recovered by running \Cref{alg:unsat} multiple times and choosing different
+unsatisfiable cores and static routes assignments. Since there can only be finitely many
+possible assignments, we are eventually 
+guaranteed to find a solution if one exists for the input $(PC, \Pi)$.
