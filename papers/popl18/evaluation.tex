@@ -305,3 +305,67 @@ by $0.1\times$.
 In summary, the answer to \textbf{Q3} is that,
 when allowed to try different domain assignments
 \textbf{\name can get configurations with higher connectivity-resilience mainly for workloads with large number of paths}.
+
+\subsection{Comparison to Synet}
+Synet~\cite{synet} is a network-wide configuration synthesis system 
+which supports multiple routing protocols (OSPF and BGP) and static 
+routes. In this section, we compare Synet's performance with Zeppelin 
+for OSPF + static route configuration synthesis workloads obtained from the 
+authors of Synet.
+
+\begin{wrapfigure}{r}{0.51\textwidth}
+	\vspace{-3mm}
+	\small
+		\begin{minipage}{\linewidth}
+			\begin{tabular}{m{3em} m{4.8em} m{3em} m{3em} m{3em}} 
+				{\bf Topo} & {\bf System} & {\bf 1 TC} & {\bf 5 TC} & {\bf 10 TC} \\ 
+				\hline
+				\multirow{3}{*}{I2}& Synet & 9 & 21.3 & 49.3 \\
+				 & Zeppelin & 0.025 &	0.030 &	0.034 \\
+				 & Speedup & \textbf{352$\times$} &	\textbf{698$\times$} &	\textbf{1417$\times$} \\ 
+				\hline 
+				\multirow{3}{*}{G3} & Synet & 9.4 &	19.8 &	39.9\\
+				 & Zeppelin &0.026 &	0.029 & 0.032 \\
+				& Speedup & \textbf{350$\times$}	& \textbf{677$\times$}	& \textbf{1244$\times$} \\ 
+			\end{tabular}
+		\end{minipage}
+		\caption{Comparison of synthesis times (s) of  
+			Zeppelin and Synet for OSPF + Static route workloads (1,5 and
+			10 traffic classes) and topologies (Internet2 and 3$\times$3 grid).  }
+		\label{tab:synetcomparison}
+\end{wrapfigure}
+
+
+For these experiments, we use two network topologies: (1) Internet2 (I2):
+a US-based network with 9 routers, and (2) G3: A $3 \times 3$ grid
+topology. The routing requirements defines the forwarding behavior
+for 1, 5, and 10 traffic classes, such that
+for each router and each traffic class, 
+the workload specifies the next-hop router and the protocol for 
+forwarding: OSPF or static route. 
+Thus, for a topology with n routers and m traffic classes, 
+the workload contains $n \times m$ Synet requirements. We 
+combine these requirements to generate paths to provide input 
+for \name's OSPF synthesis. Since the workload specifies which
+routers had static routes installed for the different classes, we 
+add these static routes (and remove the corresponding constraints), 
+and the LP solver is used to find the OSPF weights satisfying the 
+requirements in conjuction with the static routes.
+
+\Cref{tab:synetcomparison} shows Zeppelin outperforms Synet 
+for all the workloads and topologies, achieving a best case speedup 
+of 1417$\times$ for Internet9 topology with 10 traffic classes 
+(0.034 versus 49.3 seconds). In each of these experiments, Zeppelin 
+invokes the LP solver once and does not need to add more static routes
+than specified in the input requirements, which matches with the Synet 
+output (if more static routes were required, Synet would have returned 
+no solution for these experiments). The important aspect is that \name is 
+able to achieve 2-3 orders of magnitude speedup without \emph{sacrificing 
+completeness} (\Cref{sec:ospf}) for these workloads. 
+
+ 
+
+
+
+
+
