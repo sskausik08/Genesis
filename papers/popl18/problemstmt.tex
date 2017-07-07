@@ -113,6 +113,7 @@ shortest distance to router $r_\lambda$. This is expressed as follows.
 \route_{ospf}(r,\lambda) = \{r_1 ~|~ r_1 \in N(r)\wedge \forall r_2 \in N(s) .~W(r, r_1) + D(r_1, r_\lambda) \le 
 W(r, r_2) + D(r_2, r_\lambda)\}
 \]
+
 \minisection{BGP} BGP is a path-vector inter-domain routing protocol
 that connects different domains (also called autonomous systems), where each domain
 comprises of one or more routers typically managed by a single
@@ -122,14 +123,14 @@ a certain
 destination comprises of a domain-level path to the destination
 domain and, by default, a BGP router will forward a packet through the path that traverses fewer domains.
 BGP routers can be configured with a
-\emph{local preference} variable to assign higher priorities to
+\emph{local preference} to assign higher priorities to
 specific routes for a 
 particular destination. We define the local
 preference function $LP: V \times V \times \Lambda \mapsto \nat$ as
 follows.  Given a BGP router $r$, a neighbouring router $r'$, and  
 a destination $\lambda$, $LP(r, r', \lambda)$ specifies the local
 preference for the router $r$ to choose $r'$ as the next-hop router for destination $\lambda$.  This function is only defined
-on inter-domain links---i.e., $r$ and $r'$ must belong to different adjacent domains.  
+on inter-domain links---i.e., $r$ and $r'$ must belong to adjacent domains.  
 From the routes received at $r$, the router
 picks one with greatest local preference.
 
@@ -152,7 +153,7 @@ based on the best path selection at each BGP router.
 %a local preference function $LP$,
 Informally, BGP 
 chooses a route with highest local preference, and
-if there is a tie, it then chooses the route that traverses fewer domains~\cite{bgp}. 
+if there is a tie, it chooses the route that traverses fewer domains~\cite{bgp}. 
 We assume all ties 
 are broken using these criteria. 
 Formally, we define a partial BGP routing function 
@@ -251,7 +252,7 @@ $\paths^C(PC) = \cup_{pc\in PC} \paths^C(pc)$.
 \end{definition}
 
 \subsection{Policy Support}
-\input{policy}
+
 One of the foremost tasks in network management in enterprise 
 and multi-tenant datacenters\footnote{
 In a multi-tenant datacenter, different entities ("tenants") share the datacenter's 
@@ -267,6 +268,7 @@ We classify Zeppelin's policy support into two categories:
 (1) \emph{path policies}: high-level intents on paths of different traffic classes, and 
 (2) \emph{configuration policies}: low-level intents on the deployed router configurations. 
 
+\input{policy}
 \Cref{tab:policysupport} describes 
 the common path policies 
 supported by \name, particularly suited for operators 
@@ -356,21 +358,6 @@ can lead to undesired routing behaviors such as routing loops (more in~\secref{s
 since they increase the complexity of the network.
 \name can  also try to minimize certain expressions over the quantities $sc$, and $bc$---e.g., $max(sc, bc)$. 
 
-%different configuration metrics. For example,
-%we allow  route filters in OSPF synthesis 
-%(\secref{sec:ospfsynthesis}), which may yield undesirable
-%endpoint resilience, thereby, synthesizing configurations
-%which provide a specified metric of resilience or maximize
-%the metric. Similarily, to enable path-based inter-domain routing, 
-%\name needs	to set up static routes along the path, or configure BGP 
-%variables like local preferences to ensure the configurations 
-%induce the input paths.
-%These increase the size of the configurations,
-%thus increasing the complexity of verifying correctness either 
-%manually or using verification tools~\cite{batfish, arc, era}. 
-%Therefore,
-%another objective \name considers is the configuration overhead
-%to ensure path-compliance.
 \subsection{Synthesis of policy-compliant configurations}
 We now define when a configuration $C$ is policy-compliant, present our synthesis problems, and introduce two definition of resilience we will use throughout the paper.
 \begin{definition}[Policy-Compliance and Synthesis] \label{def:policycompliance}
