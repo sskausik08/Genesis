@@ -268,9 +268,11 @@ with higher resilience.
 %reduce both configuration overhead and number of static routes, 
 %leading to higher connectivity-resilience. 
 We consider an 80 router fat-tree topology and run the MCMC sampling
-for 600s---i.e., more than 100,000 iterations---and the parameter
-$\alpha$ that assigns priorities for optimizing configuration overhead
-vs static routes is set to 1. For the input, we generate $n$ (between
+for 600s---i.e., more than 100,000 iterations---to minimize the
+ cost function $max(sc, bc)$. Using this cost function, \name
+ tries to jointly decrease number of 
+ BGP local preferences and static routes. 
+ For the input, we generate $n$ (between
 200 and 1,000) random paths for $n/4$ destination IPs, with random
 path length between 3 and 10.  We require \name to split the network
 into 5 OSPF domains each with size in range between 4 and 10.
@@ -291,20 +293,21 @@ to compute path-compliant configurations.
 \Cref{fig:mcmceval} shows, for varying number of paths, the average ratios
 between the best- and worst-score configurations
 in terms of
-configuration overhead, number of static routes, and 
+BGP configuration overhead (local preferences), 
+number of static routes, and 
 connectivity-resilience.
 For smaller workloads, 
-the algorithm reduces the configuration overhead, but increases
+the algorithm reduces the BGP configuration overhead, but increases
 the number of static routes, leading to worse connectivity-resilience. For 
 larger workloads, the algorithm can
 reduce both static routes 
-and configuration overhead by $0.3\times$
+and BGP local preference entries by $0.3\times$
 and improve the connectivity-resilience 
 by $0.1\times$.
 
 In summary, the answer to \textbf{Q3} is that,
 when allowed to try different domain assignments,
-\textbf{\name synthesizes configurations with higher connectivity-resilience mainly for workloads with a large number of paths}.
+\textbf{\name synthesizes configurations with higher connectivity-resilience mainly for workloads with large number of paths}.
 
 \subsection{Comparison to Synet}
 \label{sec:synet}
