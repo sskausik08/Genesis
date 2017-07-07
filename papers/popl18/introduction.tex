@@ -6,7 +6,7 @@ error-prone~\cite{troubleshooting, bgpmisconfig}.
 At least three
 common characteristics of network policies are to blame: (1) A network
 may need to satisfy several types of policies, including reachability
-(i.e., which end-hosts can communicate), isolation (i.e., which flows
+(i.e., which endpoints can communicate), isolation (i.e., which flows
 cannot share links), service chaining (i.e., which ``middleboxes'',
 e.g., firewalls or load balancers, must be traversed), resilience
 (e.g., number of available backup paths), and traffic engineering
@@ -20,48 +20,49 @@ they concern end-to-end paths, not individual devices/links.
 
 The global nature of network policies is one motivation for
 software-defined networking (SDN). SDN allows paths to be centrally
-computed over a global view of the network. However, 
-ensuring paths are correctly computed and installed in the
-presence of failures is tough, even if the SDN controller is
-distributed~\cite{hasdn}.
-Traditional control planes rely on distributed protocols such as Open
-Shortest Path First (OSPF) and Border Gateway Protocol (BGP) to
-compute paths; these protocols typically employ variants of least cost
-path computation, and react to failures by recomputing least cost
-paths and installing forwarding state in routers that induces the
-paths. In contrast to centralized SDN, traditional control planes
-offer greater fault tolerance; but, determining the appropriate
-distributed realization of policies is hard.
+computed over a global view of the network. However, ensuring paths
+are correctly computed and installed in the presence of failures is
+difficult in practice, even if the SDN controller is
+distributed~\cite{hasdn}.  Traditional control planes rely on
+distributed protocols such as Open Shortest Path First (OSPF) and
+Border Gateway Protocol (BGP) to compute paths; these protocols
+typically employ variants of least cost path computation, and react to
+failures by recomputing least cost paths and installing forwarding
+state in routers that induces the paths. In contrast to centralized
+SDN, traditional control planes offer greater fault tolerance; but,
+determining the appropriate distributed realization of policies is
+hard~\cite{propane}.
 
 Our high-level goal is to develop a system to {\em automate the
   process of creating a correct and failure-resilient distributed
   realization of policies in a traditional control plane}. To be
 useful, such a system must satisfy a few key requirements. First, it
-must handle a wide range of commonly-used policies -- including
-reachability, service chaining, and traffic engineering -- to meet
+must handle a wide range of commonly-used policies---including
+reachability, service chaining, and traffic engineering---to meet
 applications' diverse security and compliance requirements. Second, it
 must ensure that configurations are resilient to network malfunctions
 such as link failures. Third, with increasing sizes of networks, it
-must provide support for realizing hierarchical control planes --
+must provide support for realizing hierarchical control planes---
 where a network is split into several ``domains'' atop which a
-hierarchy of control plane configurations is deployed -- to ensure
-scalability, necessitating the use of multiple intra- and inter-domain
-routing protocols (e.g., OSPF and BGP). Finally, to improve
-manageability and network
+hierarchy of control plane configurations is deployed---to ensure
+scalability. This necessitates the use of multiple intra- and
+inter-domain routing protocols (e.g., OSPF and BGP). Finally, to
+improve manageability and network
 cost-effectiveness~\cite{mpa:imc15,complexity:sigcomm11}, it must
 ensure that configurations obey certain general rules-of-thumb, e.g.,
-avoid deployment of resource-intensive protocols such as BGP on a
-large fraction of routers.
+limit the use of certain configuration constructs and avoid deployment
+of resource-intensive protocols such as BGP on a large fraction of
+routers.
 
 
 Thus, our work contrasts with prior efforts~\cite{netegg, propane,
-  merlin, simple, fattire, netkat, netkatcompiler, sol}, which
-generate SDN- or BGP-specific control planes for a limited range of
-policies (e.g., peering), do not attempt to be resilient to failures,
-do not support generating hierarchical control planes, and don't
-enable generation of simple-to-manage network
-configurations. \aditya{update citations to most recent versions;
-  e.g., CAV paper}
+  merlin, simple, fattire, netkat, netkatcompiler, sol}, which suffer
+from one or more of these issues: they generate SDN- or BGP-specific
+control planes for a limited range of policies (e.g., peering); do not
+attempt to be resilient to failures; do not support generating
+hierarchical control planes; and do not enable generation of
+simple-to-manage network configurations. \aditya{update citations to
+  most recent versions; e.g., CAV paper}
 
 The problem of synthesizing router configurations for which the
 distributed control plane is resilient to failures and generates
@@ -89,7 +90,7 @@ already intractable synthesis problem.
 
 In this paper, we present \name, a new system for synthesizing
 highly resilient policy-compliant configurations.
-Unlike previous approaches, \name uses a two-phased approach 
+Unlike previous approaches, \name uses a two-phased approach for tractability
 (\Cref{fig:architecture}) 
 that does not attempt to generate 
 a policy-compliant control plane in a single step.
@@ -112,7 +113,7 @@ policy-compliant solutions.
 
 First, we consider a setting in which the operator of a hierarchically
 structured network wants to enforce a large diverse set of complex
-policies (waypoint-compliance, isolation, traffic engineering, etc).
+policies (waypoint traversal, isolation, traffic engineering, etc).
 The operator also requires a simple notion of
 \emph{connectivity-resilience} to guarantee that, under most common
 link failures, packets can still reach their destination.
@@ -146,21 +147,22 @@ link failures, the resulting configuration is still policy-compliant.
 We call this notion \emph{policy-resilience}.  Given the complexity of
 this problem, we focus on a {\rm restricted class} of policies.  In
 particular, for each class of packets, we allow the operator to
-specify a set of waypoints---e.g., a set of firewalls---that packets
-must traverse before reaching their destination.  To generate
-configurations with high policy-resilience, we modify our linear
-constraints to guarantee that at least two paths that traverse the
-waypoints have path cost (e.g., OSPF path cost) lower than any path not
-going through a waypoint.  Using this improved technique, \name can
-generate configurations that are $140\%$ more policy-resilient than
-configurations generated with our first technique.
+specify a set of waypoints---e.g., firewalls and traffic
+scrubbers---that packets must traverse before reaching their
+destination.  To generate configurations with high policy-resilience,
+we modify our linear constraints to guarantee that at least two paths
+that traverse the waypoints have path cost (e.g., OSPF path cost)
+lower than any path not going through a waypoint.  Using this improved
+technique, \name can generate configurations that are $140\%$ more
+policy-resilient than configurations generated with our first
+technique.
 
 Finally, we consider a setting in which the operator has the
 flexibility to specify bounds on the number and sizes of domains her
-control plane is organized into, and to assign routers to different
-domains.  We present a stochastic search technique that actually
-leverages this flexibility to look for ways to assign routers to
-different domains so that the synthesized configurations have even
+control plane is organized into, and the ability to assign routers to
+different domains.  We present a stochastic search technique that
+actually leverages this flexibility to look for ways to assign routers
+to different domains so that the synthesized configurations have even
 higher resilience.  Using this search technique, \name can further
 improve the resilience of the configurations generated by the previous
 two techniques by $10\%$. We show that \name can be naturally used to
@@ -225,9 +227,13 @@ and BGP configurations to improve network manageability.
 		partitions of the network into multiple routing domains which
 		yield configurations with higher resilience (\S~\ref{sec:synth-dom-ass}).
 	
-	\item An implementation of \name
-	together with an evaluation of its synthesis algorithms
-	 for different topologies and workloads. 
-	 Our results show that \name can produce highly resilient and policy-compliant
-	 network configurations (\S~\ref{sec:evaluation}). 
+	\item An implementation of \name together with an evaluation
+          of its synthesis algorithms for different topologies and
+          workloads. Compared to state-of-the-art~\cite{vechev},
+          \aditya{FILL THE REST. vechev comparison summary and perhaps
+            main quantitative takeaway from expts} \aditya{the
+            following sentence is repetitive and content-free without
+            any quantitative info. nix} Our results show that \name
+          can produce highly resilient and policy-compliant network
+          configurations (\S~\ref{sec:evaluation}).
 \end{itemize}
