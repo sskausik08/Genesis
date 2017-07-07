@@ -351,8 +351,8 @@ Finally, \name provides ways to specify upper bounds on the number of
 static routes---i.e., $sc=|\{(v, v', \lambda)\mid \exists v'. v' \in SR(v,\lambda)\}|\leq C_{sc}$--- and
 BGP configurations---i.e., 
 $bc=|\bigcup_{v,\lambda\in V\times\Lambda} IF(v,\lambda)\cup \{(v,v',\lambda)\mid LP(v,v',\lambda)$ $\neq \bot\}|\leq C_{bc}$.
-In general, it is desirable to limit the number of static routes since they
-can lead to undesired routing behaviors such as routing loops (more in~\secref{sec:loopavoidance}), and to limit the number of BGP configurations
+While static routes are a powerful too, it is desirable to limit the number of static routes used since they
+can lead to undesired routing behaviors such as routing loops (more in~\secref{sec:loopavoidance}). Similarly, it is desirabel to limit the number of BGP configurations
 since they increase the complexity of the network.
 \name can  also try to minimize certain expressions over the quantities $sc$, and $bc$---e.g., $max(sc, bc)$. 
 
@@ -450,9 +450,9 @@ Ideally, operators desire a resilience score of 1 (perfectly resilient for polic
 preserving connectivity). However, achieving this objective is in practice difficult  
 due to the 
 increased number of configurations one needs to consider,
-and sometimes impossible due to the structure of the network.
+and sometimes impossible due to the structure of the network and the nature of policies.
 In practice, \name can synthesize configurations 
-with high resilience scores and operators can run it to generate different configurations upto 
+with high resilience scores and operators can run it to generate different configurations until
 a threshold score is crossed. 
 %\todo{write resilience metrics here and some text like the following.}
 %\kausik{Ideally, the most important metric we want to maximize is resilience---i.e.,
