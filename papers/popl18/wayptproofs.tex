@@ -58,8 +58,13 @@ $\sigma_{pc}$ is the shortest path from $s_{pc}$ to $d_{pc}$.
 %Hence, proved, there is no path $\sigma_{pc} \in \paths^C(pc)$ such that $\forall w \in \waypt.~
 %w \not\in \sigma_{pc}$. 
 \end{proof}
-\kausik{
-While, the waypoint-compliance synthesis is sound, it is not complete---i.e., for all packet classes, 
-the shortest path traverses one of the waypoint, $W$ need not satisfy constraints (\ref{eq:waypoint}). 
-Even if $\pi_{pc}$ is greater than the non-waypoint distance between the endpoints of $pc$, thus,
-violating constraints (\ref{eq:waypoint}), the shortest path could still traverse one of the waypoints in $\waypt_{pc}$.}
+\paragraph{Completeness}
+In this setting, the notion of completeness is slightly complicated as
+we solve a different variant of the path synthesis problem.
+If the problem admit solution, there always exists a set of waypoint-compliant
+paths on which the proposed technique returns appropriate weights.
+However, if we might provide the algorithm with waypoint-compliant paths
+for which no $W$ satisfy constraints (\ref{eq:waypoint}), although a waypoint-compliant
+configuration exists. 
+Formally, even if $\pi_{pc}$ is greater than the non-waypoint distance between the endpoints of $pc$, thus,
+violating constraints (\ref{eq:waypoint}), the shortest path could still traverse one of the waypoints in $\waypt_{pc}$.

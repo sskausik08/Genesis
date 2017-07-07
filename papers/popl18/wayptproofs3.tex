@@ -50,11 +50,7 @@
 	endpoints traverses one of the waypoints in $\waypt_{pc}$.
 \end{proof}
 
-\kausik{
-Waypoint synthesis with two paths is not complete---i.e.,  A configuration $C$ 
-could violate constraints (\ref{eq:resilience}) 
-but each packet class's path is waypoint-compliant
-under single link failures. One or both $\pi_1$ and $\pi_2$ can have weights
-greater than $D(s,t,\waypt)$, but there are two edge-disjoint waypoint-compliant 
-paths in the network.
-}
+\paragraph{Completeness}
+The same observations as in Section~\ref{sec:waypoint-compliance-constraints}
+also apply to this case and completeness can be achieved by running the algorithm
+on different sets of paths.
