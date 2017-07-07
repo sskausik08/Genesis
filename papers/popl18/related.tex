@@ -5,16 +5,14 @@ the first systems, RCP~\cite{rcp}, supported logically central BGP
 configuration. The more recent Fibbing~\cite{fibbing} system provides
 centralized control over distributed routing by creating fake nodes
 and fake links to steer the traffic in the network through paths that
-are not the shortest, similar to how \name uses static routes. 
-However, the algorithms to solve the synthesis problem 
-in this work is different from ours.  
-Both approaches face the issue of  
-forwarding loops in the network during failures. 
-One merit of our work over Fibbing is that by using 
-static routes for steering, we do not increase the 
-traffic in the network, unlike the fake advertisements 
-which are used in Fibbing. Fibbing also does not take into
-account inter-domain routing.
+are not the shortest, similar to how \name uses static routes.  Both
+approaches face the issue of forwarding loops in the network during
+failures. Fibbing and \name differ in the specific algorithms to solve
+the synthesis problem.  \name does offer key advantages: first, by
+using static routes for steering, we do not increase the traffic in
+the network, unlike the fake advertisements used in Fibbing. Second,
+Fibbing by design targets a single domain and does not take into account
+domain decomposition and inter-domain routing. \aditya{check this}
 
 %However, these fake advertisements can create
 %forwarding loops in the network during failures, and the centralized
@@ -33,43 +31,41 @@ network configurations for security,
 functionality, performance and
 reliability requirements specified as constraints; 
 but it does not
-support any notion of policy-resilience 
+support any notion of policy- or connectivity-resilience  \aditya{check this}
 or hierarchical domain splitting.  Fortz
 et. al~\cite{ospf-te} tackle the problem of optimizing OSPF weights
 for performing traffic engineering, but their work is tailor-made
 to just this specific problem.
 
-Propane~\cite{propane, propaneat} tackles the specific problem of synthesizing
-BGP configurations for concrete and abstract topologies 
-to ensure network-wide objectives hold even under
-failures. The policy language of Propane is suited to specify
-preferences on paths and peering policies among different autonomous
-systems. Propane translates policies
-to a graph-based intermediate representation, which is then compiled
-to device-level BGP configurations. It is unclear how to extend
-Propane to incorporate domains, configuration complexity, or OSPF.
+Propane~\cite{propane, propaneat} tackles the specific problem of
+synthesizing BGP configurations for concrete and abstract topologies
+to ensure network-wide objectives hold even under failures. The policy
+language of Propane is suited to specify preferences on paths and
+peering policies among different autonomous systems. Propane
+translates policies to a graph-based intermediate representation,
+which is then compiled to device-level BGP configurations. It is
+unclear how to extend Propane to incorporate domains, configuration
+complexity, or OSPF, or to express other policies such as
+isolation. \aditya{check the last part}
 
-Synet~\cite{synet} tackles network-wide configuration
-synthesis (Definition \ref{def:policycompliance}) in an elegant manner by
+Synet~\cite{synet} tackles network-wide configuration synthesis
+(Definition \ref{def:policycompliance}) in an elegant manner by
 modeling the behavior and interactions of the routing protocols as a
 stratified Datalog program, and using SMT to synthesize the Datalog
 input such that the fixed point of the Datalog program (which
 represents the network's forwarding state after the protocols have
-converged) satisfies certain policies or path requirements. 
-While both systems can take paths as input requirements,  
-\name uses LP-solvers (which are faster and parallelizable) 
-to tackle configuration
-synthesis rather than SMT solvers.
-Synet's approach does not deal with resilience, 
-a key aspect we tackle 
-in this paper.  Synet also does not attempt to 
-minimize the number of static routes, which can cause
-undesirable behaviors like routing loops.
-Finally, Synet supports routers that run both
-OSPF and BGP protocols and can be configured with 
-static routes, which does not fit naturally into an hierarchical structure
-where some routers only run OSPF and not BGP. In contrast, our MCMC algorithm can
-look for dynamic domain assignments.
+converged) satisfies certain policies or path requirements.  While
+both systems can take paths as input requirements, \name uses
+LP-solvers---which are faster and parallelizable---to tackle
+configuration synthesis rather than SMT solvers.  Synet's approach
+does not deal with resilience, a key aspect we tackle in this paper.
+Synet also does not attempt to minimize the number of static routes,
+which can cause undesirable behaviors like routing loops.  Finally,
+Synet supports routers that run both OSPF and BGP protocols and can be
+configured with static routes, which does not fit naturally into a
+hierarchical structure where some routers only run OSPF and not
+BGP. In contrast, our MCMC algorithm can look for dynamic domain
+assignments.
 %
 %An earlier iteration of our
 %work considered synthesizing network configurations directly from
