@@ -39,8 +39,9 @@ et. al~\cite{ospf-te} tackle the problem of optimizing OSPF weights
 for performing traffic engineering, but their work is tailor-made
 to just this specific problem.
 
-Propane~\cite{propane} tackles the specific problem of synthesizing
-BGP configurations to ensure network-wide objectives hold even under
+Propane~\cite{propane, propaneat} tackles the specific problem of synthesizing
+BGP configurations for concrete and abstract topologies 
+to ensure network-wide objectives hold even under
 failures. The policy language of Propane is suited to specify
 preferences on paths and peering policies among different autonomous
 systems. Propane translates policies
@@ -48,31 +49,27 @@ to a graph-based intermediate representation, which is then compiled
 to device-level BGP configurations. It is unclear how to extend
 Propane to incorporate domains, configuration complexity, or OSPF.
 
-El-Hassany et. al~\cite{synet} tackle network-wide configuration
+Synet~\cite{synet} tackles network-wide configuration
 synthesis (Definition \ref{def:policycompliance}) in an elegant manner by
 modeling the behavior and interactions of the routing protocols as a
 stratified Datalog program, and using SMT to synthesize the Datalog
 input such that the fixed point of the Datalog program (which
 represents the network's forwarding state after the protocols have
-converged) satisfies certain policies.  
-Their approach does not deal with resilience, a key aspect we tackle 
-in this paper.
-The
-largest topology considered by El-Hassany et. al has 16 nodes (we handle 45)
-and the policy language does not support isolation or
-traffic engineering, 
-features that contribute to make our synthesis 
-problem challenging (however \genesis could be used 
-as a front-end for their approach).  
-On the technical side, our approach is different because
-it first synthesizes policy-compliant paths and then uses
-LP-solvers (which are faster and parallelizable) 
+converged) satisfies certain policies or path requirements. 
+While both systems can take paths as input requirements,  
+uses LP-solvers (which are faster and parallelizable) 
 to tackle configuration
-synthesis.  
-Finally, El-Hassany et. al can only perform synthesis for a
-static domain assignment, where the input specifies if a router runs
-BGP or not. Our MCMC algorithm can also look for domain assignments.
-
+synthesis rather than SMT solvers.
+Their approach does not deal with resilience, 
+a key aspect we tackle 
+in this paper.  Synet also does not attempt to 
+minimize the number of static routes, which can cause
+undesirable behaviors like routing loops.
+Finally, Synet supports routers that run both, 
+OSPF and BGP protocols and can be configured with 
+static routes, which does not fit naturally into an hierarchical structure
+where some routers only run OSPF and not BGP. Our MCMC algorithm can
+look for dynamic domain assignments.
 %
 %An earlier iteration of our
 %work considered synthesizing network configurations directly from
