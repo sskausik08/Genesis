@@ -55,22 +55,20 @@ input such that the fixed point of the Datalog program (which
 represents the network's forwarding state after the protocols have
 converged) satisfies certain policies or path requirements.  While
 both systems can take paths as input requirements, \name uses
-LP-solvers---which are faster and parallelizable---to tackle
-configuration synthesis rather than SMT solvers.  Synet's approach
-does not deal with resilience, a key aspect we tackle in this paper.
-Synet also does not attempt to minimize the number of static routes,
+a two-phase approach where OSPF weights are synthesized
+separately using
+LP-solvers---which are faster and parallelizable---rather than directly  
+solving the whole configuration synthesis problem using SMT solvers.  
+Moreover, Synet's approach
+does not deal with resilience, a key aspect we tackle in this paper,
+and
+Synet does not attempt to minimize the number of static routes,
 which can cause undesirable behaviors like routing loops.  Finally,
 Synet supports routers that run both OSPF and BGP protocols and can be
 configured with static routes, which does not fit naturally into a
 hierarchical structure where some routers only run OSPF and not
 BGP. In contrast, our MCMC algorithm can look for dynamic domain
 assignments.
-%
-%An earlier iteration of our
-%work considered synthesizing network configurations directly from
-%policies using SMT; however, we found that encoding OSPF's shortest
-%path-based constraints in SMT was time-consuming for modern SMT
-%solvers~\cite{z3} and does not scale well to larger networks 
 
 \paragraph{Policy languages} While \name uses \genesis 
 to synthesize policy-compliant paths, in the future it could use

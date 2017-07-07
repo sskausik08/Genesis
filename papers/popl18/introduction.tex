@@ -1,5 +1,4 @@
 \section{Introduction}
-\loris{uniform use of  "bla, i.e., bla, bla" vs "bla---i.e., bla---bla", same for e.g.,}
 Programming networks to correctly forward flows according to user- and
 application-induced policies is difficult and
 error-prone~\cite{troubleshooting, bgpmisconfig}. 
@@ -13,7 +12,6 @@ e.g., firewalls or load balancers, must be traversed), resilience
 (e.g., minimizing average link utilization). (2) The network must
 provide certain guarantees in the event of failures. Ideally, every
 set of forwarding paths (i.e., data plane) installed in the network
-%---either manually or by a control plane---
 should conform to these policies, otherwise performance, security, or
 availability problems may arise. (3) Most policies are global---i.e.,
 they concern end-to-end paths, not individual devices/links.
@@ -101,9 +99,6 @@ with given policies, such as, waypoints and isolation.
 intra-domain (shortest-path OSPF) and inter-domain (BGP) router configurations
 that induce the forwarding
 state synthesized by \genesis\ {\em and} provide high resilience. 
-%We consider hierarchical networks  routers run
-%OSPF for intra-domain routing, while domains use BGP for inter-domain
-%routing. Moreover, routers can install static routes---i.e., default routes that can bypass the other two protocols.
 
 We investigate three different settings with different policies and
 resilience requirements and show how \name, using its two-phase
@@ -116,23 +111,10 @@ policies (waypoint traversal, isolation, traffic engineering, etc).
 The operator also requires a simple notion of
 \emph{connectivity-resilience} to guarantee that, under most common
 link failures, packets can still reach their destination.
-%In general, in the absence of static routes a network can support
-%a number of link failures equal to the min-cut of the network, regardless
-%of the OSPF and BGP configurations.
-%However, we might need static routes to generate policy-compliant configurations.
-%Static routes can cause unexpected network behaviors after a failure---e.g., a forwarding loop---and
-%we argue that the \emph{connectivity-resilience} of a configuration is related to the its number of static routes.
 To increase connectivity-resilience, \name tries to produce
 policy-compliant configurations with a small number of {\em static
   routes}---i.e., static router configurations where routers have
 fixed next hops for a destination that bypass routes computed by routing protocols (OSPF and BGP).
-%---helps 
-%increasing \emph{connectivity-resilience} and
-%decreasing configuration complexity. 
-%thus, easing automated
-%verification~\cite{batfish, arc, era} and improving readability for
-%performing future manual changes.
-%Therefore, \name aims at producing policy-compliant configurations with a small number of static routes.
 To do so, \name synthesizes OSPF configurations using linear constraint solving to compute
 link weights and uses the unsatisfiable cores
 of failed solving attempts to learn when to introduce static routes.
@@ -168,39 +150,18 @@ two techniques by $10\%$. We show that \name can be naturally used to
 bound or optimize different configuration metrics like static routes
 and BGP configurations' size to improve network manageability. \aditya{check this}
 
-Our experiments show that 
+Our experiments show that, thanks to its two-phase approach,
 \name can synthesize policy-compliant 
-congurations for medium size topologies 
+configurations for medium size topologies 
 in less than 5 minutes and 
-policy-resilient congurations in under an hour. 
+policy-resilient configurations in under an hour. 
 Notably, \name's performance is 2-3
 orders of magnitude faster than the state-of-the-art network
-configuration synthesis system Synet~\cite{synet}. 
+configuration synthesis system Synet~\cite{synet}, which uses a direct
+synthesis 
+approach based on SMT. 
 
 
-
-%We evaluate \name on medium-sized topologies and show that
-%\name can synthesize OSPF configurations for 200 paths in 200
-%seconds for a 40 node ISP topology, and achieve greater than 
-%50\% resilience for fat-tree topologies.
-%\todo{what does resilient mean here? this last para and contrib need to be rewritten
-%after eval}
-% On average, using MCMC, \name can increase
-%endpoint resilience by $1.6\times$ and 
-%reduce configuration overhead
-%by $0.3\times$
-%for a 125-node ISP topology.
-
-
-%% Automatically synthesizing distributed realizations 
-%% of network policies is an
-%% important step towards simplifying 
-%% network management and providing an 
-%% SDN-like interface for programming networks 
-%% running distributed routing protocols. 
-%% Our approach is an important
-%% contribution towards the vision of 
-%% intent-driven networking~\cite{intent}.
 
 \paragraph{Contributions} We make the following contributions.
 \begin{itemize}	
