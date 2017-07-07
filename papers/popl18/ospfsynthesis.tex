@@ -278,8 +278,11 @@ each path $\pi \in \Pi$ is the unique shortest path between its endpoints.
 	Hence, proved, all paths in $\Pi$ are the unique shortest paths if $W$
 	satisfy constraints (\ref{eq:distance}) and (\ref{eq:unique}).
 \end{proof}
-					
-\kausik{This is complete as well.}
+\kausik{
+OSPF synthesis is complete as well,---i.e., a solution for the OSPF weights
+such that all paths in $\Pi$ are the unique shortest paths, will satisfy constraints 
+(\ref{eq:distance}) and (\ref{eq:unique}).
+}
 
 \subsubsection{Intra-domain Synthesis with Static Routes} \label{sec:ospfsr}
 
@@ -390,7 +393,7 @@ and the approach is repeated until a solution is found.
 					\State{$\Psi = \Psi_D \cup \Psi_U$} 
 					\While{$\Psi$ is \emph{unsat}} 
 					\State{Extract unsat core $uc$ from LP Solver}
-					\State{Pick static route $sr(s, t, \lambda)$ from $uc$ constraints}
+					\State{Pick random static route $sr(s, t, \lambda)$ from $uc$}
 					\State{Add $sr$ to static routes $SR$ \label{line:staticroute}}
 					\State{$\Psi = \Psi \setminus \Psi_U(s, \lambda)$ \label{line:removeconstraint}}
 					\EndWhile

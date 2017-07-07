@@ -58,61 +58,8 @@ $\sigma_{pc}$ is the shortest path from $s_{pc}$ to $d_{pc}$.
 %Hence, proved, there is no path $\sigma_{pc} \in \paths^C(pc)$ such that $\forall w \in \waypt.~
 %w \not\in \sigma_{pc}$. 
 \end{proof}
-
-%\begin{theorem}[Correctness with static routes]
-%	For a OSPF configuration $C$ with edge weights $W$ and
-%	static routes $SR$, and for a packet class $pc$, source router $s_{pc}$, destination router $d_{pc}$ and destination $\lambda_{pc}$ and the path provided by Genesis $\pi_{pc}$, \Cref{alg:unsat} produces $W$ and $SR$ 
-%	such that $GP$	is in the set of induced paths of $C$, i.e., $~~\pi_{pc} \in \paths^C(pc)$
-%\end{theorem}
-%\begin{proof}
-%Let us assume that $\pi_{pc} \not\in \paths^C(pc)$. 
-%Let us denote the 
-%Genesis path $\pi_{pc}$ as $(s_{pc}, s_1)$ $ (s_1, s_2) \
-%\ldots (s_n, d_{pc})$. 
-%
-%Given the routing function $\route^C$ which depends on $SR$ and
-%$W$, let the first switch where routing diverges from $GP$ be at $s_p$: 
-%$s_{p+1} \not\in \route^C(s_{p}, \lambda_{pc})$. Let us consider  $r \in \route^C(s_{p}, \lambda_{pc})$. By virtue of
-%constraint (\ref{eq:unique}) added to ensure the path from $s_{p}$
-%to $d_{pc}$ is the unique shortest path: 
-%\begin{equation} \label{eq:uniq}
-%\sum_{\mathclap{\substack{(s_{p},s_{p+1})\ldots(s_{n},d_{pc})}}} 
-%W(s_i, s_j) < W(s_{p}, r) + D(r, d_{pc})
-%\end{equation}
-%
-%\Cref{alg:unsat} uses unsatisfiable cores to greedily remove 
-%constraints and find a solution for $W$ and $SR$. Note that 
-%the algorithm only removes the shortest unique path 
-%constraints (\ref{eq:unique}) and 
-%not the distance constraints (\ref{eq:distance}).
-%\paragraph{Case 1:} Constraint (\ref{eq:uniq}) is not removed by 
-%\Cref{alg:unsat}. Thus, there is no static route $(s_p, s_{p+1})$ for
-%$\lambda_{pc}$, and OSPF-based forwarding occurs at $s_{p}$. 
-%For any path $(r, r_1), (r_1, r_2) \ldots (r_m, d_{pc})$, 
-%using the distance constraints (\ref{eq:distance}) to
-%expand $D(r, d_{pc})$, we get the following: 
-%\[
-%\sum_{\mathclap{\substack{(s_{p},s_{p+1})\ldots(s_{n},d_{pc})}}} 
-%W(s_i, s_j) < W(s_{p}, r) + W(r, r_{1}) + D(r_{1}, d_{pc})
-%\]
-%\begin{center}
-%	$\ldots$
-%\end{center}
-%\[
-%\sum_{\mathclap{\substack{(s_{p},s_{p+1})\ldots(s_{n},d_{pc})}}} 
-%W(s_i, s_j) < W(s_{p}, r) + W(r, r_{1}) + \ldots W(r_{m}, d_{pc}) + D(d_{pc}, d_{pc})
-%\]
-%Therefore, the weight of any path through $r$ is greater than 
-%the path through $s_{p}$. However, 
-%OSPF sends traffic through the shortest weighted
-%path, therefore, $r \not\in R^C_{ospf}(s_p, \lambda_{pc})$. Hence, 
-%$s_{p+1} \in \route^C(s_{p}, \lambda_{pc})$.
-%
-%\paragraph{Case 2:} Constraint (\ref{eq:uniq}) is removed by 
-%\Cref{alg:unsat} and therefore, $SR(s_p, \lambda_{pc}) = \{s_{p+1}\}$. 
-%Thus, $s_{p+1} \in \route^C(s_{p}, \lambda_{pc})$ as static routes 
-%have the higher priority than OSPF. This contradicts our assumption
-%that $s_{p+1} \not\in \route^C(s_{p}, \lambda_{pc})$. 
-%
-%Hence, proved by contradiction, $\pi_{pc} \in \paths^C(pc)$.
-%\end{proof}
+\kausik{
+While, the waypoint-compliance synthesis is sound, it is not complete---i.e., for all packet classes, 
+the shortest path traverses one of the waypoint, $W$ need not satisfy constraints (\ref{eq:waypoint}). 
+Even if $\pi_{pc}$ is greater than the non-waypoint distance between the endpoints of $pc$, thus,
+violating constraints (\ref{eq:waypoint}), the shortest path could still traverse one of the waypoints in $\waypt_{pc}$.}

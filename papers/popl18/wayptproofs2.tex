@@ -130,3 +130,12 @@ the theorem is correct.}
 	Hence, for every packet class, 
 	there exists a path in the set of induced paths which traverses through one of the waypoints. 
 	\end{proof}
+
+	\kausik{
+	Given a set of waypoint paths $\{(\pi_{pc}, \waypt_{pc}) ~|~ pc\}$,
+	\Cref{alg:wayptunsat} will always terminate with configuration $C$ where
+	each packet class is waypoint-compliant, the trivial solution being that of 
+	using static routes on each link in $\pi_{pc}$. \Cref{alg:wayptunsat} is not 
+	guaranteed to find $C$ with upper bound on number of static routes, but similar
+	to \Cref{alg:unsat}, running \Cref{alg:wayptunsat} multiple times will eventually find 
+	solution $C$ such that number of routes is bounded.  }
