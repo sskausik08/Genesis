@@ -32,23 +32,34 @@ paths. In contrast to centralized SDN, traditional control planes
 offer greater fault tolerance; but, determining the appropriate
 distributed realization of policies is hard.
 
-Our goal is to {\em automate the process of creating a correct and
-  failure-resilient distributed realization of policies in a
-  traditional control plane}. We wish to handle a wide range of
-policies, e.g., reachability, service chaining, and traffic
-engineering, to meet applications' diverse security and compliance
-requirements.  With increasing sizes of networks, we must further
-provide support for realizing hierarchical control planes (where a
-network is split into several domains atop which a hierarchy of
-control plane configurations is deployed) to ensure scalability,
-necessitating the use of multiple intra- and inter-domain routing
-protocols (e.g., OSPF and BGP).  Finally, and most importantly, we
-want configurations that are resilient to network malfunctions such as
-link failures.  Thus, our work contrasts with prior
-efforts~\cite{netegg, propane, merlin, simple, fattire, netkat,
-  netkatcompiler, sol}, which generate SDN- or BGP-specific control
-planes for a limited range of policies (e.g., peering) 
-and/or do not attempt to be resilient to failures.
+Our high-level goal is to develop a system to {\em automate the
+  process of creating a correct and failure-resilient distributed
+  realization of policies in a traditional control plane}. To be
+useful, such a system must satisfy a few key requirements. First, it
+must handle a wide range of commonly-used policies -- including
+reachability, service chaining, and traffic engineering -- to meet
+applications' diverse security and compliance requirements. Second,
+with increasing sizes of networks, it must provide support for
+realizing hierarchical control planes -- where a network is split into
+several ``domains'' atop which a hierarchy of control plane
+configurations is deployed -- to ensure scalability, necessitating the
+use of multiple intra- and inter-domain routing protocols (e.g., OSPF
+and BGP). Third, to improve manageability and network
+cost-effectiveness~\cite{mpa:imc15,complexity:sigcomm11}, it must
+ensure that configurations obey certain general rules-of-thumb, e.g.,
+avoid deployment of resource-intensive protocols such as BGP on all
+routers. Finally, and most importantly, it must ensure that
+configurations are resilient to network malfunctions such as link
+failures.
+
+\aditya{edited till here. will get back in a couple hours}
+
+Thus, our work contrasts with prior efforts~\cite{netegg, propane,
+  merlin, simple, fattire, netkat, netkatcompiler, sol}, which
+generate SDN- or BGP-specific control planes for a limited range of
+policies (e.g., peering), do not attempt to be resilient to failures,
+do not support generating hierarchical control planes, and don't
+enable generation of simple-to-manage networks.
 
 
 
