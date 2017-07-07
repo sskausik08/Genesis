@@ -126,17 +126,17 @@ attributestyle = \itshape\ttfamily\color{attributecolor}
 \lstset{escapechar=@,style=customc}
 
 %space above and below
-\lstset{aboveskip=2pt,belowskip=2pt}
+%\lstset{aboveskip=3pt,belowskip=3pt}
 
 \let\originalleft\left
 \let\originalright\right
 \renewcommand{\left}{\mathopen{}\mathclose\bgroup\originalleft}
 \renewcommand{\right}{\aftergroup\egroup\originalright}
 
-\expandafter\def\expandafter\normalsize\expandafter{%
-    \normalsize
-    \setlength\abovedisplayskip{2.5pt}
-    \setlength\belowdisplayskip{2.5pt}
-    \setlength\abovedisplayshortskip{2.5pt}
-    \setlength\belowdisplayshortskip{2.5pt}
-}
+%\expandafter\def\expandafter\normalsize\expandafter{%
+%    \normalsize
+%    \setlength\abovedisplayskip{3pt}
+%    \setlength\belowdisplayskip{3pt}
+%    \setlength\abovedisplayshortskip{3pt}
+%    \setlength\belowdisplayshortskip{3pt}
+%}

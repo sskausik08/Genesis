@@ -254,21 +254,22 @@ $\paths^C(PC) = \cup_{pc\in PC} \paths^C(pc)$.
 \subsection{Policy Support}
 
 One of the foremost tasks in network management in enterprise 
-and multi-tenant datacenters\footnote{
-In a multi-tenant datacenter, different entities ("tenants") share the datacenter's 
-infrastructure (compute, network etc.).
-} 
-is programming 
+and multi-tenant datacenters---i.e., where different entities ("tenants") share the datacenter's 
+infrastructure (compute, network etc.)---is programming 
 networks to forward traffic in a manner consistent with user- and
 application-induced high-level policies for performance and security considerations. 
 Unlike SDN, ``traditional'' networks are  heterogeneous and run different kinds of 
-protocols, and thus, operators require support to enforce and/or optimize different
-configuration structure and properties. 
-We classify Zeppelin's policy support into two categories: 
+protocols, and thus, operators require
+ support to 
+ enforce and/or optimize different
+configuration  structure and properties. We 
+classify
+ Zeppelin's 
+ policy support  into two categories: 
 (1) \emph{path policies}: high-level intents on paths of different traffic classes, and 
 (2) \emph{configuration policies}: low-level intents on the deployed router configurations. 
 
-\input{policy}
+\input{policy}  
 \Cref{tab:policysupport} describes 
 the common path policies 
 supported by \name, particularly suited for operators 
