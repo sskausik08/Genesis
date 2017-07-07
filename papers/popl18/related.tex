@@ -57,18 +57,18 @@ input such that the fixed point of the Datalog program (which
 represents the network's forwarding state after the protocols have
 converged) satisfies certain policies or path requirements. 
 While both systems can take paths as input requirements,  
-uses LP-solvers (which are faster and parallelizable) 
+\name uses LP-solvers (which are faster and parallelizable) 
 to tackle configuration
 synthesis rather than SMT solvers.
-Their approach does not deal with resilience, 
+Synet's approach does not deal with resilience, 
 a key aspect we tackle 
 in this paper.  Synet also does not attempt to 
 minimize the number of static routes, which can cause
 undesirable behaviors like routing loops.
-Finally, Synet supports routers that run both, 
+Finally, Synet supports routers that run both
 OSPF and BGP protocols and can be configured with 
 static routes, which does not fit naturally into an hierarchical structure
-where some routers only run OSPF and not BGP. Our MCMC algorithm can
+where some routers only run OSPF and not BGP. In contrast, our MCMC algorithm can
 look for dynamic domain assignments.
 %
 %An earlier iteration of our
