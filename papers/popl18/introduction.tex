@@ -32,54 +32,50 @@ paths. In contrast to centralized SDN, traditional control planes
 offer greater fault tolerance; but, determining the appropriate
 distributed realization of policies is hard.
 
-Our goal is to {\em automate the process of creating a correct and
-  failure-resilient distributed realization of policies in a
-  traditional control plane}. We wish to handle a wide range of
-policies, e.g., reachability, service chaining, and traffic
-engineering, to meet applications' diverse security and compliance
-requirements.  With increasing sizes of networks, we must further
-provide support for realizing hierarchical control planes (where a
-network is split into several domains atop which a hierarchy of
-control plane configurations is deployed) to ensure scalability,
-necessitating the use of multiple intra- and inter-domain routing
-protocols (e.g., OSPF and BGP).  Finally, and most importantly, we
-want configurations that are resilient to network malfunctions such as
-link failures.  Thus, our work contrasts with prior
-efforts~\cite{netegg, propane, merlin, simple, fattire, netkat,
-  netkatcompiler, sol}, which generate SDN- or BGP-specific control
-planes for a limited range of policies (e.g., peering) 
-and/or do not attempt to be resilient to failures.
+Our high-level goal is to develop a system to {\em automate the
+  process of creating a correct and failure-resilient distributed
+  realization of policies in a traditional control plane}. To be
+useful, such a system must satisfy a few key requirements. First, it
+must handle a wide range of commonly-used policies -- including
+reachability, service chaining, and traffic engineering -- to meet
+applications' diverse security and compliance requirements. Second, it
+must ensure that configurations are resilient to network malfunctions
+such as link failures. Third, with increasing sizes of networks, it
+must provide support for realizing hierarchical control planes --
+where a network is split into several ``domains'' atop which a
+hierarchy of control plane configurations is deployed -- to ensure
+scalability, necessitating the use of multiple intra- and inter-domain
+routing protocols (e.g., OSPF and BGP). Finally, to improve
+manageability and network
+cost-effectiveness~\cite{mpa:imc15,complexity:sigcomm11}, it must
+ensure that configurations obey certain general rules-of-thumb, e.g.,
+avoid deployment of resource-intensive protocols such as BGP on all
+routers.
 
 
+Thus, our work contrasts with prior efforts~\cite{netegg, propane,
+  merlin, simple, fattire, netkat, netkatcompiler, sol}, which
+generate SDN- or BGP-specific control planes for a limited range of
+policies (e.g., peering), do not attempt to be resilient to failures,
+do not support generating hierarchical control planes, and don't
+enable generation of simple-to-manage networks.
 
-The problem of synthesizing router configurations
-for which the distributed control plane is
-resilient to failures and it
-generates policy-compliant paths 
-is computationally hard. 
-First, even generating a set of policy-compliant 
-paths for an SDN  is 
-computationally hard---e.g., enforcing isolated
-paths is NP-complete. 
-Second, to infer the concrete
-set of paths induced by network configurations, 
-one has to incorporate
-into synthesis
-complex concepts---e.g., reasoning about shortest path algorithms
-requires constraints in complex
-theories that combine propositional logic (SAT) 
-with linear rational
-arithmetic (LRA). Even with recent 
-advances in Satisfiability Modulo Theories
-(SMT) solvers, 
-approaches that directly generate configurations  from policies
-do not scale to
-even moderately-sized networks or 
-sets of policies~\cite{synet}.
-Third, to generate resilient control planes one has to reason
-about how different protocols react to failures, 
-which further complicates an already intractable synthesis
-problem. 
+The problem of synthesizing router configurations for which the
+distributed control plane is resilient to failures and it generates
+policy-compliant paths is computationally hard.  First, even
+generating a set of policy-compliant paths for an SDN is
+computationally hard---e.g., enforcing isolated paths is NP-complete.
+Second, to infer the concrete set of paths induced by network
+configurations, one has to incorporate into synthesis complex
+concepts---e.g., reasoning about shortest path algorithms requires
+constraints in complex theories that combine propositional logic (SAT)
+with linear rational arithmetic (LRA). Even with recent advances in
+Satisfiability Modulo Theories (SMT) solvers, approaches that directly
+generate configurations from policies do not scale to even
+moderately-sized networks or sets of policies~\cite{synet}.  Third, to
+generate resilient control planes one has to reason about how
+different protocols react to failures, which further complicates an
+already intractable synthesis problem.
 
 \begin{wrapfigure}{r}{0.4\columnwidth}
 	\includegraphics[width=\linewidth]{figures/architecture.pdf}
@@ -106,9 +102,10 @@ state synthesized by \genesis and provide high resilience.
 %OSPF for intra-domain routing, while domains use BGP for inter-domain
 %routing. Moreover, routers can install static routes---i.e., default routes that can bypass the other two protocols.
 
-We investigate three different settings with different policies and resilience requirements
-and show how \name, using its two-phase approach, can effectively generate
-highly-resilient and policy-compliant solutions.
+We investigate three different settings with different policies and
+resilience requirements and show how \name, using its two-phase
+approach, can effectively generate highly-resilient and
+policy-compliant solutions.
 
 First, we consider a setting in which the operator of a hierarchically
 structured network wants to enforce a large diverse set of complex
@@ -155,14 +152,19 @@ going through a waypoint.  Using this improved technique, \name can
 generate configurations that are $140\%$ more policy-resilient than
 configurations generated with our first technique.
 
-
 Finally, we consider a setting in which the operator has the
-flexibility to assign routers to different domains.  We present a
-stochastic search technique that uses this flexibility to look for
-ways to assign routers to different domains so that the synthesized
-configurations have higher resilience.  Using this search technique,
-\name can further improve the resilience of the configurations
-generated by the previous two techniques by $10\%$.
+flexibility to specify bounds on the number of size of domains her
+control plane is organized into, and to assign routers to different
+domains.  We present a stochastic search technique that actually
+leverages this flexibility to look for ways to assign routers to
+different domains so that the synthesized configurations have higher
+resilience.  Using this search technique, \name can further improve
+the resilience of the configurations generated by the previous two
+techniques by $10\%$.
+
+\aditya{edited till here. will get back tomorrow AM}
+
+\aditya{say something about metrics here}
 
 %We evaluate \name on medium-sized topologies and show that
 %\name can synthesize OSPF configurations for 200 paths in 200
