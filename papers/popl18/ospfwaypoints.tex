@@ -181,47 +181,11 @@ a waypoint $w \in \waypt$. These constraints are expressed as follows:
 W < 
 W(r, r')+ D(r', R_\lambda, \waypt) 
 \end{equation}
-%\begin{figure*}
-%		\subfloat[Waypoint-compliant edge weights] {
-%			\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
-%			square/.style={regular polygon,regular polygon sides=4}] 
-%			\node[state] at (0,0) (s)  {$s$}; 
-%			\node[state, fill=orange] at (1.8,1) (v1)  {$r_1$}; 
-%			\node[state, fill=orange] at (1.8,-1) (v2)  {$r_2$}; 
-%			\node[state] at (3.6, 0)(t) {$t$};
-%			\node[state, rectangle] at (5, 0) (d1) {$\lambda$};
-%			\path[->] 
-%			(s) edge [red] node [black] {1} (v1)
-%			(s) edge  node {1} (v2)
-%			edge  node [above] {10} (t)
-%			(v1) edge [red] node [black] {5} (t)
-%			(v2) edge  node [black] {1} (t)
-%			(t) edge [red, dashed] node {} (d1);
-%			\end{tikzpicture}
-%	}
-%		\subfloat[Routing Loop] {
-%			\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
-%			square/.style={regular polygon,regular polygon sides=4}] 
-%			\node[state] at (0,0) (s)  {$s$}; 
-%			\node[state] at (1.8,1) (v1)  {$r_1$}; 
-%			\node[state] at (3.6, 0)(t) {$t$};
-%			\node[state, rectangle] at (5, 0) (d1) {$\lambda$};
-%			\path[->] 
-%			(s) edge [red] node [black, sloped, anchor=center, above]
-%			{$sr(\lambda)$} node
-%			[black, sloped, anchor=center, below] {1} (v1)
-%			edge  node [below] {5} (t)
-%			(v1) edge [red] node [black] {50} (t)
-%			(t) edge [red, dashed] node {} (d1);
-%			\end{tikzpicture}
-%		}
-%			\compactcaption{. Example of routing loop caused by a static route.} \label{fig:ospfloop}
-%			%\label{fig:ospfwayptexample}	
-%\end{figure*}
+
 \begin{figure}[!t] 
 	\centering
 	\subfloat[Waypoint-compliant edge weights]{
-		\resizebox {0.33\columnwidth} {!} {
+		\resizebox {0.40\columnwidth} {!} {
 			\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
 			square/.style={regular polygon,regular polygon sides=4}] 
 			\node[state] at (0,0) (s)  {$s$}; 
@@ -240,7 +204,7 @@ W(r, r')+ D(r', R_\lambda, \waypt)
 		}}
 		\hspace*{1cm}
 		\subfloat[Routing Loop]{
-			\raisebox{0.7cm}{\resizebox {0.33\columnwidth} {!} {
+			\raisebox{0.7cm}{\resizebox {0.40\columnwidth} {!} {
 					\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
 					square/.style={regular polygon,regular polygon sides=4}] 
 					\node[state] at (0,0) (s)  {$s$}; 

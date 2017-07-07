@@ -128,9 +128,9 @@ if $\Pi$ contains the
  smaller weight than the path $\pi'=s \rightarrow t$ ---e.g., $W(\pi)=3$
   and $W(\pi')=5$. 
  
-\begin{wrapfigure}{r}{0.33\columnwidth}
+\begin{wrapfigure}{r}{0.35\columnwidth}
 	%\vspace{-4mm}
-	\resizebox {0.33\columnwidth} {!} {
+	\resizebox {0.34\columnwidth} {!} {
 		\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
 		square/.style={regular polygon,regular polygon sides=4}] 
 		\node[state] at (0,0) (s)  {$s$}; 
@@ -144,7 +144,6 @@ if $\Pi$ contains the
 		(t) edge [red, dashed] node {} (d1);
 		\end{tikzpicture}
 	}
-	\vspace{-3mm}
 	\compactcaption{OSPF edge weights
 		such that the routers forward traffic along
 		the colored path.}
@@ -268,9 +267,8 @@ the values of the $W(s,t)$ variables are the weights we are trying to synthesize
 otherwise the intra-domain synthesis problem 
 cannot be solved without static routes.
 
-\begin{wrapfigure}{r}{0.33\columnwidth}
-\vspace{-8mm}
-	\resizebox {0.33\columnwidth} {!} {
+\begin{wrapfigure}{r}{0.35\columnwidth}
+	\resizebox {0.34\columnwidth} {!} {
 			\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
 			square/.style={regular polygon,regular polygon sides=4}] 
 			\node[state] at (0,0) (s)  {$s$}; 
@@ -286,8 +284,7 @@ cannot be solved without static routes.
 			(t) edge [blue, dashed] node {} (d2);
 			\end{tikzpicture}
 	}
-	\vspace{-3mm}
-	\compactcaption{An example of why static routes are needed.}
+	\compactcaption{Example illustrating the use of static routes.}
 	\label{fig:srexample}
 \end{wrapfigure}
 Consider the example in \Cref{fig:srexample}
