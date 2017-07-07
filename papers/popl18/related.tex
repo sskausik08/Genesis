@@ -12,7 +12,7 @@ the synthesis problem.  \name does offer key advantages: first, by
 using static routes for steering, we do not increase the traffic in
 the network, unlike the fake advertisements used in Fibbing. Second,
 Fibbing by design targets a single domain and does not take into account
-domain decomposition and inter-domain routing. \aditya{check this}
+domain decomposition and inter-domain routing. 
 
 %However, these fake advertisements can create
 %forwarding loops in the network during failures, and the centralized
@@ -31,7 +31,7 @@ network configurations for security,
 functionality, performance and
 reliability requirements specified as constraints; 
 but it does not
-support any notion of policy- or connectivity-resilience  \aditya{check this}
+support any notion of policy- or connectivity-resilience 
 or hierarchical domain splitting.  Fortz
 et. al~\cite{ospf-te} tackle the problem of optimizing OSPF weights
 for performing traffic engineering, but their work is tailor-made
@@ -45,8 +45,7 @@ peering policies among different autonomous systems. Propane
 translates policies to a graph-based intermediate representation,
 which is then compiled to device-level BGP configurations. It is
 unclear how to extend Propane to incorporate domains, configuration
-complexity, or OSPF, or to express other policies such as
-isolation. \aditya{check the last part}
+complexity, or OSPF routing.
 
 Synet~\cite{synet} tackles network-wide configuration synthesis
 (Definition \ref{def:policycompliance}) in an elegant manner by
