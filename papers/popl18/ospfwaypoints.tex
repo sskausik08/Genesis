@@ -523,7 +523,7 @@ the estimated OSPF distance corresponding to $\pi_1$:
 	\sum_{\pi_2} W \leq \sum_{i=1}^{\alpha - 1} W_{u_i}^{v_i} + D_{u_\alpha}^t	
 \end{equation}
 
-Since, we cannot exactly express the weights of the actual routes seen 
+However, since we cannot exactly express the weights of the actual routes seen 
 at the source router, the above constraint does not  guarantee 
 that traffic will be split amongst
 $\pi_1$ and $\pi_2$. 
@@ -534,10 +534,12 @@ an unsatisfiable core, we cannot add a static route to eliminate
 this unsatisfiability. \name lazily eliminates these constraints from the
 system of equations depending on whether these constraints are part of 
 an unsat-core which cannot be eliminated by a static route. 
-While our approach to synthesize policy-resilient 
-configurations with static routes does not provide provable resilience guarantees, 
-judging by our experiments (\secref{sec:reseval}), 
-this technique generates highly resilient configurations 
-in practice. Also, under no failures, the configurations are
+
+\paragraph{Soundness and completeness}
+Under no failures, the generated configurations are
 waypoint-compliant by virtue of \Cref{thm:wayptsr}.
+In the presence of failures, the presented approach does not provide provable resilience guarantees.
+However,  our experiments show that
+this technique generates highly resilient configurations 
+in practice (\secref{sec:reseval}). 
 
