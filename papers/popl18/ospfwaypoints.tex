@@ -185,7 +185,7 @@ W(r, r')+ D(r', R_\lambda, \waypt)
 \begin{figure}[!t] 
 	\centering
 	\subfloat[Waypoint-compliant edge weights]{
-		\resizebox {0.40\columnwidth} {!} {
+		\resizebox {0.45\columnwidth} {!} {
 			\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
 			square/.style={regular polygon,regular polygon sides=4}] 
 			\node[state] at (0,0) (s)  {$s$}; 
@@ -204,7 +204,7 @@ W(r, r')+ D(r', R_\lambda, \waypt)
 		}}
 		\hspace*{1cm}
 		\subfloat[Routing Loop]{
-			\raisebox{0.7cm}{\resizebox {0.40\columnwidth} {!} {
+			\raisebox{0.7cm}{\resizebox {0.45\columnwidth} {!} {
 					\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
 					square/.style={regular polygon,regular polygon sides=4}] 
 					\node[state] at (0,0) (s)  {$s$}; 
@@ -260,12 +260,18 @@ violating constraints (\ref{eq:waypoint}), the shortest path could still travers
 
 \subsubsection{Avoiding Routing Loops} \label{sec:loopavoidance}
 \Cref{alg:wayptunsat} presents the OSPF 
-synthesis algorithm with static
+synthesis algorithm with static routes.  
+If one of the constraints in \Cref{eq:waypoint} is part of an unsatisfiable  
+core, \name adds the static 
+route
+ $(r, N_{\xi_\lambda}(r))$ to
+$SR(\lambda)$ to eliminate the equations at router $r$. 
+However, since \Cref{eq:waypoint} does not 
 \iffull
 \begin{figure}[t]
 \else
 \begin{wrapfigure}{r}{0.52\textwidth}
-	\vspace{-6mm}
+%	\vspace{-2mm}
 	\fi
 	\begin{minipage}{\linewidth}
 		\begin{algorithm}[H]
@@ -297,11 +303,7 @@ synthesis algorithm with static
 \else
 \end{wrapfigure}
 \fi
-routes.  
-If one of the constraints in \Cref{eq:waypoint} is part of an unsatisfiable  
-core, \name adds the static route $(r, N_{\xi_\lambda}(r))$ to
-$SR(\lambda)$ to eliminate the equations at router $r$. 
-However, since \Cref{eq:waypoint} does not guarantee that the path generated
+guarantee that the path generated
 by \genesis is indeed the shortest path, adding
 static routes can lead to undesired behaviors like routing loops.  
 Consider the example configuration shown in \Cref{fig:ospfloop}(b). 
@@ -362,7 +364,8 @@ route and continues with the unsat-core learning algorithm. We will
 now present the soundness result of the algorithm.
 
 \begin{theorem}[OSPF+SR Waypoint Soundness] \label{thm:wayptsr}
-	Given a set of waypoint paths $\{(\pi_{pc}, \waypt_{pc}) ~|~ pc\}$,
+	Given a set of waypoint paths \linebreak
+	$\{(\pi_{pc}, \waypt_{pc}) ~|~ pc\}$,
 	\Cref{alg:wayptunsat} outputs a configuration $C(W,SR)$ 
 	such that, for every packet class $pc$, 
 	there exists a path in $\paths^C(pc)$ that
@@ -528,9 +531,16 @@ $u_\alpha = r_0$, and the distance between $s$ to $t$
 is estimated as $W(s, r_0) + D(r_0, t) = 1 + (1 + 1 + 1)$
 which is the shortest OSPF distance. 
 
+
 To enable splitting amongst
 $\pi_1$ and $\pi_2$, we ensure that the weight 
-of the path $\pi_2$\footnote{
+of the path $\pi_2$
+is smaller or equal to 
+the estimated OSPF distance corresponding to $\pi_1$: 
+\begin{equation}
+	\sum_{\pi_2} W \leq \sum_{i=1}^{\alpha - 1} W_{u_i}^{v_i} + D_{u_\alpha}^t	
+\end{equation}
+\loris{fix following sentence, punctuation is a mess}
 Note that ideally, the OSPF distance corresponding to 
 $\pi_2$ would also depend on the first static route on
 $\pi_2$, our distance variables are upper bounded by actual
@@ -539,12 +549,6 @@ those variables in these constraints do not ensure soundness.
 As an approximation, we use $\sum_{\pi_2}$ which is an upper bound
 for the OSPF distance corresponding to 
 $\pi_2$. 
-} 
-is smaller or equal to 
-the estimated OSPF distance corresponding to $\pi_1$: 
-\begin{equation}
-	\sum_{\pi_2} W \leq \sum_{i=1}^{\alpha - 1} W_{u_i}^{v_i} + D_{u_\alpha}^t	
-\end{equation}
 
 However, since we cannot exactly express the weights of the actual routes seen 
 at the source router, the above constraint does not  guarantee 
