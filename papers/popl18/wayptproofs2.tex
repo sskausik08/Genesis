@@ -1,11 +1,12 @@
 %!TEX root=paper.tex
-\begin{theorem}[Soundness]
+\begin{theorem}[OSPF+SR Waypoint Soundness]
 	Given a set of waypoint paths $\{(\pi_{pc}, \waypt_{pc}) ~|~ pc\}$,
 	\Cref{alg:wayptunsat} outputs a configuration $C(W,SR)$ 
 	such that, for every packet class $pc$, 
 	there exists a path in $\paths^C(pc)$ that
 	traverses one of the waypoints in $\waypt_{pc}$.
 \end{theorem}
+\iffull
 \kausik{This proof is quite long, and is complicated
 by the fact that we dont enforce a particular path, 
 and static routes, which force me to enumerate a lot of 
@@ -130,6 +131,7 @@ the theorem is correct.}
 	Hence, for every packet class, 
 	there exists a path in the set of induced paths which traverses through one of the waypoints. 
 	\end{proof}
+\fi
 
 \paragraph{Completeness}
 The same observations as in Section~\ref{sec:waypoint-compliance-constraints}

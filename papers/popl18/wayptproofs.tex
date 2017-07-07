@@ -1,9 +1,10 @@
-\begin{theorem}[Soundness] \label{thm:waypoint}
+\begin{theorem}[OSPF Waypoint Soundness] \label{thm:waypoint}
 	Given a set of waypoint paths $\{(\pi_{pc}, \waypt_{pc}) ~|~ pc\}$, if edge weights 
 	$W$ satisfy constraints (\ref{eq:wdistance}) and (\ref{eq:waypoint}), for
 	each packet class $pc$, the shortest path between its endpoints
 	traverses one of the waypoints in $\waypt_{pc}$.
 \end{theorem}
+\iffull
 \begin{proof}
 	Let us assume there exists a packet class $pc$ with waypoint set $\waypt_{pc}$ 
 	and waypoint path $\pi_{pc} = (s_{pc}, s_1)(s_1, s_2)\ldots (s_n, d_{pc})$, 
@@ -58,6 +59,7 @@ $\sigma_{pc}$ is the shortest path from $s_{pc}$ to $d_{pc}$.
 %Hence, proved, there is no path $\sigma_{pc} \in \paths^C(pc)$ such that $\forall w \in \waypt.~
 %w \not\in \sigma_{pc}$. 
 \end{proof}
+\fi
 \paragraph{Completeness}
 In this setting, the notion of completeness is slightly complicated as
 we solve a different variant of the path synthesis problem.

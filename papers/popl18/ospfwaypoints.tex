@@ -276,9 +276,8 @@ the shortest path is $s \rightarrow r_2
 However, both of the waypoint-compliant paths are shorter 
 than $s \rightarrow t$, the shortest non-waypoint path.
 
-\iffull
 \input{wayptproofs}
-\fi
+
 
 \subsubsection{Avoiding Routing Loops} \label{sec:loopavoidance}
 \begin{wrapfigure}{r}{0.5\textwidth}
@@ -374,9 +373,7 @@ adds loop-avoidance constraints $\Psi_R(N_{\xi_\lambda}(sr_2),
 route and continues with the unsat-core learning algorithm. We will
 now present the soundness result of the algorithm.
 
-\iffull
 \input{wayptproofs2}
-\fi
 
 \subsubsection{Configurations for Two Paths} \label{sec:ospfresilience}
 To guarantee policy-resilience, \name
@@ -406,9 +403,7 @@ than any path which is not waypoint-compliant.
 For a OSPF configuration with no static routes,
 the synthesized configuration is policy-resilient. 
 
-\iffull
 \input{wayptproofs3}
-\fi
 
 \subsubsection{Resilience with Static Routes}
 \name only adds static routes on the paths obtained from \genesis.
