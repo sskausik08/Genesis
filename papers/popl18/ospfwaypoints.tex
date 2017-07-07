@@ -136,6 +136,7 @@ paths to provide policy-resilience.
 
 
 \subsubsection{Waypoint-Compliance Constraints}
+\label{sec:waypoint-compliance-constraints}
 In this section, we show how to generate constraints that
 guarantee that a single waypoint-compliant path is shorter
 than any path which does \emph{not} traverse a waypoint. 
@@ -521,10 +522,10 @@ the estimated OSPF distance corresponding to $\pi_1$:
 	\sum_{\pi_2} W \leq \sum_{i=1}^{\alpha - 1} W_{u_i}^{v_i} + D_{u_\alpha}^t	
 \end{equation}
 
-\kausik{Since, we cannot exactly express the weights of the actual routes seen 
+Since, we cannot exactly express the weights of the actual routes seen 
 at the source router, the above constraint does not  guarantee 
 that traffic will be split amongst
-$\pi_1$ and $\pi_2$.}
+$\pi_1$ and $\pi_2$. 
 Similar to the routing loop avoidance constraints, we add the
 above constraints lazily when a static route is added to one of the
 paths for $\lambda$. However, if one of these constraints is part of 
@@ -532,8 +533,9 @@ an unsatisfiable core, we cannot add a static route to eliminate
 this unsatisfiability. \name lazily eliminates these constraints from the
 system of equations depending on whether these constraints are part of 
 an unsat-core which cannot be eliminated by a static route. 
-\kausik{While our approach to synthesize policy-resilient 
-configurations with static routes does not provide provable guarantees, 
+While our approach to synthesize policy-resilient 
+configurations with static routes does not provide provable resilience guarantees, 
 judging by our experiments (\secref{sec:reseval}), 
 this technique generates highly resilient configurations 
-in practice. }
+in practice. 
+\loris{does it still produce a (non resilient) path compliant solution for at least one path?}

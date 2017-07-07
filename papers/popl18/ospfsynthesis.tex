@@ -55,12 +55,28 @@ routes and connectivity-resilience,
 we set as our goal that of generating configurations 
 with few static routes.
 
+In the following sections, we assume we are given paths that are compliant to 
+all path policies and we only need to find configurations that realize those paths.
+Therefore, the algorithms we present solve the path-compliance synthesis problem
+and whenever we discuss soundness and completeness is with respect to such a problem.
+In general, for a given set of paths, we might not be able to find a path-compliant configuration
+that satisfies all the required configuration policies. However, in this case
+we can simply use the techniques from Section~\ref{sec:genesis} to generate
+a new set of paths.
+Assuming we have a sound and complete algorithm for the
+path-compliance synthesis problem, we can obtain a sound and complete algorithm
+for the
+ configuration synthesis problem by keeping enumerating more policy compliant paths
+ whenever the path-compliance synthesis fails.
+
 We show how to synthesize 
 path-compliant intra-domain 
 configurations---i.e., when there
 is only a single domain---and then extend our technique to
  inter-domain configurations---i.e., when
 there are multiple domains.
+
+
 
 \subsection{Synthesising Path-compliant Intra-domain Configurations} \label{sec:intra-synthesis}
 In this section, we show how to synthesize  path-compliant  intra-domain configurations that
@@ -279,10 +295,11 @@ each path $\pi \in \Pi$ is the unique shortest path between its endpoints.
 	satisfy constraints (\ref{eq:distance}) and (\ref{eq:unique}).
 \end{proof}
 \kausik{
-OSPF synthesis is complete as well,---i.e., a solution for the OSPF weights
+OSPF synthesis is complete as well---i.e., a solution for the OSPF weights
 such that all paths in $\Pi$ are the unique shortest paths, will satisfy constraints 
 (\ref{eq:distance}) and (\ref{eq:unique}).
 }
+\loris{unfortunately, this needs a proof...}
 
 \subsubsection{Intra-domain Synthesis with Static Routes} \label{sec:ospfsr}
 
