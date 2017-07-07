@@ -231,7 +231,7 @@ SR(r, \lambda) & \text{if } SR(r, \lambda) \not= \emptyset, \\
 \minisection{Induced paths}
 In the following, we assume a finite set of packet classes $PC = \{0, \ldots, C_{pc}\}$ 
 and map each reachability
-policy that requires the existanence of a path between two endpoints
+policy that requires the existence of a path between two endpoints
 to a unique integer in $PC$. The rest of the policies specify 
 properties on these paths. Each packet class $pc$ is associated
 with a tuple ($s_{pc}, d_{pc}, \lambda_{pc})$ which specifies 
@@ -354,7 +354,7 @@ static routes---i.e., $sc=|\{(v, v', \lambda)\mid \exists v'. v' \in SR(v,\lambd
 BGP configurations---i.e., 
 $bc=|\bigcup_{v,\lambda\in V\times\Lambda} IF(v,\lambda)\cup \{(v,v',\lambda)\mid LP(v,v',\lambda)$ $\neq \bot\}|\leq C_{bc}$.
 While static routes are a powerful too, it is desirable to limit the number of static routes used since they
-can lead to undesired routing behaviors such as routing loops (more in~\secref{sec:loopavoidance}). Similarly, it is desirabel to limit the number of BGP configurations
+can lead to undesired routing behaviors such as routing loops (more in~\secref{sec:loopavoidance}). Similarly, it is desirable to limit the number of BGP configurations
 since they increase the complexity of the network.
 \name can  also try to minimize certain expressions over the quantities $sc$, and $bc$---e.g., $max(sc, bc)$. 
 
