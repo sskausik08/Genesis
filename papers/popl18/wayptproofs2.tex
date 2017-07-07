@@ -1,9 +1,3 @@
-\kausik{This proof is quite long, and is complicated
-by the fact that we dont enforce a particular path, 
-and static routes, which force me to enumerate a lot of 
-cases, I will think if there is an easier proof than the 
-half-completed one I have below. But I am pretty sure that 
-the theorem is correct.}
 \begin{proof}
 	Let us assume there exists a packet class $pc$ 
 	with destination $\lambda$, 
@@ -105,12 +99,21 @@ the theorem is correct.}
 	W < W(s_{p}, r_{p+1})+ \ldots + W(r_{m}, d_{pc}) + D(d_{pc}, d_{pc}, \waypt_{pc})
 	\]
 	By adding weights of $(s_{pc}, s_1)\ldots(s_{p-1}, s_p)$, we obtain that weight of $\sigma_{pc}$ 
-	is greater than $\pi_{pc}$. If there is no static route on $\sigma_{pc}$, then, this is a contradiction
-	as OSPF has a shorter path $\pi_{pc}$ to send traffic to.  If $\sigma_{pc}$ has a static route on the
-	path, we consider the first divergence from the static route and use (\ref{eq:wdistance}) from that
-	router. 
-	\kausik{Very sketchy. }
-	
+	is greater than $\pi_{pc}$. 
+	\begin{description}
+			\item[Case 2A.1:]
+			There are no static routes on $\sigma_{pc}$. This is a contradiction
+			as OSPF has a shorter path $\pi_{pc}$ to send traffic to, instead of $\sigma_{pc}$.
+			
+			\item[Case 2A.2:]
+			$\sigma_{pc}$ has a static route on the path. Since, \Cref{alg:wayptunsat}
+			only adds static routes on links in $\xi_\lambda$, $\sigma_pc$ intersects $\xi_\lambda$
+			again after diverging at $r_{p}$. Let the next divergence from $\xi_\lambda$ be at $r_{q}$.
+			Using Case 2 argument at $r_{q}$, we can reach a contradiction. This is because, the number
+			of routers at which $\sigma_{pc}$ intersect with $\xi_\lambda$ would be bounded, and at the last
+			divergence, there would be no static routes to the destination.
+		 
+\end{description}
 	\item[Case 2B:]
 	\Cref{alg:wayptunsat} removes Constraint (\ref{eq:waypoint}) 
 	and $SR(s_p, \lambda_{pc}) = \{s_{p+1}\}$ (lines \ref{line:wstaticroute}-\ref{line:wremoveconstraint}). 
