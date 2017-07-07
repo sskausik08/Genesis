@@ -1,12 +1,3 @@
-%!TEX root=paper.tex
-\begin{theorem}[OSPF+SR Waypoint Soundness] \label{thm:wayptsr}
-	Given a set of waypoint paths $\{(\pi_{pc}, \waypt_{pc}) ~|~ pc\}$,
-	\Cref{alg:wayptunsat} outputs a configuration $C(W,SR)$ 
-	such that, for every packet class $pc$, 
-	there exists a path in $\paths^C(pc)$ that
-	traverses one of the waypoints in $\waypt_{pc}$.
-\end{theorem}
-\iffull
 \kausik{This proof is quite long, and is complicated
 by the fact that we dont enforce a particular path, 
 and static routes, which force me to enumerate a lot of 
@@ -131,18 +122,3 @@ the theorem is correct.}
 	Hence, for every packet class, 
 	there exists a path in the set of induced paths which traverses through one of the waypoints. 
 	\end{proof}
-\fi
-
-\paragraph{Completeness}
-The same observations as in Section~\ref{sec:waypoint-compliance-constraints}
-also apply to this case and completeness can be achieved by running the algorithm
-on different sets of paths.
-%
-%	Given a set of waypoint paths $\{(\pi_{pc}, \waypt_{pc}) ~|~ pc\}$,
-%	\Cref{alg:wayptunsat} always terminates with a configuration $C$ where
-%	each packet class is waypoint-compliant, the trivial solution being that of 
-%	using static routes on each link in $\pi_{pc}$. 
-	Moreover, similarly to what we observed in \Cref{alg:unsat}, \Cref{alg:wayptunsat} is not 
-	guaranteed to find $C$ with a given bound on number of static routes.
-Completeness is recovered by running \Cref{alg:unsat} multiple times, and by choosing different
-unsatisfiable cores and static routes assignments. 

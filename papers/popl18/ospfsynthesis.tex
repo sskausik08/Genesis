@@ -241,60 +241,7 @@ $W$ satisfy constraints (\ref{eq:distance}) and (\ref{eq:unique}), then
 each path $\pi \in \Pi$ is the unique shortest path between its endpoints. 
 \end{theorem}
 \iffull
-\begin{proof}
-	Let us assume there exists a path $\pi
-	= (s, s_1)(s_1, s_2) 
-	\ldots (s_n, d)$ in $\Pi$ such that $\pi$ is \emph{not} the unique 
-	shortest path between $s$ and $d$. Let  $\sigma = (s, r_1)(r_1, r_2)\ldots (r_m,
-	 d)$ be one of the shortest path that is different from $\pi$. 	
-	\noindent Since, $\sigma$ is the shortest weighted path: 
-	\begin{equation} \label{eq:assumption}
-	\sum_{\pi} W \geq \sum_{\sigma} W
-	\end{equation}
-	
-	Let $s_i \not= r_i$ be the first point of divergence of the paths---i.e., for every $j<i$, $s_{j} = r_{j}$.
-    Constraints (\ref{eq:unique}) 
-	impose $(s_{i-1}, s_i)\ldots(s_n, d)$ to be the
-	unique shortest path by ensuring the edge weights of the path
-	are smaller than any path going through a neighbouring 
-	router other than $s_i$. 
-	Consider the 
-	neighbour router $r_i$ in $\sigma$:
-	\[
-	\sum_{\mathclap{\substack{(s_{i-1}, s_i)\cdots(s_n, d)}}} 
-	W < W(s_{i-1}, r_i)+ D(r_i, d)
-	\]
-	We can then use constraint (\ref{eq:distance}) to expand the term $D(r_k, d)$ for $i \leq k \leq m$
-	and obtain the following: 
-	\[
-	\sum_{\mathclap{\substack{(s_{i-1}, s_i)\cdots(s_n, d)}}} 
-	W < W(s_{i-1}, r_i)+ W(r_i, r_{i+1}) + D(r_{i+1}, d)
-	\] 
-	\begin{center}
-		$\ldots$
-	\end{center}
-	\[
-	\sum_{\mathclap{\substack{(s_{i-1}, s_i)\cdots(s_n, d)}}} 
-	W < W(s_{i-1}, r_i)+ W(r_i, r_{i+1}) + \ldots W(r_{m}, d) + D(d, d)
-	\] 
-	\[
-	\sum_{\mathclap{\substack{(s_{i-1}, s_i)\cdots(s_n, d)}}} 
-	W \hspace{0.4cm}< \hspace{0.4cm}
-	\sum_{\mathclap{\substack{(r_{i-1}, r_i)\cdots(r_m, d)}}} 
-	W
-	\]
-	Adding $\Sigma_{(s, s_1)\cdots(s_{i-2},s_{i-1})}W$ to both sides:
-	\[
-	\sum_{\mathclap{\substack{\pi}}} 
-	W < 
-	\sum_{\mathclap{\substack{\sigma}}} 
-	W
-	\] 
-	This contradicts assumption (\ref{eq:assumption}) that 
-	$\sigma$ is one of the shortest paths from $s$ to $d$. 
-	Hence, proved, all paths in $\Pi$ are the unique shortest paths if $W$
-	satisfy constraints (\ref{eq:distance}) and (\ref{eq:unique}).
-\end{proof}
+\input{ospf-soundness}
 \fi
 
 OSPF synthesis is complete as well---i.e., a solution for the OSPF weights
@@ -477,3 +424,25 @@ constraints.
 In each iteration, there can be more than one way to place a static route and
 \name picks one randomly. ~\Cref{alg:unsat} illustrates
 this unsat-core based approach of finding the static routes and edge weights.
+
+We will now present the soundness result of \Cref{alg:unsat}. 
+\begin{theorem}[OSPF+SR Soundness]
+	Given a set of packet classes $PC$ and paths $\Pi$, \Cref{alg:unsat} outputs
+	a configuration $C(W,SR)$ such that $\Pi\subseteq\paths^C(PC)$.
+\end{theorem}
+\iffull
+\input{ospfproofs}
+\fi
+
+\paragraph{Completeness}
+For any input $(PC, \Pi)$, there is a trivial configuration that uses static
+routes along each path to guarantee that  
+$\Pi\subseteq\paths^C(PC)$. Therefore, without constraints on the
+number of static routes, \name is guaranteed to find a solution.
+However, if there is a configuration policy 
+upper bounding the number of static routes, \Cref{alg:unsat} is not guaranteed 
+to find a compliant configurations, if one exists. 
+Completeness is recovered by running \Cref{alg:unsat} multiple times and choosing different
+unsatisfiable cores and static routes assignments. Since there can only be finitely many
+possible assignments, we are eventually 
+guaranteed to find a solution if one exists for the input $(PC, \Pi)$.

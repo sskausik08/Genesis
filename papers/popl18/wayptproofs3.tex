@@ -1,12 +1,4 @@
-\begin{theorem}[OSPF 2-Waypoint Soundness]
-	For a set of edge-disjoint waypoint paths $\{(\pi^1_{pc}, \pi^2_{pc}, \waypt_{pc}) ~|~ pc\}$, 
-	if edge weights $W$ satisfy constraints (\ref{eq:wdistance}), (\ref{eq:waypoint}) and
-	(\ref{eq:resilience}), 
-	then for any arbitrary single link failure, 
-	the shortest path between each packet class's 
-	endpoints traverses one of the waypoints in $\waypt_{pc}$.
-\end{theorem}
-\iffull
+
 \kausik{Proof very similar to Thm 5.1, could be avoided}
 \begin{proof}
 	Let us assume there exists a packet class $pc$ with waypoint set $\waypt_{pc}$ 
@@ -50,9 +42,3 @@
 	Hence proved, under any arbitrary single-link failure, the shortest path between each packet class's 
 	endpoints traverses one of the waypoints in $\waypt_{pc}$.
 \end{proof}
-\fi
-
-\paragraph{Completeness}
-The same observations as in Section~\ref{sec:waypoint-compliance-constraints}
-also apply to this case and completeness can be achieved by running the algorithm
-on different sets of paths.

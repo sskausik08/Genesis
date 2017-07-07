@@ -1,5 +1,3 @@
-%!TEX root=paper.tex
-
 \section{From Waypoint Policies to Policy-Resilient Configurations}
 \label{sec:waypointres}
 
@@ -276,8 +274,25 @@ the shortest path is $s \rightarrow r_2
 However, both of the waypoint-compliant paths are shorter 
 than $s \rightarrow t$, the shortest non-waypoint path.
 
+\begin{theorem}[OSPF Waypoint Soundness] \label{thm:waypoint}
+	Given a set of waypoint paths $\{(\pi_{pc}, \waypt_{pc}) ~|~ pc\}$, if edge weights 
+	$W$ satisfy constraints (\ref{eq:wdistance}) and (\ref{eq:waypoint}), for
+	each packet class $pc$, the shortest path between its endpoints
+	traverses one of the waypoints in $\waypt_{pc}$.
+\end{theorem}
+\iffull
 \input{wayptproofs}
-
+\fi
+\paragraph{Completeness}
+In this setting, the notion of completeness is slightly complicated as
+we solve a different variant of the path synthesis problem.
+If the problem admit solution, there always exists a set of waypoint-compliant
+paths on which the proposed technique returns appropriate weights.
+However, if we might provide the algorithm with waypoint-compliant paths
+for which no $W$ satisfy constraints (\ref{eq:waypoint}), although a waypoint-compliant
+configuration exists. 
+Formally, even if $\pi_{pc}$ is greater than the non-waypoint distance between the endpoints of $pc$, thus,
+violating constraints (\ref{eq:waypoint}), the shortest path could still traverse one of the waypoints in $\waypt_{pc}$.
 
 \subsubsection{Avoiding Routing Loops} \label{sec:loopavoidance}
 \begin{wrapfigure}{r}{0.5\textwidth}
@@ -373,7 +388,26 @@ adds loop-avoidance constraints $\Psi_R(N_{\xi_\lambda}(sr_2),
 route and continues with the unsat-core learning algorithm. We will
 now present the soundness result of the algorithm.
 
+\begin{theorem}[OSPF+SR Waypoint Soundness] \label{thm:wayptsr}
+	Given a set of waypoint paths $\{(\pi_{pc}, \waypt_{pc}) ~|~ pc\}$,
+	\Cref{alg:wayptunsat} outputs a configuration $C(W,SR)$ 
+	such that, for every packet class $pc$, 
+	there exists a path in $\paths^C(pc)$ that
+	traverses one of the waypoints in $\waypt_{pc}$.
+\end{theorem}
+\iffull
 \input{wayptproofs2}
+\fi
+
+\paragraph{Completeness}
+The same observations as in Section~\ref{sec:waypoint-compliance-constraints}
+also apply to this case and completeness can be achieved by running the algorithm
+on different sets of paths.
+	Moreover, similarly to what we observed in \Cref{alg:unsat}, \Cref{alg:wayptunsat} is not 
+	guaranteed to find $C$ with a given bound on number of static routes.
+Completeness is recovered by running \Cref{alg:unsat} multiple times, and by choosing different
+unsatisfiable cores and static routes assignments. 
+
 
 \subsubsection{Configurations for Two Paths} \label{sec:ospfresilience}
 To guarantee policy-resilience, \name
@@ -403,7 +437,23 @@ than any path which is not waypoint-compliant.
 For a OSPF configuration with no static routes,
 the synthesized configuration is policy-resilient. 
 
+\begin{theorem}[OSPF 2-Waypoint Soundness]
+	For a set of edge-disjoint waypoint paths $\{(\pi^1_{pc}, \pi^2_{pc}, \waypt_{pc}) ~|~ pc\}$, 
+	if edge weights $W$ satisfy constraints (\ref{eq:wdistance}), (\ref{eq:waypoint}) and
+	(\ref{eq:resilience}), 
+	then for any arbitrary single link failure, 
+	the shortest path between each packet class's 
+	endpoints traverses one of the waypoints in $\waypt_{pc}$.
+\end{theorem}
+\iffull
 \input{wayptproofs3}
+\fi
+
+\paragraph{Completeness}
+The same observations as in Section~\ref{sec:waypoint-compliance-constraints}
+also apply to this case and completeness can be achieved by running the algorithm
+on different sets of paths.
+
 
 \subsubsection{Resilience with Static Routes}
 \name only adds static routes on the paths obtained from \genesis.
@@ -523,7 +573,7 @@ the estimated OSPF distance corresponding to $\pi_1$:
 	\sum_{\pi_2} W \leq \sum_{i=1}^{\alpha - 1} W_{u_i}^{v_i} + D_{u_\alpha}^t	
 \end{equation}
 
-Since, we cannot exactly express the weights of the actual routes seen 
+However, since we cannot exactly express the weights of the actual routes seen 
 at the source router, the above constraint does not  guarantee 
 that traffic will be split amongst
 $\pi_1$ and $\pi_2$. 
@@ -534,10 +584,12 @@ an unsatisfiable core, we cannot add a static route to eliminate
 this unsatisfiability. \name lazily eliminates these constraints from the
 system of equations depending on whether these constraints are part of 
 an unsat-core which cannot be eliminated by a static route. 
-While our approach to synthesize policy-resilient 
-configurations with static routes does not provide provable resilience guarantees, 
-judging by our experiments (\secref{sec:reseval}), 
-this technique generates highly resilient configurations 
-in practice. Also, under no failures, the configurations are
+
+\paragraph{Soundness and completeness}
+Under no failures, the generated configurations are
 waypoint-compliant by virtue of \Cref{thm:wayptsr}.
+In the presence of failures, the presented approach does not provide provable resilience guarantees.
+However,  our experiments show that
+this technique generates highly resilient configurations 
+in practice (\secref{sec:reseval}). 
 
