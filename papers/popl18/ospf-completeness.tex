@@ -1,0 +1,19 @@
+\begin{proof}
+Given $W$, assign $D(s,t)$ the weight of the shortest 
+path from $s$ to $t$. 
+
+The distance constraints (\ref{eq:distance}) are satisfied using
+the triangle inequality: If $r$ lies on the shortest path from $s$ to
+$t$, $D(s,t) = W(s,r) + D(r,t)$, otherwise $s$, $r$ and $t$  form a 
+triangle. 
+
+Since, every path $\pi \in \Pi$ is the shortest unique path, each subpath 
+$\sigma = (s, r_1)\ldots(r_n, d)$ 
+of $\pi$ to the destination is also the shortest unique path. By 
+definition of unique shortest path, $\sum_\sigma W$ is smaller than the shortest path
+from $s$ to $d$ through $r'$ not in $\sigma$---
+i.e., $\sum_\sigma W < W(s, r') + D(r', d)$. Hence, $W$ satisfies constraints 
+(\ref{eq:unique}). 
+
+Hence, proved, there exists values for $D$ such that $W$ satisfies constraints (\ref{eq:distance}) and (\ref{eq:unique}). 
+\end{proof}
