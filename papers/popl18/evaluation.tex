@@ -317,20 +317,20 @@ authors of Synet.
 \begin{wrapfigure}{r}{0.46\textwidth}
 	\small
 		\begin{minipage}{\linewidth}
-			\begin{tabular}{m{3.4em} m{2.8em} m{2.2em} m{3.1em} m{3.1em}} 
-				{\bf Topology} & {\bf Traffic Classes} & {\bf Synet} & {\bf \name} & {\bf Speedup} \\ 
+			\centering
+			\begin{tabular}{P{3.4em} P{2.8em} m{2.2em} m{3.1em} m{3.1em}} 
+			{\bf Topology}& {\bf \#Class} & {\bf Synet} & {\bf \name} & {\bf Speedup} \\ 
 				\hline
-				\multirow{3}{*}{Internet2}& 1 & 9.0s & 0.02s & \textbf{450$\times$} \\
-				 & 5 & 21.3s &	0.03s &	\textbf{710$\times$} \\
-				 & 10 & 49.3s &	0.03s &	\textbf{1,643$\times$} \\ 
+				\multirow{3}{*}{Internet2}& 1 & \hfill 9.0s & \hfill 0.02s &  \hfill \textbf{450$\times$} \\
+				 & 5 & \hfill 21.3s &\hfill	0.03s &	\hfill\textbf{710$\times$} \\
+				 & 10 & \hfill 49.3s & \hfill	0.03s &\hfill 	\textbf{1,643$\times$} \\ 
 				\hline 
-				\multirow{3}{*}{G3} & 1 & 9.4s &	0.03s &	\textbf{313$\times$}\\
-				 & 5 & 19.8s &	0.03s &  \textbf{660$\times$}\\
-				& 10 & 39.9s	&  0.03s	& \textbf{1,330$\times$} \\ 
+				\multirow{3}{*}{G3} &  1 & \hfill 9.4s & \hfill	0.03s &	\hfill \textbf{313$\times$}\\
+				 & 5 & \hfill 19.8s &\hfill	0.03s &  \hfill \textbf{660$\times$}\\
+				&  10 &  \hfill 39.9s	& \hfill 0.03s	& \hfill \textbf{1,330$\times$} \\ 
 			\end{tabular}
 		\end{minipage}
 		\caption{
-		\loris{align numbers to the right}
 		Comparison of synthesis times of  
 			Zeppelin and Synet for OSPF + Static route workloads.  }
 		\label{tab:synetcomparison}

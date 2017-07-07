@@ -538,5 +538,6 @@ While our approach to synthesize policy-resilient
 configurations with static routes does not provide provable resilience guarantees, 
 judging by our experiments (\secref{sec:reseval}), 
 this technique generates highly resilient configurations 
-in practice. 
-\loris{does it still produce a (non resilient) path compliant solution for at least one path?}
+in practice. Also, under no failures, the configurations are
+waypoint-compliant by virtue of \Cref{thm:wayptsr}.
+

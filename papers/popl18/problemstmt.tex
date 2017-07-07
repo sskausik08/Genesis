@@ -146,7 +146,7 @@ such that,
 if a BGP router $r_1$ belongs to  $IF(r_2, \lambda)$, then
 the router $r_2$ will not advertise a route for $\lambda$ to
 $r_1$ through iBGP. 
-\input{bgp-routing-algorithm} s
+\input{bgp-routing-algorithm} 
  
 Algorithm~\ref{alg:bgppathrules} defines the BGP routing function
 based on the best path selection at each BGP router. 
@@ -252,6 +252,7 @@ $\paths^C(PC) = \cup_{pc\in PC} \paths^C(pc)$.
 \end{definition}
 
 \subsection{Policy Support}
+\input{policy}
 One of the foremost tasks in network management in enterprise 
 and multi-tenant datacenters\footnote{
 In a multi-tenant datacenter, different entities ("tenants") share the datacenter's 
@@ -270,15 +271,16 @@ We classify Zeppelin's policy support into two categories:
 \Cref{tab:policysupport} describes 
 the common path policies 
 supported by \name, particularly suited for operators 
-of a multi-tenant datacenter. 
-\loris{clarify we have a language to write them}
+of a multi-tenant datacenter. Operators can
+specify policies in a declarative manner using a high-level 
+policy language. 
 Given  a set $\Psi$ of
 path policies, we say that
 a set of paths $\Pi$ is policy-compliant with respect to $\Psi$, 
 denoted  $\Pi \models \Psi$,
 if the paths in $\Pi$ satisfy all the policies in $\Psi$ (see~\cite{genesis} for the formal definition). 
 
-\input{policy}
+
 \minisection{Reachability and Waypoints}
 This policy enables network communication
 between pairs of an tenant entity's virtual instances (VM), 
@@ -323,6 +325,7 @@ if $C$ satisfies every constraint in $P$.
 For each configuration policy 
 we define what it means for  a configuration $C=(T,\Theta,W,LP,IF,SR)$ to satisfy it.
 
+\input{zeppelinPolicy}
 \minisection{OSPF Domains and Sizes}
 The first type of policy restricts how many OSPF domains $N_D= |\{\Theta(r)\mid r\in V\}|$ a
 configuration might have
@@ -343,7 +346,6 @@ not scale gracefully with network size.
 	Formally, for every $r\in V\setminus B$,
 	there does not exist a router $r'\in N(r)$ such that $\Theta(r) \not= \Theta(r')$
 
-\input{zeppelinPolicy}
 \minisection{Configuration Metrics}
 Finally, \name provides ways to specify upper bounds on the number of
 static routes---i.e., $sc=|\{(v, v', \lambda)\mid \exists v'. v' \in SR(v,\lambda)\}|\leq C_{sc}$--- and
