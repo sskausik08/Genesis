@@ -267,14 +267,16 @@ to $SR(\lambda)$ eliminates the unsatisfiability caused by
 the constraint. Effectively, while $g'$ is closer to
 $r$ than $g$, we use the static route to steer traffic toward $g$. 
 
-\kausik{soundness and completeness}
+\paragraph{Soundness and Completeness}
 For a network topology $T$ and 
 fixed domain assignment $\Theta$, \name's path-compliance
-synthesis is \emph{sound}---i.e., for input $(PC, \Pi)$, the configuration 
-$C = (T, \Theta,W,LP,IF,SR)$ induces all paths in $\Pi$. 
+synthesis is \emph{sound}---i.e., for input $(PC, \Pi)$, the 
+synthesized configuration 
+ induces all paths in $\Pi$. 
 \name's soundness is by virtue of the BGP forwarding semantics specified in ~\Cref{alg:bgppathrules}
 and \Cref{thm:ospfsr}---OSPF and static routes in a domain 
 forward traffic to the specified gateway, where BGP is configured to 
 send it to the next domain in the path. 
-\name's path-compliance synthesis is not complete, 
-as ~\Cref{alg:unsat} is not complete. 
+The same completeness considerations as for Section~\ref{sec:ospfsr} also hold here
+and completeness can be obtained by running \Cref{alg:unsat} in each domain multiple times and choosing different
+unsatisfiable cores and static routes assignments.
