@@ -426,7 +426,7 @@ In each iteration, there can be more than one way to place a static route and
 this unsat-core based approach of finding the static routes and edge weights.
 
 We will now present the soundness result of \Cref{alg:unsat}. 
-\begin{theorem}[OSPF+SR Soundness]
+\begin{theorem}[OSPF+SR Soundness] \label{thm:ospfsr}
 	Given a set of packet classes $PC$ and paths $\Pi$, \Cref{alg:unsat} outputs
 	a configuration $C(W,SR)$ such that $\Pi\subseteq\paths^C(PC)$.
 \end{theorem}
