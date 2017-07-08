@@ -484,73 +484,66 @@ In this case, the problem is caused by the fact that
 path chosen by the configuration, $\pi_1$,
 contains a static route in the middle of it.
 Upon a failure, even though there exists another
-a waypoint-compliant path, $r_2$, the configuration will not switch to it.
+a waypoint-compliant path, $\pi_2$, the configuration will not switch to it.
 %but ``worse'' than
 % $\pi_1$ and that  traverses a static route.
 %Essentially there is a path that is longer than $\pi_1$,
 %but shorter than $\pi_2$.
-To avoid this problem, when this happens,
-\name modifies the configurations to ensure that traffic is split.
-When dealing with static routes,
-the routes seen at $s$ may not 
-correspond to weights of $\pi_1$ and $\pi_2$, 
-thus simply 
-the constraint $W(\pi_1) = W(\pi_2)$ does not ensure the 
-traffic will split (see \Cref{fig:ospfresexample}).
+To avoid this problem, 
+\name synthesizes 
+configurations such that traffic is split among the two paths.
 
-Consider a path $\pi$ (different from $\pi_1$) for destination $\lambda$
-that has  a  static route $(r_1, r_2)$ on one of its links.
-\name would only have added this static route
-if the shortest path from $r_1$ for location $\lambda$
-was going through  a
-router $r' \not= r_2$. 
-%Instead, the static route circumvents 
-%the OSPF shortest route at $r_1$ and \emph{steers} $\lambda$ 
-%traffic to $r_2$ and not $r'$. 
-Therefore, the weight of $\pi$,
- is greater or equal than the 
-actual OSPF distance
-between $s$ and $t$ corresponding to $\pi_1$. 
-Suppose $\pi = l_1 \ldots l_k = (u_1, v_1) \ldots (u_k, v_k)$ 
-and 
-there exists a $\alpha \leq k$ such that 
-$l_\alpha = (u_\alpha, v_\alpha)$  
-is the first 
-static route in $\pi$---i.e., 
-$\forall \beta. ~1 \leq \beta < \alpha. ~(u_\beta, v_\beta) \not\in SR(\lambda)$.
-Therefore, all routers between $s$ and $u_\alpha$ did
-not require any static routes to steer traffic along a 
-non-shortest path. 
-Using this property we overapproximate
-the
-actual shortest OSPF distance  between $s$ to $t$ 
-corresponding to $\pi_1$ 
-as the sum of weights till $u_\alpha$ plus the distance
-from $u_\alpha$ to $t$. In our running example, 
-$u_\alpha = r_0$, and the distance between $s$ to $t$ 
-is estimated as $W(s, r_0) + D(r_0, t) = 1 + (1 + 1 + 1)$
-which is the shortest OSPF distance. 
+However, simply  adding
+the constraint $\sum_{\pi_1} W= \sum_{\pi_2}W$ does not ensure the 
+traffic will be split (see \Cref{fig:ospfresexample}), due to the 
+presence of static routes in the path. Intuitively, a static route
+is added to override OSPF and take a longer path, thus $\sum_{\pi_1}W$
+is not the actual shortest path in the network. Thus, we need to estimate 
+the weight of the shortest paths from the source 
+corresponding to $\pi_1$ and $\pi_2$ and 
+equate them to split the traffic.
 
-
+ In our running example,  
+ the distance between $s$ to $t$ corresponding
+ to $\pi_1$ is equal to 
+ $W(s, r_0) + D(r_0, t) = 1 + (1 + 1 + 1)$ where $r_0$
+ is the position of the first static route. From $s$ to 
+ $r_0$, since there are no static routes in the path, the  
+ OSPF distance can be estimated by sum of edge weights,
+ while the distance from $r_0$ to $t$ is estimated using $D(r_0, t)$.
+ Concretely, given $\pi_1 = (s, r_1)(r_1, r_2) \ldots (r_m, t)$, let 
+ $r_\alpha$ denote the first router in the path which has a static route---
+ i.e., $\forall i < \alpha. (r_i, r_{i+1}) \not\in SR(\lambda)$ for destination IP $\lambda$.
+ we estimate
+ the actual shortest OSPF distance  
+ between $s$ to $t$ 
+ corresponding to $\pi_1$ 
+ as the sum of weights till $r_\alpha$ plus the distance
+ from $r_\alpha$ to $t$. 
+ 
 To enable splitting amongst
-$\pi_1$ and $\pi_2$, we ensure that the weight 
-of the path $\pi_2$
+$\pi_1$ and $\pi_2 = (s, s_1)(s_1, s_2)\ldots(s_n, t)$, we ensure that 
+estimated OSPF distance of $\pi_2$ (with first static route at $s_\beta$)
 is smaller or equal to 
-the estimated OSPF distance corresponding to $\pi_1$: 
+the estimated OSPF distance corresponding to $\pi_1$, and vice-versa:
 \begin{equation}
-	\sum_{\pi_2} W \leq \sum_{i=1}^{\alpha - 1} W_{u_i}^{v_i} + D_{u_\alpha}^t	
+	\sum_{\mathclap{\substack{(s, s_1)\ldots(r_{\beta-1}, r_\beta)}}} W + D(r_\beta, t) 
+	 \hspace{0.2cm} \leq \hspace{0.2cm} \sum_{\mathclap{\substack{(s, r_1)\ldots(r_{\alpha-1}, r_\alpha)}}} W + D(r_\alpha, t)
 \end{equation}
-\loris{fix following sentence, punctuation is a mess}
-Note that ideally, the OSPF distance corresponding to 
-$\pi_2$ would also depend on the first static route on
-$\pi_2$, our distance variables are upper bounded by actual
-distances and may not be equal, and thus, upper bounding 
-those variables in these constraints do not ensure soundness.
-As an approximation, we use $\sum_{\pi_2}$ which is an upper bound
+However, distance variables $D$ 
+are upper bounded by actual
+distances and may not be equal, thus, the term $D(r_\beta,t)$ 
+will not faithfully represent the distance here as the constraint is simply 
+imposing an upper bound on an upper bounded variable. 
+Thus,  we use $\sum_{\pi_2}W$ (which is an upper bound)
 for the OSPF distance corresponding to 
-$\pi_2$. 
+$\pi_2$:
+\begin{equation}
+\sum_{\mathclap{\substack{\pi_2}}} W 
+\hspace{0.2cm} \leq \hspace{0.2cm} \sum_{\mathclap{\substack{(s, r_1)\ldots(r_{\alpha-1}, r_\alpha)}}} W + D(r_\alpha, t)
+\end{equation}
 
-However, since we cannot exactly express the weights of the actual routes seen 
+Since we cannot exactly express the weights of the actual routes seen 
 at the source router, the above constraint does not  guarantee 
 that traffic will be split amongst
 $\pi_1$ and $\pi_2$. 
