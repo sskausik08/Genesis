@@ -522,10 +522,12 @@ equate them to split the traffic.
  from $r_\alpha$ to $t$. 
  
 To enable splitting amongst
-$\pi_1$ and $\pi_2 = (s, s_1)(s_1, s_2)\ldots(s_n, t)$, we ensure that 
+$\pi_1$ and $\pi_2 = (s, s_1)(s_1, s_2)\ldots(s_n, t)$, we 
+would like to ensure that 
 the estimated OSPF distance of $\pi_2$ (with first static route at $s_\beta$)
 is smaller or equal to 
-the estimated OSPF distance corresponding to $\pi_1$, and vice-versa:
+the estimated OSPF distance corresponding to $\pi_1$, and vice-versa.
+A first attempt at doing so is to use the following constraint.
 \begin{equation}
 	\sum_{\mathclap{\substack{(s, s_1)\ldots(r_{\beta-1}, r_\beta)}}} W + D(r_\beta, t) 
 	 \hspace{0.2cm} \leq \hspace{0.2cm} \sum_{\mathclap{\substack{(s, r_1)\ldots(r_{\alpha-1}, r_\alpha)}}} W + D(r_\alpha, t)
@@ -533,10 +535,12 @@ the estimated OSPF distance corresponding to $\pi_1$, and vice-versa:
 By virtue of distance constraints (\ref{eq:distance}), 
 $D(r_\beta,t)$ is upper-bounded by the actual shortest
 distance between $r_\beta$ and $t$.  However, the distance
-constraints do not impose a lower bound on $D(r_\beta,t)$.
-Thus, a constraint of the form $D(r_\beta,t) \leq E$---where 
-$E$ is some expression---will not impose a lower bound
-on the value of $D(r_\beta,t)$---resulting in lower $D$ and incorrect 
+constraints do not impose a lower bound on $D(r_\beta,t)$
+and
+ a constraint of the form $D(r_\beta,t) \leq E$, where 
+$E$ is some expression, will also not impose a lower bound
+on the value of $D(r_\beta,t)$.
+Instead this may result in lower $D$ and incorrect 
 $W$ values.
 Hence,  we need to use $\sum_{\pi_2}W$ (which is an upper bound)
 for the OSPF distance corresponding to 
