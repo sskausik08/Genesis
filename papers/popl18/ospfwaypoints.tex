@@ -530,12 +530,15 @@ the estimated OSPF distance corresponding to $\pi_1$, and vice-versa:
 	\sum_{\mathclap{\substack{(s, s_1)\ldots(r_{\beta-1}, r_\beta)}}} W + D(r_\beta, t) 
 	 \hspace{0.2cm} \leq \hspace{0.2cm} \sum_{\mathclap{\substack{(s, r_1)\ldots(r_{\alpha-1}, r_\alpha)}}} W + D(r_\alpha, t)
 \end{equation}
-However, distance variables $D$ 
-are upper bounded by actual
-distances and may not be equal\loris{equal to what?}, thus, the term $D(r_\beta,t)$ 
-will not faithfully represent the distance \loris{distance from where to where}  as the constraint is simply 
-imposing an upper bound on an upper bounded variable. \loris{what is an upper bounded variable?} 
-Thus,  we use $\sum_{\pi_2}W$ (which is an upper bound)
+By virtue of distance constraints (\ref{eq:distance}), 
+$D(r_\beta,t)$ is upper-bounded by the actual shortest
+distance between $r_\beta$ and $t$.  However, the distance
+constraints do not impose a lower bound on $D(r_\beta,t)$.
+Thus, a constraint of the form $D(r_\beta,t) \leq E$---where 
+$E$ is some expression---will not impose any restriction
+on the value of $D(r_\beta,t)$ (thus, not affecting $W$ which depends
+on $D(r_\beta,t)$). 
+Hence,  we need to use $\sum_{\pi_2}W$ (which is an upper bound)
 for the OSPF distance corresponding to 
 $\pi_2$:
 \begin{equation}
