@@ -535,9 +535,9 @@ $D(r_\beta,t)$ is upper-bounded by the actual shortest
 distance between $r_\beta$ and $t$.  However, the distance
 constraints do not impose a lower bound on $D(r_\beta,t)$.
 Thus, a constraint of the form $D(r_\beta,t) \leq E$---where 
-$E$ is some expression---will not impose any restriction
-on the value of $D(r_\beta,t)$ (thus, not affecting $W$ which depends
-on $D(r_\beta,t)$). 
+$E$ is some expression---will not impose a lower bound
+on the value of $D(r_\beta,t)$---resulting in lower $D$ and incorrect 
+$W$ values.
 Hence,  we need to use $\sum_{\pi_2}W$ (which is an upper bound)
 for the OSPF distance corresponding to 
 $\pi_2$:
