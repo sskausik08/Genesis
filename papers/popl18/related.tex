@@ -47,7 +47,7 @@ which is then compiled to device-level BGP configurations. It is
 unclear how to extend Propane to incorporate domains, configuration
 complexity, or OSPF routing.
 
-Synet~\cite{synet} tackles network-wide configuration synthesis
+SyNET~\cite{synet} tackles network-wide configuration synthesis
 (Definition \ref{def:policycompliance}) in an elegant manner by
 modeling the behavior and interactions of the routing protocols as a
 stratified Datalog program, and using SMT to synthesize the Datalog
@@ -59,12 +59,12 @@ a two-phase approach where OSPF weights are synthesized
 separately using
 LP-solvers---which are faster and parallelizable---rather than directly  
 solving the whole configuration synthesis problem using SMT solvers.  
-Moreover, Synet's approach
+Moreover, SyNET's approach
 does not deal with resilience, a key aspect we tackle in this paper,
 and
-Synet does not attempt to minimize the number of static routes,
+SyNET does not attempt to minimize the number of static routes,
 which can cause undesirable behaviors like routing loops.  Finally,
-Synet supports routers that run both OSPF and BGP protocols and can be
+SyNET supports routers that run both OSPF and BGP protocols and can be
 configured with static routes, which does not fit naturally into a
 hierarchical structure where some routers only run OSPF and not
 BGP. In contrast, our MCMC algorithm can look for dynamic domain
