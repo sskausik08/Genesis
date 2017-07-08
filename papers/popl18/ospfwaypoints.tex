@@ -509,12 +509,12 @@ equate them to split the traffic.
  $W(s, r_0) + D(r_0, t) = 1 + (1 + 1 + 1)$ where $r_0$
  is the position of the first static route. From $s$ to 
  $r_0$, since there are no static routes in the path, the  
- OSPF distance can be estimated by sum of edge weights,
+ OSPF distance can be estimated using the sum of edge weights,
  while the distance from $r_0$ to $t$ is estimated using $D(r_0, t)$.
  Concretely, given $\pi_1 = (s, r_1)(r_1, r_2) \ldots (r_m, t)$, let 
- $r_\alpha$ denote the first router in the path which has a static route---
- i.e., $\forall i < \alpha. (r_i, r_{i+1}) \not\in SR(\lambda)$ for destination IP $\lambda$.
- we estimate
+ $r_\alpha$ denote the first router in the path which has a static route---i.e., 
+ $\forall i < \alpha. (r_i, r_{i+1}) \not\in SR(\lambda)$ for destination IP $\lambda$.
+ We estimate
  the actual shortest OSPF distance  
  between $s$ to $t$ 
  corresponding to $\pi_1$ 
@@ -523,7 +523,7 @@ equate them to split the traffic.
  
 To enable splitting amongst
 $\pi_1$ and $\pi_2 = (s, s_1)(s_1, s_2)\ldots(s_n, t)$, we ensure that 
-estimated OSPF distance of $\pi_2$ (with first static route at $s_\beta$)
+the estimated OSPF distance of $\pi_2$ (with first static route at $s_\beta$)
 is smaller or equal to 
 the estimated OSPF distance corresponding to $\pi_1$, and vice-versa:
 \begin{equation}
@@ -532,9 +532,9 @@ the estimated OSPF distance corresponding to $\pi_1$, and vice-versa:
 \end{equation}
 However, distance variables $D$ 
 are upper bounded by actual
-distances and may not be equal, thus, the term $D(r_\beta,t)$ 
-will not faithfully represent the distance here as the constraint is simply 
-imposing an upper bound on an upper bounded variable. 
+distances and may not be equal\loris{equal to what?}, thus, the term $D(r_\beta,t)$ 
+will not faithfully represent the distance \loris{distance from where to where}  as the constraint is simply 
+imposing an upper bound on an upper bounded variable. \loris{what is an upper bounded variable?} 
 Thus,  we use $\sum_{\pi_2}W$ (which is an upper bound)
 for the OSPF distance corresponding to 
 $\pi_2$:
