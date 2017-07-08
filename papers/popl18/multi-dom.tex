@@ -36,12 +36,12 @@ to destination $\lambda$.
 Here, BGP router $g_3$ receives from $g_6$ an advertisement for a route to destination $\lambda$
 traversing only the domain $1$; this route has domain path length 1 as it only traverses 1 domain. 
 Instead, $g_1$ and $g_2$ receive advertisements for a route 
-(D2, D1)
+($D_2$, $D_1$)
 to destination $\lambda$  with 
 domain path length 2. Since our objective is to send traffic along
 $g_3$, for path (1) we do not need to add any further BGP configurations,
-and the route via $g_3$ is automatically redistributed into domain D0;
-for destination $\lambda$, the gateway at domain D0 is $g_3$, i.e.,
+and the route via $g_3$ is automatically redistributed into domain $D_0$;
+for destination $\lambda$, the gateway at domain $D_0$ is $g_3$, i.e.,
 $G(0, \lambda) = g_3$.
 
 In the second case, the requested path does not have shortest domain path length
@@ -55,7 +55,7 @@ we need to set the local preference of route received by $g_1$
 (from $g_4$) to a value greater than the preference for the route received by $g_3$. 
 In the example, we set the preference at node $g_1$: 
 $LP(g_1, g_4, \lambda) = 100$
-which causes $g_1$ to become gateway at domain D0 for destination $\lambda$, i.e., 
+which causes $g_1$ to become gateway at domain $D_0$ for destination $\lambda$, i.e., 
 $G(0, \lambda) = g_1$.
 
 In the third case, two paths from different sources 
@@ -63,7 +63,7 @@ destination $\lambda$ exit
 the domain through two different
 gateways.
 For example, in \Cref{fig:bgpexample}(b),
-the path from $r_1$ to $\lambda$ exits domain D0 through 
+the path from $r_1$ to $\lambda$ exits domain $D_0$ through 
 gateway router $g_1$, while the path from $r_2$  to $\lambda$ exits 
 through $g_2$. 
 Moreover,  we assume that $g_1$ is the closest gateway to $r_1$ and 
@@ -83,7 +83,7 @@ we add an iBGP filter
  for the connection $g_2 \rightarrow g_1$ for
 destination IP $\lambda$. 
 Thus, $g_1$ will not receive the
-a route for $\lambda$ from $g_2$, and therefore,
+route for $\lambda$ from $g_2$, and therefore,
 redistribute the route it received from $g_3$. For 
 this example, $G(0, \lambda) = \{g_1, g_2\}$.
 $\lambda$ traffic from $r_1$ will exit through $g_1$ 
@@ -107,10 +107,10 @@ Finally, we describe a case in which standard BGP cannot enforce
 the desired path, therefore requiring the use of static routes.
 Consider the path for destination $\lambda$ 
 shown in \Cref{fig:bgpexample}(c). BGP Gateway $g_1$, which is in
-domain D0, 
+domain $D_0$, 
 will receive an advertisement for $\lambda$ that goes through domain
-1 and then domain D0.
-This advertisement will be rejected because it creates a loop---i.e., the domain D0
+1 and then domain $D_0$.
+This advertisement will be rejected because it creates a loop---i.e., the domain $D_0$
 appears twice in the path. 
 To enforce domain paths with loops, we use static routes. In this example
 the static routes
