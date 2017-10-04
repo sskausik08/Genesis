@@ -180,6 +180,10 @@ class GPLInterpreter(object):
 	def p_match(self, p) : 
 		'match : NAME EQUALS STRING'
 		p[0] = p[1] + " = " + p[3]
+
+	def p_match_str(self, p) : 
+		'match : STRING'
+		p[0] = p[1]
 	# def p_predicate_and(self, p):
 	# 	'predicate : predicate AND predicate'
 	# 	p[0] = AndNP(p[1], p[3])
