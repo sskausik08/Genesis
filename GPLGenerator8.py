@@ -3,6 +3,7 @@ from GPLInterpreter import GPLInterpreter
 import sys
 import random
 import math
+import time
 
 # python GPLGenerator.py <topology-file> <number-of-packet-classes> <tenant-group-size> <gpl-filename>
 # python GPLGenerator.py ./topologies/fattree-6.topo 50 10 fat6-50-10.gpl
@@ -24,12 +25,14 @@ swCount = topology.getSwitchCount()
 edgeSwitches = (topology.getSwitchCount() * 2/ 5) - 1  
 k = int(math.sqrt(topology.getSwitchCount() * 4/ 5))
 
+random.seed(time.time())
 wclasses = []
 for i in range(waypointclasses) : 
 	while True : 
 		wclass = []
 		for j in range(3) : 
-			w = random.randint(edgeSwitches + 1, swCount - 1)
+			#w = random.randint(edgeSwitches + 1, swCount - 1)
+			w = random.randint(0,edgeSwitches)
 			if w not in wclass : 
 				wclass.append(w)
 		wclass = sorted(wclass)
@@ -43,10 +46,11 @@ for i in range(len(wclasses)) :
 	wclassStr = ""
 	for j in range(len(wclass)) :
 		w = wclass[j]
-		if w >= 2 * edgeSwitches + 2 : 
-			waypoint = topology.getSwID("c" + str(w))
-		else : 
-			waypoint = topology.getSwID("a" + str(w))
+		# if w >= 2 * edgeSwitches + 2 : 
+		# 	waypoint = topology.getSwID("c" + str(w))
+		# else : 
+		# 	waypoint = topology.getSwID("a" + str(w))
+		waypoint = topology.getSwID("e" + str(w))
 		wclassStr += str(waypoint) + "-" 
 	
 	wclassStr = wclassStr[:len(wclassStr)-1]
@@ -55,21 +59,20 @@ for i in range(len(wclasses)) :
 
 endpoints = []
 for i in range(dsts) :
-	d = random.randint(0,edgeSwitches)
-	wclass = wclasses[i % len(wclasses)]
 	while True:		
+		d = random.randint(0,edgeSwitches)
+		wclass = wclasses[i % len(wclasses)]
+		w1 = wclass[random.randint(0, len(wclass) - 1)]
 		s1 = random.randint(0,edgeSwitches)
-		s2 = random.randint(0,edgeSwitches)
-		if s1 != d and s2 != d and s1 != s2 : 
+		if s1 != d and d not in wclass and s1 not in wclass : 
 			break
 
-	w1 = wclass[random.randint(0, len(wclass) - 1)]
 	#w2 = wclass[random.randint(0, len(wclass) - 1)]
-	if w1 >= 2 * edgeSwitches + 2 : 
-		w1 = "c" + str(w1)
-	else : 
-		w1 = "a" + str(w1) 
-
+	# if w1 >= 2 * edgeSwitches + 2 : 
+	# 	w1 = "c" + str(w1)
+	# else : 
+	# 	w1 = "a" + str(w1) 
+	w1 = "e" + str(w1)
 	# if w2 >= 2 * edgeSwitches + 2 : 
 	# 	w2 = "c" + str(w2)
 	# else : 

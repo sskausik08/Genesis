@@ -1974,10 +1974,11 @@ class GenesisSynthesiser(object) :
 	def getBFSModelPath(self, pc):
 		src = self.pdb.getSourceSwitch(pc)
 		dstSw = self.pdb.getDestinationSwitch(pc)
-		dst = self.pdb.getDestinationSubnet(pc)
+		
 
 		dag = None
 		if self.controlPlaneMode :
+			dst = self.pdb.getDestinationSubnet(pc)
 			# Create Destination DAGs
 			if dst in self.destinationDAGs : 
 				dag = self.destinationDAGs[dst]

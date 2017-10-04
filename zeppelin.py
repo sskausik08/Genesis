@@ -8,6 +8,7 @@ from PolicyDatabase import PolicyDatabase
 from ZeppelinSynthesiser import ZeppelinSynthesiser
 from OuterZeppelinSynthesiser import OuterZeppelinSynthesiser
 from ZeppelinInputGenerator import ZeppelinInputGenerator
+from SynetInput import SynetInput
 import sys
 
 class Zeppelin(object):
@@ -29,6 +30,7 @@ class Zeppelin(object):
 		self.numDomains = 5
 		self.configOpt = False
 		self.rfOpt = False
+		self.synetFlag = True
 		for arg in sys.argv : 
 			if arg == "-topo" :
 				self.topofile = sys.argv[no + 1]
@@ -45,6 +47,9 @@ class Zeppelin(object):
 				self.distance = int(sys.argv[no + 1])
 			if arg == "-domains" : 
 				self.numDomains = int(sys.argv[no + 1])
+			if arg == "-synet" :
+				self.synetInput = sys.argv[no + 1]
+				self.synetFlag = True
 			if arg == "-configOpt" : 
 				self.configOpt = True
 				self.rfOpt = False
@@ -63,12 +68,16 @@ class Zeppelin(object):
 		
 	def run(self):
 		self.gplparser.parseTopo()
-		self.zepInput = ZeppelinInputGenerator(self.topology, self.policyDatabase, self.pcRange, self.subnets, self.distance)
+
+		if self.synetFlag : 
+			self.zepInput = SynetInput(self.topology, self.policyDatabase, self.synetInput, self.subnets)
+		else : 
+			self.zepInput = ZeppelinInputGenerator(self.topology, self.policyDatabase, self.pcRange, self.subnets, self.distance)
 			
 		if self.ospfFlag : 
 			# Synthesize a single OSPF domain.
 			self.zepSynthesiser = ZeppelinSynthesiser(self.topology, self.policyDatabase)
-			self.zepSynthesiser.enforceDAGs(dags=self.zepInput.getDestinationDAGs(), endpoints=self.zepInput.getEndpoints(), backups=self.zepInput.getBackupPaths())
+			self.zepSynthesiser.enforceDAGs(dags=self.zepInput.getDestinationDAGs(), endpoints=self.zepInput.getEndpoints(), backups=self.zepInput.getBackupPaths(), staticRoutes=self.zepInput.getStaticRoutes())
 
 		else : 
 			self.outerZepSynthesizer = OuterZeppelinSynthesiser(topology=self.topology, pdb=self.policyDatabase, timeout=self.timeout, numDomains=self.numDomains, configOpt=self.configOpt, rfOpt=self.rfOpt)
