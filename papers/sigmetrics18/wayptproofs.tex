@@ -1,0 +1,55 @@
+
+\begin{proof}
+	Let us assume there exists a packet class $pc$ with waypoint set $\waypt_{pc}$ 
+	and waypoint path $\pi_{pc} = (s_{pc}, s_1)(s_1, s_2)\ldots (s_n, d_{pc})$, 
+	such that  the 
+	shortest path $\sigma_{pc}=(s_{pc}, r_1)$ $(r_1, r_2)\ldots (r_m, d_{pc})$ 
+	is not waypoint-compliant---i.e.,  
+	for every $i$, we have $r_i\not\in \waypt$.	
+	Since $\sigma_{pc}$ is the shortest weighted path: 
+	\begin{equation} \label{eq:wassumption}
+	\sum_{\pi_{pc}} W \geq \sum_{\sigma_{pc}} W
+	\end{equation}
+
+	
+	Let $s_i \not= r_i$ be the first point of divergence of the paths---i.e., for every $j<i$, $s_{j} = r_{j}$.
+Constraints (\ref{eq:waypoint}) impose 
+$(s_{i-1}, s_i)\ldots(s_n, d)$ to be 
+shorter than any path which is not waypoint-compliant. 
+Let us consider the neighbour router $r_1$ in $\sigma_{pc}$:
+	\[
+	\sum_{\mathclap{\substack{(s_{i-1}, s_i)\cdots(s_n, d)}}} 
+	W < W(s_{i-1}, r_i)+ D(r_i, d, \waypt_{pc})
+	\]
+	Since $\sigma_{pc}$ does not traverse any waypoint in $\waypt_{pc}$,
+	we use constraints (\ref{eq:wdistance}) 
+	to expand the terms $D(r_k, d_{pc}, \waypt_{pc})$ for $i \leq k \leq m$:
+	\[
+	\sum_{\mathclap{\substack{(s_{i-1}, s_i)\cdots(s_n, d)}}} 
+	W < W(s_{i-1}, r_i)+ W(r_i, r_{i+1}) + D(r_{i+1}, d,\waypt_{pc})
+	\] 
+	\begin{center}
+		$\ldots$
+	\end{center}
+	\[
+	\sum_{\mathclap{\substack{(s_{i-1}, s_i)\cdots(s_n, d)}}} 
+	W < W(s_{i-1}, r_i)+ W(r_i, r_{i+1}) + \ldots W(r_{m}, d) + D(d, d, \waypt_{pc})
+	\] 
+	\[
+	\sum_{\mathclap{\substack{(s_{i-1}, s_i)\cdots(s_n, d)}}} 
+	W \hspace{0.4cm}< \hspace{0.4cm}
+	\sum_{\mathclap{\substack{(r_{i-1}, r_i)\cdots(r_m, d)}}} 
+	W
+	\]
+	Adding $\Sigma_{(s, s_1)\cdots(s_{i-2},s_{i-1})}$ to both sides:
+	\[
+	\sum_{\mathclap{\substack{\pi_{pc}}}} 
+	W < 
+	\sum_{\mathclap{\substack{\sigma_{pc}}}} 
+	W
+	\] 
+However, this contradicts the assumption (\ref{eq:wassumption}) that 
+$\sigma_{pc}$ is the shortest path from $s_{pc}$ to $d_{pc}$. 
+%Hence, proved, there is no path $\sigma_{pc} \in \paths^C(pc)$ such that $\forall w \in \waypt.~
+%w \not\in \sigma_{pc}$. 
+\end{proof}

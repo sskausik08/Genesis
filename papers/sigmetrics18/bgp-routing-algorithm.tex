@@ -1,0 +1,46 @@
+\begin{wrapfigure}{r}{0.56\textwidth}
+	\vspace{-4mm}
+	\begin{minipage}{\linewidth}
+		\begin{algorithm}[H]
+			\begin{footnotesize} 
+				\caption{BGP Best Path Selection at router $r$ for  $\lambda$}
+				\label{alg:bgppathrules}
+				\begin{algorithmic}[1]
+					\Procedure{BestPath}{}
+					\State{ /* Each route $\gamma$ of form $(\lambda, local\_pref, len, nexthop)$ */}
+					\State{$\Upsilon_{ebgp}$ = $\bigcup$ Route from external BGP neighbour for $\lambda$} 
+					\State{$\Upsilon_{ibgp}$ = $\bigcup$ Route from internal BGP router $r_1$:
+						$r \not\in IF(r_1, \lambda)$}
+					\State{$\Upsilon = \Upsilon_{ebgp}\cup \Upsilon_{ibgp}$} \newline
+					\State{ /* Prefer the path with the largest \emph{local preference} */}
+					\State{\begin{varwidth}[t]{\linewidth}
+								$\Upsilon_{lp} = \{\gamma \in \Upsilon \mid \forall \gamma_1 \in \Upsilon. 
+									\gamma.local\_pref \geq \gamma_1.local\_pref\}$
+						\end{varwidth}					
+					}					
+					\If{$|\Upsilon_{lp}| = 1$}
+					\State{$\gamma_{best} = \gamma \in \Upsilon_{lp}$}
+					\Else
+					\State{ /* Prefer the path with the smallest \emph{AS Path length} */}
+					\State{$\Upsilon_{as} = \{\gamma \in \Upsilon_{lp}  \mid \forall \gamma_1 \in \Upsilon_{lp}. ~\gamma.len \leq \gamma_1.len\} $}
+%					\If{}
+					\State{\textbf{if} $|\Upsilon_{as}| = 1$ \textbf{then} $\gamma_{best} = \gamma \in \Upsilon_{as}$}	
+%					\EndIf
+					\EndIf
+					\If{$\gamma_{best} \in \Upsilon_{ebgp}$}
+					\State{$\route_{bgp}(r, \lambda) = \gamma_{best}.nexthop$}
+					\State{Redistribute $\gamma_{best}$ to OSPF domain}
+					\Else 
+					\State{/* Traffic for $\lambda$ will not exit through $r$ */}
+					\State{$\route_{bgp}(r, \lambda) = \bot$ }
+					\EndIf
+					\EndProcedure
+					%				\State{ . }
+					%				\State{Prefer the path with the lowest \emph{multi-exit discriminator} (MED).}
+					%				\State{Prefer eBGP over iBGP paths.}
+					%				\State{Prefer the route that comes from the BGP router with the lowest \emph{router ID}.}
+				\end{algorithmic}
+			\end{footnotesize}
+		\end{algorithm}
+	\end{minipage}
+\end{wrapfigure}

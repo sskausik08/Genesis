@@ -1,0 +1,57 @@
+\begin{proof}
+Let us assume there exists a packet class $pc$ in $PC$ whose path $\pi_{pc} =
+(s_{pc}, s_1)$ $ (s_1, s_2)$ 
+$\ldots (s_n, d_{pc})$ is not induced by $C$---i.e.,
+$\pi_{pc} \not\in \paths^C(pc)$. Let the destination IP of $pc$ be
+$\lambda_{pc}$.
+
+Given the routing function $\route^C$ constructed from $SR$ and
+$W$ (\secref{sec:routingmodel}), let the first router where routing diverges from $\pi_{pc}$ be $s_p$---i.e.,  
+$s_{p+1} \not\in \route^C(s_{p}, \lambda_{pc})$. Let  $r \in \route^C(s_{p}, \lambda_{pc})$.  
+\Cref{alg:unsat} on line \ref{line:unique} adds the following
+constraint to ensure the sub-path of $\pi_{pc}$ 
+from $s_{p}$ to $d_{pc}$ is the unique shortest path: 
+\begin{equation} \label{eq:uniq}
+\sum_{\mathclap{\substack{(s_{p},s_{p+1})\ldots(s_{n},d_{pc})}}} 
+W(s_i, s_j) < W(s_{p}, r) + D(r, d_{pc})
+\end{equation}
+
+\Cref{alg:unsat}
+only removes a subset of the shortest path 
+constraints and 
+not the distance constraints (\ref{line:removeconstraint}). We consider 
+two cases: when \Cref{alg:unsat}
+does not remove Constraint (\ref{eq:uniq}) and when it does. 
+
+\paragraph{Case 1:} 
+\Cref{alg:unsat} does not remove Constraint (\ref{eq:uniq}). 
+Thus, there is no static route $(s_p, s_{p+1})$ for
+$\lambda_{pc}$ (line \ref{line:staticroute}), and 
+OSPF-based forwarding occurs at $s_{p}$. 
+For any path $(r, r_1), (r_1, r_2) \ldots (r_m, d_{pc})$, 
+using the distance constraints (\ref{eq:distance}) to
+expand $D(r, d_{pc})$, we get the following: 
+\[
+\sum_{\mathclap{\substack{(s_{p},s_{p+1})\ldots(s_{n},d_{pc})}}} 
+W(s_i, s_j) < W(s_{p}, r) + W(r, r_{1}) + D(r_{1}, d_{pc})
+\]
+\begin{center}
+	$\ldots$
+\end{center}
+\[
+\sum_{\mathclap{\substack{(s_{p},s_{p+1})\ldots(s_{n},d_{pc})}}} 
+W(s_i, s_j) < W(s_{p}, r) + W(r, r_{1}) + \ldots W(r_{m}, d_{pc}) + D(d_{pc}, d_{pc})
+\]
+Therefore, the weight of any path through $r$ is greater than 
+the path through $s_{p}$ and, since
+OSPF sends traffic through the shortest weighted
+path, $r$ cannot be in $R^C_{ospf}(s_p, \lambda_{pc})$.
+Hence a contradiction. 
+
+\paragraph{Case 2:}  
+\Cref{alg:unsat} removes Constraint (\ref{eq:uniq}) 
+and $SR(s_p, \lambda_{pc}) = \{s_{p+1}\}$ (lines \ref{line:staticroute}-\ref{line:removeconstraint}). 
+Thus, $s_{p+1} \in \route^C(s_{p}, \lambda_{pc})$ as static routes 
+have the higher priority than OSPF. This contradicts our assumption
+that $s_{p+1} \not\in \route^C(s_{p}, \lambda_{pc})$. 
+\end{proof}

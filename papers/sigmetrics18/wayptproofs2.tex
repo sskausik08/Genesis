@@ -1,0 +1,127 @@
+\begin{proof}
+	Let us assume there exists a packet class $pc$ 
+	with destination $\lambda$, 
+	waypoint set $\waypt_{pc}$,
+	and waypoint path $\pi_{pc} = (s_{pc}, s_1)(s_1, s_2)\ldots (s_n, d_{pc})$, 
+	such that for $pc$, 
+	there exists no path in $\paths^C(pc)$
+	which is waypoint-compliant. There are two
+	cases: either there exists no path in $\paths^C(pc)$ 
+	or the paths do not traverse any waypoint in $\waypt_{pc}$.
+
+	\paragraph{Case 1:} $\paths^C(pc) = \emptyset$---i.e., there
+	is a routing loop caused by static routes (OSPF forwarding
+	is loop-free).
+	We denote the set of static routes for $\lambda$ by $SR(\lambda)$. Note that
+	multiple packet classes can share the same destination IP
+	and destination router, and we 
+	construct a destination-based tree from these paths, denoted by 
+	$\xi_\lambda$ 
+
+	Let us denote the routing loop as 
+	$(r_0, r_1) (r_1, r_2) \ldots (r_{n-1}, r_0)$.
+	Since, the path is a loop with atleast one static route,
+	there must exist one router $r_i$ in the loop
+	such that $(r_{i-1}, r_i) \in SR(\lambda)$ and the
+	next router in the loop $r_j$ which has a static route
+	$(r_j, r_{j+1}) \in SR(\lambda)$ and $r_j$ is not downstream
+	to $r_i$ in $\xi_\lambda$ (meaning there is no directed path 
+	from $r_i$ to $r_j$ in $\xi_\lambda$). 
+
+	Consider $r_i$. The path from $r_i$ to $r_j$ is 
+	due to OSPF forwarding, therefore, there exists a 
+	path $\sigma =
+	(r_i, r_{i+1})\ldots(r_{j-1}, r_j)(r_j, l_1) \ldots (l_{o}, d_{pc})$
+	which is the shortest path  from $r_i$ to $d_{pc}$. 
+
+	Since static routes are only added on edges in $\xi_\lambda$, 
+	let us denote the path from $r_{i}$ to $d_{pc}$ in 
+	$\xi_\lambda$ as $(r_{i}, u_1)(u_1, u_2)\ldots(u_p, d_{pc})$. 
+	Consider constraint (\ref{eq:rla}) which is added for static route 
+	$(r_{i-1}, r_i)$ and non-downstream router $r_j$:
+	\[
+	\sum_{\mathclap{\substack{(r_{i}, u_1)\ldots(u_p, d_{pc})}}} 
+	W < D(r_i, r_j) + D(r_j, d_{pc}) 
+	\]
+	Using distance constraints (\ref{eq:distance}), we can expand 
+	$D(r_i, r_j)$ and $D(r_j, d_{pc})$ along the paths 
+	$(r_i, r_{i+1})\ldots(r_{j-1}, r_j)$ and $(r_j, l_1) \ldots (l_{o}, d_{pc})$
+	respectively. 
+	\[
+	\sum_{\mathclap{\substack{(r_{i}, u_1)\ldots(u_p, d_{pc})}}} 
+	W < \hspace{0.8cm} \sum_{\mathclap{\substack{(r_i, r_{i+1})\ldots(r_{j-1}, r_j)}}}W \hspace{0.6cm} + 
+	\hspace{0.6cm} \sum_{\mathclap{\substack{(r_j, l_1) \ldots (l_{o}, d_{pc})}}}W  
+	\]
+	However, this contradicts the assumption that $\sigma$ is 
+	the shortest path from $r_i$ to $d_{pc}$. 
+
+	\paragraph{Case 2:} All paths in $\paths^C(pc)
+	\not=\emptyset$ are not waypoint-compliant. 
+	Let $\sigma_{pc} = (s_{pc}, r_1)(r_1, r_2) \ldots
+	(r_n, d_{pc})$ be one such path in $\paths^C(pc)$.
+	Given the routing function $\route^C$ constructed from $SR$ and
+	$W$ (\secref{sec:routingmodel}), let the first router where routing diverges from $\pi_{pc}$ be $s_p$---i.e.,  
+	$s_{p+1} \not\in \route^C(s_{p}, \lambda_{pc})$. 
+	\Cref{alg:wayptunsat} on line \ref{line:waypoint} adds the following
+	constraint to ensure the sub-path of $\pi_{pc}$ 
+	from $s_{p}$ to $d_{pc}$ is shorter than non-waypoint paths:
+	\begin{equation} \label{eq:wuniq}
+	\sum_{\mathclap{\substack{(s_{p}, s_{p+1})\cdots(s_n, d_{pc})}}} 
+	W < W(s_{p}, r_{p+1})+ D(r_{p+1}, d_{pc}, \waypt_{pc})
+	\end{equation}
+
+	\Cref{alg:wayptunsat}
+	only removes a subset of the waypoint and loop constraints
+	constraints and 
+	not the distance constraints (\ref{line:wremoveconstraint}). We further consider 
+	two sub-cases: whether \Cref{alg:wayptunsat}
+	removes Constraint (\ref{eq:wuniq}) or not. 
+
+\begin{description}
+	\item[Case 2A:]
+	\Cref{alg:wayptunsat} does not remove Constraint (\ref{eq:wuniq}). 
+	Thus, there is no static route $(s_p, s_{p+1})$ for
+	$\lambda_{pc}$ (line \ref{line:wstaticroute}), and 
+	OSPF-based forwarding occurs at $s_{p}$. 
+	Since $\sigma_{pc}$ does not traverse any 
+	waypoint in $\waypt_{pc}$,
+	we use constraints (\ref{eq:wdistance}) 
+	to expand the terms $D(r_k, d_{pc}, \waypt_{pc})$ for $p+1 \leq k \leq m$:
+	\[
+	\sum_{\mathclap{\substack{(s_{p}, s_{p+1})\cdots(s_n, d_{pc})}}} 
+	W < W(s_{p}, r_{p+1})+ W(r_{p+1}, r_{p+2}) + D(r_{p+2}, d_{pc},\waypt_{pc})
+	\] 
+	\begin{center}
+		$\ldots$
+	\end{center}
+	\[
+	\sum_{\mathclap{\substack{(s_{p}, s_{p+1})\cdots(s_n, d_{pc})}}} 
+	W < W(s_{p}, r_{p+1})+ \ldots + W(r_{m}, d_{pc}) + D(d_{pc}, d_{pc}, \waypt_{pc})
+	\]
+	By adding weights of $(s_{pc}, s_1)\ldots(s_{p-1}, s_p)$, we obtain that weight of $\sigma_{pc}$ 
+	is greater than $\pi_{pc}$. 
+	\begin{description}
+			\item[Case 2A.1:]
+			There are no static routes on $\sigma_{pc}$. This is a contradiction
+			as OSPF has a shorter path $\pi_{pc}$ to send traffic to, instead of $\sigma_{pc}$.
+			
+			\item[Case 2A.2:]
+			$\sigma_{pc}$ has a static route on the path. Since, \Cref{alg:wayptunsat}
+			only adds static routes on links in $\xi_\lambda$, $\sigma_{pc}$ intersects $\xi_\lambda$
+			again after diverging at $r_{p}$. Let the next divergence from $\xi_\lambda$ be at $r_{q}$.
+			Using Case 2 argument at $r_{q}$, we can reach a contradiction. This is because, the number
+			of routers at which $\sigma_{pc}$ intersect with $\xi_\lambda$ would be bounded, and at the last
+			divergence, there would be no static routes to the destination.
+		 
+\end{description}
+	\item[Case 2B:]
+	\Cref{alg:wayptunsat} removes Constraint (\ref{eq:waypoint}) 
+	and $SR(s_p, \lambda_{pc}) = \{s_{p+1}\}$ (lines \ref{line:wstaticroute}-\ref{line:wremoveconstraint}). 
+	Thus, $s_{p+1} \in \route^C(s_{p}, \lambda_{pc})$ as static routes 
+	have the higher priority than OSPF. This contradicts our assumption
+	that $s_{p+1} \not\in \route^C(s_{p}, \lambda_{pc})$. 
+	\end{description}
+	
+	Hence, for every packet class, 
+	there exists a path in the set of induced paths which traverses through one of the waypoints. 
+	\end{proof}

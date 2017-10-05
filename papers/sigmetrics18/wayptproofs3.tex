@@ -1,0 +1,42 @@
+\begin{proof}
+	Let us assume there exists a packet class $pc$ with waypoint set $\waypt_{pc}$ 
+	and edge-disjoint waypoint paths $\pi^1_{pc} = (s_{pc}, s_1)(s_1, s_2)\ldots (s_n, d_{pc})$, 
+	and $\pi^2_{pc} = (s_{pc}, t_1)(t_1, t_2)\ldots (t_l, d_{pc})$; and there exists 
+	a link $l$ failure 
+	such that for $pc$, the 
+	shortest path $\sigma_{pc}=(s_{pc}, r_1)$ $(r_1, r_2)\ldots (r_m, d_{pc})$ 
+	is not waypoint-compliant------i.e.,  
+	for every $i$, we have $r_i\not\in \waypt$.
+	
+	A single link $l$ failure cannot disable both $\pi_{pc}^1$ and $\pi_{pc}^2$ as they are 
+	edge-disjoint. 
+	\paragraph{Case 1:} Link $l$ is not in path $\pi_{pc}^1$. Since, $\sigma_{pc}$ is 
+	the shortest path: 
+	\[
+	\sum_{\sigma_{pc}}W \leq \sum_{\pi_{pc}^1}W
+	\]
+	Constraint (\ref{eq:resilience}) imposes the following: 
+	\[
+	\sum_{\pi_{pc}^1}W < D(s_{pc}, d_{pc}, \waypt_{pc}) 
+	\]
+	Since, $\sigma_{pc}$ does not traverse any waypoint, we can use 
+	constraints (\ref{eq:wdistance}) for expanding $D(r_k, d_{pc}, \waypt_{pc})$ 
+	for $1 \leq k \leq m$: 
+	\[
+	\sum_{\pi_{pc}^1}W < W(s_{pc}, r_1) + D(r_1, d_{pc}, \waypt_{pc}) 
+	\]
+	\begin{center}
+	$\ldots$
+	\end{center}
+	\[
+	\sum_{\pi_{pc}^1}W < W(s_{pc}, r_1) + W(r_1, r_2) + \ldots + W(r_m, d_{pc}) + D(d_{pc}, d_{pc}, \waypt_{pc}) = \sum_{\sigma_{pc}}W
+	\]
+	This contradiction the assumption that $\sigma_{pc}$ is the shortest path from $s_{pc}$ to $d_{pc}$.
+
+	\paragraph{Case 2:} Link $l$ is not in path $\pi_{pc}^2$. Proof same as Case 1 for $\pi_{pc}^2$. 
+	\paragraph{Case 3:} Link $l$ is not in path $\pi_{pc}^1$ or $\pi_{pc}^2$. Using \Cref{thm:waypoint}, 
+	$\sigma_{pc}$ cannot be the shortest path as it does not traverse any waypoint in $\waypt_{pc}$. 
+	
+	Hence proved, under any arbitrary single-link failure, the shortest path between each packet class's 
+	endpoints traverses one of the waypoints in $\waypt_{pc}$.
+\end{proof}

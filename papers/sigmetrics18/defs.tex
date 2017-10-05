@@ -1,0 +1,142 @@
+\newcommand{\minisection}[1]{\noindent{\bf #1.}}
+\newcommand{\secref}[1]{{\S\ref{#1}}}
+\newcommand{\secsref}[2]{{Sections~\ref{#1} and \S\ref{#2}}}
+\newcommand{\figref}[1]{{Figure~\ref{#1}}}
+\newcommand{\figsref}[2]{{Figure~\ref{#1} and \ref{#2}}}
+\newcommand{\appref}[1]{{Appendix~\ref{#1}}}
+\newcommand{\thmref}[1]{{Theorem~\ref{#1}}}
+\newcommand{\lemref}[1]{{Lemma~\ref{#1}}}
+\newcommand{\corref}[1]{{Corollary~\ref{#1}}}
+\newcommand{\proref}[1]{{Property~\ref{#1}}}
+\newcommand{\tabref}[1]{{Table~\ref{#1}}}
+
+\newcommand{\compactcaption}[1]{\vspace{-0.5em}\caption{#1}\vspace{-0.5em}}
+\newcommand{\botcompactcaption}[1]{\caption{#1}\vspace{-1em}}
+\newcommand{\topcompactcaption}[1]{\vspace{-1em}\caption{#1}\vspace{-0.5em}}
+
+%\newtheorem{definition}{Definition}
+
+\newenvironment{compactitemize}
+{
+   \begin{itemize}[leftmargin=1.5em]
+   \vspace{-1ex}
+   \setlength{\topsep}{0pt}
+   \setlength{\itemsep}{0em}
+   \setlength{\parskip}{0pt}
+   \setlength{\parsep}{0pt}
+}
+{
+   \vspace{-1ex}
+   \end{itemize}
+}
+\newenvironment{compact2itemize}
+{
+	\begin{itemize}[leftmargin=1.5em]
+		\vspace{-1ex}
+		\setlength{\topsep}{0pt}
+		\setlength{\itemsep}{0.5em}
+		\setlength{\parskip}{0pt}
+		\setlength{\parsep}{0pt}
+	}
+	{
+		\vspace{-1ex}
+	\end{itemize}
+}
+
+
+\newenvironment{compactenumerate}
+{
+   \begin{enumerate}[leftmargin=1.5em]
+   \vspace{-1ex}
+   \setlength{\topsep}{0pt}
+   \setlength{\itemsep}{0em}
+   \setlength{\parskip}{0pt}
+   \setlength{\parsep}{0pt}
+}
+{
+   \vspace{-1ex}
+   \end{enumerate}
+}
+
+\def\rat{\mathbb{Q}}
+\def\nat{\mathbb{N}}
+\def\route{\mathfrak{R}}
+\def\paths{\mathfrak{P}}
+\def\links{\mathbb{L}}
+\def\waypt{\mathbb{W}}
+
+
+%-----
+%Space tricks
+
+\algtext*{EndWhile}% Remove "end while" text
+\algtext*{EndIf}% Remove "end if" text
+\algtext*{EndProcedure}% Remove "end while" text
+\algtext*{EndFor}% Remove "end while" text
+\let\oldReturn\Return
+\renewcommand{\Return}{\State\oldReturn}
+\makeatletter
+\lst@InstallKeywords k{attributes}{attributestyle}\slshape{attributestyle}{}ld
+\makeatother
+\newcommand\gtt[1]{{\color{gray}\texttt{\textbf{#1}}}}
+\newcommand\nf[1]{{\normalfont#1}}
+
+\lstdefinestyle{customc}{
+  belowcaptionskip=1\baselineskip,
+  breaklines=true,
+  xleftmargin=\parindent,
+  language=C,
+  showstringspaces=false,
+  basicstyle=\small\ttfamily,
+  keywordstyle=\small\bfseries\ttfamily\color{NavyBlue},
+  commentstyle=\itshape\color{black},
+  identifierstyle=\ttfamily\color{black},
+  stringstyle=\itshape\color{NavyBlue},
+  keywords={ map, flatMap, reduce, return, define, gaussian, gauss, step, elif, then, skip, if, else, reduceByKey, sensitiveAttribute, fairnessTarget, def},
+moreattributes={ let, where}, % etc...
+attributestyle = \itshape\ttfamily\color{attributecolor}
+}
+
+\setlist[itemize]{
+    %labelindent=.4cm,
+    %style=unboxed,
+    %leftmargin=.4cm,
+    %font=\itshape,
+    topsep=.5ex,
+    itemsep=0ex,
+    leftmargin=1em,
+    %itemindent=1em
+}
+
+\setlist[description]{
+    labelindent=.4cm,
+    style=unboxed,
+    leftmargin=.4cm,
+    font=\itshape,
+    topsep=.5ex,
+    itemsep=0ex
+}
+
+\lstset{columns=fullflexible,
+        mathescape=true,
+        literate=,
+        numbersep=5pt,
+        numberstyle=\tt\color{gray}
+}
+\lstset{escapechar=@,style=customc}
+
+%space above and below
+%\lstset{aboveskip=3pt,belowskip=3pt}
+
+\let\originalleft\left
+\let\originalright\right
+\renewcommand{\left}{\mathopen{}\mathclose\bgroup\originalleft}
+\renewcommand{\right}{\aftergroup\egroup\originalright}
+
+%\expandafter\def\expandafter\normalsize\expandafter{%
+%    \normalsize
+%    \setlength\abovedisplayskip{3pt}
+%    \setlength\belowdisplayskip{3pt}
+%    \setlength\abovedisplayshortskip{3pt}
+%    \setlength\belowdisplayshortskip{3pt}
+%}
