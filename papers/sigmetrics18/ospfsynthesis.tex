@@ -349,12 +349,12 @@ and the approach is repeated until a solution is found.
 %original set is satisfiable, causing addition of unnecessary filters.
 %Since our algorithm is already greedy and it does not try to compute the optimal 
 %number of route filters, this is not a problem.}
-\begin{wrapfigure}{r}{0.5\textwidth}
+\begin{figure}
 	\vspace{-7mm}
-	\begin{minipage}{\linewidth}
+	\begin{minipage}{0.7\columnwidth}
 		\begin{algorithm}[H]
 			\begin{footnotesize} 
-				\caption{OSPF Synthesis with Static Routes}
+				\caption{OSPF-SR Synthesis}
 				\label{alg:unsat}
 				\begin{algorithmic}[1]
 					\Procedure{OSPF_SYNTH}{$\Pi$} 
@@ -375,7 +375,7 @@ and the approach is repeated until a solution is found.
 			\end{footnotesize}
 		\end{algorithm}
 	\end{minipage}
-\end{wrapfigure}
+\end{figure}
 
 %\minisection{Adding static routes using unsatisfiable cores}
 To choose what static route to place, we use
