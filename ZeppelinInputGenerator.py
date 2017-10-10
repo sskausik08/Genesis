@@ -173,6 +173,9 @@ class ZeppelinInputGenerator(object) :
 	def getBackupPaths(self) :
 		return self.backupPaths
 
+	def getStaticRoutes(self) :
+		return None
+
 
 
 
