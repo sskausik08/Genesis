@@ -91,7 +91,7 @@ class OuterZeppelinSynthesiser(object) :
 		print self.domains
 		print "Validation", self.checkValidDomainAssignment()
 		start_t = time.time() 
-		[bestSRCount, bestTRL] = self.synthesizeOSPFConfigurations()
+		[bestSRCount, bestRScore] = self.synthesizeOSPFConfigurations()
 		bestSRScore = self.staticSRScore()
 		self.bestConfScore = self.configurationScore()
 		bestospfTime = time.time() - start_t
@@ -100,7 +100,7 @@ class OuterZeppelinSynthesiser(object) :
 		if not self.configOpt: 
 			print "Worst RF Configuration"
 			start_t = time.time()
-			[worstSRCount, worstTRL] = self.synthesizeOSPFConfigurations(self.worstDomainAssigmentRF)
+			[worstSRCount, worstRScore] = self.synthesizeOSPFConfigurations(self.worstDomainAssigmentRF)
 			worstospfTime = time.time() - start_t
 			worstSRScore = 0
                         if self.worstDomainAssigmentRF != None : 
@@ -111,6 +111,7 @@ class OuterZeppelinSynthesiser(object) :
 			self.zepFile.write(str(self.MCMCIter) + "\t" + str(self.accepts) + "\t" + str(len(paths)))
 			self.zepFile.write("\t" + str(self.bestConfScore) + "\t" + str(self.worstConfScore))
 			self.zepFile.write("\t" + str(bestSRCount) + "\t" + str(worstSRCount))
+			self.zepFile.write("\t" + str(bestRScore) + "\t" + str(worstRScore))
 			self.zepFile.write("\t" + str(bestospfTime) + "\t" + str(worstospfTime))
 			self.zepFile.write("\n")
 		# else : 
@@ -1243,7 +1244,7 @@ class OuterZeppelinSynthesiser(object) :
 		# Found a domain assignment from MCMC. Solve the OSPF domains now.
 		self.staticRoutes = dict()
 		SRCount = 0
-		
+		totalresilienceScore = 0
 		for domain in range(self.numDomains) :
 			topo = self.getDomainTopology(domain, switchDomains)
 
@@ -1255,8 +1256,9 @@ class OuterZeppelinSynthesiser(object) :
 				pdb.addDestinationDAG(dst, dags[dst])
 
 			zepSynthesiser = ZeppelinSynthesiser(topo, pdb)
-			staticRouteNames = zepSynthesiser.enforceDAGs(dags=dags, endpoints=endpoints, bgpExtensions=bgpExtensions)
+			[staticRouteNames, score] = zepSynthesiser.enforceDAGs(dags=dags, endpoints=endpoints, bgpExtensions=bgpExtensions)
 
+			totalresilienceScore += score
 			for dst in staticRouteNames : 
 				SRCount += len(staticRouteNames[dst])
 				for rf in staticRouteNames[dst] :
@@ -1267,11 +1269,10 @@ class OuterZeppelinSynthesiser(object) :
 
 		SRCount += self.findStaticConfScore()
 		# Compute Resilience Loss due to filtering
-		totalresilienceLoss = 0
-
+		
 		print "Number of staticRoutes are ", SRCount
-		print "Resilience Loss ", totalresilienceLoss
-		return [SRCount, totalresilienceLoss]
+		print "Resilience Score ", totalresilienceScore
+		return [SRCount, totalresilienceScore]
 
 
 	def findTotalResilienceLoss(self) :

@@ -1,0 +1,17 @@
+\begin{proof}
+Assume we are given $W$ and $\Pi$.
+We show that if we assign to each $D(s,t)$ the weight of the shortest 
+path from $s$ to $t$ according to $W$, both constraints (\ref{eq:distance}) and (\ref{eq:unique}) hold. 
+
+The distance constraints (\ref{eq:distance}) are satisfied using
+the triangular inequality: If $r$ lies on the shortest path from $s$ to
+$t$, $D(s,t) = W(s,r) + D(r,t)$, otherwise $s$, $r$ and $t$  form a 
+triangle and $D(s,t) \leq W(s,r) + D(r,t)$. 
+
+Since, every path $\pi \in \Pi$ is the shortest unique path, each subpath 
+$\sigma = (s, r_1)\ldots(r_n, d)$ 
+of $\pi$ to the destination is also the unique shortest  path. By 
+definition of unique shortest path, $\sum_\sigma W$ is smaller than the shortest path
+from $s$ to $d$ through $r'$ not in $\sigma$---i.e., $\sum_\sigma W < W(s, r') + D(r', d)$. Hence, $W$ satisfies constraints 
+(\ref{eq:unique}). 
+\end{proof}

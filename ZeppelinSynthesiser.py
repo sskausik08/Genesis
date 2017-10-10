@@ -138,7 +138,7 @@ class ZeppelinSynthesiser(object) :
 	def bp(self, sw, dst) : 
 		return self.backupPathVars[sw][dst]
 
-	def enforceDAGs(self, dags, endpoints, waypoints=None, backups=None, bgpExtensions=None):
+	def enforceDAGs(self, dags, endpoints, waypoints=None, backups=None, bgpExtensions=None, staticRoutes=None):
 		""" Enforce the input destination dags """
 		start_t = time.time()
 		self.overlay = dict()
@@ -204,6 +204,13 @@ class ZeppelinSynthesiser(object) :
 			self.enforceStrictCompliance()
 		else : 
 			self.enforceWaypointCompliance(self.resilience)
+
+		self.ilpSolver.update()
+		
+		if staticRoutes != None : 
+			for dst in staticRoutes : 
+				for sr in staticRoutes[dst] :
+					self.addStaticRoute(SRType.SR, sr[0], sr[1], dst)
 
 		solvetime = time.time()
 		self.ilpSolver.optimize()
@@ -734,6 +741,7 @@ class ZeppelinSynthesiser(object) :
 		
 		distconstrs = self.distanceConstraints[sw1][sw2][dst]
 		if distconstrs != None : 
+			print distconstrs
 			for dconstr in distconstrs : 
 				self.ilpSolver.remove(dconstr)
 

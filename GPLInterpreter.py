@@ -71,11 +71,11 @@ class GPLInterpreter(object):
 	def t_MINMAXTE(self, t): r'minimize-max-te'; return t
 
 	def t_NAME(self, t):
-		r'[a-zA-Z_][a-zA-Z0-9_]*'
+		r'[a-zA-Z_][a-zA-Z0-9_.]*'
 		return t
 
 	def t_STRING(self, t):
-		r'[a-zA-Z0-9_]+'
+		r'[a-zA-Z0-9_.]+'
 		return t
 
 	def t_COMMENT(self, t):
@@ -142,7 +142,7 @@ class GPLInterpreter(object):
 	#     'statement : mcast_statement'
 
 	def p_reach(self, p):
-		'reach_statement : NAME ASSIGN STRING COLON NAME REACH NAME'
+		'reach_statement : NAME ASSIGN match COLON NAME REACH NAME'
 		# Add Reachability Policy.
 		reachPolicy = ReachAst(p[3], p[5], p[7])
 		pc = self.genesisSynthesiser.addReachabilityPolicy(predicate=p[3], src=p[5], dst=p[7])
@@ -151,7 +151,7 @@ class GPLInterpreter(object):
 		p[0] = reachPolicy  
 
 	def p_reach_len(self, p):
-		'reach_statement : NAME ASSIGN STRING COLON NAME REACH NAME IN NUMBER'
+		'reach_statement : NAME ASSIGN match COLON NAME REACH NAME IN NUMBER'
 		# Add Reachability Policy.
 		reachPolicy = ReachAst(p[3], p[5], p[7])
 		pc = self.genesisSynthesiser.addReachabilityPolicy(predicate=p[3], src=p[5], dst=p[7], pathlen=p[9])
@@ -160,7 +160,7 @@ class GPLInterpreter(object):
 		p[0] = reachPolicy  
 
 	def p_reach_waypoint(self, p):
-		'reach_statement : NAME ASSIGN STRING COLON NAME REACH LBRACKET waypointlist RBRACKET REACH NAME'
+		'reach_statement : NAME ASSIGN match COLON NAME REACH LBRACKET waypointlist RBRACKET REACH NAME'
 		# Add Reachability Policy
 		reachPolicy = ReachAst(p[3], p[5], p[11], p[8])
 		pc = self.genesisSynthesiser.addReachabilityPolicy(predicate=p[3], src=p[5], dst=p[11], waypoints=p[8])
@@ -169,7 +169,7 @@ class GPLInterpreter(object):
 		p[0] = reachPolicy  
 
 	def p_reach_waypoint_len(self, p):
-		'reach_statement : NAME ASSIGN STRING COLON NAME REACH LBRACKET waypointlist RBRACKET REACH NAME IN NUMBER'
+		'reach_statement : NAME ASSIGN match COLON NAME REACH LBRACKET waypointlist RBRACKET REACH NAME IN NUMBER'
 		# Add Reachability Policy.
 		reachPolicy = ReachAst(p[3], p[5], p[11], p[8])
 		pc = self.genesisSynthesiser.addReachabilityPolicy(predicate=p[3], src=p[5], dst=p[11], waypoints=p[8], pathlen=p[13])
@@ -177,6 +177,13 @@ class GPLInterpreter(object):
 		self.policyTable[p[1]] = reachPolicy
 		p[0] = reachPolicy  
 
+	def p_match(self, p) : 
+		'match : NAME EQUALS STRING'
+		p[0] = p[1] + " = " + p[3]
+
+	def p_match_str(self, p) : 
+		'match : STRING'
+		p[0] = p[1]
 	# def p_predicate_and(self, p):
 	# 	'predicate : predicate AND predicate'
 	# 	p[0] = AndNP(p[1], p[3])

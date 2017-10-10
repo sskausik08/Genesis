@@ -49,7 +49,7 @@ for i in range(groups) :
 						dstCount[d] += 1
 						break			
 
-		gplfile.write("p" + str(i) + "_" + str(j) + " := tcp.port = " + str(i) + " : e" + str(s)  + " >> e" + str(d) + "\n")
+		gplfile.write("p" + str(i) + "_" + str(j) + " := ip.dst = 10.0.0." + str(i+j+1) + " : e" + str(s)  + " >> e" + str(d) + "\n")
 
 if count == 1 : # If no of packet classes = group size, then there are no isolation policies
 	exit(0)
