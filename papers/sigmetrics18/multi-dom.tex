@@ -11,7 +11,7 @@ Second, we show how to modify the
 techniques given in Section~\ref{sec:intra-synthesis}
 to determine the edge weights and static routes
  in each domain to guarantee that paths traverse
-the correct gateways.
+the correct gateways. 
 
 
 \subsubsection{Configuring BGP and Static Routes}
@@ -24,6 +24,15 @@ BGP routers so that the routes chosen by BGP
 (and redistributed into OSPF) 
 can yield the policy-compliant
 paths $\Pi$ given as input. 
+Note that, the BGP $\rightarrow$ OSPF redistribution
+can lead to explosion of OSPF routing tables. However, 
+in our datacenter setting, BGP is used in a restricted
+sense for management ease and BGP routers are not connected
+to the external internet directly. We manually enable iBGP route redistribution~\cite{ibgprouteredist} for internal prefixes to
+prevent the explosion of routing tables from external prefixes.
+
+
+To enforce the policy-complaint paths, 
 We need to take into account three different
 cases, which are illustrated in \Cref{fig:bgpexample}.  
 For sake of simplicity, we omit certain small details 

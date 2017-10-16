@@ -240,12 +240,12 @@ the path from $s_{pc}$ to $d_{pc}$ for destination IP $\lambda_{pc}$.
 \begin{definition}[Induced Paths] \label{def:inducedpaths}
 Given a configuration $C$, the set of paths induced
 by the configuration $C$ for the packet class $pc$ is defined as follows:
-\[
+\begin{multline*}
 \paths^C(pc) = \{\pi=(u_1, v_1)\ldots (u_n, v_n) \mid 
-valid(\pi) \wedge 
+valid(\pi) \wedge \\
 u_1 = s_{pc} \wedge v_n= d_{pc} \wedge
 \forall i. ~v_i \in \route^C(u_i,\lambda_{pc})\}
-\]
+\end{multline*}
 Given a set of packet classes $PC$, the set of paths
  induced by $C$ is defined as
 $\paths^C(PC) = \cup_{pc\in PC} \paths^C(pc)$.
