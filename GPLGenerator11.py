@@ -37,6 +37,8 @@ for i in range(groups) :
 		while True:		
 			s = random.randint(0,edgeSwitches)
 			d = random.randint(0,edgeSwitches)
+			if s != d and i in srcCount[s] and i in dstCount[d] : 
+				break
 			if s != d and len(srcCount[s]) < k/2 and len(dstCount[d]) < k/2 : 
 				if i not in srcCount[s] : 
 					srcCount[s].append(i)
