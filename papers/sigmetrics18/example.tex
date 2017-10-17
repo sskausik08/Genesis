@@ -1,0 +1,37 @@
+\section{Example}
+Consider the hierarchical network in \cref{fig:example} which
+is split into three OSPF domains, and these domains communicate
+using BGP. Host A talks to host B and C with the following policies:
+traffic to B must go through a firewall at router $r_4$ and traffic 
+to B and C do not share any links (We discuss the policy support in
+detail in \Cref{sec:policy}). Given the particular domain assignment, 
+we have to synthesize OSPF and BGP configurations satisfying the 
+following policies. Illustrating our two-phase approach, we first 
+use Genesis to find policy-compliant paths (indicated by the blue and
+red paths). Note that there exists multiple solutions for the given
+policies, we show how the control plane is 
+synthesized using one of the solutions:
+
+\begin{itemize}
+	\item
+For traffic $A \rightarrow B$, the entire path is inside
+a single OSPF domain, so Zeppelin has to find OSPF weights 
+such that the shortest path is $r_1 \rightarrow r_3 \rightarrow 
+r_2$. \Cref{fig:example} shows the OSPF weights which induce
+this path, we can see that the weight of path $r_1 
+\rightarrow r_3 \rightarrow r_2$ () is greater than that of path
+$r_1 \rightarrow r_2$ (). 
+ 	\item For traffic $A \rightarrow C$, the path traverses through 
+ 	multiple domains, so Zeppelin configures BGP so as to ensure
+ 	routing through domains follows the Genesis path. In this case, 
+ 	we need traffic to go through a longer path in terms of AS path
+ 	length; Zeppelin sets $r_4$'s BGP local preference for route C
+ 	from $r_5$ a higher value (200), so that $r_5$ is 
+ 	preferred over $r_6$. 
+ 	\item Suppose the operator wanted to compute better domain
+ 	assignments for the network. We can see that if $r_5$ was moved
+ 	to $D_2$, we do not even need to configure the local preference 
+ 	at $r_4$, thus, simplifying the BGP configuration complexity. 
+ 	Zeppelin can find better domain assignments using a stochastic
+ 	search procedure. 
+\end{itemize}

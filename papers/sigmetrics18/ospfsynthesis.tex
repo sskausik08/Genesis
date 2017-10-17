@@ -128,27 +128,27 @@ if $\Pi$ contains the
  smaller weight than the path $\pi'=s \rightarrow t$ ---e.g., $W(\pi)=3$
   and $W(\pi')=5$. 
  
-\begin{figure}
-	%\vspace{-4mm}
-	\resizebox {0.75\columnwidth} {!} {
-		\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
-		square/.style={regular polygon,regular polygon sides=4}] 
-		\node[state] at (0,0) (s)  {$s$}; 
-		\node[state] at (1.8,1) (v1)  {$r_1$}; 
-		\node[state] at (3.6, 0)(t) {$t$};
-		\node[state, rectangle] at (5, 0) (d1) {$\lambda$};
-		\path[->] 
-		(s) edge [red] node [black] {1} (v1)
-		edge  node {5} (t)
-		(v1) edge [red] node [black] {2} (t)
-		(t) edge [red, dashed] node {} (d1);
-		\end{tikzpicture}
-	}
-	\compactcaption{OSPF edge weights
-		such that the routers forward traffic along
-		the colored path.}
-	\label{fig:edgeweightexample}
-\end{figure}
+%\begin{figure}
+%	%\vspace{-4mm}
+%	\resizebox {0.75\columnwidth} {!} {
+%		\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
+%		square/.style={regular polygon,regular polygon sides=4}] 
+%		\node[state] at (0,0) (s)  {$s$}; 
+%		\node[state] at (1.8,1) (v1)  {$r_1$}; 
+%		\node[state] at (3.6, 0)(t) {$t$};
+%		\node[state, rectangle] at (5, 0) (d1) {$\lambda$};
+%		\path[->] 
+%		(s) edge [red] node [black] {1} (v1)
+%		edge  node {5} (t)
+%		(v1) edge [red] node [black] {2} (t)
+%		(t) edge [red, dashed] node {} (d1);
+%		\end{tikzpicture}
+%	}
+%	\compactcaption{OSPF edge weights
+%		such that the routers forward traffic along
+%		the colored path.}
+%	\label{fig:edgeweightexample}
+%\end{figure}
 The problem of synthesizing the weight function $W$ that
 realizes an input set of paths $\Pi$ is
 a
@@ -264,8 +264,8 @@ the values of the $W(s,t)$ variables are the weights we are trying to synthesize
 otherwise the intra-domain synthesis problem 
 cannot be solved without static routes.
 
-\begin{wrapfigure}{r}{0.35\columnwidth}
-	\resizebox {0.34\columnwidth} {!} {
+\begin{figure}
+	\resizebox {0.8\columnwidth} {!} {
 			\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
 			square/.style={regular polygon,regular polygon sides=4}] 
 			\node[state] at (0,0) (s)  {$s$}; 
@@ -283,7 +283,7 @@ cannot be solved without static routes.
 	}
 	\compactcaption{Example illustrating the use of static routes.}
 	\label{fig:srexample}
-\end{wrapfigure}
+\end{figure}
 Consider the example in \Cref{fig:srexample}
 where the two paths between $s$ and $t$ are used by 
 destinations $\lambda_1$ and $\lambda_2$. This
@@ -349,6 +349,7 @@ and the approach is repeated until a solution is found.
 %original set is satisfiable, causing addition of unnecessary filters.
 %Since our algorithm is already greedy and it does not try to compute the optimal 
 %number of route filters, this is not a problem.}
+\iffull
 \begin{figure}
 	\vspace{-7mm}
 	\begin{minipage}{0.7\columnwidth}
@@ -376,7 +377,7 @@ and the approach is repeated until a solution is found.
 		\end{algorithm}
 	\end{minipage}
 \end{figure}
-
+\fi
 %\minisection{Adding static routes using unsatisfiable cores}
 To choose what static route to place, we use
 LP-solvers' ability to produce an

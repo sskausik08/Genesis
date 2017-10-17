@@ -109,10 +109,10 @@ If $\lambda$ is directly connected to a router $r_\lambda$ in the same OSPF doma
 $r$---i.e., $G(\Theta(r),\lambda) = \{r_\lambda\}$---then 
 the OSPF router $r$ will forward traffic directed to $\lambda$ along a path with
 shortest distance to router $r_\lambda$. This is expressed as follows. 
-\[
-\route_{ospf}(r,\lambda) = \{r_1 ~|~ r_1 \in N(r)\wedge \forall r_2 \in N(s) .~W(r, r_1) + D(r_1, r_\lambda) \le 
+\begin{multline*}
+\route_{ospf}(r,\lambda) = \{r_1 ~|~ r_1 \in N(r)~\wedge~ \forall r_2 \in N(s). \\ ~W(r, r_1) + D(r_1, r_\lambda) \le 
 W(r, r_2) + D(r_2, r_\lambda)\}
-\]
+\end{multline*}
 
 \minisection{BGP} BGP is a path-vector inter-domain routing protocol
 that connects different domains (also called autonomous systems), where each domain
@@ -204,7 +204,7 @@ gateway router in $G (\theta, \lambda)$, which in turn will forward  the traffic
 function $\route^C_{ospf}$ for an external destination $\lambda$
 is defined as follows: 
 \begin{multline*}
-\route_{ospf}^C(r,\lambda) = \{~~r_1 \mid r_1 \in N(r) \wedge \exists g_1 \in G (\theta, \lambda). ~\forall r_2 \in N(s), g_2 \in G (\theta, \lambda). \\ ~W(r, r_1) + D(r_1, g_1) \leq
+\route_{ospf}^C(r,\lambda) = \{~~r_1 \mid r_1 \in N(r) \wedge \exists g_1 \in G (\theta, \lambda). ~\forall r_2 \in N(s), \\ g_2 \in G (\theta, \lambda). ~W(r, r_1) + D(r_1, g_1) \leq
 W(r, r_2) + D(r_2, g_2)\}
 \end{multline*}
 Piecing together the different routing protocols and their 
