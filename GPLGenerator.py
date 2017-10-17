@@ -51,7 +51,8 @@ for i in range(groups) :
 
 		gplfile.write("p" + str(i) + "_" + str(j) + " := ip.dst = 10.0.0." + str(i+j+1) + " : e" + str(s)  + " >> e" + str(d) + "\n")
 
-if count == 1 : # If no of packet classes = group size, then there are no isolation policies
+
+if groups == 1 : # If no of packet classes = group size, then there are no isolation policies
 	exit(0)
 gplfile.write("== \n")	
 sets = dict()
