@@ -17,7 +17,7 @@ if __name__ == "__main__":
 	f.close()
 	for pcs in gpl_sizes : 
 		for i in range(10) : # "-c3", "-ospf", 
-			subprocess.call(["python", "GPLGenerator.py", topofile, str(pcs), str(pcs), "1.gpl"])
+			subprocess.call(["python", "GPLGenerator11.py", topofile, str(pcs), str(pcs), "1.gpl"])
 			workloadArgs = ["python", "-O", "genesis.py", "-c3", "-ospf", "-topo", topofile, "-gpl", "1.gpl"]
 			if useTactic :
 				workloadArgs.append("-useTactic")
