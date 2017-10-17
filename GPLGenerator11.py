@@ -28,8 +28,8 @@ groupsize = isolatePercentage
 srcCount = dict()
 dstCount = dict()
 for i in range(edgeSwitches + 1) :
-	srcCount[i] = 0
-	dstCount[i] = 0
+	srcCount[i] = []
+	dstCount[i] = []
 endpoints = dict()
 currdst = 0
 for i in range(groups) :
@@ -37,18 +37,12 @@ for i in range(groups) :
 		while True:		
 			s = random.randint(0,edgeSwitches)
 			d = random.randint(0,edgeSwitches)
-			a = random.randint(edgeSwitches + 1, swCount - 1)
-			if s <> d :
-				if s > d : 
-					key = str(d) + "-" + str(s)
-				else :
-					key = str(s) + "-" + str(d)
-				if key not in endpoints : 
-					if srcCount[s] < k/2 and dstCount[d] < k/2 :
-						endpoints[key] = True
-						srcCount[s] += 1
-						dstCount[d] += 1
-						break			
+			if s != d and len(srcCount[s]) < k/2 and len(dstCount[d]) < k/2 : 
+				if i not in srcCount[s] : 
+					srcCount[s].append(i)
+				if i not in dstCount[d] : 
+					dstCount[d].append(i)
+				break
 
 		gplfile.write("p" + str(i) + "_" + str(j) + " := "  + str(currdst) + " : e" + str(s)  + " >> e" + str(d) + "\n")
 		currdst += 1
