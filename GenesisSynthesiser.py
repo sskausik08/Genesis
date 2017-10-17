@@ -323,110 +323,116 @@ class GenesisSynthesiser(object) :
 
 					self.waypointClasses.append(wclass)
 
-				for pc in range(0, self.pdb.getPacketClassRange()) :
-					dst = int(self.pdb.getPredicate(pc)) 
-					if dst not in self.waypoints :
-						self.waypoints[dst] = []
-
-					self.waypoints[dst] = self.waypointClasses[dst % len(self.waypointClasses)]
-
-
-				for pc in range(0, self.pdb.getPacketClassRange()) : 
-					dst = int(self.pdb.getPredicate(pc))
-					path = self.pdb.getPath(pc)
-					srcSw = self.pdb.getSourceSwitch(pc)
-					dstSw =  self.pdb.getDestinationSwitch(pc)
-					endpt = [srcSw, dstSw]
-
-					if len(path) == 0 : # no path
-						continue
-
-					if endpt in self.endpoints : 
-						# pc is a backup path. Check if traversing waypoint and provide as backup.
-
-						backupFlag = False
-						# Check if backup already present. 
-						if dst in self.backups : 
-							for bpath in self.backups[dst] : 
-								if bpath[0] == srcSw : 
-									# Backup already exists. Ignore this path.
-									backupFlag = True
-
-						if backupFlag : 
-							continue
-
-						waypointFlag = False
-						if len(self.pdb.getWaypoints(pc)) == 0 : 
-							waypointFlag = True
-						for w in self.waypoints[dst] :
-							if w in path : 
-								waypointFlag = True
-								break
-
-						if waypointFlag : 
-							if dst not in self.backups : 
-								self.backups[dst] = []
-							self.backups[dst].append(path)
-
-						continue
-
-					# path = []
-					# sw = srcSw 
-					# while sw != None:
-					# 	path.append(sw)
-					# 	sw = dag[sw]
-					
-					if path[len(path) - 1] != dstSw :
-						print "Something is wrong!" 
-						exit(0)
-
-					self.waypointMode = True
-					
-					waypointFlag = False
-					if len(self.pdb.getWaypoints(pc)) == 0 : 
-						waypointFlag = True
-						self.waypointMode = False
-					for w in self.waypoints[dst] :
-						if w in path : 
-							waypointFlag = True
-
-					if waypointFlag : 
-						if endpt not in self.endpoints : 
-							self.endpoints.append(endpt)
-
+				if len(self.waypointClasses) == 0 : 
+					for pc in range(0, self.pdb.getPacketClassRange()) :
+						dst = int(self.pdb.getPredicate(pc)) 
+						path = self.pdb.getPath(pc)
 						pc1 = policyDatabase.addReachabilityPolicy(dst, self.pdb.getSourceSwitch(pc), self.pdb.getDestinationSwitch(pc))
 						policyDatabase.addPath(pc1, path)
 
 						if dst not in dags : 
-							dags[dst] = dict()
-					
+								dags[dst] = dict()
+						
 						dag = dags[dst]
 						for index in range(len(path) - 1): 
 							dag[path[index]] = path[index + 1]
 
-						dag[dstSw] = None
+						dag[self.pdb.getDestinationSwitch(pc)] = None
 
-				for dst in dags : 
-					policyDatabase.addDestinationDAG(dst, dags[dst])
+					for dst in dags : 
+						policyDatabase.addDestinationDAG(dst, dags[dst])
 
-				# self.zepSynthesiser = ZeppelinSynthesiser(topology=self.topology, pdb=policyDatabase, resilience=False, waypointCompliance=False)
-				# self.zepSynthesiser.enforceDAGs(dags=policyDatabase.getDestinationDAGs(), endpoints=self.endpoints, waypoints=self.waypoints)
-				
-				# self.zepFile = open("zeppelin-timing", 'a')
-				# self.zepFile.write("Zeppelin\t" + str(self.pdb.getPacketClassRange()) + "\t" + str(end_t - start_t))
-				# self.zepFile.write("\t")
-				# self.zepFile.close()
+					self.zepSynthesiser = ZeppelinSynthesiser(topology=self.topology, pdb=policyDatabase, resilience=False, waypointCompliance=False )
+					self.zepSynthesiser.enforceDAGs(dags=policyDatabase.getDestinationDAGs(), endpoints=self.endpoints, waypoints=self.waypoints, backups=self.backups)
+				else : 
+					for pc in range(0, self.pdb.getPacketClassRange()) :
+						dst = int(self.pdb.getPredicate(pc)) 
+						if dst not in self.waypoints :
+							self.waypoints[dst] = []
 
-				# self.zepSynthesiser = ZeppelinSynthesiser(topology=self.topology, pdb=policyDatabase, resilience=False, waypointCompliance=True )
-				# self.zepSynthesiser.enforceDAGs(dags=policyDatabase.getDestinationDAGs(), endpoints=self.endpoints, waypoints=self.waypoints)
-				
-				# self.zepFile = open("zeppelin-timing", 'a')
-				# self.zepFile.write("Zeppelin\t" + str(self.pdb.getPacketClassRange()) + "\t" + str(end_t - start_t))
-				# self.zepFile.write("\t")
-				# self.zepFile.close()
+						self.waypoints[dst] = self.waypointClasses[dst % len(self.waypointClasses)]
 
-				self.zepSynthesiser = ZeppelinSynthesiser(topology=self.topology, pdb=policyDatabase, resilience=True, waypointCompliance=True )
-				self.zepSynthesiser.enforceDAGs(dags=policyDatabase.getDestinationDAGs(), endpoints=self.endpoints, waypoints=self.waypoints, backups=self.backups)
+
+					for pc in range(0, self.pdb.getPacketClassRange()) : 
+						dst = int(self.pdb.getPredicate(pc))
+						path = self.pdb.getPath(pc)
+						srcSw = self.pdb.getSourceSwitch(pc)
+						dstSw =  self.pdb.getDestinationSwitch(pc)
+						endpt = [srcSw, dstSw]
+
+						if len(path) == 0 : # no path
+							continue
+
+						if endpt in self.endpoints : 
+							# pc is a backup path. Check if traversing waypoint and provide as backup.
+
+							backupFlag = False
+							# Check if backup already present. 
+							if dst in self.backups : 
+								for bpath in self.backups[dst] : 
+									if bpath[0] == srcSw : 
+										# Backup already exists. Ignore this path.
+										backupFlag = True
+
+							if backupFlag : 
+								continue
+
+							waypointFlag = False
+							if len(self.pdb.getWaypoints(pc)) == 0 : 
+								waypointFlag = True
+							for w in self.waypoints[dst] :
+								if w in path : 
+									waypointFlag = True
+									break
+
+							if waypointFlag : 
+								if dst not in self.backups : 
+									self.backups[dst] = []
+								self.backups[dst].append(path)
+
+							continue
+
+						# path = []
+						# sw = srcSw 
+						# while sw != None:
+						# 	path.append(sw)
+						# 	sw = dag[sw]
+						
+						if path[len(path) - 1] != dstSw :
+							print "Something is wrong!" 
+							exit(0)
+
+						self.waypointMode = True
+						
+						waypointFlag = False
+						if len(self.pdb.getWaypoints(pc)) == 0 : 
+							waypointFlag = True
+							self.waypointMode = False
+						for w in self.waypoints[dst] :
+							if w in path : 
+								waypointFlag = True
+
+						if waypointFlag : 
+							if endpt not in self.endpoints : 
+								self.endpoints.append(endpt)
+
+							pc1 = policyDatabase.addReachabilityPolicy(dst, self.pdb.getSourceSwitch(pc), self.pdb.getDestinationSwitch(pc))
+							policyDatabase.addPath(pc1, path)
+
+							if dst not in dags : 
+								dags[dst] = dict()
+						
+							dag = dags[dst]
+							for index in range(len(path) - 1): 
+								dag[path[index]] = path[index + 1]
+
+							dag[dstSw] = None
+
+					for dst in dags : 
+						policyDatabase.addDestinationDAG(dst, dags[dst])
+
+					self.zepSynthesiser = ZeppelinSynthesiser(topology=self.topology, pdb=policyDatabase, resilience=True, waypointCompliance=True )
+					self.zepSynthesiser.enforceDAGs(dags=policyDatabase.getDestinationDAGs(), endpoints=self.endpoints, waypoints=self.waypoints, backups=self.backups)
 
 		self.pdb.writeForwardingRulesToFile(self.topology)
 		self.printProfilingStats()
