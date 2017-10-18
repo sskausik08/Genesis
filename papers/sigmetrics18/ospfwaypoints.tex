@@ -279,33 +279,33 @@ packet back to $s$  causing a routing loop as $s$ will send
 it back to $r_1$ and back and forth till the \emph{ttl} (time to live) of the
 packet expires. 
 
-% \begin{figure}[t]
-% 	\begin{minipage}{\columnwidth}
-% 		\begin{algorithm}[H]
-% 			\begin{footnotesize} 
-% 				\caption{OSPF Waypoint Synthesis with Static Routes}
-% 				\label{alg:wayptunsat}
-% 				\begin{algorithmic}[1]
-% 					\Procedure{OSPF_W_SYNTH}{$\Pi$} 
-% 					\State{$\Psi_D:$ Distance (\ref{eq:distance}) and non-waypoint distance constraints (\ref{eq:wdistance})}
-% 					\State{$\Psi_W:$ Waypoint constraints for $\Pi$ (\ref{eq:waypoint}) \label{line:waypoint}} 
-% 					\State{$\Psi_R = \emptyset :$ Routing Loop avoidance constraints (\ref{eq:rla})}
-% 					\State{$\Psi = \Psi_D \cup \Psi_W \cup \Psi_R$} 
-% 					\While{$\Psi$ is \emph{unsat}} 
-% 					\State{Extract unsat core $uc$ from LP Solver}
-% 					\State{Pick static route $sr(sr_1, sr_2, \lambda)$ from $uc$ constraints}
-% 					\State{Add $sr$ to static routes $SR$ \label{line:wstaticroute}}
-% 					\State{$\Psi = \Psi \setminus (\Psi_W(sr_1, \lambda) \cup \Psi_R(sr_1,\lambda))$ \label{line:wremoveconstraint}}
-% 					\State{$\Psi = \Psi \cup \Psi_R(sr_2,\lambda)$ \label{line:waddconstraint}} 
-% 					\EndWhile
-% 					\State{Obtain $W$ from solution model of $\Psi$}
-% 					\Return{Configuration $C(W,SR)$} 
-% 					\EndProcedure
-% 				\end{algorithmic}
-% 			\end{footnotesize}
-% 		\end{algorithm}
-% 	\end{minipage}
-% \end{figure}
+\begin{figure}[t]
+	\begin{minipage}{\columnwidth}
+		\begin{algorithm}[H]
+			\begin{footnotesize} 
+				\caption{OSPF Waypoint Synthesis with Static Routes}
+				\label{alg:wayptunsat}
+				\begin{algorithmic}[1]
+					\Procedure{OSPF_W_SYNTH}{$\Pi$} 
+					\State{$\Psi_D:$ Distance (\ref{eq:distance}) and non-waypoint distance constraints (\ref{eq:wdistance})}
+					\State{$\Psi_W:$ Waypoint constraints for $\Pi$ (\ref{eq:waypoint}) \label{line:waypoint}} 
+					\State{$\Psi_R = \emptyset :$ Routing Loop avoidance constraints (\ref{eq:rla})}
+					\State{$\Psi = \Psi_D \cup \Psi_W \cup \Psi_R$} 
+					\While{$\Psi$ is \emph{unsat}} 
+					\State{Extract unsat core $uc$ from LP Solver}
+					\State{Pick static route $sr(sr_1, sr_2, \lambda)$ from $uc$ constraints}
+					\State{Add $sr$ to static routes $SR$ \label{line:wstaticroute}}
+					\State{$\Psi = \Psi \setminus (\Psi_W(sr_1, \lambda) \cup \Psi_R(sr_1,\lambda))$ \label{line:wremoveconstraint}}
+					\State{$\Psi = \Psi \cup \Psi_R(sr_2,\lambda)$ \label{line:waddconstraint}} 
+					\EndWhile
+					\State{Obtain $W$ from solution model of $\Psi$}
+					\Return{Configuration $C(W,SR)$} 
+					\EndProcedure
+				\end{algorithmic}
+			\end{footnotesize}
+		\end{algorithm}
+	\end{minipage}
+\end{figure}
 
 
 Whenever \name adds a static route to resolve an unsat-core,
