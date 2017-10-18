@@ -56,37 +56,44 @@ from such paths.
 We set a timeout of 2,000 seconds for each workload.
 
 \paragraph{Reachability Policies.}
+We generate reachability policies (each of which 
+corresponds to a path) with randomly generated endpoints.
+\Cref{fig:ospfisolation}(a) shows the synthesis time for
+PC across number of paths. 
+For these workloads, \name can
+synthesize configurations for 80 policies in 62 
+seconds, where Genesis takes 10 seconds to synthesize paths 
+and configuration synthesis from paths 
+takes 52 seconds on average.
 
 \paragraph{Isolation Policies.}
-We generate policies that operate 
-on a multi-tenant topology and,
-within a  group of tenants, we add a policy to ensure
-each path  (with randomly generated endpoints)
-is isolated from other paths of the same group of tenants.
-Here, isolation  prevents interference between traffic from
-same tenants.  
- 
- \begin{wrapfigure}{r}{0.44\columnwidth}
-  	\vspace{-4mm}
- 	\includegraphics[width=\linewidth]{figures/ospfisolation.eps}
- 	\vspace{-8pt}
- 	\compactcaption{\label{fig:ospfisolation}
- 		Isolation workloads: synthesis time.}
- \end{wrapfigure}
- 
-For each 
-workload, we have $n$ tenant groups (between 1 to 8), 
-each group comprised of $g$ destinations (between 10 and 20). 
-\Cref{fig:ospfisolation} 
+We generate policies to ensure tenant-isolation
+in a multi-tenant topology, i.e., each
+tenant's traffic will be isolated from traffic from
+other tenants, and a tenant cannot interfere with any 
+other tenant. This is achieved by adding isolation policies
+amongst different tenant's traffic. 
+We have $n$ tenant groups (between 1 to 4), 
+each group comprised of $g$ destinations (20). 
+\Cref{fig:ospfisolation}(b)
 shows the synthesis time 
 for PC.
-The x-axis shows the number of paths $n * g$ 
-to different destination IP addresses. 
+The x-axis shows the number of paths $n * g$. 
+ 
+ \begin{figure}
+  	\vspace{-4mm}
+ 	\includegraphics[width=\columnwidth]{figures/ospfisolation.eps}
+ 	\vspace{-8pt}
+ 	\compactcaption{\label{fig:ospfisolation}
+ 	 Synthesis time for reachability and isolation workloads.}
+ \end{figure}
+ 
+
  As the number of tenants increase, time to 
-synthesize the data plane increases linearly as we only 
-consider isolation policies within tenants 
-and not amongst paths 
-of different tenants. Meanwhile, time taken to synthesize 
+synthesize the data plane increases exponentially 
+because finding isolated paths is NP-complete. Also, these
+paths are longer than if we only had reachability policies. 
+Similarily, time taken to synthesize 
 OSPF configurations increases exponentially with the 
 number of tenants due to the exponential complexity of computing 
 the unsat-cores; with increasing number of 
@@ -95,10 +102,10 @@ and requires more iterations of the unsat-core learning
 procedure. 
 For this workload, \name can
 synthesize configurations for 4 tenants, each with
-20 destinations in 77 seconds, where \genesis takes 35 seconds
-for synthesizing paths and synthesizing configurations
-takes 42 seconds on average. 
-
+20 destinations in 507 seconds, where \genesis takes 217 seconds
+for synthesizing paths. Note that synthesizing 
+configurations is harder for isolation than reachability 
+additionally because of longer paths provided by Genesis.
 
 
 \begin{figure*}
@@ -145,7 +152,7 @@ and 1800 seconds to synthesize policy-resilient configurations.
 
 In summary, the answer to \textbf{Q1} is that,
 \textbf{\name can synthesize policy-compliant configurations for medium size
-topologies} in less than 5 minutes and synthesizing policy-resilient 
+topologies} in less than 10 minutes and synthesizing policy-resilient 
 configurations takes less than an hour.
 
 %\begin{table}{l}{8em}
@@ -178,7 +185,8 @@ configurations takes less than an hour.
 \end{wrapfigure}
 \paragraph{Connectivity-resilience.}
 We measure the connectivity-resilience of the configurations 
-generated using the algorithm PC on the isolation workload described in
+generated using the algorithm PC on the reachability 
+workload described in
 Section~\ref{sec:ospfeval}. 
 For our baseline, we use configurations 
 where all the paths synthesized by \genesis
@@ -190,10 +198,11 @@ denotes a benchmark in which \name
 generated a configuration with higher connectivity-resilience than
 the baseline algorithm.
 PC provides an average connectivity-resilience score 
-of 0.95 over the baseline score 
-of 0.85.
-Moreover, PC places
-$(8 \pm 0.5)$\% of the static routes required by the baseline. 
+of 0.97 over the baseline score 
+of 0.88.
+Moreover, PC places on average 
+$9.3$\% of the static routes 
+than required by the baseline. 
 
 
 
