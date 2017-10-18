@@ -146,8 +146,9 @@ such that,
 if a BGP router $r_1$ belongs to  $IF(r_2, \lambda)$, then
 the router $r_2$ will not advertise a route for $\lambda$ to
 $r_1$ through iBGP. 
+\iffull
 \input{bgp-routing-algorithm} 
- 
+ \fi
 Algorithm~\ref{alg:bgppathrules} defines the BGP routing function
 based on the best path selection at each BGP router. 
 %a local preference function $LP$,
