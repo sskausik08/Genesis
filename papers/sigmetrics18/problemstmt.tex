@@ -1,3 +1,4 @@
+%!TEX root = paper.tex
 \section{Routing Model and Problem Definitions}
 In this section, we formally define the problems addressed in this
 paper.  We first describe the representation of different
@@ -9,7 +10,6 @@ we tackle.
 Finally, we formalize two resilience metrics called 
 connectivity-resilience and positive-resilience,
 which we will use in our experimental evaluation.
-
 
 \subsection{Routing Model} \label{sec:routingmodel}
 
@@ -74,10 +74,9 @@ and destination $\lambda$, if $SR(r,\lambda)=\{r_1, r_2\}$, then router
 $r$ forwards traffic for $\lambda$ to routers 
 $r_1$ and $r_2$.    
 
-\minisection{OSPF} Open Shortest Path First (OSPF) is a routing
-protocol commonly used inside a domain. In OSPF, routers receive link
-state information from other routers and use it to create a map of
-the network. Each link is associated with a positive weight and traffic from a router $r$ to
+\minisection{OSPF} Open Shortest Path First (OSPF) routing
+is commonly used inside a domain. In OSPF, each link 
+is associated with a positive weight and traffic from a router $r$ to
 a destination $\lambda$ is forwarded across 
 the shortest path from $r$ to $\lambda$.
 
@@ -91,10 +90,11 @@ OSPF weight function $W$.
 We define the gateway function 
 $G: \nat \times \lambda \mapsto 2^V$ to denote the gateway routers 
 in a domain which provide a route to $\lambda$. If $\lambda$ 
-is directly connected to a single router $r_\lambda$, for all routers $r$ in the 
+is directly connected to a single router $r_\lambda$, 
+for all routers $r$ in the 
 same domain as $r_\lambda$,
-if 
-$\Theta(r) = \Theta(r_\lambda)$, we have that $G(\Theta(r), \lambda) = \{r_\lambda\}$.
+if $\Theta(r) = \Theta(r_\lambda)$, 
+we have that $G(\Theta(r), \lambda) = \{r_\lambda\}$.
 If $\lambda$ is not connected
 to any router in the domain as $r$, then $G(\Theta(r),\lambda)$ is 
 determined by the BGP configuration, which we will talk about later. 
@@ -115,29 +115,34 @@ W(r, r_2) + D(r_2, r_\lambda)\}
 \end{multline*}
 
 \minisection{BGP} BGP is a path-vector inter-domain routing protocol
-that connects different domains (also called autonomous systems), where each domain
-comprises of one or more routers typically managed by a single
-entity. A BGP router receives routes from BGP peers: internal peers
-send iBGP routes, external peers send eBGP routes. Each route for 
-a certain
-destination comprises of a domain-level path to the destination
-domain and, by default, a BGP router will forward a packet through the path that traverses fewer domains.
+that connects different domains (or ASes).  
+% (also called autonomous systems), where each domain
+% comprises of one or more routers typically managed by a single
+% entity. A BGP router receives routes from BGP peers: internal peers
+% send iBGP routes, external peers send eBGP routes. Each route for 
+% a certain
+% destination comprises of a domain-level path to the destination
+% domain and, by default, a BGP router will forward a packet through the path that traverses fewer domains.
 BGP routers can be configured with a
-\emph{local preference} to assign higher priorities to
+\emph{local preference} 
+to assign higher priorities to
 specific routes for a 
 particular destination. We define the local
 preference function $LP: V \times V \times \Lambda \mapsto \nat$ as
 follows.  Given a BGP router $r$, a neighbouring router $r'$, and  
 a destination $\lambda$, $LP(r, r', \lambda)$ specifies the local
-preference for the router $r$ to choose $r'$ as the next-hop router for destination $\lambda$.  This function is only defined
+preference for the router $r$ to choose $r'$ 
+as the next-hop router for destination $\lambda$.  
+This function is only defined
 on inter-domain links---i.e., $r$ and $r'$ must belong to adjacent domains.  
-From the routes received at $r$, the router
-picks one with greatest local preference.
 
 The Internal BGP (iBGP) protocol is used to 
 exchange external BGP routes 
 among BGP routers belonging
-to the same domain. Informally, iBGP propagates local preferences of the routes to all the BGP routers within the same domain. 
+to the same domain. 
+Informally, iBGP propagates local 
+preferences of the routes to all the BGP 
+routers within the same domain. 
 We can configure iBGP 
 filters to prevent a router from advertising 
 a route to another router. We do so using the 
@@ -146,24 +151,24 @@ such that,
 if a BGP router $r_1$ belongs to  $IF(r_2, \lambda)$, then
 the router $r_2$ will not advertise a route for $\lambda$ to
 $r_1$ through iBGP. 
-\iffull
+
 \input{bgp-routing-algorithm} 
- \fi
 Algorithm~\ref{alg:bgppathrules} defines the BGP routing function
 based on the best path selection at each BGP router. 
 %a local preference function $LP$,
-Informally, BGP 
-chooses a route with highest local preference, and
-if there is a tie, it chooses the route that traverses fewer domains~\cite{bgp}. 
+A BGP router receives eBGP and iBGP routes; it  
+chooses a route with highest local preference, 
+and if there is a tie, it chooses the route that traverses 
+fewer domains~\cite{bgp}. 
 We assume all ties 
 are broken using these criteria. 
 Formally, we define a partial BGP routing function 
 $\route_{bgp}: V \times \lambda \mapsto V$
-so that
+such that
 $\route_{bgp}(r,\lambda)$
- describes the next-hop BGP router for
- the BGP
+describes the next-hop BGP router for the BGP
 router $r$ when forwarding traffic for a destination $\lambda$. 
+
 
 \minisection{OSPF+BGP+SR} We now describe how routing
 happens in hierarchical networks with all the previously described protocols
@@ -183,8 +188,7 @@ We now define the routing function
 $\route^C: V \times \Lambda \mapsto 2^V$ 
 so that
 $\route^C(r,\lambda)$
- describes the next-hop router for
- the 
+ describes the next-hop router for the 
 router $r$ when forwarding traffic for a destination $\lambda$. 
 At a router $r$, if there exists 
 static routes for destination $\lambda$,
@@ -196,8 +200,11 @@ gateways will receive external advertisements for $\lambda$.
 For this scenario, the gateway router set is defined 
 $G(\theta, \lambda) = \{r \mid \route^C_{bgp}(r, \lambda) \not= \perp\}$
 Consider a router $r$ in domain $\theta$. 
-If router $r$ is a BGP router belonging to $\theta$ and $r \in G (\theta, \lambda)$, then the external BGP route has higher
-precedence over any OSPF route and thus $\route^C(r, \lambda)=\route^C_{bgp}(r, \lambda)$. 
+If router $r$ is a BGP router belonging 
+to $\theta$ and $r \in G (\theta, \lambda)$, 
+then the external BGP route has higher
+precedence over any OSPF route and 
+thus $\route^C(r, \lambda)=\route^C_{bgp}(r, \lambda)$. 
 
 Finally, for a router $r$ in $\theta$ which is not a BGP gateway 
 router and that has no static routes, $r$ uses OSPF to route traffic to the closest BGP
