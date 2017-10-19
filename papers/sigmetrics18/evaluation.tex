@@ -1,3 +1,4 @@
+%!TEX root = paper.tex
 \section{Evaluation}
  \label{sec:evaluation}
  
@@ -310,9 +311,9 @@ routes. In this section, we compare SyNET's performance with Zeppelin
 for OSPF + static route configuration synthesis workloads obtained from the 
 authors of SyNET.
 
-\begin{wrapfigure}{r}{0.46\textwidth}
+\begin{figure}
 	\small
-		\begin{minipage}{\linewidth}
+		\begin{minipage}{0.9\columnwidth}
 			\centering
 			\begin{tabular}{P{3.4em} P{2.8em} m{2.2em} m{3.1em} m{3.1em}} 
 			{\bf Topology}& {\bf \#Class} & {\bf SyNET} & {\bf \name} & {\bf Speedup} \\ 
@@ -330,7 +331,7 @@ authors of SyNET.
 		Comparison of synthesis times of  
 			Zeppelin and SyNET for OSPF + Static route workloads.  }
 		\label{tab:synetcomparison}
-\end{wrapfigure}
+\end{figure}
 
 
 For these experiments, we use the two network topologies the SyNET's authors made 

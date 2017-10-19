@@ -152,16 +152,24 @@ if a BGP router $r_1$ belongs to  $IF(r_2, \lambda)$, then
 the router $r_2$ will not advertise a route for $\lambda$ to
 $r_1$ through iBGP. 
 
+\iffull
 \input{bgp-routing-algorithm} 
 Algorithm~\ref{alg:bgppathrules} defines the BGP routing function
 based on the best path selection at each BGP router. 
+\fi
 %a local preference function $LP$,
 A BGP router receives eBGP and iBGP routes; it  
 chooses a route with highest local preference, 
 and if there is a tie, it chooses the route that traverses 
 fewer domains~\cite{bgp}. 
 We assume all ties 
-are broken using these criteria. 
+are broken using these criteria. After route selection, 
+if a eBGP route is preferred, the route is redistributed to OSPF.
+Therefore, for a domain $\theta$, all BGP routers which
+redistribute routes for destination $\lambda$ to OSPF  
+belong to the gateway router set $G(\theta, \lambda)$.
+A BGP router which does not advertise a route to OSPF will 
+not act as a gateway router for the particular destination.
 Formally, we define a partial BGP routing function 
 $\route_{bgp}: V \times \lambda \mapsto V$
 such that
@@ -197,24 +205,27 @@ and thus $\route^C(s, \lambda) = SR(s, \lambda)$.
 For a domain $\theta$, if $\lambda$ is not directly 
 connected to one of the routers in $\theta$, the BGP 
 gateways will receive external advertisements for $\lambda$.
-For this scenario, the gateway router set is defined 
-$G(\theta, \lambda) = \{r \mid \route^C_{bgp}(r, \lambda) \not= \perp\}$
-Consider a router $r$ in domain $\theta$. 
-If router $r$ is a BGP router belonging 
-to $\theta$ and $r \in G (\theta, \lambda)$, 
-then the external BGP route has higher
-precedence over any OSPF route and 
-thus $\route^C(r, \lambda)=\route^C_{bgp}(r, \lambda)$. 
+Therefore, if $r \in G(\theta, \lambda)$,
+BGP is preferred and $\route^C(r, \lambda)=\route^C_{bgp}(r, \lambda)$. 
 
-Finally, for a router $r$ in $\theta$ which is not a BGP gateway 
-router and that has no static routes, $r$ uses OSPF to route traffic to the closest BGP
-gateway router in $G (\theta, \lambda)$, which in turn will forward  the traffic to its neighbouring domains and so on till it reaches the internal domain of $\lambda$.  Thus, the modified OSPF routing 
+Finally, for a router $r$ in $\theta$ 
+which is not a BGP gateway 
+router for $\lambda$ 
+and has no static routes, 
+$r$ uses OSPF to route traffic to the closest BGP
+gateway router in $G (\theta, \lambda)$, 
+which in turn will forward  the traffic to its 
+neighbouring domains and so on till it reaches the 
+internal domain of $\lambda$.  
+\iffull
+Thus, the modified OSPF routing 
 function $\route^C_{ospf}$ for an external destination $\lambda$
 is defined as follows: 
 \begin{multline*}
 \route_{ospf}^C(r,\lambda) = \{~~r_1 \mid r_1 \in N(r) \wedge \exists g_1 \in G (\theta, \lambda). ~\forall r_2 \in N(s), \\ g_2 \in G (\theta, \lambda). ~W(r, r_1) + D(r_1, g_1) \leq
 W(r, r_2) + D(r_2, g_2)\}
 \end{multline*}
+\fi
 Piecing together the different routing protocols and their 
 interactions, the routing function 
 $\route^C$ for the hierarchical domain network configuration $C$ is defined as follows: 
