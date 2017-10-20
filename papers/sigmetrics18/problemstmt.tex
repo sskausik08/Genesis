@@ -8,7 +8,7 @@ Then, we define what it means for a configuration to meet a given
 set of policies and present the configuration synthesis problems
 we tackle.
 Finally, we formalize two resilience metrics called 
-connectivity-resilience and positive-resilience,
+connectivity-resilience and policy-resilience,
 which we will use in our experimental evaluation.
 
 \subsection{Routing Model} \label{sec:routingmodel}
@@ -51,55 +51,40 @@ We describe the routing model for these protocols in brief.
 %along a single path. 
 %When synthesizing $C$, we will ensure that this property is satisfied.}
 
+\begin{figure}
+\vspace{-2mm}
+\small
+\begin{minipage}{\linewidth}
+	\begin{tabular}{m{9em}  m{18em} } 
+		{\bf Term} & {\bf Description} \\ 
+		\hline
+		$\Theta(r) = \theta$ & Router r belongs to domain $\theta$ \\ \hline
+		$SR(r,\lambda)=\{r_1\}$ & Static route $r \rightarrow r_1$ for destination $\lambda$ \\ \hline
+		$W(r_1, r_2)$ & OSPF weight of link $r_1 \rightarrow r_2$ \\ \hline
+		$D(r_1, r_2)$ & Shortest OSPF distance from $r_1$ to $r_2$ \\ \hline
+		$G(\theta, \lambda) = \{g_1, g_2\}$ & Set of exit gateway routers for $\lambda$ in domain $\theta$ \\ \hline
+		$LP(r, r', \lambda)$ &  Local preference at $r$ to choose $r'$ route to $\lambda$ \\ \hline
+		$IF(r_2, \lambda) = \{r_1\}$ & $r_2$ will not advertise $\lambda$ to $r_1$ using iBGP 
+	\end{tabular}
+	\end{minipage}
+\compactcaption{Different configuration parameters in \name}
+	\label{tab:policysupport}
+\end{figure}
 
-\minisection{Static Routes} Static routing refers to a router using a
-manually-configured routing entry, rather than information from
-dynamic protocols like OSPF or BGP.  Static routing is useful to enforce certain
-paths that are not realizable using routing protocols because 
-static
-routes for a given destination have the highest preference over other routes for the same destination.  
-We define the static route partial
-function $SR: V \times \Lambda \mapsto 2^V$ with the following meaning:  
-given a router $r$
-and destination $\lambda$, if $SR(r,\lambda)=\{r_1, r_2\}$, then router
-$r$ forwards traffic for $\lambda$ to routers 
-$r_1$ and $r_2$.    
 
-\minisection{OSPF} Open Shortest Path First (OSPF) routing
-is commonly used inside a domain. In OSPF, each link 
-is associated with a positive weight and traffic from a router $r$ to
-a destination $\lambda$ is forwarded across 
+\minisection{Static Routes} 
+These are statically configured next-hop routes with highest 
+priority over routes from OSPF and BGP.
+
+\minisection{OSPF} In Open Shortest Path First (OSPF) routing,
+traffic from a router $r$ to a destination $\lambda$ is forwarded across 
 the shortest path from $r$ to $\lambda$.
-
-We define the OSPF weight function $W: L \mapsto \rat$ which 
-maps edges of the topology to positive rational weights.  
-For two routers $s$ and $t$ in the same OSPF domain, 
-we define the distance function $D:V \times V \mapsto \rat$ 
-to be the weight of the shortest OSPF path between two routers
-belonging to the same OSPF domain with respect to the  
-OSPF weight function $W$.
-We define the gateway function 
-$G: \nat \times \lambda \mapsto 2^V$ to denote the gateway routers 
-in a domain which provide a route to $\lambda$. If $\lambda$ 
-is directly connected to a single router $r_\lambda$, 
-for all routers $r$ in the 
-same domain as $r_\lambda$,
-if $\Theta(r) = \Theta(r_\lambda)$, 
-we have that $G(\Theta(r), \lambda) = \{r_\lambda\}$.
-If $\lambda$ is not connected
-to any router in the domain as $r$, then $G(\Theta(r),\lambda)$ is 
-determined by the BGP configuration, which we will talk about later. 
-
-
-We now define the OSPF routing function $\route_{ospf}: 
+We define the OSPF routing function $\route_{ospf}: 
 V \times \Lambda \mapsto 2^V$ so that
-$\route_{ospf}(r,\lambda)$
- describes the next-hop for
-router $r$ when forwarding traffic for a destination $\lambda$. 
-If $\lambda$ is directly connected to a router $r_\lambda$ in the same OSPF domain as 
-$r$---i.e., $G(\Theta(r),\lambda) = \{r_\lambda\}$---then 
-the OSPF router $r$ will forward traffic directed to $\lambda$ along a path with
-shortest distance to router $r_\lambda$. This is expressed as follows. 
+$\route_{ospf}(r,\lambda)$ describes the next-hop for
+router $r$ which lies on the shortest path for a destination $\lambda$. 
+Suppose $\lambda$ is directly connected to a router $r_\lambda$ 
+in the same OSPF domain as $r$.
 \begin{multline*}
 \route_{ospf}(r,\lambda) = \{r_1 ~|~ r_1 \in N(r)~\wedge~ \forall r_2 \in N(s). \\ ~W(r, r_1) + D(r_1, r_\lambda) \le 
 W(r, r_2) + D(r_2, r_\lambda)\}
@@ -118,15 +103,7 @@ BGP routers can be configured with a
 \emph{local preference} 
 to assign higher priorities to
 specific routes for a 
-particular destination. We define the local
-preference function $LP: V \times V \times \Lambda \mapsto \nat$ as
-follows.  Given a BGP router $r$, a neighbouring router $r'$, and  
-a destination $\lambda$, $LP(r, r', \lambda)$ specifies the local
-preference for the router $r$ to choose $r'$ 
-as the next-hop router for destination $\lambda$.  
-This function is only defined
-on inter-domain links---i.e., $r$ and $r'$ must belong to adjacent domains.  
-
+particular destination. 
 The Internal BGP (iBGP) protocol is used to 
 exchange external BGP routes 
 among BGP routers belonging
@@ -136,12 +113,7 @@ preferences of the routes to all the BGP
 routers within the same domain. 
 We can configure iBGP 
 filters to prevent a router from advertising 
-a route to another router. We do so using the 
-function $IF: V \times \Lambda \mapsto 2^V$
-such that,
-if a BGP router $r_1$ belongs to  $IF(r_2, \lambda)$, then
-the router $r_2$ will not advertise a route for $\lambda$ to
-$r_1$ through iBGP. 
+a route to another router. 
 
 \iffull
 \input{bgp-routing-algorithm} 
@@ -173,43 +145,17 @@ router $r$ when forwarding traffic for a destination $\lambda$.
 happens in hierarchical networks with all the previously described protocols
 used together.
 We express the complete network configuration $C$
-as a tuple $(T, \Theta,W,LP,IF,SR)$, where $T$ is the 
-network topology, $\Theta$ is
-the router domain assignment, $W$ is the OSPF
-edge weight function,
-$LP$  is the local preference function for BGP,
-$IF$  is 
- the iBGP filter function, and 
- $SR$ is the static route
-function.  
-
-We now define the routing function 
+as a tuple $(T, \Theta,W,LP,IF,SR)$.
+We define the routing function 
 $\route^C: V \times \Lambda \mapsto 2^V$ 
 so that
 $\route^C(r,\lambda)$
  describes the next-hop router for the 
 router $r$ when forwarding traffic for a destination $\lambda$. 
-At a router $r$, if there exists 
-static routes for destination $\lambda$,
-these routes take highest precedence over OSPF and BGP routes, 
-and thus $\route^C(s, \lambda) = SR(s, \lambda)$.
-For a domain $\theta$, if $\lambda$ is not directly 
-connected to one of the routers in $\theta$, the BGP 
-gateways will receive external advertisements for $\lambda$.
-Therefore, if $r \in G(\theta, \lambda)$,
-BGP is preferred and $\route^C(r, \lambda)=\route^C_{bgp}(r, \lambda)$. 
-
-Finally, for a router $r$ in $\theta$ 
-which is not a BGP gateway 
-router for $\lambda$ 
-and has no static routes, 
-$r$ uses OSPF to route traffic to the closest BGP
-gateway router in $G (\theta, \lambda)$, 
-which in turn will forward  the traffic to its 
-neighbouring domains and so on till it reaches the 
-internal domain of $\lambda$.  
+The priority order based on administrative distance is 
+SR > BGP > OSPF. 
 \iffull
-Thus, the modified OSPF routing 
+The modified OSPF routing 
 function $\route^C_{ospf}$ for an external destination $\lambda$
 is defined as follows: 
 \begin{multline*}
@@ -270,12 +216,9 @@ networks to forward traffic in a manner consistent with user- and
 application-induced high-level policies for performance and security considerations. 
 Unlike SDN, ``traditional'' networks are  heterogeneous and run different kinds of 
 protocols, and thus, operators require
- support to 
- enforce and/or optimize different
+ support to enforce and/or optimize different
 configuration  structure and properties. We 
-classify
- Zeppelin's 
- policy support  into two categories: 
+classify Zeppelin's policy support  into two categories: 
 (1) \emph{path policies}: high-level intents on paths of different traffic classes, and 
 (2) \emph{configuration policies}: low-level intents on the deployed router configurations. 
 
@@ -333,41 +276,39 @@ and properties of the deployed configurations.
 \Cref{tab:configpolicysupport} 
 describes all the configuration policies supported by \name for hierarchical 
 control planes. 
-A configuration $C$ satisfies a set of configuration policies $P$
-if $C$ satisfies every constraint in $P$.
-For each configuration policy 
-we define what it means for  a configuration $C=(T,\Theta,W,LP,IF,SR)$ to satisfy it.
+% A configuration $C$ satisfies a set of configuration policies $P$
+% if $C$ satisfies every constraint in $P$.
+% For each configuration policy 
+% we define what it means for  a configuration $C=(T,\Theta,W,LP,IF,SR)$ to satisfy it.
 
 \input{zeppelinPolicy}
 \minisection{OSPF Domains and Sizes}
-The first type of policy restricts how many OSPF domains $N_D= |\{\Theta(r)\mid r\in V\}|$ a
-configuration might have
-and it is satisfied by $C$ iff $c_1\leq N_D \leq
-c_2$.  This policy is useful for avoiding situations resulting in too
+The first type of policy restricts how many OSPF domains 
+a configuration might have. This policy is useful for 
+avoiding situations resulting in too
 many domains in the hierarchical split which can be difficult to
-administer.  The second type of policy allows the operator to restrict
-the size $ds=|\{r \mid \Theta(r)=i\}|$ of each OSPF domain, $l\leq ds\leq u$, because OSPF does
+administer. The second type of policy allows the operator to restrict
+the size of each OSPF domain, $l\leq ds\leq u$, because OSPF does
 not scale gracefully with network size.  
-
 
 \minisection{Resource Constraints} Certain 
 	routers may not be suited to run BGP due to resource
 	constraints. Thus, the operator can specify what set of 
-	routers $B\subseteq V$ is BGP-compatible.  
-	This policy is satisfied if none of the routers $V\setminus B$
-	is a gateway router.
-	Formally, for every $r\in V\setminus B$,
-	there does not exist a router $r'\in N(r)$ such that $\Theta(r) \not= \Theta(r')$
+	routers $B\subseteq V$ are BGP-compatible. 
+	
 
 \minisection{Configuration Metrics}
 Finally, \name provides ways to specify upper bounds on the number of
-static routes---i.e., $sc=|\{(v, v', \lambda)\mid \exists v'. v' \in SR(v,\lambda)\}|\leq C_{sc}$--- and
-BGP configurations---i.e., 
-$bc=|\bigcup_{v,\lambda\in V\times\Lambda} IF(v,\lambda)\cup \{(v,v',\lambda)\mid LP(v,v',\lambda)$ $\neq \bot\}|\leq C_{bc}$.
-While static routes are a powerful too, it is desirable to limit the number of static routes used since they
-can lead to undesired routing behaviors such as routing loops (more in~\secref{sec:loopavoidance}). Similarly, it is desirable to limit the number of BGP configurations
+static routes $sc$ and 
+BGP configuration overhead $bc$ which we define as the 
+sum of local preference entries and iBGP filters.
+While static routes are a powerful tool, 
+it is desirable to limit the number of static routes used since they
+can lead to undesired routing behaviors such as routing loops.
+Similarly, it is desirable to limit the number of BGP configurations
 since they increase the complexity of the network.
-\name can  also try to minimize certain expressions over the quantities $sc$, and $bc$---e.g., $max(sc, bc)$. 
+\name can  also try to minimize 
+certain expressions over the quantities $sc$, and $bc$---e.g., $max(sc, bc)$. 
 
 \subsection{Synthesis of policy-compliant configurations}
 We now define when a configuration $C$ is policy-compliant, present our synthesis problems, and introduce two definition of resilience we will use throughout the paper.
