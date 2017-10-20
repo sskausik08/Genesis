@@ -1,3 +1,4 @@
+%!TEX root = paper.tex
 \section{Introduction}
 Programming networks to correctly forward flows according to user- and
 application-induced policies is difficult and
@@ -120,7 +121,7 @@ link weights and uses the unsatisfiable cores
 of failed solving attempts to learn when to introduce static routes.
 \name synthesizes BGP configurations directly from the domain mapping (i.e., which router belongs to what domain) and the paths.
 Using these techniques, \name can generate configurations that are
-$11\%$ more resilient than configurations that only use static routes.
+$10\%$ more resilient than configurations that only use static routes.
 
 Second, we consider a setting in which the operator wants to enforce a
 set of policies and wants to guarantee that, for most of the common
@@ -161,34 +162,32 @@ configuration synthesis system SyNET~\cite{synet}, which uses a direct
 synthesis 
 approach based on SMT. 
 
+% \paragraph{Contributions} We make the following contributions.
+% \begin{itemize}	
+%     \item \name, a framework for
+% 	that enforces policies in ``traditional'' (OSPF and BGP) networks
+% 	by synthesizing highly-resilient router configurations. 		
+% 	\name differs from existing approaches in that it uses concrete
+% 	paths to guide the synthesis search instead of directly generating policy-compliant
+% 	configurations.
 
+% 	\item An algorithm for synthesizing policy-compliant
+%           configurations with few statically assigned routes. This
+%           algorithm yields configurations with high network
+%           connectivity even in the presence of link failures
+%           (\S~\ref{sec:config-synthesis}).
 
-\paragraph{Contributions} We make the following contributions.
-\begin{itemize}	
-    \item \name, a framework for
-	that enforces policies in ``traditional'' (OSPF and BGP) networks
-	by synthesizing highly-resilient router configurations. 		
-	\name differs from existing approaches in that it uses concrete
-	paths to guide the synthesis search instead of directly generating policy-compliant
-	configurations.
-
-	\item An algorithm for synthesizing policy-compliant
-          configurations with few statically assigned routes. This
-          algorithm yields configurations with high network
-          connectivity even in the presence of link failures
-          (\S~\ref{sec:config-synthesis}).
-
-	\item An algorithm for synthesizing policy-compliant 		
-		 configurations that is specialized for waypoint policies. 
-		 This algorithm yields configurations that have
-		 high policy compliance even in the presence of link failures (\S~\ref{sec:ospfwaypoint}). 
+% 	\item An algorithm for synthesizing policy-compliant 		
+% 		 configurations that is specialized for waypoint policies. 
+% 		 This algorithm yields configurations that have
+% 		 high policy compliance even in the presence of link failures (\S~\ref{sec:ospfwaypoint}). 
 	
-	\item A stochastic search mechanism for finding 
-		partitions of the network into multiple routing domains which
-		yield configurations with higher resilience (\S~\ref{sec:synth-dom-ass}).
+% 	\item A stochastic search mechanism for finding 
+% 		partitions of the network into multiple routing domains which
+% 		yield configurations with higher resilience (\S~\ref{sec:synth-dom-ass}).
 	
-	\item An implementation of \name together with an evaluation
-          of its synthesis algorithms for different topologies and
-          workloads, and comparison with a state-of-the-art network
-          configuration tool (\S~\ref{sec:evaluation}).
-\end{itemize}
+% 	\item An implementation of \name together with an evaluation
+%           of its synthesis algorithms for different topologies and
+%           workloads, and comparison with a state-of-the-art network
+%           configuration tool (\S~\ref{sec:evaluation}).
+% \end{itemize}

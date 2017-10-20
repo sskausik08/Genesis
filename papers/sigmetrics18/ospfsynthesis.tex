@@ -101,15 +101,14 @@ there are multiple domains.
 
 
 \subsection{Synthesizing Path-compliant Intra-domain Configurations} \label{sec:intra-synthesis}
-In this section, we show how to synthesize 
-path-compliant  intra-domain configurations that
-use few static routes.
-To justify the complexity of the techniques 
-we are going to present,
-we show that
-%, even when policy-compliant paths are provided, 
-obtaining configurations with minimal numbers of static routes is a 
-computationally hard problem.
+% To justify the complexity of the techniques 
+% we are going to present,
+% we show that
+% %, even when policy-compliant paths are provided, 
+% obtaining configurations with minimal numbers of static routes is a 
+% computationally hard problem.
+
+\iffull
 \begin{theorem}[Hardness of synthesis]
 \label{thm:ospfsynth}
 Given a
@@ -119,15 +118,18 @@ the problem of generating
 a path-compliant configuration with at most $C_{sc}$ static routes
 is NP-complete.
 \end{theorem}
-\iffull
 \input{route-filters-nphard}
 %\else
 %The reduction is from the vertex cover problem.
 \fi
-Since the problem of optimally placing 
-static routes is computationally hard, 
+
+In this section, we show how to synthesize 
+path-compliant  intra-domain configurations that
+use few static routes.
+The problem of optimally placing 
+static routes is NP-hard (proof omitted for brevity), 
 %(Theorem~\ref{thm:ospfsynth}), 
-we propose a non-optimal greedy strategy.
+therefore, we propose a non-optimal greedy strategy.
 We first show how to solve the problem when 
 there exists a solution with no static routes
 and then extend our technique to greedily 
@@ -260,18 +262,18 @@ the values of the $W(s,t)$ variables are the weights we are trying to synthesize
 otherwise the intra-domain synthesis problem 
 cannot be solved without static routes.
 
-\begin{figure}
-	\resizebox {0.8\columnwidth} {!} {
+\begin{wrapfigure}{r}{0.5\columnwidth}
+	\resizebox {0.5\columnwidth} {!} {
 			\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
 			square/.style={regular polygon,regular polygon sides=4}] 
 			\node[state] at (0,0) (s)  {$s$}; 
-			\node[state] at (2, 1) (v1)  {$r_1$}; 
-			\node[state] at (4, 0)(t) {$t$};
-			\node[state, rectangle] at (5.5, 0.75) (d1) {$\lambda_1$};
-			\node[state, rectangle] at (5.5, -0.75) (d2) {$\lambda_2$};
+			\node[state] at (1.3, 1) (v1)  {$r_1$}; 
+			\node[state] at (2.6, 0)(t) {$t$};
+			\node[state, rectangle] at (3.6, 0.75) (d1) {$\lambda_1$};
+			\node[state, rectangle] at (3.6, -0.75) (d2) {$\lambda_2$};
 			\path[->] 
 			(s) edge [red] node [black] {1} (v1)
-			edge [blue] node [above, black] {5} node [below, black] {$sr((s,t),\lambda_2)$} (t)
+			edge [blue] node [above, black] {5} node [below, black] {$SR(\lambda_2)$} (t)
 			(v1) edge [red] node [black] {2} (t)
 			(t) edge [red, dashed] node {} (d1)
 			(t) edge [blue, dashed] node {} (d2);
@@ -279,7 +281,7 @@ cannot be solved without static routes.
 	}
 	\compactcaption{Example illustrating the use of static routes.}
 	\label{fig:srexample}
-\end{figure}
+\end{wrapfigure}
 Consider the example in \Cref{fig:srexample}
 where the two paths between $s$ and $t$ are used by 
 destinations $\lambda_1$ and $\lambda_2$. This
@@ -301,7 +303,7 @@ through $r_1$~\cite{admindistance}.
 
 
 Since the problem of minimizing the number of static routes
-is NP-complete, we opt to place static routes using a best-effort approach.
+is NP-hard, we opt to place static routes using a best-effort approach.
 Our algorithm starts by trying to synthesize a solution
 that does not use static routes using the equations 
 proposed in \secref{sec:ospf}. 
@@ -347,6 +349,7 @@ and the approach is repeated until a solution is found.
 %number of route filters, this is not a problem.}
 
 \begin{figure}
+	\centering
 	\vspace{-7mm}
 	\begin{minipage}{0.7\columnwidth}
 		\begin{algorithm}[H]
@@ -416,24 +419,37 @@ In each iteration, there can be more than one way to place a static route and
 \name picks one randomly. ~\Cref{alg:unsat} illustrates
 this unsat-core based approach of finding the static routes and edge weights.
 
-We will now present the soundness result of \Cref{alg:unsat}. 
+\iffull
 \begin{theorem}[OSPF+SR Soundness] \label{thm:ospfsr}
 	Given a set of packet classes $PC$ and paths $\Pi$, \Cref{alg:unsat} outputs
 	a configuration $C(W,SR)$ such that $\Pi\subseteq\paths^C(PC)$.
 \end{theorem}
-\iffull
 \input{ospfproofs}
 \fi
 
-\paragraph{Completeness}
-For any input $(PC, \Pi)$, there is a trivial configuration that uses static
-routes along each path to guarantee that  
-$\Pi\subseteq\paths^C(PC)$. Therefore, without constraints on the
-number of static routes, \name is guaranteed to find a solution.
-However, if there is a configuration policy 
+\paragraph{Soundness and Completeness.}
+\Cref{alg:unsat} is sound---i.e, the configuration $C(W,SR)$ 
+will induce the paths $\Pi$ provided by \genesis. As far as
+completeness goes, \name is guaranteed to find a solution if
+there are no constraints on number of static routes (use
+static routes along each path). if there is a configuration policy 
 upper bounding the number of static routes, \Cref{alg:unsat} is not guaranteed 
 to find a compliant configurations, if one exists. 
-Completeness is recovered by running \Cref{alg:unsat} multiple times and choosing different
-unsatisfiable cores and static routes assignments. Since there can only be finitely many
-possible assignments, we are eventually 
-guaranteed to find a solution if one exists for the input $(PC, \Pi)$.
+Since there can only be finitely many
+possible assignments, we are eventually guaranteed 
+to find a solution if one exists for the input by repeating 
+\Cref{alg:unsat} multiple times and choosing different
+unsatisfiable cores and static routes assignments.
+
+
+% For any input $(PC, \Pi)$, there is a trivial configuration that uses static
+% routes along each path to guarantee that  
+% $\Pi\subseteq\paths^C(PC)$. Therefore, without constraints on the
+% number of static routes, \name is guaranteed to find a solution.
+% However, if there is a configuration policy 
+% upper bounding the number of static routes, \Cref{alg:unsat} is not guaranteed 
+% to find a compliant configurations, if one exists. 
+% Completeness is recovered by running \Cref{alg:unsat} multiple times and choosing different
+% unsatisfiable cores and static routes assignments. Since there can only be finitely many
+% possible assignments, we are eventually 
+% guaranteed to find a solution if one exists for the input $(PC, \Pi)$.
