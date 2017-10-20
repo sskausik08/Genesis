@@ -78,25 +78,23 @@ routes and connectivity-resilience,
 we set as our goal that of generating configurations 
 with few static routes.
 
-In the following sections, we assume we are given paths that are compliant to 
-all path policies and we only need to find configurations that realize those paths.
-Therefore, the algorithms we present solve the path-compliance synthesis problem
-and whenever we discuss soundness and completeness is with respect to such a problem.
-In general, for a given set of paths, we might not be able to find a path-compliant configuration
-that satisfies all the required configuration policies. However, in this case
-we can simply use ~\genesis to generate a different set of paths.
-Assuming we have a sound and complete algorithm for the
-path-compliance synthesis problem, we can obtain a sound and complete algorithm
-for the
- configuration synthesis problem by keeping enumerating more policy compliant paths
- whenever the path-compliance synthesis fails.
+% In the following sections, we assume we are given paths that are compliant to 
+% all path policies and we only need to find configurations that realize those paths.
+% Therefore, the algorithms we present solve the path-compliance synthesis problem
+% and whenever we discuss soundness and completeness is with respect to such a problem.
+% In general, for a given set of paths, we might not be able to find a path-compliant configuration
+% that satisfies all the required configuration policies. However, in this case
+% we can simply use ~\genesis to generate a different set of paths.
+% Assuming we have a sound and complete algorithm for the
+% path-compliance synthesis problem, we can obtain a sound and complete algorithm
+% for the
+%  configuration synthesis problem by keeping enumerating more policy compliant paths
+%  whenever the path-compliance synthesis fails.
 
-We show how to synthesize 
+We first show how to synthesize 
 path-compliant intra-domain 
-configurations---i.e., when there
-is only a single domain---and then extend our technique to
- inter-domain configurations---i.e., when
-there are multiple domains.
+configurations and then extend to
+ inter-domain configurations.
 
 
 
@@ -163,14 +161,11 @@ the set of all destination trees.
 Given a set of input paths $\Pi$, \name 
 generates a set of linear constraints to 
 find weights 
-for each $(r_1, r_2) \in L$.
-The constraints use the variable $W(r_1, r_2)$
-to denote the weight of the edge $(r_1, r_2)$, and the variable
-$D(r_1, r_2)$ to denote the 
-shortest distance from $r_1$ to $r_2$.
-We add the equation $D(s, s) = 0$
-for every $s\in S$, to denote that the distance
-from a node to itself is $0$.
+for each directed link in the domain.
+The constraints use the variable $W(r_1, r_2)$ and
+$D(r_1, r_2)$ to denote the weight 
+and shortest distance respectively. 
+We add the equation $D(s, s) = 0$.  
 \Cref{eq:distance} guarantees that $D(s,t)$ is smaller or equal to
 the shortest distance from $s$ to $t$.
 \begin{equation} \label{eq:distance}
@@ -189,9 +184,9 @@ is the shortest path between its endpoints, every
 subpath of $\pi$ also has to be the shortest path between its endpoints.
 For each tree $\xi_\lambda$, we define the neighbor
  $N_{\xi_\lambda}(s)$ to denote the 
-next-hop neighbor of router $s$ in the destination tree $\xi_\lambda$---i.e., the parent
-of $s$ in the tree or no node if $s$ is the root of the tree. We denote the
-router directly connected to $\lambda$ (the root of the tree $\xi_\lambda$) by $R_\lambda$.
+next-hop neighbor of router $s$ in the destination tree $\xi_\lambda$. 
+We denote the router directly connected 
+to $\lambda$ (the root of the tree $\xi_\lambda$) by $R_\lambda$.
 
 For a path $\pi$, 
 $\sum_{\pi} W$ denotes the sum of weights of all 
@@ -215,8 +210,7 @@ the sum of the weights belonging to the path
 from $s$ to $R_\lambda$ in $\xi_\lambda$ 
 is strictly smaller than 
 any path that goes to $R_\lambda$ via 
-a node $n'$ that is a neighbor of $s$ in $T$ but not 
-the next-hop in $\xi_\lambda$. Note that,
+a node $n'$ which is not the next-hop. Note that,
 while $D(r, R_\lambda)$ can be smaller 
 than the actual shortest
 distance from $r$ to $R_\lambda$, 
@@ -291,11 +285,7 @@ $W(s \rightarrow r_1 \rightarrow t) < W(s \rightarrow t)$,
 and vice-versa for $\lambda_2$. 
 To steer the traffic for a particular destination
 to a next-hop router not on the OSPF shortest path, we can 
-install a static route. For example, if we install
-a static route at router $s$ to forward $\lambda_2$ 
-traffic to router $t$, this route will have a higher
-preference compared to the OSPF route
-through $r_1$~\cite{admindistance}.
+install a static route. 
 %Since there are no static routes for
 %$\lambda_1$, the traffic to $\lambda_1$ will be forwarded to $t$
 %through $r_1$ using the OSPF shortest path.
@@ -378,20 +368,17 @@ and the approach is repeated until a solution is found.
 \end{figure}
 
 %\minisection{Adding static routes using unsatisfiable cores}
-To choose what static route to place, we use
-LP-solvers' ability to produce an
-unsatisfiable core, also called IIS (Irreducible Inconsistent Subsystem)~\cite{chinneck2007feasibility}. 
-Intuitively, an IIS is a subset of the input constraints such that,
+Intuitively, an unsat core or IIS (Irreducible Inconsistent Subsystem)~\cite{chinneck2007feasibility} 
+is a subset of the input constraints such that,
 if all constraints except those in the IIS are removed, the resulting set of
-linear equations is still unsatisfiable. Moreover, the set is irreducible---i.e., removing 
+linear equations is still unsatisfiable. 
+Moreover, the set is irreducible---i.e., removing 
 any one constraint from the IIS produces a satisfiable set of constraints. 
 In our case, an IIS cannot consist of only 
 constraints from \Cref{eq:distance} as these constraints
 admit a trivial solution with all variables set to 0. 
 Therefore, an IIS must contain some constraint of the form
-given in Equations~(\ref{eq:unique})
-that was added in to reason about a destination tree $\xi_\lambda$
-at router $s$. Let us denote 
+given in Equations~(\ref{eq:unique}). Let us denote 
 this set of constraints as $\Psi_S(s, \lambda)$:
 \[
 [\sum_{\mathclap{\substack{l_i=(r_1,r_2)}}} 
@@ -434,12 +421,12 @@ completeness goes, \name is guaranteed to find a solution if
 there are no constraints on number of static routes (use
 static routes along each path). if there is a configuration policy 
 upper bounding the number of static routes, \Cref{alg:unsat} is not guaranteed 
-to find a compliant configurations, if one exists. 
-Since there can only be finitely many
-possible assignments, we are eventually guaranteed 
-to find a solution if one exists for the input by repeating 
+to find a compliant configuration, if one exists. 
+Since there can only be finitely many 
+solutions for paths and possible SR assignments, we are eventually guaranteed 
+to find a solution by repeating \genesis and
 \Cref{alg:unsat} multiple times and choosing different
-unsatisfiable cores and static routes assignments.
+solutions.
 
 
 % For any input $(PC, \Pi)$, there is a trivial configuration that uses static
