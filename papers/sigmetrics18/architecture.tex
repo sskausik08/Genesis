@@ -17,7 +17,7 @@ can be realized by routing protocols.
 %configuration synthesis is complicated or not possible. Thus, we
 %propose ways to restart the algorithm by computing new paths.
 
-%\paragraph{\genesis: From Policies to Paths} \label{sec:genesis}
+%\minisection{\genesis: From Policies to Paths} \label{sec:genesis}
 \genesis is a network management
 system which synthesizes forwarding tables enforcing some input policies. 
 Some of the policies supported by \genesis are specified in 
@@ -49,7 +49,7 @@ router of packet class $pc$ in exactly $k$ steps.
 %the input policies, \genesis generates constraints over the $Fwd$
 %and $Reach$ relations. Finally, \genesis uses the solution to the relations to extracts the concrete paths.
 
-\paragraph{Modifications to \genesis}
+\minisection{Modifications to \genesis}
 OpenFlow switches~\cite{openflow} support predicates for
 forwarding rules on different packet header fields such as source
 and/or destination IP address, ports etc. However, legacy protocols

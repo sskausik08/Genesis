@@ -134,7 +134,7 @@ and add static routes from the source to the start of this path suffix.
 % $SR(r_1,\lambda) = \{r_2\}$, $SR(r_2,\lambda) = \{g_1\}$, and $SR(g_1,\lambda) = \{g_2\}$ 
 % guarantee that routes from $r_1$, $r_2$, and $g_2$ to $\lambda$ traverse the desired links.
 
-% \paragraph{Algorithm}
+% \minisection{Algorithm}
 % We are now ready to describe the algorithm that,
 % given a set of paths $\Pi$, determines
 % BGP local preferences, iBGP filters, and static routes for enforcing such paths.
@@ -286,7 +286,7 @@ to $SR(\lambda)$ eliminates the unsatisfiability caused by
 the constraint. Effectively, while $g'$ is closer to
 $r$ than $g$, we use the static route to steer traffic toward $g$. 
 
-\paragraph{Soundness and Completeness}
+\minisection{Soundness and Completeness}
 For a network topology $T$ and 
 fixed domain assignment $\Theta$, \name's path-compliance
 synthesis is \emph{sound}---i.e., for input $(PC, \Pi)$, the 

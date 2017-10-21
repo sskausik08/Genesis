@@ -56,7 +56,7 @@ and the time \name takes to generate configurations
 from such paths. 
 We set a timeout of 2,000 seconds for each workload.
 
-\paragraph{Reachability Policies.}
+\minisection{Reachability Policies}
 We generate reachability policies (each of which 
 corresponds to a path) with randomly generated endpoints.
 \Cref{fig:ospfisolation}(a) shows the synthesis time for
@@ -67,7 +67,7 @@ seconds, where Genesis takes 10 seconds to synthesize paths
 and configuration synthesis from paths 
 takes 52 seconds on average.
 
-\paragraph{Isolation Policies.}
+\minisection{Isolation Policies}
 We generate policies to ensure tenant-isolation
 in a multi-tenant topology, i.e., each
 tenant's traffic will be isolated from traffic from
@@ -120,7 +120,7 @@ additionally because of longer paths provided by Genesis.
 			number of paths and different number of waypoint sets.}
 	\end{center} 
 \end{figure*}
-\paragraph{Waypoint Policies.}
+\minisection{Waypoint Policies}
 We generate waypoint policy 
 workloads with varying number of destination IP addresses and 
 waypoint sets as follows. 
@@ -180,11 +180,12 @@ configurations takes less than an hour.
 	\begin{center}
 	\vspace{-6mm}
 		\includegraphics[width=0.4\columnwidth]{figures/ospfbaselineresilience.eps}
-		\compactcaption{\label{fig:ospfbaselineresilience}
-			Connectivity-resilience: PC vs baseline.}		
+		\caption{Connectivity-resilience: PC vs baseline.}	
+			\label{fig:ospfbaselineresilience}	
 	\end{center} 
 \end{wrapfigure}
-\paragraph{Connectivity-resilience.}
+
+\minisection{Connectivity-resilience}
 We measure the connectivity-resilience of the configurations 
 generated using the algorithm PC on the reachability 
 workload described in
@@ -206,8 +207,7 @@ $9.3$\% of the static routes
 than required by the baseline. 
 
 
-
-\paragraph{Policy-resilience.}
+\minisection{Policy-resilience}
 We measure the policy-resilience of the configurations 
 generated using algorithms  1-WC and 2-WC on the waypoint workload described in
 \secref{sec:ospfeval} with 5 waypoint sets. 

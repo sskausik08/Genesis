@@ -249,7 +249,7 @@ than $s \rightarrow t$, the shortest non-waypoint path.
 \input{wayptproofs}
 \fi
 
-\paragraph{Soundness and Completeness}
+\minisection{Soundness and Completeness}
 If edge weights satisfy constraints (\ref{eq:wdistance}) and (\ref{eq:waypoint}), 
 then paths for packet classes will traverse one of the waypoints. However, these
 constraints do not ensure completeness---i.e., a solution could be waypoint-compliant
@@ -376,7 +376,7 @@ now present the soundness result of the algorithm.
 \input{wayptproofs2}
 \fi
 
-\paragraph{Soundness and Completeness.}
+\minisection{Soundness and Completeness.}
 \Cref{alg:wayptunsat} is sound---i.e., for each packet class, there is a 
 path which goes to one of the waypoint in the set. \Cref{alg:wayptunsat} 
 Moreover, similarly to what we observed in \Cref{alg:unsat}, \Cref{alg:wayptunsat} is not 
@@ -428,7 +428,7 @@ the synthesized configuration is policy-resilient.
 \input{wayptproofs3}
 \fi
 
-\paragraph{Soundness and Completeness.}
+\minisection{Soundness and Completeness.}
 If there are no static routes, OSPF weights satisfying constraints 
 (\ref{eq:wdistance}), (\ref{eq:waypoint}) and (\ref{eq:resilience}) ensure
 waypoint-compliance under any arbitrary single link failure. For completeness, 
@@ -567,7 +567,7 @@ this unsatisfiability. \name lazily eliminates these constraints from the
 system of equations depending on whether these constraints are part of 
 an unsat-core which cannot be eliminated by a static route. 
 
-\paragraph{Soundness and completeness}
+\minisection{Soundness and completeness}
 Under no failures, the generated configurations are
 waypoint-compliant by virtue of \Cref{thm:wayptsr}.
 In the presence of failures, the presented approach does not provide provable resilience guarantees.

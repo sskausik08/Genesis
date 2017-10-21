@@ -256,8 +256,8 @@ the values of the $W(s,t)$ variables are the weights we are trying to synthesize
 otherwise the intra-domain synthesis problem 
 cannot be solved without static routes.
 
-\begin{wrapfigure}{r}{0.5\columnwidth}
-	\resizebox {0.5\columnwidth} {!} {
+\begin{wrapfigure}{r}{0.4\columnwidth}
+	\resizebox {0.4\columnwidth} {!} {
 			\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
 			square/.style={regular polygon,regular polygon sides=4}] 
 			\node[state] at (0,0) (s)  {$s$}; 
@@ -414,7 +414,7 @@ this unsat-core based approach of finding the static routes and edge weights.
 \input{ospfproofs}
 \fi
 
-\paragraph{Soundness and Completeness.}
+\minisection{Soundness and Completeness}
 \Cref{alg:unsat} is sound---i.e, the configuration $C(W,SR)$ 
 will induce the paths $\Pi$ provided by \genesis. As far as
 completeness goes, \name is guaranteed to find a solution if

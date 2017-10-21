@@ -1,13 +1,14 @@
 %!TEX root = paper.tex
-\section{Example}
+\minisection{Zeppelin in Action}
 Consider the hierarchical network in \Cref{fig:example} which
 is split into three OSPF domains, and these domains communicate
-using BGP. Host A talks to host B and C with the following policies:
-traffic to B must go through a firewall at router $R_5$ and traffic 
+using BGP. Host A talks to hosts B and C with the following policies:
+traffic to B must go through a firewall at router $R_3$, traffic to C 
+goes through an IDS at $R_5$ and traffic 
 to B and C do not share any links (We discuss the policy support in
-detail in \Cref{sec:policy}). Given the particular domain assignment, 
-we have to synthesize OSPF and BGP configurations satisfying the 
-following policies. Illustrating our two-phase approach, we first 
+detail in \Cref{sec:policy}). We 
+have to synthesize OSPF and BGP router configurations satisfying the 
+policies. Illustrating our two-phase approach, we first 
 use Genesis to find policy-compliant paths (indicated by the blue and
 red paths). Note that there exists multiple solutions for the given
 policies, we show how the control plane is 
@@ -37,11 +38,12 @@ $R_1 \rightarrow R_2$ (3).
  	length; Zeppelin sets $R_4$'s BGP local preference for route C
  	from $R_5$ a higher value (200), so that $R_5$ is 
  	preferred over $R_6$. 
- 	\item Suppose the operator wanted to compute a better domain
- 	assignment for the network. We can see that if $R_5$ was moved
- 	to $D_1$, we do not need to configure the local preference 
- 	at $R_4$ as $R_5$ will be on the shortest AS path, 
- 	thus, simplifying the BGP configuration. 
- 	Zeppelin can find better domain assignments using a stochastic
- 	search procedure. 
+ 	\item Zeppelin can find better control planes in terms of how 
+ 	the network is split into domains. In this case,  
+ 	Zeppelin will suggest moving $R_5$ to domain $D_1$. 
+ 	This simplifies $R_4$'s BGP configuration as the local preference 
+ 	entry for C is not required. 
+ 	\item Zeppelin can synthesize OSPF configurations for $D_0$ 
+ 	such that if either $R_1-R_3$ or $R_3-R_2$ link fails, traffic to
+ 	B still goes through the firewall at $R_3$ (not shown in figure).
 \end{itemize}

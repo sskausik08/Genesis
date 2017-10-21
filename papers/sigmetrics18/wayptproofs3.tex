@@ -10,7 +10,7 @@
 	
 	A single link $l$ failure cannot disable both $\pi_{pc}^1$ and $\pi_{pc}^2$ as they are 
 	edge-disjoint. 
-	\paragraph{Case 1:} Link $l$ is not in path $\pi_{pc}^1$. Since, $\sigma_{pc}$ is 
+	\minisection{Case 1:} Link $l$ is not in path $\pi_{pc}^1$. Since, $\sigma_{pc}$ is 
 	the shortest path: 
 	\[
 	\sum_{\sigma_{pc}}W \leq \sum_{\pi_{pc}^1}W
@@ -33,8 +33,8 @@
 	\]
 	This contradiction the assumption that $\sigma_{pc}$ is the shortest path from $s_{pc}$ to $d_{pc}$.
 
-	\paragraph{Case 2:} Link $l$ is not in path $\pi_{pc}^2$. Proof same as Case 1 for $\pi_{pc}^2$. 
-	\paragraph{Case 3:} Link $l$ is not in path $\pi_{pc}^1$ or $\pi_{pc}^2$. Using \Cref{thm:waypoint}, 
+	\minisection{Case 2:} Link $l$ is not in path $\pi_{pc}^2$. Proof same as Case 1 for $\pi_{pc}^2$. 
+	\minisection{Case 3:} Link $l$ is not in path $\pi_{pc}^1$ or $\pi_{pc}^2$. Using \Cref{thm:waypoint}, 
 	$\sigma_{pc}$ cannot be the shortest path as it does not traverse any waypoint in $\waypt_{pc}$. 
 	
 	Hence proved, under any arbitrary single-link failure, the shortest path between each packet class's 

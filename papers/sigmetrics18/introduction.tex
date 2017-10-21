@@ -40,13 +40,13 @@ must handle a wide range of commonly-used policies---including
 reachability, service chaining, and traffic engineering---to meet
 applications' diverse security and compliance requirements. Second, it
 must ensure that configurations are resilient to network malfunctions
-such as link failures. Third, with increasing sizes of networks, it
+such as link failures. Third, it
 must provide support for realizing hierarchical control planes---
 where a network is split into several ``domains'' atop which a
-hierarchy of control plane configurations is deployed---to ensure
-scalability. This necessitates the use of multiple intra- and
-inter-domain routing protocols (e.g., OSPF and BGP). Finally, to
-improve manageability and network
+hierarchy of intra- and inter-domain control plane configurations 
+is deployed---to ensure
+scalability for large networks~\cite{routingdesign}. 
+Finally, to improve manageability and network
 cost-effectiveness~\cite{mpa-imc15,complexity:sigcomm11}, it must
 ensure that configurations obey certain general
 rules-of-thumb~\cite{complexity:nsdi09}, e.g., limiting the number of
@@ -64,19 +64,29 @@ simple-to-manage network configurations.
 
 The problem of synthesizing router configurations for which the
 distributed control plane is resilient to failures and generates
-policy-compliant paths is computationally hard.  First, even
+policy-compliant paths is computationally hard. Even
 generating a set of policy-compliant paths for an SDN is
 computationally hard---e.g., enforcing isolated paths is NP-complete.
-Second, to infer the concrete set of paths induced by network
+Bringing ideas from program synthesis approaches, one could try to 
+synthesize configurations using 
+Satisfiability Modulo Theories (SMT) solvers, which
+provide support for 
+constraint solving for propositional logic (SAT)
+and linear rational arithmetic (LRA). 
+
+However, there are major challenges 
+to synthesizing configurations 
+directly from policies.  
+To infer the concrete set of paths induced by network
 configurations, one has to incorporate into synthesis complex
 concepts---e.g., reasoning about shortest path algorithms requires
-constraints in complex theories that combine propositional logic (SAT)
-with linear rational arithmetic (LRA). Even with recent advances in
-Satisfiability Modulo Theories (SMT) solvers, approaches that directly
-generate configurations from policies do not scale to even
-moderately-sized networks or sets of policies~\cite{synet}.  Third, to
-generate resilient control planes one has to reason about how
-different protocols react to failures, which further complicates an
+constraints in complex theories (SAT and LRA). 
+Even with recent advances in SMT solving,
+approaches that directly generate configurations 
+from policies do not scale to 
+moderately-sized networks or sets of policies~\cite{synet}. Futhermore,
+generating resilient control planes needs reasoning about how
+protocols react to failures, which further complicates an
 already intractable synthesis problem.
 
 \begin{figure}
@@ -86,8 +96,8 @@ already intractable synthesis problem.
 	\label{fig:architecture}
 \end{figure}
 
-In this paper, we present \name, a new system for synthesizing
-highly resilient policy-compliant configurations.
+In this paper, we present \name, 
+that address the aforementioned issues.
 Unlike previous approaches, \name uses a two-phased approach for tractability
 (\Cref{fig:architecture}) 
 that does not attempt to generate 
@@ -112,42 +122,39 @@ policies (waypoint traversal, isolation, traffic engineering, etc).
 The operator also requires a simple notion of
 \emph{connectivity-resilience} to guarantee that, under most common
 link failures, packets can still reach their destination.
-To increase connectivity-resilience, \name tries to produce
-policy-compliant configurations with a small number of {\em static
-  routes}---i.e., static router configurations where routers have
-fixed next hops for a destination that bypass routes computed by routing protocols (OSPF and BGP).
-To do so, \name synthesizes OSPF configurations using linear constraint solving to compute
+\name synthesizes OSPF configurations using linear constraint solving to compute
 link weights and uses the unsatisfiable cores
-of failed solving attempts to learn when to introduce static routes.
-\name synthesizes BGP configurations directly from the domain mapping (i.e., which router belongs to what domain) and the paths.
+of failed solving attempts to judiciously place static routes.
+\name synthesizes BGP configurations directly 
+from the domain mapping (i.e., which router belongs to what domain) and the paths.
 Using these techniques, \name can generate configurations that are
 $10\%$ more resilient than configurations that only use static routes.
 
-Second, we consider a setting in which the operator wants to enforce a
-set of policies and wants to guarantee that, for most of the common
-link failures, the resulting configuration is still policy-compliant.
+Second, we consider a setting in which the operator 
+wants to guarantee that, for common
+link failures, the resulting configuration is policy-compliant.
 We call this notion \emph{policy-resilience}.  Given the complexity of
 this problem, we focus on a {\rm restricted class} of policies.  In
 particular, for each class of packets, we allow the operator to
-specify a set of waypoints---e.g., firewalls and traffic
-scrubbers---that packets must traverse before reaching their
-destination.  To generate configurations with high policy-resilience,
-we modify our linear constraints to guarantee that at least two paths
+specify a set of waypoints that packets must traverse before reaching their
+destination. 
+We modify our linear constraints to guarantee that at least two paths
 that traverse the waypoints have path cost (e.g., OSPF path cost)
-lower than any path not going through a waypoint.  Using this improved
+lower than any path not going through a waypoint, thus providing
+1-resilience under failure. Using this improved
 technique, \name can generate configurations that are $140\%$ more
 policy-resilient than configurations generated with our first
 technique.
 
-Finally, we consider a setting in which the operator has the
-flexibility to specify bounds on the number and sizes of domains her
+Finally, we consider a setting where the operator can 
+specify bounds on the number and sizes of domains her
 control plane is organized into, and the ability to assign routers to
 different domains.  We present a stochastic search technique that
-actually leverages this flexibility to look for ways to assign routers
+leverages this flexibility to look for ways to assign routers
 to different domains so that the synthesized configurations have even
-higher resilience.  Using this search technique, \name can further
-improve the resilience of the configurations generated by the previous
-two techniques by $10\%$. We show that \name can be naturally used to
+higher resilience.  Through this, \name can further
+improve the resilience of the configurations 
+by $10\%$. We show that \name can be naturally used to
 bound or optimize different configuration metrics like static routes
 and BGP configurations' size to improve network manageability. 
 
@@ -162,32 +169,32 @@ configuration synthesis system SyNET~\cite{synet}, which uses a direct
 synthesis 
 approach based on SMT. 
 
-% \paragraph{Contributions} We make the following contributions.
-% \begin{itemize}	
-%     \item \name, a framework for
-% 	that enforces policies in ``traditional'' (OSPF and BGP) networks
-% 	by synthesizing highly-resilient router configurations. 		
-% 	\name differs from existing approaches in that it uses concrete
-% 	paths to guide the synthesis search instead of directly generating policy-compliant
-% 	configurations.
+\minisection{Contributions} We make the following contributions.
+\begin{itemize}	
+    \item \name, a framework for
+	that enforces policies in ``traditional'' (OSPF and BGP) networks
+	by synthesizing highly-resilient router configurations. 		
+	\name  uses concrete
+	paths to guide the synthesis  
+	instead of directly generating policy-compliant
+	configurations.
 
-% 	\item An algorithm for synthesizing policy-compliant
-%           configurations with few statically assigned routes. This
-%           algorithm yields configurations with high network
-%           connectivity even in the presence of link failures
-%           (\S~\ref{sec:config-synthesis}).
+	\item An algorithm for synthesizing policy-compliant
+          configurations with few statically assigned routes. This
+          algorithm yields configurations with high network
+          connectivity even in the presence of link failures
+          (\S~\ref{sec:config-synthesis}).
 
-% 	\item An algorithm for synthesizing policy-compliant 		
-% 		 configurations that is specialized for waypoint policies. 
-% 		 This algorithm yields configurations that have
-% 		 high policy compliance even in the presence of link failures (\S~\ref{sec:ospfwaypoint}). 
+	\item An algorithm for synthesizing policy-compliant 		
+		 configurations that is specialized for waypoint policies. 
+		 This algorithm yields configurations that have
+		 high policy compliance even in the presence of link failures (\S~\ref{sec:ospfwaypoint}). 
 	
-% 	\item A stochastic search mechanism for finding 
-% 		partitions of the network into multiple routing domains which
-% 		yield configurations with higher resilience (\S~\ref{sec:synth-dom-ass}).
+	\item A stochastic search mechanism for finding 
+		partitions of the network into multiple routing domains which
+		yield configurations with higher resilience (\S~\ref{sec:synth-dom-ass}).
 	
-% 	\item An implementation of \name together with an evaluation
-%           of its synthesis algorithms for different topologies and
-%           workloads, and comparison with a state-of-the-art network
-%           configuration tool (\S~\ref{sec:evaluation}).
-% \end{itemize}
+	\item An implementation of \name together with an evaluation
+          of its algorithms for different workloads, and comparison with state-of-the-art
+          configuration synthesis tool (\S~\ref{sec:evaluation}).
+\end{itemize}

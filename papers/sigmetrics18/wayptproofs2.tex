@@ -9,7 +9,7 @@
 	cases: either there exists no path in $\paths^C(pc)$ 
 	or the paths do not traverse any waypoint in $\waypt_{pc}$.
 
-	\paragraph{Case 1:} $\paths^C(pc) = \emptyset$---i.e., there
+	\minisection{Case 1:} $\paths^C(pc) = \emptyset$---i.e., there
 	is a routing loop caused by static routes (OSPF forwarding
 	is loop-free).
 	We denote the set of static routes for $\lambda$ by $SR(\lambda)$. Note that
@@ -55,7 +55,7 @@
 	However, this contradicts the assumption that $\sigma$ is 
 	the shortest path from $r_i$ to $d_{pc}$. 
 
-	\paragraph{Case 2:} All paths in $\paths^C(pc)
+	\minisection{Case 2:} All paths in $\paths^C(pc)
 	\not=\emptyset$ are not waypoint-compliant. 
 	Let $\sigma_{pc} = (s_{pc}, r_1)(r_1, r_2) \ldots
 	(r_n, d_{pc})$ be one such path in $\paths^C(pc)$.
