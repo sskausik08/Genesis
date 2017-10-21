@@ -1,7 +1,6 @@
 %!TEX root = paper.tex
 \subsection{Synthesizing Path-compliant Inter-domain Configurations}
 \label{sec:inter-synthesis}
-
 Next, we extend our algorithm to
 solve the path-compliance problem in the presence
 of multiple domains. 
@@ -14,6 +13,18 @@ to determine the edge weights and static routes
  in each domain to guarantee that paths traverse
 the correct gateways. 
 
+\begin{figure*}
+	\centering
+	\subfloat[Single
+	BGP Gateway]{\includegraphics[width=0.305\textwidth]{figures/bgp-example.pdf}}
+	\hfill
+	\subfloat[Multiple BGP Gateways]{\includegraphics[width=0.31\textwidth]{figures/bgp-example2.pdf}}
+	\hfill
+	\subfloat[Static Routes]{\includegraphics[width=0.265\textwidth]{figures/static-route.pdf}}
+	\compactcaption{\label{fig:bgpexample}
+		Examples of BGP and static route configurations for 
+		inter-domain routing given domain assignment $\Theta$.}
+\end{figure*}
 
 \subsubsection{Configuring BGP and Static Routes}
 In this section, we describe how to configure
@@ -94,19 +105,6 @@ destination IP $\lambda$.
 Thus, $g_1$ will 
 redistribute the route it received from $g_3$. For 
 this example, $G(0, \lambda) = \{g_1, g_2\}$. 
-
-\begin{figure*}
-	\centering
-	\subfloat[Single
-	BGP Gateway]{\includegraphics[width=0.305\textwidth]{figures/bgp-example.pdf}}
-	\hfill
-	\subfloat[Multiple BGP Gateways]{\includegraphics[width=0.31\textwidth]{figures/bgp-example2.pdf}}
-	\hfill
-	\subfloat[Static Routes]{\includegraphics[width=0.265\textwidth]{figures/static-route.pdf}}
-	\compactcaption{\label{fig:bgpexample}
-		Examples of BGP and static route configurations for 
-		inter-domain routing given domain assignment $\Theta$.}
-\end{figure*}
 
 %\minisection{Static Routes} \label{sec:static}
 Finally, we describe a case in which standard BGP cannot enforce

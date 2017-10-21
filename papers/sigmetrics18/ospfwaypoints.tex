@@ -429,6 +429,7 @@ causing a routing loop.
 
 
 \begin{figure}
+\resizebox {0.75\columnwidth} {!} {
 	\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
 	square/.style={regular polygon,regular polygon sides=4}] 
 	\node[state] at (-0.6,1.0) (v3)  {$r_3$}; 
@@ -449,7 +450,7 @@ causing a routing loop.
 	(v1) edge [red, strike thru arrow] node [black] {1} (t)
 	(v2) edge [red]  node [black, below] {3} (t)
 	(t) edge [red, dashed] node {} (d1);
-	\end{tikzpicture}
+	\end{tikzpicture}}
 	\compactcaption{Example non-resilient configuration for the red paths provided by Genesis for $\waypt = \{r_1, r_2\}$. If link $r_1 \rightarrow t$ 
 		fails, a routing loop is formed at $r_0 \rightarrow r_1 \rightarrow r_3 \rightarrow r_0$, no traffic reaches $t$. 
 		The configuration is 1-resilient waypoint-compliant when the $s \rightarrow r_2$ weight is set to 1.}

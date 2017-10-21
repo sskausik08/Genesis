@@ -1,7 +1,19 @@
 %!TEX root = paper.tex
 \section{Evaluation}
  \label{sec:evaluation}
- 
+\begin{figure*}
+	\begin{center}
+		\subfloat[PC]
+		{\includegraphics[width=0.66\columnwidth]{figures/ospfisolation.eps}}
+		\subfloat[1-WC]
+		{\includegraphics[width=0.66\columnwidth]{figures/ospfwaypoint.eps}}
+		\subfloat[2-WC]
+		{\includegraphics[width=0.66\columnwidth]{figures/ospfwaypoint2.eps}}
+		\compactcaption{\label{fig:ospfwaypoint}
+			End-to-end synthesis time for waypoint policy workloads for varying 
+			number of paths and different number of waypoint sets.}
+	\end{center} 
+\end{figure*}
  We implemented a prototype of \name in Python. 
  For a given workload, \name outputs Quagga template
  configurations~\cite{quagga}. 
@@ -81,13 +93,13 @@ shows the synthesis time
 for PC.
 The x-axis shows the number of paths $n * g$. 
  
- \begin{figure}
-  	\vspace{-4mm}
- 	\includegraphics[width=\columnwidth]{figures/ospfisolation.eps}
- 	\vspace{-8pt}
- 	\compactcaption{\label{fig:ospfisolation}
- 	 Synthesis time for reachability and isolation workloads.}
- \end{figure}
+ % \begin{figure}
+ %  	\vspace{-4mm}
+ % 	\includegraphics[width=\columnwidth]{figures/ospfisolation.eps}
+ % 	\vspace{-8pt}
+ % 	\compactcaption{\label{fig:ospfisolation}
+ % 	 Synthesis time for reachability and isolation workloads.}
+ % \end{figure}
  
 
  As the number of tenants increase, time to 
@@ -108,18 +120,6 @@ for synthesizing paths. Note that synthesizing
 configurations is harder for isolation than reachability 
 additionally because of longer paths provided by Genesis.
 
-
-\begin{figure*}
-	\begin{center}
-		\subfloat[1-WC]
-		{\includegraphics[width=\columnwidth]{figures/ospfwaypoint.eps}}
-		\subfloat[2-WC]
-		{\includegraphics[width=\columnwidth]{figures/ospfwaypoint2.eps}}
-		\compactcaption{\label{fig:ospfwaypoint}
-			End-to-end synthesis time for waypoint policy workloads for varying 
-			number of paths and different number of waypoint sets.}
-	\end{center} 
-\end{figure*}
 \minisection{Waypoint Policies}
 We generate waypoint policy 
 workloads with varying number of destination IP addresses and 
@@ -171,6 +171,20 @@ configurations takes less than an hour.
 %		\compactcaption{Average synthesis time per class for waypoint policies with increasing number of waypoints. } \label{tab:waypointeval} 
 %	\end{footnotesize}
 %\end{table} 
+\begin{figure*}
+	\centering
+	\subfloat[2-WC vs. PC]
+	{\includegraphics[width=0.98\columnwidth]{figures/ospfresilience2.eps}}
+	\subfloat[2-WC vs. 1-WC]
+	{\includegraphics[width=\columnwidth]{figures/ospfresilience.eps}}
+	%	\subfloat[Number of Route Filters]
+	%	{\includegraphics[width=0.33\columnwidth]{figures/ospfRF.eps}}
+	%	\subfloat[Endpoint Resilience]
+	%	{\includegraphics[width=0.32\columnwidth]{figures/ospfAvgRes.eps}}
+	\compactcaption{\label{fig:ospfres}
+		Policy-resilience scores of 2-WC, 1-WC, and PC synthesis 
+		for varying waypoint workloads.}
+\end{figure*}
 
 \subsection{Resilience of Intra-domain Configurations} \label{sec:reseval}
 
@@ -230,20 +244,6 @@ higher policy-resilience than
 PC thanks to the relaxed constraints that do not require
 the path given by \genesis to be the shortest one.
 
-\begin{figure*}
-	\centering
-	\subfloat[2-WC vs. PC]
-	{\includegraphics[width=0.98\columnwidth]{figures/ospfresilience2.eps}}
-	\subfloat[2-WC vs. 1-WC]
-	{\includegraphics[width=\columnwidth]{figures/ospfresilience.eps}}
-	%	\subfloat[Number of Route Filters]
-	%	{\includegraphics[width=0.33\columnwidth]{figures/ospfRF.eps}}
-	%	\subfloat[Endpoint Resilience]
-	%	{\includegraphics[width=0.32\columnwidth]{figures/ospfAvgRes.eps}}
-	\compactcaption{\label{fig:ospfres}
-		Policy-resilience scores of 2-WC, 1-WC, and PC synthesis 
-		for varying waypoint workloads.}
-\end{figure*}
 \textbf{Q2:} 
 \textbf{\name can synthesize highly resilient configurations}.
 
