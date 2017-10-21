@@ -1,3 +1,4 @@
+%!TEX root = paper.tex
 \section{Related Work}\label{sec:related}
 \minisection{Centralized control} Programming routers for centralized
 control has been an active area of research in recent times. One of
@@ -9,7 +10,7 @@ are not the shortest, similar to how \name uses static routes.  Both
 approaches face the issue of forwarding loops in the network during
 failures. Fibbing and \name differ in the specific algorithms to solve
 the synthesis problem.  \name does offer key advantages: first, by
-using static routes for steering, we do not increase the traffic in
+using static routes for steering, we do not increase the control traffic in
 the network, unlike the fake advertisements used in Fibbing. Second,
 Fibbing by design targets a single domain and does not take into account
 domain decomposition and inter-domain routing. 
@@ -43,9 +44,7 @@ to ensure network-wide objectives hold even under failures. The policy
 language of Propane is suited to specify preferences on paths and
 peering policies among different autonomous systems. Propane
 translates policies to a graph-based intermediate representation,
-which is then compiled to device-level BGP configurations. It is
-unclear how to extend Propane to incorporate domains, configuration
-complexity, or OSPF routing.
+which is then compiled to device-level BGP configurations. 
 
 SyNET~\cite{synet} tackles network-wide configuration synthesis
 (Definition \ref{def:policycompliance}) in an elegant manner by
@@ -61,14 +60,12 @@ LP-solvers---which are faster and parallelizable---rather than directly
 solving the whole configuration synthesis problem using SMT solvers.  
 Moreover, SyNET's approach
 does not deal with resilience, a key aspect we tackle in this paper,
-and
-SyNET does not attempt to minimize the number of static routes,
+and SyNET does not attempt to minimize the number of static routes,
 which can cause undesirable behaviors like routing loops.  Finally,
 SyNET supports routers that run both OSPF and BGP protocols and can be
 configured with static routes, which does not fit naturally into a
 hierarchical structure where some routers only run OSPF and not
-BGP. In contrast, our MCMC algorithm can look for dynamic domain
-assignments.
+BGP. 
 
 \minisection{Policy languages} While \name uses \genesis 
 to synthesize policy-compliant paths, in the future it could use
@@ -78,27 +75,17 @@ performance. %% Other works on
 %% centralized policy enforcement for SDN are Merlin~\cite{merlin} and
 %% NetKAT~\cite{netkat}.
 In Merlin~\cite{merlin}, data planes that adhere to policies expressed
-using regular expressions are synthesized by first intersecting the
-topology with the regular expressions appearing in the policies and
-then encoding reachability in the intersected graph using mixed
-integer linear programming (ILP).  Merlin supports min and max
-bandwidth guarantees.
-
+using regular expressions and min and max
+bandwidth guarantees are synthesized using mixed
+integer linear programming (ILP). 
 NetKAT~\cite{netkat} is a domain-specific language and logic for 
 specifying and verifying network packet-processing functions
-for SDN, based on Kleene algebra with tests (KAT). Semantically,
-a NetKAT predicate and policy is a function that takes a packet
-history and produces a set of (possibly empty) packet histories. 
-NetKAT can be used to express certain network-wide policies like 
-reachability, waypoints using regular expressions for describing the paths, 
-and programs on virtual topologies; it uses
-BDDs and symbolic automata to translate global programs to local
-switch programs~\cite{netkatcompiler}.
-Both Merlin and NetKAT  do not support link-isolation 
+for SDN, based on Kleene algebra with tests (KAT). NetKAT 
+express certain network-wide policies like reachability and waypoints.
+However, both Merlin and NetKAT do not support link-isolation 
 to produce edge-disjoint paths, which is needed for  
 our waypoint-compliance algorithm presented in Section~\ref{sec:waypointres}.
-As future work, we will consider 
-how to apply these other front-ends to \name.
+
 
 %% However, the NetKAT semantics
 %% cannot be used to express policies based on hyperproperties

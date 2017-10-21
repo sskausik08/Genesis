@@ -23,11 +23,10 @@
 %\loris{really don't like the word realistic}
 enterprise-scale data
 center fat-tree topologies~\cite{fattree} of different 
-sizes. 
-Specifically, we ask the following questions.
-Experiments were conducted on a
+sizes. Experiments were conducted on a
 32-core Intel-Xeon 2.40GHz CPU machine and
 128GB of RAM.
+Specifically, we ask the following questions.
 
 \vspace{2mm}
 \noindent\textbf{Q1}: How does \name perform on different  workloads? (\secref{sec:ospfeval})\\
@@ -45,15 +44,14 @@ on a  fat-tree
 topology with 45 routers
 and a single OSPF domain. 
 The size of the topology is consistent with operator preferences to restrict
-the size of a domain to under 50 routers (OSPF does not scale
-well as domain size increases).
-We use PC to refer to the algorithm that handles complex policies and
-can synthesize policy-compliant
+the size of a domain to under 50 routers.
+PC refers to the algorithm that handles complex policies and
+synthesizes policy-compliant
 configurations with few static routes (\secref{sec:config-synthesis})
 and 
-1-WC (resp. 2-WC) to refer to the version of  the algorithm that handles waypoint policies and
+1-WC (resp. 2-WC) refers to the version of the algorithm that handles waypoint policies and
 can synthesize policy-compliant
-configurations with high policy-resilience starting from 1 path (resp. 2 paths) per waypoint policy (\secref{sec:waypointres}).
+configurations with high policy-resilience from 1 path (resp. 2 paths) per waypoint policy (\secref{sec:waypointres}).
 
 We consider two classes of policies. 
 We evaluate algorithm PC to handle simple
@@ -62,21 +60,19 @@ existing tools cannot handle;
 Our second class consists of
  waypoint policies of the form described in ~\secref{sec:waypointres};
 for this class we evaluate 1-WC and 2-WC.
-For each algorithm we report the time spent 
-calling \genesis to generate policy-compliant forwarding paths
-and the time \name takes to generate configurations 
-from such paths. 
-We set a timeout of 2,000 seconds for each workload.
+For each algorithm we report the time for 
+\genesis to generate policy-compliant forwarding paths
+and time \name takes to generate configurations 
+from these paths. We set a timeout of 2,000 seconds for each workload.
 
 \minisection{Reachability Policies}
 We generate reachability policies (each of which 
 corresponds to a path) with randomly generated endpoints.
 \Cref{fig:ospfend2end}(a)(a) shows the synthesis time for
-PC across number of paths. 
+PC for varying number of paths. 
 For these workloads, \name can
 synthesize configurations for 80 policies in 62 
-seconds, where Genesis takes 10 seconds to synthesize paths 
-and configuration synthesis from paths 
+seconds, out of which configuration synthesis from paths 
 takes 52 seconds on average.
 
 \minisection{Isolation Policies}
@@ -88,10 +84,10 @@ other tenant. This is achieved by adding isolation policies
 amongst different tenant's traffic. 
 We have $n$ tenant groups (between 1 to 4), 
 each group comprised of $g$ destinations (20). 
-\Cref{fig:end2end}(a)(b)
+\Cref{fig:ospfend2end}(a)(b)
 shows the synthesis time 
 for PC.
-The x-axis shows the number of paths $n * g$. 
+The x-axis shows the paths $n * g$. 
  
  % \begin{figure}
  %  	\vspace{-4mm}
@@ -102,15 +98,13 @@ The x-axis shows the number of paths $n * g$.
  % \end{figure}
  
 
- As the number of tenants increase, time to 
+As the number of tenants increase, time to 
 synthesize the data plane increases exponentially 
 because finding isolated paths is NP-complete. Also, these
 paths are longer than if we only had reachability policies. 
 Similarily, time taken to synthesize 
 OSPF configurations increases exponentially with the 
-number of tenants due to the exponential complexity of computing 
-the unsat-cores; with increasing number of 
-paths, PC needs to add more static routes 
+number of tenants as PC needs to add more static routes 
 and requires more iterations of the unsat-core learning
 procedure. 
 For this workload, \name can
@@ -118,22 +112,37 @@ synthesize configurations for 4 tenants, each with
 20 destinations in 507 seconds, where \genesis takes 217 seconds
 for synthesizing paths. Note that synthesizing 
 configurations is harder for isolation than reachability 
-additionally because of longer paths provided by Genesis.
+because of longer paths provided by Genesis.
 
 \minisection{Waypoint Policies}
 We generate waypoint policy 
-workloads with varying number of destination IP addresses and 
+workloads with varying number of destination subnets and 
 waypoint sets as follows. 
 We consider workloads with 2 and 5 unique waypoint 
 sets where each set contains 3 randomly picked routers.  
 Each waypoint set can be 
-viewed as a class of replicated middleboxes (e.g., firewalls).
-We randomly generate policies that map each destination to one of the waypoint sets. 
+viewed as a class of replicated middleboxes.
+We randomly generate policies 
+that map each subnet to one of the waypoint sets. 
 
 %Genesis generates a single path for each 
 %destination, and \name synthesizes waypoint-compliant OSPF 
 %configurations ((referred to as 1-WC) ) 
 %using the waypoint policies and paths generated by Genesis.  
+\begin{figure*}
+	\centering
+	\subfloat[2-WC vs. PC]
+	{\includegraphics[width=0.98\columnwidth]{figures/ospfresilience2.eps}}
+	\subfloat[2-WC vs. 1-WC]
+	{\includegraphics[width=\columnwidth]{figures/ospfresilience.eps}}
+	%	\subfloat[Number of Route Filters]
+	%	{\includegraphics[width=0.33\columnwidth]{figures/ospfRF.eps}}
+	%	\subfloat[Endpoint Resilience]
+	%	{\includegraphics[width=0.32\columnwidth]{figures/ospfAvgRes.eps}}
+	\compactcaption{\label{fig:ospfres}
+		Policy-resilience scores of 2-WC, 1-WC, and PC synthesis 
+		for varying waypoint workloads.}
+\end{figure*}
 
 \Cref{fig:ospfend2end}(b) and (c) shows the end-to-end synthesis
  time for varying number of destination paths and the 
@@ -171,20 +180,7 @@ configurations takes less than an hour.
 %		\compactcaption{Average synthesis time per class for waypoint policies with increasing number of waypoints. } \label{tab:waypointeval} 
 %	\end{footnotesize}
 %\end{table} 
-\begin{figure*}
-	\centering
-	\subfloat[2-WC vs. PC]
-	{\includegraphics[width=0.98\columnwidth]{figures/ospfresilience2.eps}}
-	\subfloat[2-WC vs. 1-WC]
-	{\includegraphics[width=\columnwidth]{figures/ospfresilience.eps}}
-	%	\subfloat[Number of Route Filters]
-	%	{\includegraphics[width=0.33\columnwidth]{figures/ospfRF.eps}}
-	%	\subfloat[Endpoint Resilience]
-	%	{\includegraphics[width=0.32\columnwidth]{figures/ospfAvgRes.eps}}
-	\compactcaption{\label{fig:ospfres}
-		Policy-resilience scores of 2-WC, 1-WC, and PC synthesis 
-		for varying waypoint workloads.}
-\end{figure*}
+
 
 \subsection{Resilience of Intra-domain Configurations} \label{sec:reseval}
 
@@ -283,19 +279,19 @@ to compute path-compliant configurations.
 \Cref{fig:mcmceval} shows, for varying number of paths, the average ratios
 between the best- and worst-score configurations
 in terms of
-BGP configuration overhead (local preferences), 
+BGP configuration overhead, 
 number of static routes, and 
 connectivity-resilience.
 For smaller workloads, 
-the algorithm reduces the BGP configuration overhead, but increases
-the number of static routes, leading to worse connectivity-resilience. For 
+the algorithm reduces the BGP configuration overhead, but increases 
+static routes, leading to worse connectivity-resilience. For 
 larger workloads, the algorithm can
 reduce both static routes 
 and BGP local preference entries by $0.3\times$
 and improve the connectivity-resilience 
 by $0.1\times$.
 
-\textbf{Q3:}:
+\textbf{Q3:}
 When allowed to try different domain assignments,
 \textbf{\name synthesizes configurations with higher connectivity-resilience mainly for workloads with large number of paths}.
 
