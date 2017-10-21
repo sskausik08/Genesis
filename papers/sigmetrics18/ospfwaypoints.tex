@@ -119,7 +119,9 @@ under any single link failure,
 
 
 
-\subsubsection{Waypoint-Compliance Constraints}
+\subsubsection{Waypoint-Compliance Constraints} \hspace*{4mm}
+
+
 \label{sec:waypoint-compliance-constraints}
 We now show how to generate constraints that
 guarantee that a single waypoint-compliant path is shorter
@@ -245,7 +247,9 @@ the actual shortest path could be waypoint-compliant.
 % Formally, even if $\pi_{pc}$ is greater than the non-waypoint distance between the endpoints of $pc$, thus,
 % violating constraints (\ref{eq:waypoint}), the shortest path could still traverse one of the waypoints in $\waypt_{pc}$.
 
-\subsubsection{Avoiding Routing Loops} \label{sec:loopavoidance}
+\subsubsection{Avoiding Routing Loops} \label{sec:loopavoidance} \hspace*{4mm}
+
+
 \Cref{alg:wayptunsat} presents the OSPF 
 synthesis algorithm with static routes.  
 If one of the constraints in \Cref{eq:waypoint} is part of an unsatisfiable  
@@ -359,7 +363,9 @@ guaranteed to find $C$ with a given bound on number of static routes.
 	\end{minipage}
 \end{figure}
 
-\subsubsection{Configurations for Two Paths} \label{sec:ospfresilience}
+\subsubsection{Configurations for Two Paths} \label{sec:ospfresilience} \hspace*{4mm}
+
+
 To guarantee policy-resilience, \name
 uses \genesis to generate two waypoint-compliant 
 edge-disjoint paths $\pi_1$ and $\pi_2$ from $s$ to $t$
@@ -404,7 +410,9 @@ the same observations as in Section~\ref{sec:waypoint-compliance-constraints}
 also apply to this case.  
 
 
-\subsubsection{Resilience with Static Routes}
+\subsubsection{Resilience with Static Routes} \hspace*{4mm}
+
+
 \name only adds static routes on the paths obtained from \genesis.
 Consider the example in \Cref{fig:ospfresexample} where 
 $\pi_1=s\rightarrow r_0 \rightarrow r_1 \rightarrow t$ 
