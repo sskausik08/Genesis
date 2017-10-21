@@ -33,10 +33,9 @@ Hierarchical control planes partition the
 network into multiple connected components called domains. 
 We define a router domain assignment function
 $\Theta: V \mapsto \nat$ which maps each router to a domain 
-(denoted by a natural number). In this paper, we assume 
+(denoted by a number). In this paper, we assume 
 each domain uses OSPF as the intra-domain routing protocol
 and BGP as the inter-domain routing protocol. 
-We describe the routing model for these protocols in brief.
 
 % In the 
 %rest of the section, we describe each component 
@@ -113,7 +112,7 @@ preferences of the routes to all the BGP
 routers within the same domain. 
 We can configure iBGP 
 filters to prevent a router from advertising 
-a route to another router. 
+a route. 
 
 \iffull
 \input{bgp-routing-algorithm} 
@@ -128,12 +127,10 @@ fewer domains~\cite{bgp}.
 We assume all ties 
 are broken using these criteria. After route selection, 
 if a eBGP route is preferred, the route is redistributed to OSPF.
-Therefore, for a domain $\theta$, all BGP routers which
+Therefore, for a domain $\theta$, only BGP routers which
 redistribute routes for destination $\lambda$ to OSPF  
 belong to the gateway router set $G(\theta, \lambda)$.
-A BGP router which does not advertise a route to OSPF will 
-not act as a gateway router for the particular destination.
-Formally, we define a partial BGP routing function 
+We define a partial BGP routing function 
 $\route_{bgp}: V \times \lambda \mapsto V$
 such that
 $\route_{bgp}(r,\lambda)$
@@ -195,7 +192,7 @@ the path from $s_{pc}$ to $d_{pc}$ for destination IP $\lambda_{pc}$.
 
 \begin{definition}[Induced Paths] \label{def:inducedpaths}
 Given a configuration $C$, the set of paths induced
-by the configuration $C$ for the packet class $pc$ is defined as follows:
+by the configuration $C$ for the packet class $pc$:
 \begin{multline*}
 \paths^C(pc) = \{\pi=(u_1, v_1)\ldots (u_n, v_n) \mid 
 valid(\pi) \wedge \\
@@ -243,8 +240,7 @@ between pairs of an tenant entity's virtual instances (VM),
 applications, or hosts.  
 The tenant may wish that the flow
 between two of her end hosts, or from another tenant, must traverse
-specific middleboxes, which we also refer to as ``waypoints'' in
-this paper.    
+specific middleboxes, which we also refer to as ``waypoints''.
 
 \minisection{Isolation} Tenants may require various
 Quality-of-Service (QoS) or security guarantees since the 
@@ -275,12 +271,12 @@ control planes.
 
 \input{zeppelinPolicy}
 \minisection{OSPF Domains and Sizes}
-The first type of policy restricts how many OSPF domains 
+We support a policy which restricts how many OSPF domains 
 a configuration might have. This policy is useful for 
 avoiding situations resulting in too
 many domains in the hierarchical split which can be difficult to
-administer. The second type of policy allows the operator to restrict
-the size of each OSPF domain, $l\leq ds\leq u$, because OSPF does
+administer. Another policy allows the operator to bound 
+the size of each OSPF domain because OSPF does
 not scale gracefully with network size.  
 
 \minisection{Resource Constraints} Certain 
@@ -290,12 +286,12 @@ not scale gracefully with network size.
 	
 
 \minisection{Configuration Metrics}
-Finally, \name provides ways to specify upper bounds on the number of
+\name provides ways to specify upper bounds on the number of
 static routes $sc$ and 
 BGP configuration overhead $bc$ which we define as the 
 sum of local preference entries and iBGP filters.
 While static routes are a powerful tool, 
-it is desirable to limit the number of static routes used since they
+it is desirable to limit their usage since they
 can lead to undesired routing behaviors such as routing loops.
 Similarly, it is desirable to limit the number of BGP configurations
 since they increase the complexity of the network.

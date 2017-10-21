@@ -60,7 +60,7 @@ which contains the waypoints.
 Our assumption that all waypoints lie in the 
 same domain can be realized
 through Network Function Virtualization~\cite{opennf, netbricks},
-whcih waypoint replication and 
+which provides waypoint replication and 
  flexible waypoint placement in the network.
 
 
@@ -121,10 +121,9 @@ under any single link failure,
 
 \subsubsection{Waypoint-Compliance Constraints}
 \label{sec:waypoint-compliance-constraints}
-In this section, we show how to generate constraints that
+We now show how to generate constraints that
 guarantee that a single waypoint-compliant path is shorter
 than any path which does \emph{not} traverse a waypoint. 
-
 We define $D(s,t,\waypt)$ to be the 
 distance between $s$ and $t$ for path that \emph{do not}
  traverse any waypoint $w \in \waypt$.
@@ -315,17 +314,16 @@ the shortest path from $sr_2$ to $R_\lambda$ does not traverse through
 $r$. For example, 
 in \Cref{fig:ospfloop}(b), there is a routing loop because
  the shortest path from $r_1$ to $t$ 
- goes through $s$, which is upstream of $r_1$. 
+ goes through upstream router $s$.
 
 Formally, \name adds constraints to 
 ensure that the weight
-of path $(sr_2, r_1)(r_1, r_2)\ldots(r_n,R_\lambda)$
-from $sr_2$ to $R_\lambda$ is 
+of path $sr_2 \rightarrow^+ R_\lambda$ is 
 strictly smaller than any path from $sr_2$ that traverses a
 router $r'$ not in the downstream path from $sr_2$: 
 \begin{equation} \label{eq:rla}
 \forall r' \in \xi_\lambda. ~sr_2 \not\rightarrow_{\xi_\lambda}^+ r'. 
-\hspace{0.6cm}\sum_{\mathclap{\substack{(sr_2, r_1)\ldots(r_n,R_\lambda)}}} 
+\hspace{0.3cm}\sum_{\mathclap{\substack{sr_2 \rightarrow^+ R_\lambda}}} 
 W < D(sr_2, r') + D(r', R_\lambda) 
 \end{equation}
 
@@ -350,11 +348,11 @@ for waypoint-compliance.
 \input{wayptproofs2}
 \fi
 
-\minisection{Soundness and Completeness.}
+\minisection{Soundness and Completeness}
 \Cref{alg:wayptunsat} is sound---i.e., for each packet class, there is a 
 path which goes to one of the waypoint in the set. 
 Moreover, similarly to what we observed in \Cref{sec:ospfsr}, 
-\Cref{alg:wayptunsat} is not 
+\Cref{alg:wayptunsat} is not complete---i.e., not  
 guaranteed to find $C$ with a given bound on number of static routes.
 % Completeness is recovered by running \Cref{alg:unsat} multiple times, and by choosing different
 % unsatisfiable cores and static routes assignments. 
@@ -400,7 +398,7 @@ all paths for a policy will be waypoint-compliant under failures.
 \input{wayptproofs3}
 \fi
 
-\minisection{Soundness and Completeness.}
+\minisection{Soundness and Completeness}
 If there are no static routes, OSPF weights satisfying constraints 
 (\ref{eq:wdistance}), (\ref{eq:waypoint}) and (\ref{eq:resilience}) ensure
 waypoint-compliance under any arbitrary single link failure. For completeness, 

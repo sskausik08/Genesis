@@ -193,24 +193,21 @@ $\sum_{\pi} W$ denotes the sum of weights of all
 links in $\pi$. 
 The following equation ensures that, for any node $s$ in 
 $\xi_\lambda$, 
-the path $(s,r_1)\cdots (r_n,R_\lambda)$ from $s$ to $R_\lambda$ 
+the path $(s,r_1)\cdots (r_n,R_\lambda)$ 
 in $\xi_\lambda$ is the 
-\emph{unique shortest path}\footnote{
-If two paths have the same weight, then OSPF will 
-split the traffic among the two paths.
-} from $s$ to $R_\lambda$ in $T$. 
+\emph{unique shortest path}:
 \begin{equation} \label{eq:unique}
 \forall s \in \xi_\lambda. ~
 \forall r \in N(s) \setminus N_{\xi_\lambda}(s).~~
 \sum_{\mathclap{\substack{(s,r_1)\cdots (r_n,R_\lambda)}}} 
 W < W(s,r) + D(r, R_\lambda)
 \end{equation}
-\Cref{eq:unique} guarantees that 
+These constraints guarantee that 
 the sum of the weights belonging to the path 
 from $s$ to $R_\lambda$ in $\xi_\lambda$ 
 is strictly smaller than 
-any path that goes to $R_\lambda$ via 
-a node $n'$ which is not the next-hop. Note that,
+any other path that goes to $R_\lambda$ via 
+a node $n'$. Note that,
 while $D(r, R_\lambda)$ can be smaller 
 than the actual shortest
 distance from $r$ to $R_\lambda$, 
@@ -276,15 +273,15 @@ cannot be solved without static routes.
 	\compactcaption{Example illustrating the use of static routes.}
 	\label{fig:srexample}
 \end{wrapfigure}
-Consider the example in \Cref{fig:srexample}
-where the two paths between $s$ and $t$ are used by 
-destinations $\lambda_1$ and $\lambda_2$. This
-set of input paths does not admit a solution. 
-The following is required for $\lambda_1$: 
+Consider the paths in \Cref{fig:srexample} 
+between $s$ and $t$ for  
+$\lambda_1$ and $\lambda_2$. 
+There exists no solution as 
+the following is required for $\lambda_1$: 
 $W(s \rightarrow r_1 \rightarrow t) < W(s \rightarrow t)$, 
 and vice-versa for $\lambda_2$. 
 To steer the traffic for a particular destination
-to a next-hop router not on the OSPF shortest path, we can 
+to a next-hop router not on the shortest path, we  
 install a static route. 
 %Since there are no static routes for
 %$\lambda_1$, the traffic to $\lambda_1$ will be forwarded to $t$
