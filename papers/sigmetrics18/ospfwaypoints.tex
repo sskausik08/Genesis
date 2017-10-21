@@ -9,11 +9,7 @@ connectivity resilience.
 In this section, we present a different algorithm that, for a restricted set of policies,
 can synthesize configurations with high \emph{policy-resilience}.
 In particular, we focus on \emph{waypoint policies}
-that require traffic to traverse
-firewalls,
-proxies, optimizers, and intrusion detection/prevention 
-systems and
-play a crucial role in enterprise and
+which play a crucial role in enterprise and
 datacenter networks for security, performance,  
 and auditing.
 
@@ -25,16 +21,13 @@ where $\lambda$ is a destination IP subnet,
 $s$ and $t$ are the source and destination routers respectively, 
 and $\waypt \subseteq V$ is a set of routers called the \emph{waypoint set}. 
 Each policy is mapped to a packet class and
-we say that a configuration complies to a policy 
-\texttt{$\lambda$: s >> $\waypt$ >> t}
- for the corresponding packet class
-$pc$ if
+we say that a configuration complies to a policy for $pc$ if 
 at least one of the induced paths in $\paths^C(pc)$ 
-traverses one waypoint $w \in \waypt$.\footnote{
+traverses one waypoint $w \in \waypt$.
+\footnote{
 The attentive reader will note that in our definition of waypoint-compliance 
 we do not require all induced paths for $pc$ to traverse the waypoints. 
-Our 
-definition can be realized by two mechanisms: 1) A router
+Our definition can be realized by two mechanisms: 1) A router
 which has multiple routes for $\lambda$ will split the traffic
 among these routes, and 2) The waypoint can mark certain fields in
 the packet header, and the network operator can employ 
@@ -63,12 +56,11 @@ When the network has multiple domains,
 we assume that all waypoints
 belong to the same domain and
 use our new algorithm in the domain 
-which contains the waypoints. For the
-other domains and the inter-domain configurations,
- we use the algorithms presented in \secref{sec:config-synthesis}. 
-Our assumption that all waypoints lie in the same domain can be realized
+which contains the waypoints.  
+Our assumption that all waypoints lie in the 
+same domain can be realized
 through Network Function Virtualization~\cite{opennf, netbricks},
-a technique for providing waypoint replication and 
+whcih waypoint replication and 
  flexible waypoint placement in the network.
 
 
@@ -108,12 +100,8 @@ a technique for providing waypoint replication and
 
 
 \subsection{Intra-domain Policy-Resilient Waypoint Compliance}\label{sec:ospfwaypoint}
-To achieve 1-resilient waypoint-compliance within the domain
-in which the waypoints are located, we use \genesis's
-support for isolation to generate two edge-disjoint\footnote
-{The edge-disjoint paths will actually be vertex-disjoint (except the 
-	source and destination) due to the destination-tree constraints
-	in \genesis.} paths
+We use \genesis's
+support for isolation to generate two switch-disjoint paths
 which are waypoint-compliant with respect to $\waypt$. A single link
 failure will not disable both these paths
 and we could guarantee policy-resilience by 
@@ -124,14 +112,11 @@ always route through one of the two paths is difficult and overly
 restrictive. 
 Instead, we relax our constraints to guarantee that
 the two paths are shorter than any non-compliant path in 
-the network. The existence of two such paths still guarantees that,
-under any link failure,
+the network. The existence of two such paths still guarantees that 
+traffic
+under any single link failure,
  traverses a waypoint. 
-We now discuss the
-constraints we use to generate 
-a waypoint-compliant path, and then show
-how to use the two edge-disjoint 
-paths to provide policy-resilience. 
+
 
 
 \subsubsection{Waypoint-Compliance Constraints}
@@ -144,11 +129,9 @@ We define $D(s,t,\waypt)$ to be the
 distance between $s$ and $t$ for path that \emph{do not}
  traverse any waypoint $w \in \waypt$.
 We call  $D(s,t,\waypt)$ the \emph{non-waypoint distance}.
-  We
-   add constraints to represent these distances by
+  We add constraints to represent these distances by
   considering a network topology where all the  
-  waypoints $w \in \waypt$ are removed. Formally, for a topology 
- $T = (V,L)$, we add the following equations:
+  waypoints $w \in \waypt$ are removed:
 \begin{equation} \label{eq:wdistance}
 \forall s, t \in V \setminus \waypt. ~\forall r \in N(s) \setminus \waypt.~
 D(s, t, \waypt) \leq W(s, r) + D(r,t,\waypt)
@@ -168,15 +151,12 @@ router in $r$ such the waypoint $w \in \waypt$ is downstream to $r$ in $\xi_\lam
 there exists a path from $r$ to $w$ in $\xi_\lambda$.
 The path from $r$ must traverse through 
 a waypoint in $\waypt$.  
-Suppose, the sum of weights of the edges of
+If the sum of weights of the edges of
 the path in the tree $r \rightarrow^+_{\xi_\lambda} R_\lambda$  
 is strictly smaller than the non-waypoint 
-distance from $r$ to $R_\lambda$. This property ensures that 
-the any path from $r$ to $R_\lambda$ that does not go through
-any $w \in \waypt$ has a distance strictly greater than the path through
-$\xi_\lambda$.
-Hence, the path from $r$ to $R_\lambda$ is guaranteed to traverse
-a waypoint $w \in \waypt$. These constraints are expressed as follows:
+distance from $r$ to $R_\lambda$, 
+then the path from $r$ to $R_\lambda$ is guaranteed to traverse
+a waypoint $w \in \waypt$. These constraints are expressed as:
 \begin{equation} \label{eq:waypoint}
 \forall r' \in N(s) \setminus N_{\xi_\lambda}(r).~~ \sum_{\mathclap{\substack{r \rightarrow^+_{\xi_\lambda} R_\lambda}}} 
 W < 
@@ -190,10 +170,10 @@ W(r, r')+ D(r', R_\lambda, \waypt)
 			\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
 			square/.style={regular polygon,regular polygon sides=4}] 
 			\node[state] at (0,0) (s)  {$s$}; 
-			\node[state, fill=orange] at (1.8,1) (v1)  {$r_1$}; 
-			\node[state, fill=orange] at (1.8,-1) (v2)  {$r_2$}; 
-			\node[state] at (3.6, 0)(t) {$t$};
-			\node[state, rectangle] at (5, 0) (d1) {$\lambda$};
+			\node[state, fill=orange] at (1.5,1) (v1)  {$r_1$}; 
+			\node[state, fill=orange] at (1.5,-1) (v2)  {$r_2$}; 
+			\node[state] at (3, 0)(t) {$t$};
+			\node[state, rectangle] at (4, 0) (d1) {$\lambda$};
 			\path[->] 
 			(s) edge [red] node [black] {1} (v1)
 			(s) edge  node {1} (v2)
@@ -203,15 +183,15 @@ W(r, r')+ D(r', R_\lambda, \waypt)
 			(t) edge [red, dashed] node {} (d1);
 			\end{tikzpicture}
 		}}
-		\hspace*{1cm}
+		\hspace*{4mm}
 		\subfloat[Routing Loop]{
 			\raisebox{0.7cm}{\resizebox {0.45\columnwidth} {!} {
 					\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
 					square/.style={regular polygon,regular polygon sides=4}] 
 					\node[state] at (0,0) (s)  {$s$}; 
-					\node[state] at (1.8,1) (v1)  {$r_1$}; 
-					\node[state] at (3.6, 0)(t) {$t$};
-					\node[state, rectangle] at (5, 0) (d1) {$\lambda$};
+					\node[state] at (1.5,1) (v1)  {$r_1$}; 
+					\node[state] at (3, 0)(t) {$t$};
+					\node[state, rectangle] at (4, 0) (d1) {$\lambda$};
 					\path[->] 
 					(s) edge [red] node [black, sloped, anchor=center, above]
 					{$sr(\lambda)$} node
@@ -229,15 +209,14 @@ W(r, r')+ D(r', R_\lambda, \waypt)
 
 These equations do \emph{not} guarantee that
 router $r$ will forward traffic to  
-$N_{\xi_\lambda}(r)$, but they still guarantee that the generated path is  waypoint-compliant. 
+$N_{\xi_\lambda}(r)$.
 Consider the example in \Cref{fig:ospfloop}(a) where traffic for
 $\lambda$ must traverse through one of the waypoints in $\{r_1, r_2\}$. 
 In this case,  \genesis provided the path $s \rightarrow 
-r_1 \rightarrow t$, but in the solution provided by Zeppelin, 
+r_1 \rightarrow t$, but  
 the shortest path is $s \rightarrow r_2
-\rightarrow t$.
-However, both of the waypoint-compliant paths are shorter 
-than $s \rightarrow t$, the shortest non-waypoint path.
+\rightarrow t$ which is waypoint-compliant.
+
 
 \iffull
 \begin{theorem}[OSPF Waypoint Soundness] \label{thm:waypoint}
@@ -275,18 +254,20 @@ core, \name adds the static
 route
  $(r, N_{\xi_\lambda}(r))$ to
 $SR(\lambda)$ to eliminate the equations at router $r$. 
-However, since \Cref{eq:waypoint} does not 
+Constraints (\ref{eq:waypoint}) does not 
 guarantee that the path generated
-by \genesis is indeed the shortest path, adding
+by \genesis is indeed the shortest path, so adding
 static routes can lead to undesired behaviors like routing loops.  
-Consider the example configuration shown in \Cref{fig:ospfloop}(b). 
-Traffic for $\lambda$ at router $s$ is forwarded to $r_1$ because of the
-static route at $s$. At router $r_1$, the shortest OSPF route to
-$\lambda$ is $r_1 \rightarrow s \rightarrow t$ with weight 6 (compared 
-to $r_1 \rightarrow t$ of weight 50). Thus, $r_1$ will send the 
-packet back to $s$  causing a routing loop as $s$ will send
-it back to $r_1$ and back and forth till the \emph{ttl} (time to live) of the
-packet expires. 
+Consider the example configuration shown in \Cref{fig:ospfloop}(b).
+If link $r_1 \rightarrow t$ fails, traffic will oscillate between 
+$s$ and $r_1$ due to SR and OSPF and finally be dropped. 
+% Traffic for $\lambda$ at router $s$ is forwarded to $r_1$ because of the
+% static route at $s$. At router $r_1$, the shortest OSPF route to
+% $\lambda$ is $r_1 \rightarrow s \rightarrow t$ with weight 6 (compared 
+% to $r_1 \rightarrow t$ of weight 50). Thus, $r_1$ will send the 
+% packet back to $s$  causing a routing loop as $s$ will send
+% it back to $r_1$ and back and forth till the \emph{ttl} (time to live) of the
+% packet expires. 
 
 \begin{figure}[t]
 	\begin{minipage}{\columnwidth}
@@ -333,7 +314,8 @@ lie in the downstream path $sr_2 \rightarrow^+_{\xi_\lambda} R_\lambda$,
 the shortest path from $sr_2$ to $R_\lambda$ does not traverse through 
 $r$. For example, 
 in \Cref{fig:ospfloop}(b), there is a routing loop because
- the shortest path from $r_1$ to $t$ goes through $s$, which is upstream of $r_1$. 
+ the shortest path from $r_1$ to $t$ 
+ goes through $s$, which is upstream of $r_1$. 
 
 Formally, \name adds constraints to 
 ensure that the weight
@@ -346,23 +328,15 @@ router $r'$ not in the downstream path from $sr_2$:
 \hspace{0.6cm}\sum_{\mathclap{\substack{(sr_2, r_1)\ldots(r_n,R_\lambda)}}} 
 W < D(sr_2, r') + D(r', R_\lambda) 
 \end{equation}
-We denote the routing loop avoidance 
-constraints by $\Psi_R(sr_2, \lambda)$ 
-(\Cref{alg:wayptunsat} line~\ref{line:waddconstraint}). 
+
 If one of these constraints is part of an unsatisfiable
 core, then there is a routing 
 loop caused from $sr_2$. 
-\name 
-prevents
-the occurrence of the routing loop from $sr_2$
+\name rectifies this 
 by adding a static route 
 $(sr_2, N_{\xi_\lambda}(sr_2))$ to $SR(\lambda)$. 
-\name then removes the constraints pertaining to routing
-loops at $sr_2$ (line~\ref{line:wremoveconstraint}) and 
-adds loop-avoidance constraints $\Psi_R(N_{\xi_\lambda}(sr_2), 
-\lambda)$ (line~\ref{line:waddconstraint}) for the new static
-route and continues with the unsat-core learning algorithm. We will
-now present the soundness result of the algorithm. 
+\Cref{alg:wayptunsat} describes the unsat-core learning algorithm
+for waypoint-compliance.
 
 \iffull
 \begin{theorem}[OSPF+SR Waypoint Soundness] \label{thm:wayptsr}
@@ -378,8 +352,9 @@ now present the soundness result of the algorithm.
 
 \minisection{Soundness and Completeness.}
 \Cref{alg:wayptunsat} is sound---i.e., for each packet class, there is a 
-path which goes to one of the waypoint in the set. \Cref{alg:wayptunsat} 
-Moreover, similarly to what we observed in \Cref{alg:unsat}, \Cref{alg:wayptunsat} is not 
+path which goes to one of the waypoint in the set. 
+Moreover, similarly to what we observed in \Cref{sec:ospfsr}, 
+\Cref{alg:wayptunsat} is not 
 guaranteed to find $C$ with a given bound on number of static routes.
 % Completeness is recovered by running \Cref{alg:unsat} multiple times, and by choosing different
 % unsatisfiable cores and static routes assignments. 
@@ -409,12 +384,9 @@ the non-waypoint distance for $\lambda$.
 \end{equation}
 Notice that the constraints do not enforce an order between the weights of $\pi_1$ and $\pi_2$.
 Since the paths are edge-disjoint, if a single link fails, at most one 
-of the paths is affected. Suppose
-$\pi_1$ is affected, OSPF will not route traffic through a  
-non-waypoint-compliant path, as the weight of $\pi_2$ is shorter 
-than any path which is not waypoint-compliant. 
+of the paths is affected.  
 For a OSPF configuration with no static routes,
-the synthesized configuration is policy-resilient. 
+all paths for a policy will be waypoint-compliant under failures.
 
 \iffull
 \begin{theorem}[OSPF 2-Waypoint Soundness]

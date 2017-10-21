@@ -151,9 +151,7 @@ For 5 waypoint sets and 40 destinations, \name takes 120
 seconds on average to synthesize waypoint-compliant configurations
 and 1800 seconds to synthesize policy-resilient configurations.
 
-In summary, the answer to \textbf{Q1} is that,
-\textbf{\name can synthesize policy-compliant configurations for medium size
-topologies} in less than 10 minutes and synthesizing policy-resilient 
+\textbf{Q1:} \textbf{\name can synthesize policy-compliant configurations for medium size topologies} in less than 10 minutes and synthesizing policy-resilient 
 configurations takes less than an hour.
 
 %\begin{table}{l}{8em}
@@ -174,15 +172,13 @@ configurations takes less than an hour.
 %	\end{footnotesize}
 %\end{table} 
 
-\subsection{Resilience of Synthesized Intra-domain Configurations} \label{sec:reseval}
+\subsection{Resilience of Intra-domain Configurations} \label{sec:reseval}
 
 \begin{wrapfigure}[11]{r}{0.42\columnwidth}
-	\begin{center}
 	\vspace{-6mm}
-		\includegraphics[width=0.4\columnwidth]{figures/ospfbaselineresilience.eps}
-		\caption{Connectivity-resilience: PC vs baseline.}	
-			\label{fig:ospfbaselineresilience}	
-	\end{center} 
+		\includegraphics[width=0.4\columnwidth]{figures/ospfresbaseline.eps}
+		\compactcaption{\label{fig:ospfresbaseline}
+		Connectivity-resilience: PC vs baseline.}				
 \end{wrapfigure}
 
 \minisection{Connectivity-resilience}
@@ -194,7 +190,7 @@ For our baseline, we use configurations
 where all the paths synthesized by \genesis
 are enforced using only static routes and
 OSPF weights are assigned randomly.
-\Cref{fig:ospfbaselineresilience}
+\Cref{fig:ospfresbaseline}
 shows the results. A point above the diagonal 
 denotes a benchmark in which \name
 generated a configuration with higher connectivity-resilience than
@@ -248,7 +244,7 @@ the path given by \genesis to be the shortest one.
 		Policy-resilience scores of 2-WC, 1-WC, and PC synthesis 
 		for varying waypoint workloads.}
 \end{figure*}
-In summary, the answer to \textbf{Q2} is that
+\textbf{Q2:} 
 \textbf{\name can synthesize highly resilient configurations}.
 
 
@@ -299,8 +295,8 @@ and BGP local preference entries by $0.3\times$
 and improve the connectivity-resilience 
 by $0.1\times$.
 
-In summary, the answer to \textbf{Q3} is that,
-when allowed to try different domain assignments,
+\textbf{Q3:}:
+When allowed to try different domain assignments,
 \textbf{\name synthesizes configurations with higher connectivity-resilience mainly for workloads with large number of paths}.
 
 \subsection{Comparison to SyNET}
@@ -363,7 +359,7 @@ than specified in the input requirements, which matches with the SyNET
 output (if more static routes were required, SyNET would have returned 
 no solution for these experiments). 
 
-In summary, the answer to \textbf{Q4} is that
+\textbf{Q4:} 
 \textbf{\name is 
 able to achieve 2-3 orders of magnitude speedup over state-of-the-art tools}
 without \emph{sacrificing 

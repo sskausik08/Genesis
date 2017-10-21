@@ -4,7 +4,7 @@
 
 Next, we extend our algorithm to
 solve the path-compliance problem in the presence
-of multiple domains---i.e., $|\{\Theta(r) \mid r\in V\}|>1$.
+of multiple domains. 
 First, our algorithm determines the 
 BGP configuration and static routes to ensure that the 
 paths will traverse the correct domains.
@@ -245,8 +245,8 @@ and add static routes from the source to the start of this path suffix.
 %the OSPF domain.
 %E local prefs + E(E - 1) iBGP filters!
 %
-%\todo{Changes to OSPF synthesis to ensure closest gateway}
-\subsubsection{Modified OSPF Synthesis for Multiple Gateways}
+
+\minisection{Modified OSPF Synthesis}
 When BGP routes for destination $\lambda$ 
 are redistributed by multiple gateways to an 
 OSPF domain, \name uses a modified OSPF synthesis
@@ -258,44 +258,46 @@ the closest BGP gateway in terms of OSPF distance
 for $\lambda$. For instance, a router $r$ will choose
 gateway $g_1$ over $g_2$ if the OSPF distance from $r$ to $g_1$ 
 is strictly lesser than the distance from $r$ to $g_2$. 
+We add new constraints on OSPF weights (details omitted for brevity) 
+to ensure that any router on the path is closest to the gateway in the path.
 % Assume we are given the input subpath $\pi_i=r \rightarrow^+ g_1$ in
 % the domain $\theta$ for some destination $\lambda$ outside
 % of $\theta$; this path should exit through gateway $g_1$. 
 
-Assume a subpath in domain $\theta$ for destination $\lambda$
-as follows: $r \rightarrow r_1 \rightarrow \ldots \rightarrow g$. 
-For the set of gateway
-routers $G(\theta, \lambda)$ 
-for destination $\lambda$ and domain $\theta$,
-\name adds the following constraints to ensure
-router gateway $g$ is closest to router $r$ than
-any other router $g' \in G(\theta, \lambda)$ :
+% Assume a subpath in domain $\theta$ for destination $\lambda$
+% as follows: $r \rightarrow r_1 \rightarrow \ldots \rightarrow g$. 
+% For the set of gateway
+% routers $G(\theta, \lambda)$ 
+% for destination $\lambda$ and domain $\theta$,
+% \name adds the following constraints to ensure
+% router gateway $g$ is closest to router $r$ than
+% any other router $g' \in G(\theta, \lambda)$ :
 % we define the relation $r_1 \rightarrow^+_{\xi_{\lambda}} r_2$, which holds if
 % $r_2$ is reachable from $r_1$ in the destination tree $\xi_\lambda$.
 % For each subpath $r \rightarrow^+_{\xi_{\lambda}} g$ to destination $\lambda$
 % and for each $g' \in G(\theta, \lambda)$ such that $g\neq g'$,
-\begin{equation} \label{eq:gateway}
-\forall r' \in N(r) \setminus \{r_1\}.~
-\sum_{\mathclap{r \rightarrow r_1 \ldots g }}~W < 
-W(r, r') + D(r', g')
-\end{equation}
-If one of the constraints of Equation~\ref{eq:gateway}
-is part of an unsat-core, 
-adding the static route $(r, r_1)$ 
-to $SR(\lambda)$ eliminates the unsatisfiability caused by  
-the constraint. Effectively, while $g'$ is closer to
-$r$ than $g$, we use the static route to steer traffic toward $g$. 
+% \begin{equation} \label{eq:gateway}
+% \forall r' \in N(r) \setminus \{r_1\}.~
+% \sum_{\mathclap{r \rightarrow r_1 \ldots g }}~W < 
+% W(r, r') + D(r', g')
+% \end{equation}
+% If one of the constraints of Equation~\ref{eq:gateway}
+% is part of an unsat-core, 
+% adding the static route $(r, r_1)$ 
+% to $SR(\lambda)$ eliminates the unsatisfiability caused by  
+% the constraint. Effectively, while $g'$ is closer to
+% $r$ than $g$, we use the static route to steer traffic toward $g$. 
 
-\minisection{Soundness and Completeness}
-For a network topology $T$ and 
-fixed domain assignment $\Theta$, \name's path-compliance
-synthesis is \emph{sound}---i.e., for input $(PC, \Pi)$, the 
-synthesized configuration 
- induces all paths in $\Pi$. 
-\name's soundness is by virtue of the BGP forwarding semantics specified in ~\Cref{alg:bgppathrules}
-and \Cref{thm:ospfsr}---OSPF and static routes in a domain 
-forward traffic to the specified gateway, where BGP is configured to 
-send it to the next domain in the path. 
-The same completeness considerations as for Section~\ref{sec:ospfsr} also hold here
-and completeness can be obtained by running \Cref{alg:unsat} in each domain multiple times and choosing different
-unsatisfiable cores and static routes assignments.
+% \minisection{Soundness and Completeness}
+% For a network topology $T$ and 
+% fixed domain assignment $\Theta$, \name's path-compliance
+% synthesis is \emph{sound}---i.e., for input $(PC, \Pi)$, the 
+% synthesized configuration 
+%  induces all paths in $\Pi$. 
+% \name's soundness is by virtue of the BGP forwarding semantics specified in ~\Cref{alg:bgppathrules}
+% and \Cref{thm:ospfsr}---OSPF and static routes in a domain 
+% forward traffic to the specified gateway, where BGP is configured to 
+% send it to the next domain in the path. 
+% The same completeness considerations as for Section~\ref{sec:ospfsr} also hold here
+% and completeness can be obtained by running \Cref{alg:unsat} in each domain multiple times and choosing different
+% unsatisfiable cores and static routes assignments.
