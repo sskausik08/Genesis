@@ -405,8 +405,7 @@ We repeat the procedure and add static routes
 until we obtain a satisfiable set of
 constraints. 
 In each iteration, there can be more than one way to place a static route and
-\name picks one randomly. ~\Cref{alg:unsat} illustrates
-this unsat-core based approach of finding the static routes and edge weights.
+\name picks one randomly. 
 
 \iffull
 \begin{theorem}[OSPF+SR Soundness] \label{thm:ospfsr}
@@ -417,17 +416,19 @@ this unsat-core based approach of finding the static routes and edge weights.
 \fi
 
 \minisection{Soundness and Completeness}
-\Cref{alg:unsat} is sound---i.e, the configuration $C(W,SR)$ 
+OSPF synthesis with static routes 
+is sound---i.e, the configuration $C(W,SR)$ 
 will induce the paths $\Pi$ provided by \genesis. As far as
 completeness goes, \name is guaranteed to find a solution if
 there are no constraints on number of static routes (use
 static routes along each path). if there is a configuration policy 
-upper bounding the number of static routes, \Cref{alg:unsat} is not guaranteed 
+upper bounding the number of static routes, the synthesis procedure 
+is not guaranteed 
 to find a compliant configuration, if one exists. 
 Since there can only be finitely many 
 solutions for paths and possible SR assignments, we are eventually guaranteed 
 to find a solution by repeating \genesis and
-\Cref{alg:unsat} multiple times and choosing different
+OSPF-SR synthesis multiple times and choosing different
 solutions.
 
 
