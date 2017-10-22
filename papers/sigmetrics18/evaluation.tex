@@ -184,12 +184,14 @@ configurations takes less than an hour.
 
 \subsection{Resilience of Intra-domain Configurations} \label{sec:reseval}
 
-\begin{wrapfigure}[11]{r}{0.42\columnwidth}
-	\vspace{-6mm}
-		\includegraphics[width=0.4\columnwidth]{figures/ospfresbaseline.eps}
-		\compactcaption{\label{fig:ospfresbaseline}
-		Connectivity-resilience: PC vs baseline.}				
-\end{wrapfigure}
+
+
+% \begin{wrapfigure}{r}{0.42\columnwidth}
+% 	% \vspace{-6mm}
+% 		\includegraphics[width=0.4\columnwidth]{figures/ospfbaselineresilience.eps}
+% 		\caption{
+% 		Connectivity-resilience: PC vs baseline.}				
+% \end{wrapfigure}
 
 \minisection{Connectivity-resilience}
 We measure the connectivity-resilience of the configurations 
@@ -201,9 +203,10 @@ where all the paths synthesized by \genesis
 are enforced using only static routes and
 OSPF weights are assigned randomly.
 \Cref{fig:ospfresbaseline}
-shows the results. A point above the diagonal 
+shows the results. 
+A point above the diagonal 
 denotes a benchmark in which \name
-generated a configuration with higher connectivity-resilience than
+generated a configuration with higher connectivity resilience than
 the baseline algorithm.
 PC provides an average connectivity-resilience score 
 of 0.97 over the baseline score 
@@ -211,7 +214,13 @@ of 0.88.
 Moreover, PC places on average 
 $9.3$\% of the static routes 
 than required by the baseline. 
-
+\begin{wrapfigure}{r}{0.45\columnwidth}
+	\resizebox {0.44\columnwidth} {!} {
+		\includegraphics[width=0.44\columnwidth]{figures/ospfbaselineresilience.eps}
+	}
+	\caption{Connectivity-resilience: PC vs baseline.}
+	\label{fig:ospfresbaseline}
+\end{wrapfigure}
 
 \minisection{Policy-resilience}
 We measure the policy-resilience of the configurations 
