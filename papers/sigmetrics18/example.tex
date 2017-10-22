@@ -1,18 +1,19 @@
 %!TEX root = paper.tex
-\minisection{Zeppelin in Action}
-Consider the hierarchical network in \Cref{fig:example} which
+\section{Overview}
+Before formally defining the problem tackled by \name and the algorithms, 
+we present an overview of \name using an end-to-end
+example. Consider the hierarchical network in \Cref{fig:example} which
 is split into three OSPF domains, and these domains communicate
 using BGP. Host A talks to hosts B and C with the following policies:
 traffic to B must go through a firewall at router $R_3$, traffic to C 
 goes through an IDS at $R_5$ and traffic 
 to B and C do not share any links (We discuss the policy support in
-detail in \Cref{sec:policy}). We 
-have to synthesize OSPF and BGP router configurations satisfying the 
-policies. Illustrating our two-phase approach, we first 
-use Genesis to find policy-compliant paths (indicated by the blue and
+detail in \Cref{sec:policy}). \name 
+synthesizes OSPF and BGP router configurations satisfying the 
+policies. Illustrating our two-phase approach (\Cref{fig:architecture}), 
+\name first uses Genesis to find policy-compliant paths (indicated by the blue and
 red paths). Note that there exists multiple solutions for the given
-policies, we show how the control plane is 
-synthesized using one of the solutions:
+policies, we show how the control plane is synthesized using one of the solutions:
 \begin{figure}
 	\includegraphics[width=0.75\columnwidth]{figures/example.pdf}
 	\compactcaption{Example demonstrating the two-phase synthesis approach. 

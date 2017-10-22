@@ -87,14 +87,6 @@ diamond-eps-converted-to.pdf
 distanceEquation-eps-converted-to.pdf
 paper.rtf
 
-papers/pldi17/paper.out
-papers/pldi17/paper.pdf
-papers/pldi17/paper.ps
-papers/pldi17/paper.blg
-papers/pldi17/paper.bbl
-papers/pldi17/paper.synctex.gz
-papers/pldi17/paper.rtf
-
 genesis.pdf
 papers/pldi17/figures/confMCMC-eps-converted-to.pdf
 papers/pldi17/figures/ospfSynthesisTimeMCMC-eps-converted-to.pdf
@@ -104,18 +96,10 @@ papers/pldi17/figures/ratioMCMC-eps-converted-to.pdf
 papers/pldi17/figures/TRLMCMC-eps-converted-to.pdf
 *converted-to.pdf
 
-papers/oopsla/paper.out
-papers/oopsla/paper.pdf
-papers/oopsla/paper.ps
-papers/oopsla/paper.blg
-papers/oopsla/paper.bbl
-papers/oopsla/paper.synctex.gz
-papers/oopsla/paper.rtf
-
-papers/popl*/paper.out
-papers/popl*/paper.pdf
-papers/popl*/paper.ps
-papers/popl*/paper.blg
-papers/popl*/paper.bbl
-papers/popl*/paper.synctex.gz
-papers/popl*/paper.rtf
+papers/*/paper.out
+papers/*/paper.pdf
+papers/*/paper.ps
+papers/*/paper.blg
+papers/*/paper.bbl
+papers/*/paper.synctex.gz
+papers/*/paper.rtf
