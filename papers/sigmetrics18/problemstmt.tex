@@ -82,12 +82,14 @@ We define the OSPF routing function $\route_{ospf}:
 V \times \Lambda \mapsto 2^V$ so that
 $\route_{ospf}(r,\lambda)$ describes the next-hop for
 router $r$ which lies on the shortest path for a destination $\lambda$. 
+\iffull
 Suppose $\lambda$ is directly connected to a router $r_\lambda$ 
 in the same OSPF domain as $r$.
 \begin{multline*}
 \route_{ospf}(r,\lambda) = \{r_1 ~|~ r_1 \in N(r)~\wedge~ \forall r_2 \in N(s). \\ ~W(r, r_1) + D(r_1, r_\lambda) \le 
 W(r, r_2) + D(r_2, r_\lambda)\}
 \end{multline*}
+\fi
 
 \minisection{BGP} BGP is a path-vector inter-domain routing protocol
 that connects different domains (or ASes).  

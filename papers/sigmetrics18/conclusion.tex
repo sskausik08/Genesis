@@ -1,21 +1,13 @@
+%!TEX root = paper.tex
 \section{Conclusion}
-
 We presented \name, a system for automatically synthesizing 
-highly-resilient
-distributed control planes---i.e., router configurations---from
-high-level policies. \name allows operators to provide constraints on
-how they wish their control plane to be designed---e.g., the number and size
-of constituent domains---as well as optimization metrics that are
-central to management and operations---e.g., ensuring   that  synthesized configurations  are
-simple. \name leverages a novel combination of ideas: linear constraint solving
-and a unsatisfiable-core-based procedures for synthesizing
-intra-domain OSPF configurations, and MCMC sampling to stochastically
-search for the best way to partition the network into multiple domains
-and to configure BGP. To the best of our knowledge, \name is the first
-configuration synthesis system that can  provide comprehensive coverage of
-many operational goals---i.e.,support for many types of policies,
-optimization of management and operational metrics, domain
-decomposition---and generate control planes with high resilience. 
-Detailed evaluation on realistic topologies shows
-that \name can synthesize highly-resilient policy-compliant configurations quickly enough to be
-useful in practice.
+highly-resilient distributed hierarchical control planes---i.e., OSPF and 
+BGP router configurations---from
+high-level policies. For hierarchical control planes, 
+we devised algorithms based on our OSPF-BGP interaction model. In 
+practice, there exists hierarchical models, we can integrate these routing
+models into \name's modular two-phase approach.
+Similarly, we can modify OSPF synthesis to incorporate multi-path routing
+for load-balancing etc. Finally, resilience is an important requirement, 
+and extending \name to support other notions of policy-resilience
+for $k > 1$ link failures is subject for future work.
