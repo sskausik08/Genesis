@@ -394,7 +394,7 @@ $r$, based on OSPF weights,
 but the path through $r$ is causing the unsatisfiability. 
 To remove this inequality from the set of constraints, 
 we add the static route $(s,N_{\xi_\lambda}(s))$ to $SR(\lambda)$.
-As a result of adding of static route, \name removes 
+As a result of adding a static route, \name removes 
 the $\Psi_S(s, \lambda)$ constraints as router $s$ 
 will forward $\lambda$ traffic  to 
 next-hop $N_{\xi_\lambda}(s)$ irrespective of
@@ -422,7 +422,7 @@ is sound---i.e, the configuration $C(W,SR)$
 will induce the paths $\Pi$ provided by \genesis. As far as
 completeness goes, \name is guaranteed to find a solution if
 there are no constraints on number of static routes (use
-static routes along each path). if there is a configuration policy 
+static routes along each path). If there is a configuration policy 
 upper bounding the number of static routes, the synthesis procedure 
 is not guaranteed 
 to find a compliant configuration, if one exists. 

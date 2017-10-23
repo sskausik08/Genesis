@@ -160,8 +160,8 @@ For 5 waypoint sets and 40 destinations, \name takes 120
 seconds on average to synthesize waypoint-compliant configurations
 and 1800 seconds to synthesize policy-resilient configurations.
 
-\textbf{Q1:} \textbf{\name can synthesize policy-compliant configurations for medium size topologies} in less than 10 minutes and synthesizing policy-resilient 
-configurations takes less than an hour.
+\textbf{Q1:} \textbf{\name can synthesize policy-compliant configurations for medium size topologies} in less than 10 minutes and policy-resilient 
+configurations in  less than an hour.
 
 %\begin{table}{l}{8em}
 %	\begin{footnotesize}
@@ -199,7 +199,7 @@ generated using the algorithm PC on the reachability
 workload described in
 Section~\ref{sec:ospfeval}. 
 For our baseline, we use configurations 
-where all the paths synthesized by \genesis
+where paths 
 are enforced using only static routes and
 OSPF weights are assigned randomly.
 \Cref{fig:ospfresbaseline}
@@ -214,7 +214,8 @@ of 0.88.
 Moreover, PC places on average 
 $9.3$\% of the static routes 
 than required by the baseline. 
-\begin{wrapfigure}{r}{0.45\columnwidth}
+
+\begin{wrapfigure}{r}{0.43\columnwidth}
 	\resizebox {0.44\columnwidth} {!} {
 		\includegraphics[width=0.44\columnwidth]{figures/ospfbaselineresilience.eps}
 	}
