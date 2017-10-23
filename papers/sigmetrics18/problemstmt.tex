@@ -8,8 +8,8 @@ Then, we define what it means for a configuration to meet a given
 set of policies and present the configuration synthesis problems
 we tackle.
 Finally, we formalize two resilience metrics called 
-connectivity-resilience and policy-resilience,
-which we will use in our experimental evaluation.
+connectivity-resilience and policy-resilience; the goal 
+of \name is maximizing these metrics. 
 
 \subsection{Routing Model} \label{sec:routingmodel}
 
@@ -35,7 +35,8 @@ We define a router domain assignment function
 $\Theta: V \mapsto \nat$ which maps each router to a domain 
 (denoted by a number). In this paper, we assume 
 each domain uses OSPF as the intra-domain routing protocol
-and BGP as the inter-domain routing protocol (\Cref{tab:zeppelinconfig}). 
+and BGP as the inter-domain routing protocol. We summarise
+the notations in \Cref{tab:zeppelinconfig}. 
 
 % In the 
 %rest of the section, we describe each component 
@@ -57,6 +58,7 @@ and BGP as the inter-domain routing protocol (\Cref{tab:zeppelinconfig}).
 	\begin{tabular}{m{9em}  m{18em} } 
 		{\bf Term} & {\bf Description} \\ 
 		\hline
+		$T=(V,L)$ & Topology $T$ of routers $V$ and links $L$ \\ \hline
 		$\Theta(r) = \theta$ & Router r belongs to domain $\theta$ \\ \hline
 		$SR(r,\lambda)=\{r_1\}$ & Static route $r \rightarrow r_1$ for destination $\lambda$ \\ \hline
 		$W(r_1, r_2)$ & OSPF weight of link $r_1 \rightarrow r_2$ \\ \hline
@@ -72,8 +74,8 @@ and BGP as the inter-domain routing protocol (\Cref{tab:zeppelinconfig}).
 
 
 \minisection{Static Routes} 
-These are statically configured next-hop routes with highest 
-priority over routes from OSPF and BGP.
+These are statically configured next-hop routes with higher 
+priority over those routes computed by OSPF and BGP.
 
 \minisection{OSPF} In Open Shortest Path First (OSPF) routing,
 traffic from a router $r$ to a destination $\lambda$ is forwarded across 
@@ -101,7 +103,7 @@ that connects different domains (or ASes).
 % destination comprises of a domain-level path to the destination
 % domain and, by default, a BGP router will forward a packet through the path that traverses fewer domains.
 BGP routers can be configured with a
-\emph{local preference} 
+local preference (LP)
 to assign higher priorities to
 specific routes for a 
 particular destination. 
@@ -113,7 +115,7 @@ Informally, iBGP propagates local
 preferences of the routes to all the BGP 
 routers within the same domain. 
 We can configure iBGP 
-filters to prevent a router from advertising 
+filters (IF) to prevent a router from advertising 
 a route. 
 
 \iffull
@@ -225,7 +227,8 @@ classify Zeppelin's policy support  into two categories:
 \Cref{tab:policysupport} describes 
 the common path policies 
 supported by \name, particularly suited for operators 
-of a multi-tenant datacenter. 
+of multi-tenant datacenters and enterprises with diverse 
+policies across user groups. 
 In our tool, operators can
 specify policies in a declarative manner using a high-level 
 policy language. 

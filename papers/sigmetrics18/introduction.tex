@@ -88,10 +88,10 @@ concepts---e.g., reasoning about shortest path algorithms requires
 constraints in complex theories (SAT and LRA).  Even with recent
 advances in SMT solving, approaches that directly generate
 configurations from policies do not scale to moderately-sized networks
-or sets of policies~\cite{synet}. Futhermore, generating resilient
+or sets of policies~\cite{synet}. Furthermore, generating resilient
 control planes needs reasoning about how protocols react to failures,
 which further complicates an already intractable synthesis
-problem. Control plane hierarchy and manageability requirements futher
+problem. Control plane hierarchy and manageability requirements further
 complicate the problem.
 
 \begin{figure}
@@ -110,7 +110,9 @@ synthesize paths---i.e., the network forwarding state---that are
 compliant with given policies, such as, waypoints and isolation.
 \name then generates intra-domain (shortest-path OSPF) and
 inter-domain (BGP) router configurations that induce the forwarding
-state synthesized by \genesis\ {\em and} provide high resilience.
+state synthesized by \genesis\ {\em and} provide high resilience. \name 
+is catered for moderate-sized enterprises and multi-tenant datacenters 
+which require support for diverse policies.
 
 We consider three settings with progressively more complex policies
 and resilience requirements and show how \name, using its two-phase
@@ -157,8 +159,8 @@ different configuration metrics such as static routes and BGP
 configurations' size to improve network manageability.
 
 Our experiments show that, thanks to its two-phase approach, \name can
-synthesize connectivity resilient configurations for medium size
-topologies in $< 5$ {\em minutes} and policy-resilient configurations
+synthesize connectivity-resilient configurations for medium size
+datacenter topologies in $< 10$ {\em minutes} and policy-resilient configurations
 in under an hour.  Notably, \name's performance is {\em 2-3 orders of
   magnitude} faster than the state-of-the-art network configuration
 synthesis system SyNET~\cite{synet}, which uses a direct synthesis
