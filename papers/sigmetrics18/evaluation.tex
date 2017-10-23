@@ -198,6 +198,14 @@ We measure the connectivity-resilience of the configurations
 generated using the algorithm PC on the reachability 
 workload described in
 Section~\ref{sec:ospfeval}. 
+\begin{wrapfigure}{r}{0.43\columnwidth}
+\vspace{-5.0mm}
+	\resizebox {0.44\columnwidth} {!} {
+		\includegraphics[width=0.44\columnwidth]{figures/ospfbaselineresilience.eps}
+	}
+	\caption{Connectivity-resilience: PC vs baseline.}
+	\label{fig:ospfresbaseline}
+\end{wrapfigure}
 For our baseline, we use configurations 
 where paths 
 are enforced using only static routes and
@@ -214,14 +222,6 @@ of 0.88.
 Moreover, PC places on average 
 $9.3$\% of the static routes 
 than required by the baseline. 
-
-\begin{wrapfigure}{r}{0.43\columnwidth}
-	\resizebox {0.44\columnwidth} {!} {
-		\includegraphics[width=0.44\columnwidth]{figures/ospfbaselineresilience.eps}
-	}
-	\caption{Connectivity-resilience: PC vs baseline.}
-	\label{fig:ospfresbaseline}
-\end{wrapfigure}
 
 \minisection{Policy-resilience}
 We measure the policy-resilience of the configurations 
@@ -261,7 +261,14 @@ when \name  is allowed to explore different domain assignments,
 the MCMC algorithm presented in \secref{sec:synth-dom-ass}
 can 
 generate configurations
-with higher resilience. 
+with higher resilience.
+\begin{wrapfigure}{r}{0.5\columnwidth}
+\vspace{-5.0mm}
+	\includegraphics[width=0.48\columnwidth]{figures/ratioMCMC.eps}
+	\vspace{-3mm}
+	\compactcaption{\label{fig:mcmceval}
+		MCMC Evaluation for varying number of paths.}
+\end{wrapfigure} 
 We consider an 80 router fat-tree topology and run the MCMC sampling
 for 600s---i.e., more than 100,000 iterations---to minimize the
  cost function $max(sc, bc)$. Using this cost function, \name
@@ -271,14 +278,6 @@ for 600s---i.e., more than 100,000 iterations---to minimize the
 200 and 1,000) random paths for $n/4$ destination IPs, with random
 path length between 3 and 10.  We require \name to split the network
 into 5 OSPF domains each with size in range between 4 and 10.
-
-\begin{wrapfigure}{r}{0.5\columnwidth}
-\vspace{-5.5mm}
-	\includegraphics[width=0.48\columnwidth]{figures/ratioMCMC.eps}
-	\vspace{-3mm}
-	\compactcaption{\label{fig:mcmceval}
-		MCMC Evaluation for varying number of paths.}
-\end{wrapfigure}
 We conduct each experiment 20 times and report averages and standard
 deviations.  For each MCMC run, we collect the domain assignments with
 worst and best scores.  For these assignments, we use the algorithm PC
@@ -352,8 +351,7 @@ for \name's OSPF synthesis. Since the workload specifies which
 routers had static routes installed for the different classes, we 
 add these static routes (and remove the corresponding constraints), 
 and use the algorithm presented in 
-Section~\ref{sec:ospf}  to find the OSPF weights satisfying the 
-requirements.
+Section~\ref{sec:ospf}  to find the OSPF weights.
 
 \Cref{tab:synetcomparison} shows Zeppelin outperforms SyNET 
 for all the workloads and topologies, achieving a best case 1,643$\times$
