@@ -26,14 +26,13 @@ all induced paths in $\paths^C(pc)$
 traverses some waypoint $w \in \waypt$.
 Here, $\waypt$
 can be the set of physical replicas of,  for example, a firewall.
-
-
- Given a set of such waypoint policies, our goal is to
+Given a set of such waypoint policies, our goal is to
 find a policy-compliant configuration 
 $C=(T,\Theta,W,LP$, $IF,SR)$ 
 with high policy-resilience---i.e., the configuration
 must be waypoint-compliant under single-link failures. 
-We present algorithm
+
+We present an algorithm
 that solves this problem when the network 
 has a single domain;
 when the network has multiple domains, 
@@ -41,8 +40,7 @@ we assume that all waypoints
 belong to the same domain and
 use our new algorithm in the domain 
 which contains the waypoints.  
-Our assumption that all waypoints lie in the 
-same domain can be realized
+This assumption can be realized
 through Network Function Virtualization~\cite{opennf, netbricks},
 which provides waypoint replication and 
  flexible waypoint placement in the network.

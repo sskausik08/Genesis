@@ -62,9 +62,9 @@ which can cause undesirable behaviors like routing loops.
 
 \minisection{Policy languages} While \name uses \genesis 
 to synthesize policy-compliant paths, in the future it could use
-other policy language frameworks as a front-end
-too; existing frameworks offer perhaps less rich policy support but better
-performance. %% Other works on
+other policy language frameworks as a front-end (with 
+less rich policy support but better
+performance). %% Other works on
 %% centralized policy enforcement for SDN are Merlin~\cite{merlin} and
 %% NetKAT~\cite{netkat}.
 In Merlin~\cite{merlin}, data planes that adhere to policies expressed
@@ -76,8 +76,7 @@ specifying and verifying network packet-processing functions
 for SDN, based on Kleene algebra with tests (KAT). NetKAT can  
 express certain network-wide policies like reachability and waypoints.
 However, both Merlin and NetKAT do not support link-isolation 
-to produce edge-disjoint paths, which is needed for  
-our waypoint-compliance algorithm presented in Section~\ref{sec:waypointres}.
+to produce edge-disjoint paths, which is needed for waypoint-compliance in ~\secref{sec:waypointres}.
 
 
 %% However, the NetKAT semantics
