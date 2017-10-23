@@ -116,10 +116,10 @@ enforced by conventional BGP routing.
 % 1 and then domain $D_0$.
 % This advertisement will be rejected because it creates a loop---i.e., the domain $D_0$
 % appears twice in the path. 
-To circumvent this issue, \name use static routes 
+To circumvent this issue, \name uses static routes 
 (illustrated in \Cref{fig:bgpexample}(c)). 
-For finding the minimal number of static routes to be used in
-such cases, we find the longest path suffix which have
+To find the minimal number of static routes to be used in
+such cases, we find the longest path suffix that has
 no domain loops (from the start of this path fragment, 
 BGP+OSPF can be used for routing), 
 and add static routes from the source to the start of this path suffix.
