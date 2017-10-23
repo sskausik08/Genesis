@@ -22,21 +22,8 @@ $s$ and $t$ are the source and destination routers respectively,
 and $\waypt \subseteq V$ is a set of routers called the \emph{waypoint set}. 
 Each policy is mapped to a packet class and
 we say that a configuration complies to a policy for $pc$ if 
-at least one of the induced paths in $\paths^C(pc)$ 
-traverses one waypoint $w \in \waypt$.
-\footnote{
-The attentive reader will note that in our definition of waypoint-compliance 
-we do not require all induced paths for $pc$ to traverse the waypoints. 
-Our definition can be realized by two mechanisms: 1) A router
-which has multiple routes for $\lambda$ will split the traffic
-among these routes, and 2) The waypoint can mark certain fields in
-the packet header, and the network operator can employ 
-simple edge-based checks at the destination 
-(for e.g., in the hypervisor) to 
-detect if a packet traversed the waypoint or not. Thus, only
-packets which traversed a waypoint-compliant path would be 
-accepted and forwarded to the tenant. 
-}
+all induced paths in $\paths^C(pc)$ 
+traverses some waypoint $w \in \waypt$.
 Here, $\waypt$
 can be the set of physical replicas of,  for example, a firewall.
 
@@ -101,7 +88,7 @@ which provides waypoint replication and
 
 \subsection{Intra-domain Policy-Resilient Waypoint Compliance}\label{sec:ospfwaypoint}
 We use \genesis's
-support for isolation to generate two switch-disjoint paths
+support for isolation to generate two link-disjoint paths
 which are waypoint-compliant with respect to $\waypt$. A single link
 failure will not disable both these paths
 and we could guarantee policy-resilience by 
@@ -411,7 +398,22 @@ also apply to this case.
 
 
 \subsubsection{Resilience with Static Routes} \hspace*{4mm}
-
+Providing policy-resilience with static routes is challenging
+because static routes do not react to failures. When static routes
+are used, we relax our definition of waypoint-compliance to 
+ensure atleast one of the induced paths for the policy traverses the waypoint.
+\footnote{
+Can be realized by two mechanisms: 1) A router
+which has multiple routes for $\lambda$ will split the traffic
+among these routes, and 2) The waypoint can mark certain fields in
+the packet header, and the network operator can employ 
+simple edge-based checks at the destination 
+(for e.g., in the hypervisor) to 
+detect if a packet traversed the waypoint or not. Thus, only
+packets which traversed a waypoint-compliant path would be 
+accepted and forwarded to the tenant. 
+} We now present our approach to providing policy-resilience with
+static routes. 
 
 \name only adds static routes on the paths obtained from \genesis.
 Consider the example in \Cref{fig:ospfresexample} where 
@@ -542,11 +544,8 @@ an unsatisfiable core, we cannot add a static route to eliminate
 this unsatisfiability. \name lazily eliminates these constraints from the
 system of equations depending on whether these constraints are part of 
 an unsat-core which cannot be eliminated by a static route. 
-
-\minisection{Soundness and completeness}
-Under no failures, the generated configurations are
-waypoint-compliant by virtue of \Cref{alg:wayptunsat}. 
-In the presence of failures, the presented approach does not provide provable resilience guarantees.
+Thus, the presented approach does not provide provable 
+resilience guarantees.
 However, our experiments show that
 this technique generates highly resilient configurations 
 in practice (\secref{sec:reseval}). 

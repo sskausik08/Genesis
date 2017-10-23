@@ -31,7 +31,7 @@ such that the shortest path is $R_1 \rightarrow R_3 \rightarrow
 R_2$. From the OSPF weights shown in \Cref{fig:example}, 
 we can see that the weight of path $R_1 
 \rightarrow R_3 \rightarrow R_2$ (2) is smaller than that of path
-$R_1 \rightarrow R_2$ (3). 
+$R_1 \rightarrow R_2$ (5). 
  	\item For traffic $A \rightarrow C$, the path traverses through 
  	multiple domains, so Zeppelin configures BGP such that 
  	routing across domains follows the Genesis path. In this case, 
@@ -44,9 +44,8 @@ $R_1 \rightarrow R_2$ (3).
  	Zeppelin will suggest moving $R_5$ to domain $D_1$. 
  	This simplifies $R_4$'s BGP configuration as the local preference 
  	entry for C is not required. 
- 	\item Zeppelin automatically synthesizes OSPF configurations
+ 	\item With a backup firewall at $R_8$, 
+ 	Zeppelin automatically synthesizes resilient OSPF configurations
           for $D_0$ such that if either $R_1-R_3$ or $R_3-R_2$ link
-          fails, traffic to B still goes through the firewall at $R_3$
-          (not shown in figure). \aditya{fix this based on changes to
-            the figure}
+          fails, traffic to B goes through the firewall at $R_8$.
 \end{itemize}

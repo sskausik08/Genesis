@@ -78,8 +78,9 @@ the space of distributed configurations for a suitable ``solution'' --
 i.e., concrete router configurations that satisfy input policies and
 the aforementioned four requirements. SMT solvers provide support for
 constraint solving for propositional logic (SAT) and linear rational
-arithmetic (LRA) \aditya{which are useful to encode various
-  policies...?}. Thus, an SMT-search based approach can, in theory,
+arithmetic (LRA); these powerful theories can  
+encode properties on network paths 
+and configurations. Thus, an SMT-search based approach can, in theory,
 provide support for multiple policies and different manageability
 requirements.  However, using SMT solvers in our context is
 non-trivial.  To infer the concrete set of paths induced by network

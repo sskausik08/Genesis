@@ -9,7 +9,7 @@ set of policies and present the configuration synthesis problems
 we tackle.
 Finally, we formalize two resilience metrics called 
 connectivity-resilience and policy-resilience; the goal 
-of \name is maximizing these metrics. 
+of \name is optimizing these metrics. 
 
 \subsection{Routing Model} \label{sec:routingmodel}
 
@@ -35,7 +35,7 @@ We define a router domain assignment function
 $\Theta: V \mapsto \nat$ which maps each router to a domain 
 (denoted by a number). In this paper, we assume 
 each domain uses OSPF as the intra-domain routing protocol
-and BGP as the inter-domain routing protocol. We summarise
+and BGP as the inter-domain routing protocol. We summarize
 the notations in \Cref{tab:zeppelinconfig}. 
 
 % In the 
@@ -236,7 +236,7 @@ Given  a set $\Psi$ of
 path policies, we say that
 a set of paths $\Pi$ is policy-compliant with respect to $\Psi$, 
 denoted  $\Pi \models \Psi$,
-if the paths in $\Pi$ satisfy all the policies in $\Psi$ (see~\cite{genesis} for the formal definition). 
+if the paths in $\Pi$ satisfy all the policies in $\Psi$~\cite{genesis}.
 
 
 \minisection{Reachability and Waypoints}
