@@ -230,7 +230,8 @@ the shortest path is $s \rightarrow r_2
 \fi
 
 \minisection{Soundness and Completeness}
-If edge weights satisfy constraints (\ref{eq:wdistance}) and (\ref{eq:waypoint}), 
+With no static routes, if edge weights satisfy 
+constraints (\ref{eq:wdistance}) and (\ref{eq:waypoint}), 
 then paths for packet classes will traverse one of the waypoints. However, these
 constraints do not ensure completeness---i.e., a solution could be waypoint-compliant
 while violating some of the constraints, specifically constraint (\ref{eq:waypoint}):
@@ -326,9 +327,8 @@ for waypoint-compliance.
 \minisection{Soundness and Completeness}
 \Cref{alg:wayptunsat} is sound---i.e., for each packet class, there is a 
 path which goes to one of the waypoint in the set. 
-Moreover, similarly to what we observed in \Cref{sec:ospfsr}, 
 \Cref{alg:wayptunsat} is not complete---i.e., not  
-guaranteed to find $C$ with a given bound on number of static routes.
+guaranteed to find $C$ with a given bound on number of static routes. 
 % Completeness is recovered by running \Cref{alg:unsat} multiple times, and by choosing different
 % unsatisfiable cores and static routes assignments. 
 % The same observations as in Section~\ref{sec:waypoint-compliance-constraints}
