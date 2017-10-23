@@ -419,7 +419,7 @@ $\pi_1=s\rightarrow r_0 \rightarrow r_1 \rightarrow t$
 and $\pi_2=s\rightarrow r_2 \rightarrow t$ 
 are two edge disjoint paths 
 connecting the routers $s$ to $t$. In this example, 
-$\pi_1$ is path selected by the configuration and it uses a static route
+$\pi_1$ is the path selected by the configuration and it uses a static route
 for $r_0 \rightarrow r_1$. 
 Ideally, we want to ensure 
 that if any link on $\pi_1$ fails, 
@@ -431,10 +431,9 @@ Because of the static route at $r_0$, traffic is forwarded
 to $r_1$ which sends it back to $r_0$ through $r_3$, 
 causing a routing loop. 
 
-
-In this case, the problem is caused by the fact that
-path chosen by the configuration, $\pi_1$,
-contains a static route in the middle of it.
+The problem is caused by the fact that $\pi_1$---i.e.,
+the
+path chosen by the configuration---contains a static route.
 Upon a failure, even though there exists another
 waypoint-compliant path, $\pi_2$, the configuration will not switch to it.
 %but ``worse'' than
@@ -443,7 +442,7 @@ waypoint-compliant path, $\pi_2$, the configuration will not switch to it.
 %but shorter than $\pi_2$.
 To avoid this problem, 
 \name synthesizes 
-configurations such that traffic is split among the two paths.
+configurations that split  traffic among the two paths.
 
 However, simply  adding
 the constraint $\sum_{\pi_1} W= \sum_{\pi_2}W$ does not ensure the 
