@@ -315,12 +315,13 @@ totTime = [2.650796689,5.545891339,15.29532384,31.4204547,97.32999361,209.955762
 
 ax1.set_xlim([10, 80])
 ax1.set_xticks(xticks)
+ax1.set_ylim([0, 1000])
 
-ax1.plot(x, genesisTime, '#ff7f00')
-ax1.plot(x, totTime, '#377eb8',)
+ax1.plot(x, genesisTime, '#d95f02')
+ax1.plot(x, totTime, '#7570b3')
 
-ax1.fill_between(x, genesisTime, totTime, color='#377eb8', alpha='0.5', label="Zeppelin")
-ax1.fill_between(x, 0, genesisTime, color='#ff7f00', alpha='0.5', label="Genesis")
+ax1.fill_between(x, genesisTime, totTime, color='#7570b3', alpha='0.5', label="Zeppelin")
+ax1.fill_between(x, 0, genesisTime, color='#d95f02', alpha='0.5', label="Genesis")
 ax1.legend(loc='upper left')
 
 #plt.legend(loc='best', frameon=False, fontsize=18)
@@ -334,12 +335,13 @@ totTime = [3.339358291,8.092288089,30.90892007,101.4620721,284.8738477,531.96632
 
 ax2.set_xlim([10, 80])
 ax2.set_xticks(xticks)
+ax2.set_ylim([0, 1000])
 
-ax2.plot(x, genesisTime, '#ff7f00')
-ax2.plot(x, totTime, '#377eb8',)
+ax2.plot(x, genesisTime, '#d95f02')
+ax2.plot(x, totTime, '#7570b3',)
 
-z = ax2.fill_between(x, genesisTime, totTime, color='#377eb8', alpha='0.5', label="Zeppelin")
-g = ax2.fill_between(x, 0, genesisTime, color='#ff7f00', alpha='0.5', label="Genesis")
+z = ax2.fill_between(x, genesisTime, totTime, color='#7570b3', alpha='0.5', label="Zeppelin")
+g = ax2.fill_between(x, 0, genesisTime, color='#d95f02', alpha='0.5', label="Genesis")
 
 #plt.legend(loc='best', frameon=False, fontsize=18)
 ax2.set_xlabel('\#Paths \n (b) \#Sets: 5', fontsize=14)
@@ -375,11 +377,11 @@ ax1.set_xlim([10, 50])
 ax1.set_xticks(x)
 ax1.set_ylim([0, 2000])
 
-ax1.plot(x, genesisTime, '#ff7f00')
-ax1.plot(x, totTime, '#377eb8',)
+ax1.plot(x, genesisTime, '#d95f02')
+ax1.plot(x, totTime, '#7570b3',)
 
-ax1.fill_between(x, genesisTime, totTime, color='#377eb8', alpha='0.5', label="Zeppelin")
-ax1.fill_between(x, 0, genesisTime, color='#ff7f00', alpha='0.5', label="Genesis")
+ax1.fill_between(x, genesisTime, totTime, color='#7570b3', alpha='0.5', label="Zeppelin")
+ax1.fill_between(x, 0, genesisTime, color='#d95f02', alpha='0.5', label="Genesis")
 
 #plt.legend(loc='best', frameon=False, fontsize=18)
 ax1.set_ylabel('Synthesis \n Time (s)', fontsize=14)
@@ -398,11 +400,11 @@ ax2.set_xticks(x)
 ax2.set_ylim([0, 2000])
 
 
-ax2.plot(x, genesisTime, '#ff7f00')
-ax2.plot(x, totTime, '#377eb8',)
+ax2.plot(x, genesisTime, '#d95f02')
+ax2.plot(x, totTime, '#7570b3',)
 
-z = ax2.fill_between(x, genesisTime, totTime, color='#377eb8', alpha='0.5', label="Zeppelin")
-g = ax2.fill_between(x, 0, genesisTime, color='#ff7f00', alpha='0.5', label="Genesis")
+z = ax2.fill_between(x, genesisTime, totTime, color='#7570b3', alpha='0.5', label="Zeppelin")
+g = ax2.fill_between(x, 0, genesisTime, color='#d95f02', alpha='0.5', label="Genesis")
 
 #plt.legend(loc='best', frameon=False, fontsize=18)
 ax2.set_xlabel('\#Paths \n (b) \#Sets: 5', fontsize=14)
@@ -444,11 +446,11 @@ ax1.set_ylim([0, 80])
 yticks = range(20, 100, 20)
 ax1.set_yticks(yticks)
 
-ax1.plot(x, genesisTime, '#ff7f00')
-ax1.plot(x, totTime, '#377eb8',)
+ax1.plot(x, genesisTime, '#d95f02')
+ax1.plot(x, totTime, '#7570b3',)
 
-ax1.fill_between(x, genesisTime, totTime, color='#377eb8', alpha='0.5', label="Zeppelin")
-ax1.fill_between(x, zeroes, genesisTime, color='#ff7f00', alpha='0.5', label="Genesis")
+ax1.fill_between(x, genesisTime, totTime, color='#7570b3', alpha='0.5', label="Zeppelin")
+ax1.fill_between(x, zeroes, genesisTime, color='#d95f02', alpha='0.5', label="Genesis")
 
 #plt.legend(loc='best', frameon=False, fontsize=18)
 ax1.set_ylabel('Synthesis \n Time (s)', fontsize=14)
@@ -465,11 +467,11 @@ ax2.set_ylim([0, 520])
 yticks = range(0, 600, 100)
 ax1.set_yticks(yticks)
 
-ax2.plot(x, genesisTime, '#ff7f00')
-ax2.plot(x, totTime, '#377eb8',)
+ax2.plot(x, genesisTime, '#d95f02')
+ax2.plot(x, totTime, '#7570b3',)
 
-z = ax2.fill_between(x, genesisTime, totTime, color='#377eb8', alpha='0.5', label="Zeppelin")
-g = ax2.fill_between(x, zeroes, genesisTime, color='#ff7f00', alpha='0.5', label="Genesis")
+z = ax2.fill_between(x, genesisTime, totTime, color='#7570b3', alpha='0.5', label="Zeppelin")
+g = ax2.fill_between(x, zeroes, genesisTime, color='#d95f02', alpha='0.5', label="Genesis")
 
 #plt.legend(loc='best', frameon=False, fontsize=18)
 ax2.set_xlabel('\#Paths \n (b) Isolation', fontsize=14)
