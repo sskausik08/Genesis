@@ -7,7 +7,7 @@ is split into three OSPF domains, and these domains communicate
 using BGP. Host A talks to hosts B and C with the following policies:
 traffic to B must go through a firewall at router $R_3$, traffic to C 
 goes through an IDS at $R_5$ and traffic 
-to B and C do not share any links (We discuss the policy support in
+to B and C do not share any links (We discuss the policies supported in
 detail in \Cref{sec:policy}). \name 
 synthesizes OSPF and BGP router configurations satisfying the 
 policies. Illustrating our two-phase approach (\Cref{fig:architecture}), 
@@ -37,14 +37,16 @@ $R_1 \rightarrow R_2$ (3).
  	routing across domains follows the Genesis path. In this case, 
  	we need traffic to go through a longer path in terms of AS path
  	length; Zeppelin sets $R_4$'s BGP local preference for route C
- 	from $R_5$ a higher value (200), so that $R_5$ is 
+ 	from $R_5$ to a higher value (200), so that $R_5$ is 
  	preferred over $R_6$. 
  	\item Zeppelin can find better control planes in terms of how 
  	the network is split into domains. In this case,  
  	Zeppelin will suggest moving $R_5$ to domain $D_1$. 
  	This simplifies $R_4$'s BGP configuration as the local preference 
  	entry for C is not required. 
- 	\item Zeppelin can synthesize OSPF configurations for $D_0$ 
- 	such that if either $R_1-R_3$ or $R_3-R_2$ link fails, traffic to
- 	B still goes through the firewall at $R_3$ (not shown in figure).
+ 	\item Zeppelin automatically synthesizes OSPF configurations
+          for $D_0$ such that if either $R_1-R_3$ or $R_3-R_2$ link
+          fails, traffic to B still goes through the firewall at $R_3$
+          (not shown in figure). \aditya{fix this based on changes to
+            the figure}
 \end{itemize}
