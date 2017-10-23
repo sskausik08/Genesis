@@ -81,8 +81,11 @@ constraint solving for propositional logic (SAT) and linear rational
 arithmetic (LRA); these powerful theories can  
 encode properties on network paths 
 and configurations. Thus, an SMT-search based approach can, in theory,
-provide support for multiple policies and different manageability
-requirements.  However, using SMT solvers in our context is
+provide support for multiple policies and different manageability requirements. 
+An SMT-based approach decouples requirements from the underlying search, thus,
+could be extended to support new policies. 
+
+However, using SMT solvers in our context is
 non-trivial.  To infer the concrete set of paths induced by network
 configurations, one has to incorporate into synthesis complex
 concepts---e.g., reasoning about shortest path algorithms requires

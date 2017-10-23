@@ -31,15 +31,12 @@ can be the set of physical replicas of,  for example, a firewall.
  Given a set of such waypoint policies, our goal is to
 find a policy-compliant configuration 
 $C=(T,\Theta,W,LP$, $IF,SR)$ 
-with high policy-resilience. Ideally, for 
-any single link failure, there should be at least 
-one path to $\lambda$ which is waypoint-compliant. 
-In the following section, we focus on 
-intra-domain configurations,
-and present an algorithm
+with high policy-resilience---i.e., the configuration
+must be waypoint-compliant under single-link failures. 
+We present algorithm
 that solves this problem when the network 
-has a single domain.
-When the network has multiple domains, 
+has a single domain;
+when the network has multiple domains, 
 we assume that all waypoints
 belong to the same domain and
 use our new algorithm in the domain 
@@ -269,12 +266,12 @@ routing loops.
 %that do not contain a static route in the final configuration 
 %and cannot cause routing loops. 
 Suppose \name added a static route $(sr_1, sr_2)$ for destination
-$\lambda$ where $sr_2 = N_{\xi_\lambda}(sr_1)$ (because we do not add
+$\lambda$ where $sr_2 = N_{\xi_\lambda}(sr_1)$ (we do not add
 static routes on any other links except $\xi_\lambda$). \name needs to
 ensure that, for any router $r\in\xi_\lambda$ that does not 
 lie in the downstream path $sr_2 \rightarrow^+_{\xi_\lambda} R_\lambda$, 
 the shortest path from $sr_2$ to $R_\lambda$ does not traverse through 
-$r$. For example, 
+$r$. For e.g., 
 in \Cref{fig:ospfloop}(b), there is a routing loop because
  the shortest path from $r_1$ to $t$ 
  goes through upstream router $s$.
@@ -401,7 +398,7 @@ also apply to this case.
 Providing policy-resilience with static routes is challenging
 because static routes do not react to failures. When static routes
 are used, we relax our definition of waypoint-compliance to 
-ensure atleast one of the induced paths for the policy traverses the waypoint.
+ensure at least one of the induced paths for the policy traverses the waypoint.
 \footnote{
 Can be realized by two mechanisms: 1) A router
 which has multiple routes for $\lambda$ will split the traffic

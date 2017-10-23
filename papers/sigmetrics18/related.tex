@@ -1,8 +1,6 @@
 %!TEX root = paper.tex
 \section{Related Work}\label{sec:related}
-\minisection{Centralized control} Programming routers for centralized
-control has been an active area of research in recent times. One of
-the first systems, RCP~\cite{rcp}, supported logically central BGP
+\minisection{Centralized control}  RCP~\cite{rcp}, supported logically central BGP
 configuration. The more recent Fibbing~\cite{fibbing} system provides
 centralized control over distributed routing by creating fake nodes
 and fake links to steer the traffic in the network through paths that
@@ -37,11 +35,10 @@ or hierarchical domain splitting.  Fortz
 et. al~\cite{ospf-te} tackle the problem of optimizing OSPF weights
 for performing traffic engineering, but their work is tailor-made
 to just this specific problem.
-
 Propane~\cite{propane, propaneat} tackles the specific problem of
 synthesizing BGP configurations for concrete and abstract topologies
-to ensure network-wide objectives hold even under failures. The policy
-language of Propane is suited to specify preferences on paths and
+to ensure network-wide objectives hold even under failures. 
+Propane is suited to specify preferences on paths and
 peering policies among different autonomous systems. Propane
 translates policies to a graph-based intermediate representation,
 which is then compiled to device-level BGP configurations. 

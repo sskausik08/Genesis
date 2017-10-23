@@ -226,9 +226,7 @@ classify Zeppelin's policy support  into two categories:
 \input{policy}  
 \Cref{tab:policysupport} describes 
 the common path policies 
-supported by \name, particularly suited for operators 
-of multi-tenant datacenters and enterprises with diverse 
-policies across user groups. 
+supported by \name. 
 In our tool, operators can
 specify policies in a declarative manner using a high-level 
 policy language. 
@@ -241,7 +239,7 @@ if the paths in $\Pi$ satisfy all the policies in $\Psi$~\cite{genesis}.
 
 \minisection{Reachability and Waypoints}
 This policy enables network communication
-between pairs of an tenant entity's virtual instances (VM), 
+between pairs of a tenant's virtual instances (VM), 
 applications, or hosts.  
 The tenant may wish that the flow
 between two of her end hosts, or from another tenant, must traverse
@@ -329,7 +327,10 @@ a configuration $C$ that is path-compliant with $(\Pi,P)$.
 \minisection{1-Resilience metrics}
 One of the main goals of this paper is to 
 generate configurations that are highly resilient to failures. In this
-work, we focus on resilient configurations for single link failures. 
+work, we focus on resilient configurations for single link failures.
+\footnote{ 
+We do not consider multiple link failures as they occur with lower probability
+~\cite{datacenterfailures}.}
 For a packet class $pc$ and configuration $C$, we define 
 the set of links \emph{affecting} $pc$ as 
 $\links(pc) = \{l \mid \exists \pi \in \paths^C(pc).~l \in \pi  \}$.
