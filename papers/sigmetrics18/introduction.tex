@@ -82,8 +82,8 @@ arithmetic (LRA); these powerful theories can
 encode properties on network paths 
 and configurations. Thus, an SMT-search based approach can, in theory,
 provide support for multiple policies and different manageability requirements. 
-An SMT-based approach decouples requirements from the underlying search, thus,
-could be extended to support new policies. 
+This approach also decouples the requirements from the underlying search, 
+and thus, could be extended to support new policies. 
 
 However, using SMT solvers in our context is
 non-trivial.  To infer the concrete set of paths induced by network
@@ -163,10 +163,10 @@ different configuration metrics such as static routes and BGP
 configurations' size to improve network manageability.
 
 Our experiments show that, thanks to its two-phase approach, \name can
-synthesize connectivity-resilient configurations for medium size
+synthesize connectivity-resilient configurations for medium-sized
 datacenter topologies in $< 10$ {\em minutes} and policy-resilient configurations
 in under an hour.  Notably, \name's performance is {\em 2-3 orders of
-  magnitude} faster than the state-of-the-art network configuration
+  magnitude} faster than the state-of-art network configuration
 synthesis system SyNET~\cite{synet}, which uses a direct synthesis
 approach based on SMT.
 

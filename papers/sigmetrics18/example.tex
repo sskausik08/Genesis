@@ -49,9 +49,10 @@ $R_1 \rightarrow R_2$ (5).
           for $D_0$ such that if either $R_1-R_3$ or $R_3-R_2$ link
           fails, traffic to B goes through the firewall at $R_8$.
 \end{itemize}
-\name differs from the state-of-art approaches for policy enforcement
+\name is fundamentally different from state-of-art approaches for policy enforcement
 in legacy networks: Propane~\cite{propane} generates BGP configurations
 from peering and path requirements, while Fibbing~\cite{fibbing} uses fake
 advertisements to centrally control OSPF routing. SyNET~\cite{synet} targets
 BGP and OSPF configuration synthesis, however, it does not cleanly
-tackle domain assignments or provide support for resilience.
+tackle domain assignments or provide support for resilience. 
+\name has more general policy coverage, supports automatic domain assignment (which is manual and difficult today), and can provide fault-tolerant paths, all in one system.
