@@ -15,7 +15,7 @@ from collections import defaultdict
 
 
 class GenesisSynthesiser(object) :
-	def __init__(self, topo, pdb, DC=True, TopoSlicing=False, pclist=None, useTactic=False, tactic="", noOptimizations=False, BridgeSlicing=True, weakIsolation=False, repairMode=False, controlPlane=False, ospfOnly=False) :
+	def __init__(self, topo, pdb, DC=True, TopoSlicing=False, pclist=None, useTactic=False, tactic="", noOptimizations=False, BridgeSlicing=True, weakIsolation=False, repairMode=False, controlPlane=False, ospfOnly=False, wilcoFlag=False) :
 		self.topology = topo
 
 		# Network Forwarding Function
@@ -112,6 +112,8 @@ class GenesisSynthesiser(object) :
 		self.ospfOnlyMode = ospfOnly
 		self.destinationDAGs = dict()
 
+		# Wilco Variables
+		self.wilcoFlag = wilcoFlag
 		# SMT Variables
 		#self.smtlib2file = open("genesis-z3-smt", 'w')
 
@@ -213,6 +215,9 @@ class GenesisSynthesiser(object) :
 		print "Input size: "+ str(self.pdb.getPacketClassRange()) + " packet classes "
 		start_t = time.time()
 		self.initializeSATVariables()
+
+		if self.wilcoFlag : 
+			self.wilcoVerify()
 
 		# Enforce Tactics 
 		if self.useTacticFlag : 
@@ -2312,6 +2317,46 @@ class GenesisSynthesiser(object) :
 
 	def getTopology(self) :
 		return self.topology
+
+	def initializeOSPFVariables(self) : 
+		swCount = self.topology.getSwitchCount()
+		pcRange = self.pdb.getPacketClassRange()
+
+		self.edgeWeights = [[random.randint(1, 10) for x in range(swCount + 1)] for x in range(swCount + 1)]
+		self.traffic = [random.randint(1, 10) for x in range(pcRange)]
+		self.failureVariables = [[0 for x in range(swCount + 1)] for x in range(swCount + 1)]
+		self.bestVariables = [[[0 for x in range(pcRange)] for x in range(swCount + 1)] for x in range(swCount + 1)]
+
+		for sw1 in range(1,swCount+1):
+			for sw2 in self.topology.getSwitchNeighbours(sw1) :
+				if sw1 < sw2 :  
+					self.failureVariables = Int("FAIL-"+ str(sw1) + "-" + str(sw2))
+
+		for sw1 in range(1,swCount+1):
+			for sw2 in self.topology.getSwitchNeighbours(sw1) :
+				for pc in range(pcRange) : 
+					self.bestVariables = Int("BEST-" + str(sw1) + "-" + str(sw2) + ":" + str(pc))
+
+
+	def fail(self, sw1, sw2) : 
+		if sw1 > sw2 : 
+			return self.fail(sw2, sw1)
+		else : 
+			return self.failureVariables[sw1][sw2]
+
+	def best(self, sw1, sw2, pc) : 
+		return self.bestVariables[sw1][sw2][pc]
+
+	def addBestRouteConstraints(pc) : 
+		pass
+
+
+	def wilcoVerify(self) : 
+		self.initializeOSPFVariables()
+		for pc in range(self.pdb.getPacketClassRange()) : 
+			self.addBestRouteConstraints(pc)
+
+
 
 def toSMT2Benchmark(f, status="unknown", name="benchmark", logic=""):
 	v = (Ast * 0)()
