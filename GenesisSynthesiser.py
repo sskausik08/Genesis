@@ -15,7 +15,7 @@ from collections import defaultdict
 
 
 class GenesisSynthesiser(object) :
-	def __init__(self, topo, pdb, DC=True, TopoSlicing=False, pclist=None, useTactic=False, tactic="", noOptimizations=False, BridgeSlicing=True, weakIsolation=False, repairMode=False, controlPlane=False, ospfOnly=False, wilcoFlag=False) :
+	def __init__(self, topo, pdb, DC=True, TopoSlicing=False, pclist=None, useTactic=False, tactic="", noOptimizations=False, BridgeSlicing=True, weakIsolation=False, repairMode=False, controlPlane=False, ospfOnly=False, wilcoMode=False) :
 		self.topology = topo
 
 		# Network Forwarding Function
@@ -113,7 +113,7 @@ class GenesisSynthesiser(object) :
 		self.destinationDAGs = dict()
 
 		# Wilco Variables
-		self.wilcoFlag = wilcoFlag
+		self.wilcoMode = wilcoMode
 		# SMT Variables
 		#self.smtlib2file = open("genesis-z3-smt", 'w')
 
@@ -216,7 +216,7 @@ class GenesisSynthesiser(object) :
 		start_t = time.time()
 		self.initializeSATVariables()
 
-		if self.wilcoFlag : 
+		if self.wilcoMode : 
 			self.wilcoVerify()
 
 		# Enforce Tactics 
@@ -2325,17 +2325,23 @@ class GenesisSynthesiser(object) :
 		self.edgeWeights = [[random.randint(1, 10) for x in range(swCount + 1)] for x in range(swCount + 1)]
 		self.traffic = [random.randint(1, 10) for x in range(pcRange)]
 		self.failureVariables = [[0 for x in range(swCount + 1)] for x in range(swCount + 1)]
-		self.bestVariables = [[[0 for x in range(pcRange)] for x in range(swCount + 1)] for x in range(swCount + 1)]
+		self.routeVariables = [[[0 for x in range(pcRange)] for x in range(swCount + 1)] for x in range(swCount + 1)]
+		self.bestVariables = [[0 for x in range(pcRange)] for x in range(swCount + 1)]
 
 		for sw1 in range(1,swCount+1):
 			for sw2 in self.topology.getSwitchNeighbours(sw1) :
 				if sw1 < sw2 :  
-					self.failureVariables = Int("FAIL-"+ str(sw1) + "-" + str(sw2))
+					self.failureVariables[sw1][sw2] = Int("FAIL-"+ str(sw1) + "-" + str(sw2))
 
 		for sw1 in range(1,swCount+1):
 			for sw2 in self.topology.getSwitchNeighbours(sw1) :
-				for pc in range(pcRange) : 
-					self.bestVariables = Int("BEST-" + str(sw1) + "-" + str(sw2) + ":" + str(pc))
+				for pc in range(pcRange) :
+					pass 
+					#self.routeVariables[sw1][sw2][pc] = Int("ROUTE-" + str(sw1) + "-" + str(sw2) + ":" + str(pc))
+
+		for sw1 in range(1,swCount+1):
+			for pc in range(pcRange) : 
+				self.bestVariables[sw1][pc] = Int("BEST-" + str(sw1) + ":" + str(pc))
 
 
 	def fail(self, sw1, sw2) : 
@@ -2344,11 +2350,27 @@ class GenesisSynthesiser(object) :
 		else : 
 			return self.failureVariables[sw1][sw2]
 
-	def best(self, sw1, sw2, pc) : 
-		return self.bestVariables[sw1][sw2][pc]
+	def route(self, sw1, sw2, pc) : 
+		return self.routeVariables[sw1][sw2][pc]
 
-	def addBestRouteConstraints(pc) : 
-		pass
+	def best(self, sw, pc) : 
+		return self.bestVariables[sw][pc]
+
+	def edgeWeight(self, sw1, sw2) : 
+		return self.edgeWeights[sw1][sw2]
+
+	def addBestRouteConstraints(self, pc) : 
+		swCount = self.topology.getSwitchCount()
+		dstSw = self.pdb.getDestinationSwitch(pc)
+		for sw in range(1, swCount + 1) :
+			if sw == dstSw : 
+				self.z3Solver.add(self.best(sw, pc) == 0)
+			else : 
+				bestAssert = True
+				for n in self.topology.getSwitchNeighbours(sw) : 
+					self.z3Solver.add(Implies(self.fail(sw,n) == 0, self.best(sw, pc) <= self.best(n, pc) + self.edgeWeight(sw, n)))
+					bestAssert = Or(bestAssert, Implies(self.fail(sw,n) == 0, self.best(sw, pc) == self.best(n, pc) + self.edgeWeight(sw, n)))
+				self.z3Solver.add(bestAssert)
 
 
 	def wilcoVerify(self) : 
@@ -2356,6 +2378,10 @@ class GenesisSynthesiser(object) :
 		for pc in range(self.pdb.getPacketClassRange()) : 
 			self.addBestRouteConstraints(pc)
 
+		start_t = time.time()
+		self.z3Solver.check()
+		end_t = time.time()
+		print "Time taken to solve is", end_t - start_t
 
 
 def toSMT2Benchmark(f, status="unknown", name="benchmark", logic=""):

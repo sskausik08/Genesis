@@ -30,6 +30,7 @@ class Genesis(object):
 		generateControlPlaneFlag = False
 		generateOSPFControlPlaneFlag = False
 		repairMode = False
+		wilcoMode = False
 		tactic = ""
 
 		for arg in sys.argv : 
@@ -54,6 +55,8 @@ class Genesis(object):
 				generateControlPlaneFlag = True
 			if arg == "-ospf" :
 				generateOSPFControlPlaneFlag = True
+			if arg == "-wilco" : 
+				wilcoMode = True
 			no += 1
 
 		if not (gplargFlag and topoargFlag) : 
@@ -67,7 +70,7 @@ class Genesis(object):
 			self.genesisSynthesiser = GenesisSynthesiser(topo=self.topology, pdb=self.policyDatabase, DC=DCFlag, 
 				TopoSlicing=TopoSlicingFlag, useTactic=UseTacticFlag, tactic=tactic, noOptimizations=NoOptimizationsFlag, 
 				weakIsolation=WeakIsolationFlag, repairMode=repairMode, 
-				controlPlane=generateControlPlaneFlag, ospfOnly=generateOSPFControlPlaneFlag)
+				controlPlane=generateControlPlaneFlag, ospfOnly=generateOSPFControlPlaneFlag, wilcoMode=wilcoMode)
 			
 		self.gplparser = GPLInterpreter(self.gplfile, self.topofile, self.genesisSynthesiser, self.topology)
 		
