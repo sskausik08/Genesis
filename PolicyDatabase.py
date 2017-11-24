@@ -14,6 +14,7 @@ class PolicyDatabase(object) :
 		self.enforcementStatusTable = dict()
 		self.isolationTable = []
 		self.isolationMap = dict()
+                self.nodeIsolationTable = []
 		self.mutlicastTable = dict()
 		self.equalMulticastPolicy = dict()
 		self.relClasses = []

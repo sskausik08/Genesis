@@ -32,7 +32,7 @@ class GPLInterpreter(object):
 		'ISOLATE', 'REACH', 'IN',
 		'COMMENT', 
 		'AND', 'OR', 'NOT', 'TRUE', 'FALSE',
-		'MINAVGTE', 'MINMAXTE'
+		'MINAVGTE', 'MINMAXTE', 'NODEISOLATE'
 		)
 
 	# Tokens
@@ -51,6 +51,8 @@ class GPLInterpreter(object):
 	t_RBRACKET = r'\]'
    
 	def t_ISOLATE(self, t): r'\|\|'; return t
+
+        def t_NODEISOLATE(self, t): r'##'; return t
 
 	def t_REACH(self, t): r'\>\>'; return t
 
@@ -236,8 +238,8 @@ class GPLInterpreter(object):
 		else :
 			print "Policy " + p[3] + " is not defined."
 			exit(0)
-
-		# Add isolation policy.
+                
+                # Add isolation policy.
 		self.genesisSynthesiser.addTrafficIsolationPolicy(p1.getPacketClass(), p2.getPacketClass())
 
 	def p_isolate_allisolated(self, p):
@@ -278,6 +280,29 @@ class GPLInterpreter(object):
 
 				# Add isolation policy. 
 				self.genesisSynthesiser.addTrafficIsolationPolicy(p1.getPacketClass(), p2.getPacketClass())
+
+        def p_gplnodeisolate(self, p):
+                'gplnodeisolate : gplnodeisolate nodeisolate_statement'
+        
+        def p_gplnodeisolate_nodeisolate(self, p):
+                'gplnodeisolate : nodeisolate_statement'
+
+        def p_nodeisolate(self, p):
+                'nodeisolate_statement : NAME NODEISOLATE NAME'
+                if p[1] in self.policyTable :
+                        p1 = self.policyTable[p[1]]
+                else :
+                     print "Policy " + p[1] + " is not defined."
+                     exit(0)
+                
+                if p[3] in self.policyTable :
+                        p2 = self.policyTable[p[3]]
+                else :
+                        print "Policy " + p[3] + " is not defined."
+                        exit(0)
+                
+                # Add node isolation policy.
+                self.genesisSynthesiser.addNodeIsolationPolicy(p1.getPacketClass(), p2.getPacketClass())
 
 	# def p_mcast(self, p) :
 	#     'mcast_statement : endpoint REACH REACH LBRACKET endpoints RBRACKET' 

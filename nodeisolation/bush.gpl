@@ -1,0 +1,6 @@
+p1 := ip.srcAddr = 10.0.0.1 : a >> j
+p2 := ip.srcAddr = 10.0.0.2 : j >> f
+p3 := ip.srcAddr = 10.0.0.3 : j >> k
+
+==
+[ p1 ] || [ p2 ]

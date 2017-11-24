@@ -15,7 +15,7 @@ from collections import defaultdict
 
 
 class GenesisSynthesiser(object) :
-	def __init__(self, topo, pdb, DC=True, TopoSlicing=False, pclist=None, useTactic=False, tactic="", noOptimizations=False, BridgeSlicing=True, weakIsolation=False, repairMode=False, controlPlane=False, ospfOnly=False) :
+	def __init__(self, topo, pdb, DC=True, TopoSlicing=False, pclist=None, useTactic=False, tactic="", noOptimizations=True, BridgeSlicing=True, weakIsolation=False, repairMode=False, controlPlane=False, ospfOnly=False) :
 		self.topology = topo
 
 		# Network Forwarding Function
@@ -123,7 +123,8 @@ class GenesisSynthesiser(object) :
 		swCount = self.topology.getSwitchCount()
 		pcRange = self.pdb.getPacketClassRange()
 		maxPathLen = self.topology.getMaxPathLength()
-
+                
+                #MARKER  self.topology.printSwitchMappings()
 		# Fwd Relation Variables
 		self.fwdvars = [[[0 for x in range(pcRange)] for x in range(swCount + 1)] for x in range(swCount + 1)]
 		
@@ -133,12 +134,12 @@ class GenesisSynthesiser(object) :
 		for sw1 in range(1,swCount+1):
 			for sw2 in range(1,swCount+1):
 				for pc in range(pcRange) :
-					self.fwdvars[sw1][sw2][pc] = Bool(str(sw1)+"-"+str(sw2)+":"+str(pc))
+					self.fwdvars[sw1][sw2][pc] = Bool("FWD"+str(sw1)+"-"+str(sw2)+":"+str(pc))
 
 		for sw in range(1,swCount+1):
 			for pc in range(pcRange) :
 				for plen in range(1,maxPathLen +1) :
-					self.reachvars[sw][pc][plen] = Bool(str(sw)+":"+str(pc)+":"+str(plen))
+					self.reachvars[sw][pc][plen] = Bool("REACH" + str(sw)+":"+str(pc)+":"+str(plen))
 
 	# Fwd relation
 	def Fwd(self, sw1, sw2, pc) :
@@ -260,7 +261,8 @@ class GenesisSynthesiser(object) :
 		else : 
 			self.synthesisSuccessFlag = self.enforceUnicastPolicies()	
 
-		end_t = time.time()
+		#MARKER print toSMT2Benchmark(self.z3Solver)
+                end_t = time.time()
 		self.zepFile = open("zeppelin-timing", 'a')
 		self.zepFile.write("Zeppelin\t" + str(self.pdb.getPacketClassRange()) + "\t" + str(end_t - start_t))
 		self.zepFile.write("\t")
@@ -532,7 +534,7 @@ class GenesisSynthesiser(object) :
 				pc2 = pc[1]
 				if pc1 in relClass and pc2 in relClass: 
 					self.addTrafficIsolationConstraints(pc1, pc2)
-			
+			#MARKER print toSMT2Benchmark(self.z3Solver)
 			#print "Time taken to add isolation constraints is", time.time() - isolationtime
 
 			# check if global traffic engineering constraints
@@ -587,6 +589,7 @@ class GenesisSynthesiser(object) :
 			pc1 = pcs[0]
 			pc2 = pcs[1]
 			self.addTrafficIsolationConstraints(pc1, pc2)
+                        self.addNodeIsolationConstraints(pc1, pc2)
 
 		# Apply synthesis
 		solvetime = time.time()
@@ -1007,13 +1010,77 @@ class GenesisSynthesiser(object) :
 		else :
 			swList = range(1, swCount + 1) 
 
-		for sw in swList:
-			for n in self.topology.getSwitchNeighbours(sw, useBridgeSlicing) :
-				isolateAssert = Not( And (self.Fwd(sw,n,pc1), self.Fwd(sw,n,pc2)))
-				self.z3numberofadds += 1
-				#addtime = time.time() # Profiling z3 add.
-				self.z3Solver.add(isolateAssert)	
-				#self.z3addTime += time.time() - addtime
+                for sw in swList:
+                       for n in self.topology.getSwitchNeighbours(sw, useBridgeSlicing) :
+                               isolateAssert = Not( And (self.Fwd(sw,n,pc1), self.Fwd(sw,n,p)))
+                               self.z3numberofadds += 1  #Why is this broken now
+                               #addtime = time.time() # Profiling z3 add.
+                               self.z3Solver.add(isolateAssert)
+                               #self.z3addTime += time.time() - addtime
+
+
+        def addNodeIsolationConstraints(self, pc1, pc2):
+        	""" Adding constraints for Node Isolation Policy enforcement of traffic for packet classes pc1 and pc2 """
+		
+		swCount = self.topology.getSwitchCount()
+		useBridgeSlicing = False
+
+		# Find bridges for pc1 and pc2.
+		if useBridgeSlicing :
+			# Find if exists in a bridge slice. 
+			srcSlice1 = self.topology.getBridgeSliceNumber(self.pdb.getSourceSwitch(pc1))
+			dstSlice1 = self.topology.getBridgeSliceNumber(self.pdb.getDestinationSwitch(pc1))
+			srcSlice2 = self.topology.getBridgeSliceNumber(self.pdb.getSourceSwitch(pc2))
+			dstSlice2 = self.topology.getBridgeSliceNumber(self.pdb.getDestinationSwitch(pc2))
+			slice1 = None
+			slice2 = None
+			if srcSlice1 == dstSlice1 and srcSlice1 <> None :
+				slice1 = srcSlice1
+			if srcSlice2 == dstSlice2 and srcSlice2 <> None :
+				slice2 = srcSlice2
+			if slice1 <> None and slice2 <> None :
+				# Both are in bridge slices.
+				if slice1 <> slice2: 
+					# pc1 and pc2 will be isolated naturally. 
+					return
+			if slice1 <> None or slice2 <> None : 
+				# One of them is in a bridge slice. Only add traffic isolation constraints in that slice.
+				if slice1 <> None : 
+					slice = slice1
+				else :
+					slice = slice2
+				swList = self.topology.getBridgeSlice(slice)
+				useBridgeSlicing = True
+			else :
+				swList = range(1, swCount + 1) 
+		else :
+			swList = range(1, swCount + 1) 
+
+                if self.pdb.getDestinationSwitch(pc1) != self.pdb.getDestinationSwitch(pc2):
+                        for sw in swList:
+                                for n in self.topology.getSwitchNeighbours(sw, useBridgeSlicing) :
+                                        for m in self.topology.getSwitchNeighbours(n, useBridgeSlicing) :
+                                                isolateAssert = Not(And(self.Fwd(sw, n, pc1), self.Fwd(m, n, pc2)))
+                                                self.z3numberofadds += 1
+                                                #addtime = time.time() # Profiling z3 add.
+                                                print isolateAssert
+                                                self.z3Solver.add(isolateAssert)	
+                                                #self.z3addTime += time.time() - addtime
+                else:
+                        swList = range(1, swCount + 1)
+                        print swList
+                        for sw in swList:
+                                for n in self.topology.getSwitchNeighbours(sw, useBridgeSlicing) :
+                                        print sw, n, self.pdb.getDestinationSwitch(pc1)
+
+                                        if n != self.pdb.getDestinationSwitch(pc1):
+                                                for m in self.topology.getSwitchNeighbours(n, useBridgeSlicing) :
+                                                        isolateAssert = Not(And(self.Fwd(sw, n, pc1), self.Fwd(m, n, pc2)))
+                                                        self.z3numberofadds += 1
+                                                        #addtime = time.time() # Profiling z3 add.
+                                                        print isolateAssert
+                                                        self.z3Solver.add(isolateAssert)
+                                                        #self.z3addTime += time.time() - addtime
 
 
 	# def addSliceTrafficIsolationConstraints(self, slice, pc1, pc2) : 
