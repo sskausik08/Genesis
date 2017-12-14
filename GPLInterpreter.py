@@ -52,7 +52,7 @@ class GPLInterpreter(object):
    
 	def t_ISOLATE(self, t): r'\|\|'; return t
 
-        def t_NODEISOLATE(self, t): r'##'; return t
+        def t_NODEISOLATE(self, t): r'\*\*'; return t
 
 	def t_REACH(self, t): r'\>\>'; return t
 
@@ -225,6 +225,12 @@ class GPLInterpreter(object):
 	def p_gplisolate_isolate(self, p):
 		'gplisolate : isolate_statement'
 
+        def p_gplisolate_node(self, p):
+                'gplisolate : gplisolate nodeisolate_statement'
+        
+        def p_gplisolate_nodeisolate(self, p):
+                'gplisolate : nodeisolate_statement'
+
 	def p_isolate(self, p):
 		'isolate_statement : NAME ISOLATE NAME'
 		if p[1] in self.policyTable : 
@@ -281,14 +287,10 @@ class GPLInterpreter(object):
 				# Add isolation policy. 
 				self.genesisSynthesiser.addTrafficIsolationPolicy(p1.getPacketClass(), p2.getPacketClass())
 
-        def p_gplnodeisolate(self, p):
-                'gplnodeisolate : gplnodeisolate nodeisolate_statement'
-        
-        def p_gplnodeisolate_nodeisolate(self, p):
-                'gplnodeisolate : nodeisolate_statement'
 
         def p_nodeisolate(self, p):
                 'nodeisolate_statement : NAME NODEISOLATE NAME'
+                print "In node isolate", p[1], p[3]
                 if p[1] in self.policyTable :
                         p1 = self.policyTable[p[1]]
                 else :

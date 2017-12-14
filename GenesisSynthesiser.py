@@ -15,7 +15,7 @@ from collections import defaultdict
 
 
 class GenesisSynthesiser(object) :
-	def __init__(self, topo, pdb, DC=True, TopoSlicing=False, pclist=None, useTactic=False, tactic="", noOptimizations=True, BridgeSlicing=True, weakIsolation=False, repairMode=False, controlPlane=False, ospfOnly=False) :
+	def __init__(self, topo, pdb, DC=False, TopoSlicing=False, pclist=None, useTactic=False, tactic="", noOptimizations=True, BridgeSlicing=True, weakIsolation=False, repairMode=False, controlPlane=False, ospfOnly=False) :
 		self.topology = topo
 
 		# Network Forwarding Function
@@ -276,7 +276,7 @@ class GenesisSynthesiser(object) :
 		elif self.synthesisSuccessFlag and not self.DCSynthesisFlag :
 			self.pdb.validatePolicies(self.topology)
 
-		self.pdb.printPaths(self.topology)
+                self.pdb.printPaths(self.topology)
 		self.pdb.validatePolicies(self.topology)
 		
 		# Control plane synthesis: outside scope of POPL17 Genesis paper.
@@ -466,7 +466,11 @@ class GenesisSynthesiser(object) :
 
 	def addTrafficIsolationPolicy(self, policy1, policy2) : 
 		# Isolation of traffic for Policies policy1 and policy2
-		pc = self.pdb.addIsolationPolicy(policy1,policy2) 
+		pc = self.pdb.addIsolationPolicy(policy1,policy2)
+                
+        def addNodeIsolationPolicy(self, policy1, policy2) :
+                # Isolation of node for Policies policy1 and policy2
+                pc = self.pdb.addNodeIsolationPolicy(policy1, policy2)
 
 	def addEqualMulticastPolicy(self, srcIP, srcSw, dstIPs, dstSws) :
 		pc = self.pdb.addEqualMulticastPolicy(srcIP, srcSw, dstIPs, dstSws)
@@ -562,7 +566,7 @@ class GenesisSynthesiser(object) :
 				# These unsat cores could be used to generate policy violations for the operator. 
 				unsatCores = self.z3Solver.unsat_core()
 				for unsatCore in unsatCores :
-					print str(unsatCore)
+                                        print str(unsatCore)
 
 			self.z3Solver.pop()
 
@@ -589,6 +593,12 @@ class GenesisSynthesiser(object) :
 			pc1 = pcs[0]
 			pc2 = pcs[1]
 			self.addTrafficIsolationConstraints(pc1, pc2)
+                        
+                # Add node isolation constraints
+                for pno in range(self.pdb.getNodeIsolationPolicyCount()) :
+                        pcs = self.pdb.getNodeIsolationPolicy(pno)
+                        pc1 = pcs[0]
+                        pc2 = pcs[1]
                         self.addNodeIsolationConstraints(pc1, pc2)
 
 		# Apply synthesis
@@ -1063,22 +1073,17 @@ class GenesisSynthesiser(object) :
                                                 isolateAssert = Not(And(self.Fwd(sw, n, pc1), self.Fwd(m, n, pc2)))
                                                 self.z3numberofadds += 1
                                                 #addtime = time.time() # Profiling z3 add.
-                                                print isolateAssert
                                                 self.z3Solver.add(isolateAssert)	
                                                 #self.z3addTime += time.time() - addtime
                 else:
                         swList = range(1, swCount + 1)
-                        print swList
                         for sw in swList:
                                 for n in self.topology.getSwitchNeighbours(sw, useBridgeSlicing) :
-                                        print sw, n, self.pdb.getDestinationSwitch(pc1)
-
                                         if n != self.pdb.getDestinationSwitch(pc1):
                                                 for m in self.topology.getSwitchNeighbours(n, useBridgeSlicing) :
                                                         isolateAssert = Not(And(self.Fwd(sw, n, pc1), self.Fwd(m, n, pc2)))
                                                         self.z3numberofadds += 1
                                                         #addtime = time.time() # Profiling z3 add.
-                                                        print isolateAssert
                                                         self.z3Solver.add(isolateAssert)
                                                         #self.z3addTime += time.time() - addtime
 
@@ -1188,7 +1193,7 @@ class GenesisSynthesiser(object) :
 		else :
 			rcGraphSat = False
 			print "Input Policies not realisable"
-			print pclist
+                        print pclist
 			unsatCores = self.z3Solver.unsat_core()
 			if len(unsatCores) == 0:
 				# print "Unsatisfiability not due to any partial isolation solutions to the rcGraph. Thus, solution does not exist"
@@ -1572,7 +1577,7 @@ class GenesisSynthesiser(object) :
 		# Returns the best packet class (least degree and unrerouted).
 		if (len(pclist)) == 0 :
 			return None
-		print pclist
+                print pclist
 		minpc = pclist[0]
 		mindegree = self.pdb.getRelationalClassGraphDegree(minpc)
 		for pc in pclist :

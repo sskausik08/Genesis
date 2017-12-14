@@ -15,6 +15,7 @@ class PolicyDatabase(object) :
 		self.isolationTable = []
 		self.isolationMap = dict()
                 self.nodeIsolationTable = []
+                self.nodeIsolationMap = dict()
 		self.mutlicastTable = dict()
 		self.equalMulticastPolicy = dict()
 		self.relClasses = []
@@ -178,6 +179,44 @@ class PolicyDatabase(object) :
 			return self.isolationMap[pc]
 		else :
 			return []
+        
+        def addNodeIsolationPolicy(self, pc1, pc2) :
+                if pc1 > pc2 :
+                        pc1, pc2 = pc2, pc1
+
+                if pc1 in self.nodeIsolationMap and pc2 in self.nodeIsolationMap :
+                        # Node Isolation Policy already added
+                        return
+
+                self.nodeIsolationTable.append([pc1, pc2])
+                if pc1 in self.nodeIsolationMap :
+                        self.nodeIsolationMap[pc1].append(pc2)
+                else:
+                        self.nodeIsolationMap[pc1] = [pc2]
+                
+                if pc2 in self.nodeIsolationMap : 
+                        self.nodeIsolationMap[pc2].append(pc1)
+                else :
+                        self.nodeIsolationMap[pc2] = [pc1]
+        
+        def getNodeIsolationPolicy(self, no) :
+                if no > len(self.nodeIsolationTable) - 1 :
+                        return None
+                else:
+                        return self.nodeIsolationTable[no]
+
+        def isNodeIsolated(self, pc1, pc2) :
+                if pc1 in self.nodeIsolationMap and pc2 in self.nodeIsolationMap[pc1]:
+                        return True
+                return False
+        
+        def getNodeIsolationPolicyCount(self) :
+                return len(self.nodeIsolationTable)
+        
+        def getNodeIsolatedPolicies(self, pc) :
+                if pc in self.nodeIsolationMap :
+                        return self.nodeIsolationMap[pc]
+                return []
 
 	def createRelationalClasses(self) :
 		""" Create Relational classes of packet classes. A relational class is a maximal set of
