@@ -61,19 +61,33 @@ $\paths^C(PC) = \Pi$.
 %Ideally, we want to directly generate configurations that maximize 
 %connectivity resilience, but already generating policy-compliant configuration is
 %a hard problem.
-This problem admits a trivial solution that 
-enforces the set of input paths
- by adding a 
-static route to $SR(\lambda)$ for every link $l$ in 
-set of the paths $\Pi$. 
+\kausik{In a software-defined OpenFlow~\cite{openflow} network, 
+we can program
+switch rules to forward to a particular next-hop switch. 
+Therefore, a trivial solution to the path-compliance problem 
+in SDNs is to install forwarding rules along the policy-compliant
+paths~\cite{genesis}. Static routes provide the functionality
+of specifying the next-hop similar to OpenFlow rules;
+thus, a solution to the path-compliance problem is to
+add a static route to $SR(\lambda)$ for every link $l$ in 
+set of the paths $\Pi$. Similar to static routes,
+Fibbing~\cite{fibbing} used fake 
+advertisements to achieve fine-grained control over
+OSPF forwarding.}
+
+\kausik{
+Under no failures, the trivial 
+solution of using static routes ensures 
+policy-compliance. 
 However, this solution uses more static routes than necessary
 and, in the presence of failures, static routes may
 create routing loops that make certain connections 
 unreachable, hence reducing connectivity-resilience.
-Given the relation between the number of static 
-routes and connectivity-resilience,
-we set as our goal that of generating configurations 
-with few static routes.
+Thus, we set our goal to synthesizing configurations
+which are policy-compliant when there are no network 
+failures, and improving connectivity-resilience by using
+fewer static routes.}
+
 
 % In the following sections, we assume we are given paths that are compliant to 
 % all path policies and we only need to find configurations that realize those paths.

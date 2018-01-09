@@ -51,13 +51,14 @@ rules-of-thumb~\cite{complexity:nsdi09}, e.g., limiting the number of
 lines of configurations and the use of certain configuration
 constructs.
 
-\kausik{add references to each sentence in paragraph}
-Thus, our work contrasts with prior efforts~\cite{netegg, propane,
-  merlin, simple, fattire, netkat, netkatcompiler, sol}, which suffer
+Thus, our work contrasts with prior efforts which suffer
 from one or more drawbacks: they generate SDN- or BGP-specific
-control planes for a limited range of policies (e.g., peering); do not
-attempt to be resilient to failures; do not support generating
-hierarchical control planes; and do not enable generation of
+control planes for a limited range of policies (e.g., peering)
+~\cite{netkat,merlin,netegg,fattire,simple,sol,propane}; do not
+attempt to be resilient to failures~\cite{synet}; 
+do not support generating
+hierarchical control planes~\cite{propane}; 
+and do not enable generation of
 simple-to-manage network configurations. 
 
 The problem of synthesizing router configurations for which the
