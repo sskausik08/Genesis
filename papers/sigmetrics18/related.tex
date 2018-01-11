@@ -42,6 +42,13 @@ Propane is suited to specify preferences on paths and
 peering policies among different autonomous systems. Propane
 translates policies to a graph-based intermediate representation,
 which is then compiled to device-level BGP configurations. 
+\kausik{
+The compilation and resilience algorithms for Propane use automata
+and are tailored for its underlying technology (BGP configurations with support for 
+local preferences, MEDs and communities), in contrast to our LP-based
+algorithms which synthesize OSPF and static routing configurations which have
+a different forwarding model than BGP.}
+
 
 SyNET~\cite{synet} tackles network-wide configuration synthesis
 (Definition \ref{def:policycompliance}) by
