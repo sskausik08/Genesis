@@ -2,16 +2,19 @@
 \section{From Waypoint Policies to Policy-Resilient \\ Configurations}
 \label{sec:waypointres}
 
-
-The algorithm we presented in the previous section can generate configurations
-for complex types of policies and at the same time can achieve good
-connectivity resilience.
+\kausik{
+The algorithm we presented in the previous section generates configuration which guarantees enforcement of complex policies under 
+no failure scenarios, and at the same time achieves good
+connectivity resilience by using fewer static routes as possible.
+However, the generated configurations do not provide
+any guarantees as to whether the policies are complied when
+failures occur in the network.
 In this section, we present a different algorithm that, for a restricted set of policies,
 can synthesize configurations with high \emph{policy-resilience}.
 In particular, we focus on \emph{waypoint policies}
 which play a crucial role in enterprise and
 datacenter networks for security, performance,  
-and auditing.
+and auditing.}
 
 \subsection{Problem Setup}
 
