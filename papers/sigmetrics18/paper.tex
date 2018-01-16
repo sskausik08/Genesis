@@ -142,12 +142,13 @@
 %% Copyright information
 %% Supplied to authors (based on authors' rights management selection;
 %% see authors.acm.org) by publisher for camera-ready submission
-\setcopyright{none}             %% For review submission
-%\setcopyright{acmcopyright}
-%\setcopyright{acmlicensed}
-%\setcopyright{rightsretained}
-%\copyrightyear{2017}           %% If different from \acmYear
+%\setcopyright{none}             %% For review submission
 
+% \TODO : Uncomment
+% \setcopyright{acmcopyright}
+% \acmJournal{POMACS}
+% \acmYear{2018} \acmVolume{2} \acmNumber{1} \acmArticle{22} \acmMonth{3} \acmPrice{$15.00}
+% \acmDOI{10.1145/3179425}
 
 %% Bibliography style
 
@@ -242,32 +243,13 @@
 \input{evaluation}
 \input{related}
 \input{conclusion}
+\input{acks}
 
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{references}
 
-%\appendix
-%\input{proofs}
-
-
-%% Acknowledgments
-%\begin{acks}                            %% acks environment is optional
-%                                        %% contents suppressed with 'anonymous'
-%  %% Commands \grantsponsor{<sponsorID>}{<name>}{<url>} and
-%  %% \grantnum[<url>]{<sponsorID>}{<number>} should be used to
-%  %% acknowledge financial support and will be used by metadata
-%  %% extraction tools.
-%  This material is based upon work supported by the
-%  \grantsponsor{GS100000001}{National Science
-%    Foundation}{http://dx.doi.org/10.13039/100000001} under Grant
-%  No.~\grantnum{GS100000001}{nnnnnnn} and Grant
-%  No.~\grantnum{GS100000001}{mmmmmmm}.  Any opinions, findings, and
-%  conclusions or recommendations expressed in this material are those
-%  of the author and do not necessarily reflect the views of the
-%  National Science Foundation.
-%\end{acks}
-
-
+\appendix
+\input{proofs}
 
 %% Appendix
 

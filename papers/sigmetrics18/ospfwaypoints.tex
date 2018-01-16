@@ -85,14 +85,19 @@ which provides waypoint replication and
 
 
 \subsection{Intra-domain Policy-Resilient Waypoint Compliance}\label{sec:ospfwaypoint}
-We use \genesis's
-support for isolation to generate two link-disjoint paths
-which are waypoint-compliant with respect to $\waypt$. A single link
+\kausik{
+\genesis provides support for link-isolation, which can be used 
+in conjunction with the waypoint policy to generate multiple disjoint paths
+for a particular destination which are waypoint-compliant. For our case of 1-resilience, \name
+uses \genesis to generate two link-disjoint paths which traverse through
+one of the waypoints in $\waypt$. Link-disjointedness ensures that
+a single link
 failure will not disable both these paths
 and we could guarantee policy-resilience by 
 guaranteeing that, under any link failure,
 traffic to $\lambda$ 
-traverses one of these two paths. However, enforcing the control plane to 
+traverses one of these two paths. }
+However, enforcing the control plane to 
 always route through one of the two paths is difficult and overly 
 restrictive. 
 Instead, we relax our constraints to guarantee that
@@ -112,7 +117,7 @@ We now show how to generate constraints that
 guarantee that a single waypoint-compliant path is shorter
 than any path which does \emph{not} traverse a waypoint. 
 We define $D(s,t,\waypt)$ to be the 
-distance between $s$ and $t$ for path that \emph{do not}
+distance between $s$ and $t$ for paths that \emph{do not}
  traverse any waypoint $w \in \waypt$.
 We call  $D(s,t,\waypt)$ the \emph{non-waypoint distance}.
   We add constraints to represent these distances by

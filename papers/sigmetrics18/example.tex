@@ -11,7 +11,8 @@ to B and C do not share any links (We discuss the policies supported in
 detail in \Cref{sec:policy}). \name 
 synthesizes OSPF and BGP router configurations satisfying the 
 policies. Illustrating our two-phase approach (\Cref{fig:architecture}), 
-\name first uses Genesis to find policy-compliant paths (indicated by the blue and
+\name first uses \genesis~\cite{genesis}, a policy-enforcement framework for SDNs 
+to find policy-compliant paths (indicated by the blue and
 red paths). Note that there exists multiple solutions for the given
 policies, we show how the control plane is synthesized using one of the solutions:
 \begin{figure}
@@ -55,4 +56,5 @@ from peering and path requirements, while Fibbing~\cite{fibbing} uses fake
 advertisements to centrally control OSPF routing. SyNET~\cite{synet} targets
 BGP and OSPF configuration synthesis, however, it does not cleanly
 tackle domain assignments or provide support for resilience. 
-\name has more general policy coverage, supports automatic domain assignment (which is manual and difficult today), and can provide fault-tolerant paths, all in one system.
+\name has more general policy coverage, supports automatic domain assignment 
+(which is manual and difficult today), and can provide fault-tolerant configurations, all in one system.
