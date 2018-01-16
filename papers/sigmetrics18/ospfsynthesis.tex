@@ -63,12 +63,13 @@ $\paths^C(PC) = \Pi$.
 %a hard problem.
 \kausik{In a software-defined OpenFlow~\cite{openflow} network, 
 we can program
-switch rules to forward to a particular next-hop switch. 
+switch rules to forward traffic 
+to a particular next-hop switch. 
 Therefore, a trivial solution to the path-compliance problem 
 in SDNs is to install forwarding rules along the policy-compliant
 paths~\cite{genesis}. Static routes provide the functionality
-of specifying the next-hop similar to OpenFlow rules;
-thus, a solution to the path-compliance problem is to
+of specifying the next-hop router,
+thus, a solution to the path-compliance problem is to simply
 add a static route to $SR(\lambda)$ for every link $l$ in 
 set of the paths $\Pi$. Similar to static routes,
 Fibbing~\cite{fibbing} used fake 
@@ -78,7 +79,7 @@ OSPF forwarding.}
 \kausik{
 Under no failures, the trivial 
 solution of using static routes ensures 
-policy-compliance. 
+policy-compliance, as traffic follows the paths provided by \genesis. 
 However, this solution uses more static routes than necessary
 and, in the presence of failures, static routes may
 create routing loops that make certain connections 
