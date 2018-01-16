@@ -75,21 +75,20 @@ assignments with constraints on OSPF domain sizes, lower
 BGP configuration complexity and higher resilience.}
 
 \minisection{Policy languages} 
-\kausik{\name uses the \genesis framework
-to synthesize paths with comply with reachability, 
+\kausik{\name uses the \genesis~\cite{genesis} framework
+to synthesize paths which comply with reachability, 
 waypoint and isolation policies. \genesis is tailored
-for software-defined networks with OpenFlow switches, whose
+for software-defined networks comprised of 
+OpenFlow~\cite{openflow} switches, whose
 forwarding tables can be directly programmed to specify the next-hop
 switch for different classes of traffic based on the paths provided
-by \genesis. \name's algirthms are catered for legacy control planes 
+by \genesis. \name's algorithms are catered for legacy control planes 
 running OSPF/BGP which lack the programmability of SDNs. \genesis also
-provides resilience in a different manner than \name. \genesis precomputes
-and install backup paths (using isolation policies) 
+provides resilience in a different manner than \name. \genesis precomputes and install backup paths (using isolation policies) 
 in the SDN dataplane, while \name synthesizes OSPF
-weights and static routes such that, the distributed protocols converge to a
-policy-compliant path even under failures. Unlike \genesis, which can provide
-resilience for arbitrary $k$-link failures, \name currently supports only $k=1$
-link failure scenarios.}
+weights and static routes such that, 
+the distributed protocols converge to a
+policy-compliant path even under failures. Unlike \genesis, which can provide resilience for arbitrary $k$-link failures, \name currently supports only $k=1$ link failure scenarios.}
 
 In the future, \name could use
 other policy language frameworks as a front-end (with 
