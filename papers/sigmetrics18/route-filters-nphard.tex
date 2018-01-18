@@ -14,7 +14,7 @@ minimum vertex cover problem. A set of
 vertices $VC \subseteq V$ is the vertex cover
 if $\forall (v_1, v_2) \in E. ~v_1 \in VC \vee v_2 \in VC$. 
 
-We now show how to construct a topology $T=(S,L)$ 
+We now show how to construct a topology $T=(R,L)$ 
 and a corresponding set of paths $\Pi$ that can be enforced 
 by configuration C which requires static routes $SR$ such that $|SR| \leq k$  
 if and only if the corresponding $VC(SR)$ is a vertex cover of 
@@ -23,7 +23,7 @@ the graph $G$ and $|VC(SR)| \leq k$.
 \paragraph{Construction.}
 For every vertex $v \in V$: add a vertex $r_v$.
 For every edge $(u,v) \in E$: add two vertices $s_{uv}$
-and $t_{uv}$ to $S$. Add edges
+and $t_{uv}$ to $R$. Add edges
 connecting $s_{uv} \rightarrow r_{u}$, $s_{uv} \rightarrow r_{v}$,
 $r_{u} \rightarrow t_{uv}$ and $r_{v} \rightarrow t_{uv}$. 
 \Cref{fig:rfcomplexity} illustrates this construction.

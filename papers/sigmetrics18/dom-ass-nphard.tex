@@ -17,8 +17,8 @@ such that for $\forall (u, v) \in E. C(u)
 	\begin{tikzpicture}[shorten >=0.5pt,node distance=1.5cm,on grid,auto,
 	square/.style={regular polygon,regular polygon sides=4}] 
 	\node[state] at (0,0) (s)  {$r_u$}; 
-	\node[state] at (2,-0.75) (v1)  {$d_1$}; 
-	\node[state] at (2,0.75) (u1)  {$d_2$};
+	\node[state] at (2,-0.75) (v1)  {$r_1$}; 
+	\node[state] at (2,0.75) (u1)  {$r_2$};
 	\node[state] at (4,0) (t) {$r_v$};
 	\path[->] 
 	(s) edge [red] node {} (v1)
@@ -35,22 +35,22 @@ such that for $\forall (u, v) \in E. C(u)
 Let us consider a network topology $T = (R,L)$. 
 For each $v \in V$, add a router $r_v \in R$. To
 ensure any domain assignment to the $r_v$'s is valid, we 
-add edges to connect every router. 
+add link to connect every router (each domain must be 
+contiguous).
 
-For every edge $(u, v) \in E$, we construct a
-$(u, v, \lambda_1, \lambda_2)$-$diamond$ (Section 6.2) %TODO
-as illustrated in \Cref{fig:domasscomplexity}. For every
-edge $(u, v) \in E$, we add $d_1, d_2$ to R, and add
-paths: $u \rightarrow d_1 \rightarrow v$ and 
- $u \rightarrow d_2 \rightarrow v$ to $\Pi$. 
+For every edge $(u, v) \in E$, we add $r_1, r_2$ to R, and add
+paths: $r_u \rightarrow r_1 \rightarrow r_v$ and 
+ $r_u \rightarrow r_2 \rightarrow r_v$ with different destinations
+ to $\Pi$. We can notice that these two paths form a diamond. 
  
 Suppose we find a domain assignment $\Theta$ 
-with $k$ domains such that number of static routes is zero. 
+with $k$ domains such that the number of 
+static routes used is zero. 
 Since, the count of static routes is 0, 
 for two routers $r_u, r_v$ which 
 have a diamond, $\Theta(r_u) \not= \Theta(r_v)$. This is
 because, if $\Theta(r_u) = \Theta(r_v)$, then atleast 
-one static route would be required to eliminate the diamond. 
+one static route would be required to eliminate the diamond (Lemma~\ref{lemma:diamond}). 
 Therefore, for every edge in $(u,v) \in E$, 
 the routers $r_u$ and $r_v$ belong to 
 different domains, therefore $u$ and $v$ have different colors. 
