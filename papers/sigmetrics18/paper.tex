@@ -1,5 +1,5 @@
-%\documentclass[format=acmsmall, review=false, screen=true]{acmart}
-\documentclass[sigconf]{acmart}
+\documentclass[format=acmsmall]{acmart}
+%\documentclass[sigconf]{acmart}
 
 %%% Some recommended packages.
 %\usepackage{booktabs}   %% For formal tables:
@@ -24,7 +24,7 @@
 \usepackage{algpseudocode}
 \usepackage{pifont,xspace}
 \usetikzlibrary{automata,positioning,shapes.geometric}
-\newcommand{\name}{Zeppelin\xspace}
+\newcommand{\name}{{\sc Zeppelin}\xspace}
 \newcommand{\Name}{\name}
 \newcommand{\genesis}{Genesis\xspace}
 \newcommand{\pushcode}[1][1]{\hskip\dimexpr#1\algorithmicindent\relax}
@@ -108,38 +108,13 @@
 
 \settopmatter{printacmref=false,printfolios=true}
 
-%\makeatletter\if@ACM@journal\makeatother
-%%% Journal information (used by PACMPL format)
-%%% Supplied to authors by publisher for camera-ready submission
-%\acmJournal{PACMPL}
-%\acmVolume{1}
-%\acmNumber{1}
-%\acmArticle{1}
-%\acmYear{2017}
-%\acmMonth{1}
-%\acmDOI{10.1145/nnnnnnn.nnnnnnn}
-%\startPage{1}
-%\else\makeatother
-%%% Conference information (used by SIGPLAN proceedings format)
-%%% Supplied to authors by publisher for camera-ready submission
-%\acmConference[PL'17]{ACM SIGPLAN Conference on Programming Languages}{January 01--03, 2017}{New York, NY, USA}
-%\acmYear{2017}
-%\acmISBN{978-x-xxxx-xxxx-x/YY/MM}
-%\acmDOI{10.1145/nnnnnnn.nnnnnnn}
-%\startPage{1}
-%\fi
 
-
-%% Copyright information
-%% Supplied to authors (based on authors' rights management selection;
-%% see authors.acm.org) by publisher for camera-ready submission
-%\setcopyright{none}             %% For review submission
 
 % \TODO : Uncomment
-% \setcopyright{acmcopyright}
-% \acmJournal{POMACS}
-% \acmYear{2018} \acmVolume{2} \acmNumber{1} \acmArticle{22} \acmMonth{3} \acmPrice{$15.00}
-% \acmDOI{10.1145/3179425}
+\setcopyright{acmcopyright}
+\acmJournal{POMACS}
+\acmYear{2018} \acmVolume{2} \acmNumber{1} \acmArticle{22} \acmMonth{3} \acmPrice{$15.00$}
+\acmDOI{10.1145/3179425}
 
 %% Bibliography style
 
@@ -147,7 +122,7 @@
 
 \begin{document}
 %% Title information
-\title{Synthesis of Fault-Tolerant Distributed Router Configurations}         %% [Short Title] is optional;
+\title{Synthesis of Fault-tolerant Distributed Router Configurations}         %% [Short Title] is optional;
                                         %% when present, will be used in
                                         %% header instead of Full Title.    
                                         %% can be repeated if necessary;
@@ -168,51 +143,58 @@
 %% Many elements are not rendered, but should be provided for metadata
 %% extraction tools.
 \author{Kausik Subramanian}
-\affiliation{
-\institution{University of Wisconsin-Madison}            %% \institution is required
-}
-\email{sskausik08@cs.wisc.edu}          %% \email is recommended
-
 \author{Loris D'Antoni}
-\affiliation{
-\institution{University of Wisconsin-Madison}            %% \institution is required
-}
-\email{loris@cs.wisc.edu}          %% \email is recommended
-
 \author{Aditya Akella}
 \affiliation{
-\institution{University of Wisconsin-Madison}   %% \institution is required
-}         
-\email{akella@cs.wisc.edu}          %% \email is recommended
+\institution{University of Wisconsin-Madison}            %% \institution is required
+\streetaddress{1210 W Dayton St}
+\city{Madison}
+\state{WI}
+\postcode{53706}
+\country{USA}
+}
+\email{sskausik08@cs.wisc.edu}          %% \email is recommended
+\email{loris@cs.wisc.edu}
+\email{akella@cs.wisc.edu}
+% \author{Loris D'Antoni}
+% \affiliation{
+% \institution{University of Wisconsin-Madison}            %% \institution is required
+% \streetaddress{1210 W Dayton St}
+% \city{Madison}
+% \state{WI}
+% \postcode{53706}
+% \country{USA}
+% }
+% \email{loris@cs.wisc.edu}          %% \email is recommended
+
+% \author{Aditya Akella}
+% \affiliation{
+% \institution{University of Wisconsin-Madison}   %% \institution is required
+% \streetaddress{1210 W Dayton St}
+% \city{Madison}
+% \state{WI}
+% \postcode{53706}
+% \country{USA}
+% }         
+% \email{akella@cs.wisc.edu}          %% \email is recommended
 
 
 \input{abstract}
 
-%%% 2012 ACM Computing Classification System (CSS) concepts
-%%% Generate at 'http://dl.acm.org/ccs/ccs.cfm'.
-%\begin{CCSXML}
-%<ccs2012>
-%<concept>
-%<concept_id>10011007.10011006.10011008</concept_id>
-%<concept_desc>Software and its engineering~General programming languages</concept_desc>
-%<concept_significance>500</concept_significance>
-%</concept>
-%<concept>
-%<concept_id>10003456.10003457.10003521.10003525</concept_id>
-%<concept_desc>Social and professional topics~History of programming languages</concept_desc>
-%<concept_significance>300</concept_significance>
-%</concept>
-%</ccs2012>
-%\end{CCSXML}
-%
-%\ccsdesc[500]{Software and its engineering~General programming languages}
-%\ccsdesc[300]{Social and professional topics~History of programming languages}
-%%% End of generated code
-%
-%
-%%% Keywords
-%%% comma separated list
-%\keywords{keyword1, keyword2, keyword3}  %% \keywords is optional
+%  \begin{CCSXML}
+% <ccs2012>
+% <concept>
+% <concept_id>10003033.10003083.10003098</concept_id>
+% <concept_desc>Networks~Network manageability</concept_desc>
+% <concept_significance>500</concept_significance>
+% </concept>
+% </ccs2012>
+% \end{CCSXML}
+
+% \ccsdesc[500]{Networks~Network manageability}
+
+\keywords{Zeppelin; Synthesis; Fault Tolerance; Network Management; Routing protocols;
+Hierarchical network control plane}
 
 
 %% \maketitle
@@ -222,6 +204,10 @@
 
 
 \maketitle
+
+% The default list of authors is too long for headers.
+\renewcommand{\shortauthors}{K. Subramanian et al.}
+
 \input{introduction}
 %\input{motivation}
 \input{example}

@@ -5,7 +5,7 @@ Many networks today have well-defined routing hierarchies to realize a variety o
 need for careful planning
 causes the hierarchical division to be painstaking and error-prone, and makes changes to  the hierarchies---e.g., to accommodate more hosts or new policies---difficult to implement.
 
-In such settings, Zeppelin can help by automating domain creation/restructuring. It can automatically find good routing domain hierarchies with increased resilience and policy compliance. We envision that operators will synthesize ``one-shot'' domain assignments for their changing input policies at coarse-grained timescales (days/weeks) when there are significant changes to their networks or policies; operators need not resynthesize these assignments for every low-level policy change.
+In such settings, Zeppelin can help by automating domain creation/restructuring. It can automatically find good routing domain hierarchies with increased resilience and policy compliance. We envision that operators will synthesize ``one-shot'' domain assignments for their changing input policies at coarse-grained timescales (days/weeks) when there are significant changes to their networks or policies; operators need not re-synthesize these assignments for every low-level policy change.
 
 
 In this section, we present an algorithm 
@@ -14,7 +14,7 @@ one that meets all configuration policies and increases
 connectivity-resilience by reducing the number of static routes.
 Note that a simple variant of this problem: 
 finding a domain assignment with
-zero static routes is NP-complete(~\Cref{thm:multidom}).
+zero static routes is NP-complete (\Cref{thm:multidom}).
 Therefore, we opt for a greedy
 stochastic search.
 \name uses Markov
