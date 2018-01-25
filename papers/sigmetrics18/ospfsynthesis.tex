@@ -1,5 +1,5 @@
 %!TEX root = paper.tex
-\section{From Policies to Connectivity-Resilient \\ Configurations}
+\section{From Policies to Connectivity-Resilient Configurations}
 \label{sec:config-synthesis}
 
 We now present an algorithm
@@ -110,7 +110,7 @@ configurations and then extend to
 
 
 
-\subsection{Synthesizing Path-compliant Intra-domain \\ Configurations} \label{sec:intra-synthesis}
+\subsection{Synthesizing Path-compliant Intra-domain Configurations} \label{sec:intra-synthesis}
 % To justify the complexity of the techniques 
 % we are going to present,
 % we show that
@@ -273,10 +273,10 @@ cannot be solved without static routes.
 			\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
 			square/.style={regular polygon,regular polygon sides=4}] 
 			\node[state] at (0,0) (s)  {$s$}; 
-			\node[state] at (1.3, 1) (v1)  {$r_1$}; 
-			\node[state] at (2.6, 0)(t) {$t$};
-			\node[state, rectangle] at (3.6, 0.75) (d1) {$\lambda_1$};
-			\node[state, rectangle] at (3.6, -0.75) (d2) {$\lambda_2$};
+			\node[state] at (2, 1) (v1)  {$r_1$}; 
+			\node[state] at (4, 0)(t) {$t$};
+			\node[state, rectangle] at (5.6, 0.75) (d1) {$\lambda_1$};
+			\node[state, rectangle] at (5.6, -0.75) (d2) {$\lambda_2$};
 			\path[->] 
 			(s) edge [red] node [black] {1} (v1)
 			edge [blue] node [above, black] {5} node [below, black] {$SR(\lambda_2)$} (t)
@@ -285,9 +285,10 @@ cannot be solved without static routes.
 			(t) edge [blue, dashed] node {} (d2);
 			\end{tikzpicture}
 	}
-	\compactcaption{Example illustrating the use of static routes.}
+	\caption{Example illustrating the use of static routes.}
 	\label{fig:srexample}
 \end{wrapfigure}
+
 Consider the paths in \Cref{fig:srexample} 
 between $s$ and $t$ for  
 $\lambda_1$ and $\lambda_2$. 

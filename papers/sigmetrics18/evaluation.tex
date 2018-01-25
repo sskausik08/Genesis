@@ -7,7 +7,7 @@
 		{\includegraphics[width=0.325\columnwidth]{figures/ospfwaypoint.eps}}
 		\subfloat[2-WC]
 		{\includegraphics[width=0.33\columnwidth]{figures/ospfwaypoint2.eps}}
-		\compactcaption{\label{fig:ospfend2end}
+		\caption{\label{fig:ospfend2end}
 			End-to-end synthesis time for waypoint policy workloads for varying 
 			number of paths and different number of waypoint sets.}
 	\end{center} 
@@ -93,7 +93,7 @@ The x-axis shows the paths $n * g$.
  %  	\vspace{-4mm}
  % 	\includegraphics[width=\columnwidth]{figures/ospfisolation.eps}
  % 	\vspace{-8pt}
- % 	\compactcaption{\label{fig:ospfisolation}
+ % 	\caption{\label{fig:ospfisolation}
  % 	 Synthesis time for reachability and isolation workloads.}
  % \end{figure}
  
@@ -139,7 +139,7 @@ that map each subnet to one of the waypoint sets.
 	%	{\includegraphics[width=0.33\columnwidth]{figures/ospfRF.eps}}
 	%	\subfloat[Endpoint Resilience]
 	%	{\includegraphics[width=0.32\columnwidth]{figures/ospfAvgRes.eps}}
-	\compactcaption{\label{fig:ospfres}
+	\caption{\label{fig:ospfres}
 		Policy-resilience scores of 2-WC, 1-WC, and PC synthesis 
 		for varying waypoint workloads.}
 \end{figure*}
@@ -177,7 +177,7 @@ configurations in  less than an hour.
 %				Waypoint & 40 & 7.85 & 0.3 & 7/100\\
 %			\end{tabular}
 %		\end{center}
-%		\compactcaption{Average synthesis time per class for waypoint policies with increasing number of waypoints. } \label{tab:waypointeval} 
+%		\caption{Average synthesis time per class for waypoint policies with increasing number of waypoints. } \label{tab:waypointeval} 
 %	\end{footnotesize}
 %\end{table} 
 
@@ -198,14 +198,13 @@ We measure the connectivity-resilience of the configurations
 generated using the algorithm PC on the reachability 
 workload described in
 Section~\ref{sec:ospfeval}. 
-% \begin{wrapfigure}{r}{0.43\columnwidth}
-% \vspace{-5.0mm}
-% 	\resizebox {0.44\columnwidth} {!} {
-% 		\includegraphics[width=0.44\columnwidth]{figures/ospfbaselineresilience.eps}
-% 	}
-% 	\caption{Connectivity-resilience: PC vs baseline.}
-% 	\label{fig:ospfresbaseline}
-% \end{wrapfigure}
+\begin{wrapfigure}{r}{0.33\columnwidth}
+	\resizebox {0.33\columnwidth} {!} {
+		\includegraphics[width=0.44\columnwidth]{figures/ospfbaselineresilience.eps}
+	}
+	\caption{Connectivity-resilience: PC vs baseline.}
+	\label{fig:ospfresbaseline}
+\end{wrapfigure}
 For our baseline, we use configurations 
 where paths 
 are enforced using only static routes and
@@ -253,21 +252,21 @@ the path given by \genesis to be the shortest one.
 \textbf{Q2:} 
 \textbf{\name can synthesize highly resilient configurations}.
 
-\begin{figure}
-\centering
-\begin{minipage}{.5\textwidth}
-  \centering
-  \includegraphics[width=.6\linewidth]{figures/ospfbaselineresilience.eps}
-  \captionof{figure}{Connectivity-resilience: PC vs baseline.}
-  \label{fig:ospfresbaseline}
-\end{minipage}%
-\begin{minipage}{.5\textwidth}
-  \centering
-  \includegraphics[width=.6\linewidth]{figures/ratioMCMC.eps}
-  \captionof{figure}{MCMC Evaluation for varying number of paths.}
-  \label{fig:mcmceval}
-\end{minipage}
-\end{figure}
+% \begin{figure}
+% \centering
+% \begin{minipage}{.5\textwidth}
+%   \centering
+%   \includegraphics[width=.6\linewidth]{figures/ospfbaselineresilience.eps}
+%   \captionof{figure}{Connectivity-resilience: PC vs baseline.}
+%   \label{fig:ospfresbaseline}
+% \end{minipage}%
+% \begin{minipage}{.5\textwidth}
+%   \centering
+%   \includegraphics[width=.6\linewidth]{figures/ratioMCMC.eps}
+%   \captionof{figure}{MCMC Evaluation for varying number of paths.}
+%   \label{fig:mcmceval}
+% \end{minipage}
+% \end{figure}
 
 \subsection{Dynamic Domain Assignment Performance} \label{sec:mcmceval}
 
@@ -277,13 +276,12 @@ the MCMC algorithm presented in \secref{sec:synth-dom-ass}
 can 
 generate configurations
 with higher resilience.
-% \begin{wrapfigure}{r}{0.25\columnwidth}
-% \vspace{-5.0mm}
-% 	\includegraphics[width=0.24\columnwidth]{figures/ratioMCMC.eps}
-% 	\vspace{-3mm}
-% 	\compactcaption{\label{fig:mcmceval}
-% 		MCMC Evaluation for varying number of paths.}
-% \end{wrapfigure} 
+\begin{wrapfigure}{r}{0.45\columnwidth}
+	\includegraphics[width=0.45\columnwidth]{figures/ratioMCMC.eps}
+	\vspace{-3mm}
+	\caption{\label{fig:mcmceval}
+		MCMC Evaluation for varying number of paths.}
+\end{wrapfigure} 
 We consider an 80 router fat-tree topology and run the MCMC sampling
 for 600s---i.e., more than 100,000 iterations---to minimize the
  cost function $max(sc, bc)$. Using this cost function, \name
@@ -331,8 +329,8 @@ authors of SyNET.
 	\small
 		\begin{minipage}{0.9\columnwidth}
 			\centering
-			\begin{tabular}{P{3.4em} P{2.8em} m{2.2em} m{3.1em} m{3.1em}} 
-			{\bf Topology}& {\bf \#Class} & {\bf SyNET} & {\bf \name} & {\bf Speedup} \\ 
+			\begin{tabular}{P{3.4em} P{3em} m{2.5em} m{3.5em} m{3.5em}} 
+			{\bf Topology}& {\bf \#Classes} & {\bf SyNET} & {\bf Zeppelin} & {\bf Speedup} \\ 
 				\hline
 				\multirow{3}{*}{Internet2}& 1 & \hfill 9.0s & \hfill 0.02s &  \hfill \textbf{450$\times$} \\
 				 & 5 & \hfill 21.3s &\hfill	0.03s &	\hfill\textbf{710$\times$} \\
@@ -343,7 +341,7 @@ authors of SyNET.
 				&  10 &  \hfill 39.9s	& \hfill 0.03s	& \hfill \textbf{1,330$\times$} \\ 
 			\end{tabular}
 		\end{minipage}
-		\compactcaption{
+		\caption{
 		Comparison of synthesis times of  
 			\name and SyNET for OSPF + Static route workloads.  }
 		\label{tab:synetcomparison}

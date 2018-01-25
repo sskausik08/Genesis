@@ -1,5 +1,5 @@
 %!TEX root = paper.tex
-\section{From Waypoint Policies to Policy-Resilient \\ Configurations}
+\section{From Waypoint Policies to Policy-Resilient Configurations}
 \label{sec:waypointres}
 
 \kausik{
@@ -158,14 +158,14 @@ W(r, r')+ D(r', R_\lambda, \waypt)
 \begin{figure}[!t] 
 	\centering
 	\subfloat[Waypoint-compliant edge weights]{
-		\resizebox {0.45\columnwidth} {!} {
+		\resizebox {0.4\columnwidth} {!} {
 			\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
 			square/.style={regular polygon,regular polygon sides=4}] 
 			\node[state] at (0,0) (s)  {$s$}; 
-			\node[state, fill=orange] at (1.5,1) (v1)  {$r_1$}; 
-			\node[state, fill=orange] at (1.5,-1) (v2)  {$r_2$}; 
-			\node[state] at (3, 0)(t) {$t$};
-			\node[state, rectangle] at (4, 0) (d1) {$\lambda$};
+			\node[state, fill=orange] at (2,1) (v1)  {$r_1$}; 
+			\node[state, fill=orange] at (2,-1) (v2)  {$r_2$}; 
+			\node[state] at (4, 0)(t) {$t$};
+			\node[state, rectangle] at (5.5, 0) (d1) {$\lambda$};
 			\path[->] 
 			(s) edge [red] node [black] {1} (v1)
 			(s) edge  node {1} (v2)
@@ -177,13 +177,13 @@ W(r, r')+ D(r', R_\lambda, \waypt)
 		}}
 		\hspace*{4mm}
 		\subfloat[Routing Loop]{
-			\raisebox{0.7cm}{\resizebox {0.45\columnwidth} {!} {
+			\raisebox{0.7cm}{\resizebox {0.4\columnwidth} {!} {
 					\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
 					square/.style={regular polygon,regular polygon sides=4}] 
 					\node[state] at (0,0) (s)  {$s$}; 
-					\node[state] at (1.5,1) (v1)  {$r_1$}; 
-					\node[state] at (3, 0)(t) {$t$};
-					\node[state, rectangle] at (4, 0) (d1) {$\lambda$};
+					\node[state] at (2,1) (v1)  {$r_1$}; 
+					\node[state] at (4, 0)(t) {$t$};
+					\node[state, rectangle] at (5.5, 0) (d1) {$\lambda$};
 					\path[->] 
 					(s) edge [red] node [black, sloped, anchor=center, above]
 					{$sr(\lambda)$} node
@@ -193,7 +193,7 @@ W(r, r')+ D(r', R_\lambda, \waypt)
 					(t) edge [red, dashed] node {} (d1);
 					\end{tikzpicture}
 				}}}
-				\compactcaption{Example of waypoint-compliant edge weights 
+				\caption{Example of waypoint-compliant edge weights 
 					and example of a routing loop caused by a static route.} \label{fig:ospfloop}
 \end{figure}
 
@@ -327,13 +327,14 @@ guaranteed to find $C$ with a given bound on number of static routes.
 % on different sets of paths.
 
 \begin{figure}[t]
-	\begin{minipage}{\columnwidth}
+\centering
+	\begin{minipage}{0.62\columnwidth}
 		\begin{algorithm}[H]
 			\begin{footnotesize} 
 				\caption{OSPF Waypoint Synthesis with Static Routes}
 				\label{alg:wayptunsat}
 				\begin{algorithmic}[1]
-					\Procedure{OSPF_W_SYNTH}{$\Pi$} 
+					\Procedure{OSPF$\_$W$\_$SYNTH}{$\Pi$} 
 					\State{$\Psi_D:$ Distance (\ref{eq:distance}) and non-waypoint distance constraints (\ref{eq:wdistance})}
 					\State{$\Psi_W:$ Waypoint constraints for $\Pi$ (\ref{eq:waypoint}) \label{line:waypoint}} 
 					\State{$\Psi_R = \emptyset :$ Routing Loop avoidance constraints (\ref{eq:rla})}
@@ -479,16 +480,16 @@ equate them to split the traffic.
  from $r_\alpha$ to $t$. 
  
 \begin{figure}
-\resizebox {0.75\columnwidth} {!} {
+\resizebox {0.6\columnwidth} {!} {
 	\begin{tikzpicture}[shorten >=0.5pt,node distance=,on grid,auto,
 	square/.style={regular polygon,regular polygon sides=4}] 
-	\node[state] at (-0.6,1.0) (v3)  {$r_3$}; 
+	\node[state] at (-0.5,1.2) (v3)  {$r_3$}; 
 	\node[state] at (-2,0) (s)  {$r_0$}; 
-	\node[state] at (-3.5,0) (src)  {$s$}; 
-	\node[state, fill=orange] at (0.8,0) (v1)  {$r_1$}; 
-	\node[state, fill=orange] at (-0.6,-1.0) (v2)  {$r_2$}; 
-	\node[state] at (2.4, 0)(t) {$t$};
-	\node[state, rectangle] at (3.4, 0) (d1) {$\lambda$};
+	\node[state] at (-4,0) (src)  {$s$}; 
+	\node[state, fill=orange] at (1,0) (v1)  {$r_1$}; 
+	\node[state, fill=orange] at (-0.5,-1.2) (v2)  {$r_2$}; 
+	\node[state] at (3, 0)(t) {$t$};
+	\node[state, rectangle] at (4.5, 0) (d1) {$\lambda$};
 	\path[->] 
 	(s) edge [red] node [black, above] {$sr(\lambda)$} 
 	node [black, below] {4} (v1)
@@ -501,7 +502,7 @@ equate them to split the traffic.
 	(v2) edge [red]  node [black, below] {3} (t)
 	(t) edge [red, dashed] node {} (d1);
 	\end{tikzpicture}}
-	\compactcaption{Example non-resilient configuration for the red paths provided by Genesis for $\waypt = \{r_1, r_2\}$. If link $r_1 \rightarrow t$ 
+	\caption{Example non-resilient configuration for the red paths provided by Genesis for $\waypt = \{r_1, r_2\}$. If link $r_1 \rightarrow t$ 
 		fails, a routing loop is formed at $r_0 \rightarrow r_1 \rightarrow r_3 \rightarrow r_0$, no traffic reaches $t$. 
 		The configuration is 1-resilient waypoint-compliant when the $s \rightarrow r_2$ weight is set to 1.}
 	\label{fig:ospfresexample}

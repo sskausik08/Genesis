@@ -1,19 +1,55 @@
-%!TEX root = paper.tex
-\begin{figure}
-\vspace{-2mm}
-\small
-\begin{minipage}{\columnwidth}
-	\begin{tabular}{m{6em}  m{21em} } 
+% %!TEX root = paper.tex
+
+% \begin{figure}
+% \vspace{-2mm}
+% \small
+% \begin{minipage}{\columnwidth}
+% 	\begin{tabular}{m{6em}  m{21em} } 
+% 		{\bf Policy} & {\bf Description} \\ 
+% 		\hline
+% 		Reachability & There is a path from router $s$ to router $t$ for subnet $\lambda$ \\ \hline
+% 		Reachability + \newline Waypoints & The path  from $s$ to $t$ for destination $\lambda$ 
+% 		traverses a set of waypoints\\ \hline
+% 		Isolation & Paths of two reachability policies do not share links \\ \hline
+% 		Traffic  Eng.  & Minimize total/max link utilization 
+% 	\end{tabular}
+% 	\end{minipage}
+% 	\vspace{-1mm}
+% \caption{\name path policy support}
+% 	\label{tab:policysupport}
+% \end{figure}
+
+
+\begin{figure*}
+\centering
+\footnotesize
+\subfloat[Path Policies]
+{
+		\begin{tabular}{m{6em}  m{12em} } 
+			{\bf Policy} & {\bf Description} \\ 
+			\hline
+			Reachability & There is a path from router $s$ to router $t$ for subnet $\lambda$ \\ \hline
+			Reachability + \newline Waypoints & The path  from $s$ to $t$ for destination $\lambda$ 
+			traverses a set of waypoints\\ \hline
+			Isolation & Paths of two reachability policies do not share links \\ \hline
+			Traffic  Eng.  & Minimize total/max link utilization 
+		\end{tabular}
+		\label{tab:policysupport}
+}
+\subfloat[Configuration Policies]
+{
+	\begin{tabular}{m{5.5em}  m{18.5em} } 
 		{\bf Policy} & {\bf Description} \\ 
 		\hline
-		Reachability & There is a path from router $s$ to router $t$ for subnet $\lambda$ \\ \hline
-		Reachability + \newline Waypoints & The path  from $s$ to $t$ for destination $\lambda$ 
-		traverses a set of waypoints\\ \hline
-		Isolation & Paths of two reachability policies do not share links \\ \hline
-		Traffic  Eng.  & Minimize total/max link utilization 
+		Count  & No. of OSPF domains: $c_1\leq N_D\leq c_2$  \\ \hline
+			Domain Size  & Limit number of routers in a domain: $l\leq ds\leq u$ \\ \hline
+			BGP Enable & Enable BGP on routers $B$ (hardware constraint) \\ \hline
+			Static Route ${sc}$ & Limit number of static routes: $sc < SC$ \\ \hline
+			BGP Config. Overhead $bc$ & Upper bound the number of local preference entries and iBGP filters $bc < BC$ \\ \hline
+			Cost Minimization & Minimize user-defined cost $expr(sc, bc)$
 	\end{tabular}
-	\end{minipage}
-	\vspace{-1mm}
-\compactcaption{\name path policy support}
-	\label{tab:policysupport}
-\end{figure}
+			\label{tab:configpolicysupport}
+}
+\caption{\name Policy Support 
+}
+\end{figure*}

@@ -324,7 +324,7 @@ ax1.plot(x, totTime, '#7570b3')
 
 ax1.fill_between(x, genesisTime, totTime, color='#7570b3', alpha='0.5', label="Zeppelin")
 ax1.fill_between(x, 0, genesisTime, color='#d95f02', alpha='0.5', label="Genesis")
-ax1.legend(loc='upper left')
+#ax1.legend(loc='upper left')
 
 #plt.legend(loc='best', frameon=False, fontsize=18)
 ax1.set_ylabel('Time (s)', fontsize=20)
