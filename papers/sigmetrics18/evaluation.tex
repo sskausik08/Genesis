@@ -323,7 +323,7 @@ When allowed to try different domain assignments,
 \label{sec:synet}
 SyNET~\cite{synet} is a network-wide configuration synthesis system 
 which supports multiple routing protocols (OSPF and BGP) and static 
-routes. In this section, we compare SyNET's performance with Zeppelin 
+routes. In this section, we compare SyNET's performance with \name 
 for OSPF + static route configuration synthesis workloads obtained from the 
 authors of SyNET.
 
@@ -345,7 +345,7 @@ authors of SyNET.
 		\end{minipage}
 		\compactcaption{
 		Comparison of synthesis times of  
-			Zeppelin and SyNET for OSPF + Static route workloads.  }
+			\name and SyNET for OSPF + Static route workloads.  }
 		\label{tab:synetcomparison}
 \end{figure}
 
@@ -368,11 +368,11 @@ add these static routes (and remove the corresponding constraints),
 and use the algorithm presented in 
 Section~\ref{sec:ospf} to find the OSPF weights.
 
-\Cref{tab:synetcomparison} shows Zeppelin outperforms SyNET 
+\Cref{tab:synetcomparison} shows \name outperforms SyNET 
 for all the workloads and topologies, achieving a best case 1,643$\times$
 speedup 
  for Internet2 topology with 10 traffic classes. 
- In each of these experiments, Zeppelin 
+ In each of these experiments, \name 
 invokes the LP solver once and does not need to add more static routes
 than specified in the input requirements, which matches with the SyNET 
 output (if more static routes were required, SyNET would have returned 

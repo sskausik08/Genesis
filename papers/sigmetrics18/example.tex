@@ -19,7 +19,7 @@ policies, we show how the control plane is synthesized using one of the solution
 	\includegraphics[width=0.75\columnwidth]{figures/example.pdf}
 	\compactcaption{Example demonstrating the two-phase synthesis approach. 
 	Genesis produces policy-compliant paths (red and blue), 
-	which are used as input by Zeppelin to
+	which are used as input by \name to
 	synthesize the OSPF and BGP configurations.}
 	\label{fig:example}
 \end{figure}
@@ -27,26 +27,26 @@ policies, we show how the control plane is synthesized using one of the solution
 \begin{itemize}
 	\item
 For traffic $A \rightarrow B$, the path is entirely inside
-a single OSPF domain, so Zeppelin has to find OSPF weights 
+a single OSPF domain, so \name has to find OSPF weights 
 such that the shortest path is $R_1 \rightarrow R_3 \rightarrow 
 R_2$. From the OSPF weights shown in \Cref{fig:example}, 
 we can see that the weight of path $R_1 
 \rightarrow R_3 \rightarrow R_2$ (2) is smaller than that of path
 $R_1 \rightarrow R_2$ (5). 
  	\item For traffic $A \rightarrow C$, the path traverses through 
- 	multiple domains, so Zeppelin configures BGP such that 
+ 	multiple domains, so \name configures BGP such that 
  	routing across domains follows the Genesis path. In this case, 
  	we need traffic to go through a longer path in terms of AS path
- 	length; Zeppelin sets $R_4$'s BGP local preference for route C
+ 	length; \name sets $R_4$'s BGP local preference for route C
  	from $R_5$ to a higher value (200), so that $R_5$ is 
  	preferred over $R_6$. 
- 	\item Zeppelin can find better control planes in terms of how 
+ 	\item \name can find better control planes in terms of how 
  	the network is split into domains. In this case,  
- 	Zeppelin will suggest moving $R_5$ to domain $D_1$. 
+ 	\name will suggest moving $R_5$ to domain $D_1$. 
  	This simplifies $R_4$'s BGP configuration as the local preference 
  	entry for C is not required. 
  	\item With a backup firewall at $R_8$, 
- 	Zeppelin automatically synthesizes resilient OSPF configurations
+ 	\name automatically synthesizes resilient OSPF configurations
           for $D_0$ such that if either $R_1-R_3$ or $R_3-R_2$ link
           fails, traffic to B goes through the firewall at $R_8$.
 \end{itemize}
