@@ -1,21 +1,19 @@
 %!TEX root = paper.tex
 \section{From Waypoint Policies to Policy-Resilient Configurations}
 \label{sec:waypointres}
-
-\kausik{
 The algorithm presented in the previous section generates configurations 
 which guarantees enforcement of complex policies under 
 no failure scenarios, and at the same time, achieves good
 connectivity-resilience by using fewer static routes.
 However, the generated configurations do not provide
-any guarantees as to whether the policies are complied when
+any guarantees as to whether the policies are satisfied when
 failures occur in the network.
 In this section, we present a different algorithm that, for a restricted set of policies,
 can synthesize configurations with high \emph{policy-resilience}.
 In particular, we focus on \emph{waypoint policies}
 which play a crucial role in enterprise and
 datacenter networks for security, performance,  
-and auditing.}
+and auditing.
 
 \subsection{Problem Setup}
 
@@ -86,7 +84,6 @@ which provides waypoint replication and
 
 
 \subsection{Intra-domain Policy-Resilient Waypoint Compliance}\label{sec:ospfwaypoint}
-\kausik{
 \genesis provides support for link-isolation, which can be used 
 in conjunction with the waypoint policy to generate multiple disjoint paths
 for a particular destination which are waypoint-compliant. For our case of 1-resilience, 
@@ -97,7 +94,7 @@ failure will not disable both these paths
 and we could guarantee policy-resilience by 
 ensuring that, under any link failure,
 traffic to $\lambda$ 
-traverses one of these two paths.}
+traverses one of these two paths.
 However, enforcing the control plane to 
 always route through one of the 
 two paths is difficult and overly 

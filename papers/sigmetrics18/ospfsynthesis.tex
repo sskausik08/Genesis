@@ -61,7 +61,7 @@ $\paths^C(PC) = \Pi$.
 %Ideally, we want to directly generate configurations that maximize 
 %connectivity resilience, but already generating policy-compliant configuration is
 %a hard problem.
-\kausik{In a software-defined OpenFlow~\cite{openflow} network, 
+In a software-defined OpenFlow~\cite{openflow} network, 
 we can program
 switch rules to forward traffic 
 to a particular next-hop switch. 
@@ -74,9 +74,9 @@ add a static route to $SR(\lambda)$ for every link $l$ in
 set of the paths $\Pi$. Similar to static routes,
 Fibbing~\cite{fibbing} used fake 
 advertisements to achieve fine-grained control over
-OSPF forwarding.}
+OSPF forwarding.
 
-\kausik{
+
 Under no failures, the trivial 
 solution of using static routes ensures 
 policy-compliance, as traffic follows the paths provided by \genesis. 
@@ -87,7 +87,7 @@ unreachable, hence reducing connectivity-resilience.
 Thus, we set our goal to synthesizing configurations
 which are policy-compliant when there are no network 
 failures, and improving connectivity-resilience by using
-fewer static routes.}
+fewer static routes.
 
 
 % In the following sections, we assume we are given paths that are compliant to 

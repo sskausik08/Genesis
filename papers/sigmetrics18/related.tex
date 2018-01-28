@@ -42,13 +42,12 @@ Propane is suited to specify preferences on paths and
 peering policies among different autonomous systems. Propane
 translates policies to a graph-based intermediate representation,
 which is then compiled to device-level BGP configurations. 
-\kausik{
 The automata-based compilation and resilience algorithms for Propane 
 are tailored for its underlying technology (BGP configurations with support for 
 local preferences, MEDs and communities), in contrast to our LP-based
 algorithms which synthesize hierarchical BGP, OSPF and 
 static routing configurations which have
-a different forwarding model than BGP.}
+a different forwarding model than BGP.
 
 
 SyNET~\cite{synet} tackles network-wide configuration synthesis
@@ -67,16 +66,15 @@ Moreover, SyNET's approach
 does not deal with resilience, a key aspect we tackle in this paper,
 and SyNET does not attempt to minimize the number of static routes,
 which can cause undesirable behaviors like routing loops.  
-\kausik{
 Finally, SyNET supports routers that run both OSPF and BGP protocols and can be
 configured with static routes, which does not fit naturally into a
 hierarchical structure where some routers only run OSPF and not
 BGP. In contrast, our stochastic MCMC algorithm can look for dynamic domain
 assignments with constraints on OSPF domain sizes, lower 
-BGP configuration complexity and higher resilience.}
+BGP configuration complexity and higher resilience.
 
 \minisection{Policy languages} 
-\kausik{\name uses the \genesis~\cite{genesis} framework
+\name uses the \genesis~\cite{genesis} framework
 to synthesize paths which comply with reachability, 
 waypoint and isolation policies. \genesis is tailored
 for software-defined networks comprising of 
@@ -92,7 +90,7 @@ weights and static routes such that,
 the distributed protocols converge to a
 policy-compliant path even under failures. 
 Unlike \genesis, which can provide resilience for arbitrary $k$-link failures, 
-\name currently supports only $k=1$ link failure scenarios.}
+\name currently supports only $k=1$ link failure scenarios.
 
 In the future, \name could use
 other policy language frameworks as a front-end (with 
