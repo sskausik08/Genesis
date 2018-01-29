@@ -1,4 +1,4 @@
-\documentclass[format=acmsmall]{acmart}
+\documentclass[format=acmsmall, printccs]{acmart}
 %\documentclass[sigconf]{acmart}
 
 %%% Some recommended packages.
@@ -106,7 +106,7 @@
 
 \setlength{\textfloatsep}{6pt}
 
-\settopmatter{printacmref=false,printfolios=true}
+%\settopmatter{printacmref=true,printfolios=true}
 
 
 
@@ -122,7 +122,7 @@
 
 \begin{document}
 %% Title information
-\title{Synthesis of Fault-tolerant Distributed Router Configurations}         %% [Short Title] is optional;
+\title{Synthesis of Fault-Tolerant Distributed Router Configurations}         %% [Short Title] is optional;
                                         %% when present, will be used in
                                         %% header instead of Full Title.    
                                         %% can be repeated if necessary;
@@ -178,23 +178,30 @@
 % }         
 % \email{akella@cs.wisc.edu}          %% \email is recommended
 
+ \begin{CCSXML}
+<ccs2012>
+<concept>
+<concept_id>10003033.10003083.10003098</concept_id>
+<concept_desc>Networks~Network manageability</concept_desc>
+<concept_significance>500</concept_significance>
+</concept>
+</ccs2012>
+<concept>
+<concept_id>10003033.10003039.10003045.10003046</concept_id>
+<concept_desc>Networks~Routing protocols</concept_desc>
+<concept_significance>500</concept_significance>
+</concept>
+\end{CCSXML}
 
-\input{abstract}
-
-%  \begin{CCSXML}
-% <ccs2012>
-% <concept>
-% <concept_id>10003033.10003083.10003098</concept_id>
-% <concept_desc>Networks~Network manageability</concept_desc>
-% <concept_significance>500</concept_significance>
-% </concept>
-% </ccs2012>
-% \end{CCSXML}
-
-% \ccsdesc[500]{Networks~Network manageability}
+\ccsdesc[500]{Networks~Network manageability}
+\ccsdesc[500]{Networks~Routing protocols}
 
 \keywords{Zeppelin; Synthesis; Fault Tolerance; Network Management; Routing protocols;
 Hierarchical network control plane}
+
+\input{abstract}
+
+
 
 
 %% \maketitle

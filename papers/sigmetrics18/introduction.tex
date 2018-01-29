@@ -75,7 +75,7 @@ synthesis, is to use
 %% By bringing ideas from program synthesis approaches, one could try to 
 %% synthesize configurations using 
 Satisfiability Modulo Theories (SMT) solvers to automatically search
-the space of distributed configurations for a suitable ``solution'' --
+the space of distributed configurations for a suitable ``solution''---
 i.e., concrete router configurations that satisfy input policies and
 the aforementioned four requirements. SMT solvers provide support for
 constraint solving for propositional logic (SAT) and linear rational
@@ -116,7 +116,7 @@ compliant with given policies, such as, waypoints and isolation.
 \name then generates intra-domain (shortest-path OSPF) and
 inter-domain (BGP) router configurations that induce the forwarding
 state synthesized by \genesis\ {\em and} provide high resilience. \name 
-is catered for moderate-sized enterprises and multi-tenant datacenters 
+caters for moderate-sized enterprises and multi-tenant datacenters 
 which require support for diverse policies.
 
 We consider three settings with progressively more complex policies
@@ -127,9 +127,10 @@ policy-compliant solutions.
 First, we consider a setting in which the operator of a hierarchically
 structured network wants to enforce a large diverse set of complex
 policies (waypoint traversal, isolation, traffic engineering, etc).
-The operator also requires a simple notion of
-\emph{connectivity-resilience} to guarantee that, under most common
-link failures, packets can still reach their destination.  In this
+The operator also desires a simple notion of
+\emph{connectivity-resilience}---i.e., under most common
+link failures, even if operator-specified policies (like waypoints)
+are not enforced, majority of packets can still reach their destination.  In this
 case, \name synthesizes OSPF configurations using linear constraint
 solving to compute link weights, and uses the unsatisfiable cores of
 failed solving attempts to judiciously place a small number of static
@@ -138,19 +139,20 @@ mapping (i.e., which router belongs to what domain) and the paths.
 Using these techniques, \name can generate configurations that are
 $10\%$ more resilient than configurations that only use static routes.
 
-Second, we consider a setting in which the operator wants to guarantee
-that, for common link failures, the resulting configuration is
-policy-compliant.  We call this notion \emph{policy-resilience}.
+Second, we consider a setting in which the operator wants to generate
+configurations which reduce the number of policy violations occurring
+under common link failure scenarios. We call this notion \emph{policy-resilience}.
 Since synthesizing policy-resilient configuration is very difficult in
 the general case, we focus on a {\rm restricted class} of policies:
 for traffic class (src-dst subnet pair), we allow the operator to
 specify a set of waypoints that packets must traverse before reaching
-their destination.  We modify our linear constraints to guarantee that
+their destination.  We modify our linear constraints to ensure that
 at least two paths that traverse the waypoints have path cost (e.g.,
 OSPF path cost) lower than any path not going through a waypoint, thus
 providing 1-resilience under failure. Using this, \name can generate
 configurations that are $140\%$ more policy-resilient than
-configurations generated with our first technique.
+configurations generated with our first technique (i.e., reduces
+policy violations under failures by 140\%).
 
 Finally, we consider a setting where the operator can specify bounds
 on the number and sizes of domains her control plane is organized
