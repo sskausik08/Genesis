@@ -263,10 +263,6 @@ $W$ satisfies constraints (\ref{eq:distance}) and (\ref{eq:unique}).
 \subsubsection{Intra-domain Synthesis with Static Routes} \label{sec:ospfsr} 
 \hspace*{4mm}
 
-If the system of equations presented in Section~\ref{sec:ospf} admits a solution, 
-the values of the $W(s,t)$ variables are the weights we are trying to synthesize,
-otherwise the intra-domain synthesis problem 
-cannot be solved without static routes.
 
 \begin{wrapfigure}{r}{0.4\columnwidth}
 	\resizebox {0.4\columnwidth} {!} {
@@ -289,6 +285,10 @@ cannot be solved without static routes.
 	\label{fig:srexample}
 \end{wrapfigure}
 
+If the system of equations presented in Section~\ref{sec:ospf} admits a solution, 
+the values of the $W(s,t)$ variables are the weights we are trying to synthesize,
+otherwise the intra-domain synthesis problem 
+cannot be solved without static routes.
 Consider the paths in \Cref{fig:srexample} 
 between $s$ and $t$ for  
 $\lambda_1$ and $\lambda_2$. 

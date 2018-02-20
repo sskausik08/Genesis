@@ -880,7 +880,7 @@ Computing Machinery]
   \@ACM@screentrue
   \PackageInfo{\@classname}{Using screen mode due to \@journalCode}%
 \or % POMACS
-  \def\@journalName{Proceedings of the ACM on Measurement and Analysis of Computing Systems}%
+  \def\@journalName{Proc. ACM Meas. Anal. Comput. Syst.}%
   \def\@journalNameShort{Proc. ACM Meas. Anal. Comput. Syst.}%
   \def\@permissionCodeOne{2476-1249}%
   \@ACM@screentrue

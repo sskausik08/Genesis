@@ -33,7 +33,7 @@ Hierarchical control planes partition the
 network into multiple connected components called domains. 
 We define a router domain assignment function
 $\Theta: V \mapsto \nat$ which maps each router to a domain 
-(denoted by a number). In this paper, we assume 
+(denoted by a number). We assume 
 each domain uses OSPF as the intra-domain routing protocol
 and BGP as the inter-domain routing protocol. We summarize
 the notations in \Cref{tab:zeppelinconfig}. 
@@ -183,7 +183,7 @@ SR(r, \lambda) & \text{if } SR(r, \lambda) \not= \emptyset, \\
 %\]
 
 \minisection{Induced paths}
-In the following, we assume a finite set of packet classes $PC = \{0, \ldots, C_{pc}\}$ 
+We assume a finite set of packet classes $PC = \{0, \ldots, C_{pc}\}$ 
 and map each reachability
 policy that requires the existence of a path between two endpoints
 to a unique integer in $PC$. The rest of the policies specify 

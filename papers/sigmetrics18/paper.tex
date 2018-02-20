@@ -1,4 +1,4 @@
-\documentclass[format=acmsmall, printccs]{acmart}
+\documentclass[format=acmsmall, screen=true, printccs]{acmart}
 %\documentclass[sigconf]{acmart}
 
 %%% Some recommended packages.
@@ -9,7 +9,7 @@
 \newif\iffull
 \fullfalse
 
-\usepackage{mathptmx}
+
 \usepackage{graphicx}
 \usepackage{mathtools}
 \usepackage{amsmath}
@@ -48,7 +48,6 @@
 	}}
 	
 
-\usepackage{times}
 \usepackage[font=small]{caption}
 %\usepackage{subcaption}
 \usepackage{enumitem}
@@ -74,12 +73,12 @@
 \usepackage{wrapfig}
 \usepackage{array,ragged2e}
 \input{defs}
-\usepackage[medium, compact]{titlesec}
+%\usepackage[medium, compact]{titlesec}
 %\usepackage[font={bf,small}]{caption}
 %\usepackage{titlesec}
-\titlespacing*{\section}{1pt}{3.5pt}{2pt}
-\titlespacing*{\subsection}{1pt}{3pt}{1.5pt}
-\titlespacing*{\subsubsection}{1pt}{3pt}{1.5pt}
+% \titlespacing*{\section}{1pt}{3.5pt}{2pt}
+% \titlespacing*{\subsection}{1pt}{3pt}{1.5pt}
+% \titlespacing*{\subsubsection}{1pt}{3pt}{1.5pt}
 %\newtheorem{example}{Example}
 %\newtheorem{theorem}{Theorem}[section]
 %\newtheorem{lemma}{Lemma}[section]
@@ -108,7 +107,7 @@
 
 %\settopmatter{printacmref=true,printfolios=true}
 
-
+\renewcommand{\textrightarrow}{$\rightarrow$}
 
 % \TODO : Uncomment
 \setcopyright{acmcopyright}
