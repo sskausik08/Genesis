@@ -1,0 +1,82 @@
+This is BibTeX, Version 0.99d (TeX Live 2017)
+Capacity: max_strings=100000, hash_size=100000, hash_prime=85009
+The top-level auxiliary file: abstract.aux
+The style file: ACM-Reference-Format.bst
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+Reallocated wiz_functions (elt_size=4) to 6000 items from 3000.
+Database file #1: references.bib
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+Reallocated glb_str_ptr (elt_size=4) to 20 items from 10.
+Reallocated global_strs (elt_size=20001) to 20 items from 10.
+Reallocated glb_str_end (elt_size=4) to 20 items from 10.
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+Warning--empty publisher in hasdn
+Warning--empty address in hasdn
+Warning--page numbers missing in both pages and numpages fields in hasdn
+Warning--numpages field, but no articleno or eid field, in netkat
+Warning--empty publisher in propane
+Warning--empty address in propane
+Warning--page numbers missing in both pages and numpages fields in propane
+Warning--numpages field, but no articleno or eid field, in complexity:nsdi09
+Warning--numpages field, but no articleno or eid field, in complexity:sigcomm11
+Warning--empty publisher in synet
+Warning--empty address in synet
+Warning--page numbers missing in both pages and numpages fields in synet
+Warning--empty publisher in mpa-imc15
+Warning--empty address in mpa-imc15
+Warning--page numbers missing in both pages and numpages fields in mpa-imc15
+Warning--empty publisher in sol
+Warning--empty address in sol
+Warning--empty publisher in bgpmisconfig
+Warning--empty address in bgpmisconfig
+Warning--page numbers missing in both pages and numpages fields in bgpmisconfig
+Warning--numpages field, but no articleno or eid field, in routingdesign
+Warning--numpages field, but no articleno or eid field, in simple
+Warning--empty publisher in fattire
+Warning--empty address in fattire
+Warning--numpages field, but no articleno or eid field, in merlin
+Warning--empty publisher in genesis
+Warning--empty address in genesis
+Warning--page numbers missing in both pages and numpages fields in genesis
+You've used 17 entries,
+            5732 wiz_defined-function locations,
+            1421 strings with 18639 characters,
+and the built_in function-call counts, 21118 in all, are:
+= -- 2174
+> -- 936
+< -- 1
++ -- 313
+- -- 296
+* -- 1706
+:= -- 2214
+add.period$ -- 81
+call.type$ -- 17
+change.case$ -- 140
+chr.to.int$ -- 17
+cite$ -- 45
+duplicate$ -- 1921
+empty$ -- 1334
+format.name$ -- 364
+if$ -- 4825
+int.to.chr$ -- 2
+int.to.str$ -- 1
+missing$ -- 77
+newline$ -- 193
+num.names$ -- 136
+pop$ -- 787
+preamble$ -- 1
+purify$ -- 293
+quote$ -- 0
+skip$ -- 672
+stack$ -- 0
+substring$ -- 1409
+swap$ -- 177
+text.length$ -- 1
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 496
+warning$ -- 28
+while$ -- 96
+width$ -- 0
+write$ -- 365
+(There were 28 warnings)

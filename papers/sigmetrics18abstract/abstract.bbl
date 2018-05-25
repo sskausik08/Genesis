@@ -1,0 +1,298 @@
+%%% -*-BibTeX-*-
+%%% Do NOT edit. File created by BibTeX with style
+%%% ACM-Reference-Format-Journals [18-Jan-2012].
+
+\begin{thebibliography}{17}
+
+%%% ====================================================================
+%%% NOTE TO THE USER: you can override these defaults by providing
+%%% customized versions of any of these macros before the \bibliography
+%%% command.  Each of them MUST provide its own final punctuation,
+%%% except for \shownote{}, \showDOI{}, and \showURL{}.  The latter two
+%%% do not use final punctuation, in order to avoid confusing it with
+%%% the Web address.
+%%%
+%%% To suppress output of a particular field, define its macro to expand
+%%% to an empty string, or better, \unskip, like this:
+%%%
+%%% \newcommand{\showDOI}[1]{\unskip}   % LaTeX syntax
+%%%
+%%% \def \showDOI #1{\unskip}           % plain TeX syntax
+%%%
+%%% ====================================================================
+
+\ifx \showCODEN    \undefined \def \showCODEN     #1{\unskip}     \fi
+\ifx \showDOI      \undefined \def \showDOI       #1{#1}\fi
+\ifx \showISBNx    \undefined \def \showISBNx     #1{\unskip}     \fi
+\ifx \showISBNxiii \undefined \def \showISBNxiii  #1{\unskip}     \fi
+\ifx \showISSN     \undefined \def \showISSN      #1{\unskip}     \fi
+\ifx \showLCCN     \undefined \def \showLCCN      #1{\unskip}     \fi
+\ifx \shownote     \undefined \def \shownote      #1{#1}          \fi
+\ifx \showarticletitle \undefined \def \showarticletitle #1{#1}   \fi
+\ifx \showURL      \undefined \def \showURL       {\relax}        \fi
+% The following commands are used for tagged output and should be
+% invisible to TeX
+\providecommand\bibfield[2]{#2}
+\providecommand\bibinfo[2]{#2}
+\providecommand\natexlab[1]{#1}
+\providecommand\showeprint[2][]{arXiv:#2}
+
+\bibitem[\protect\citeauthoryear{Akella and Krishnamurthy}{Akella and
+  Krishnamurthy}{2014}]%
+        {hasdn}
+\bibfield{author}{\bibinfo{person}{Aditya Akella} {and} \bibinfo{person}{Arvind
+  Krishnamurthy}.} \bibinfo{year}{2014}\natexlab{}.
+\newblock \showarticletitle{A Highly Available Software Defined Fabric}. In
+  \bibinfo{booktitle}{\emph{HotNets}}.
+\newblock
+
+
+\bibitem[\protect\citeauthoryear{Anderson, Foster, Guha, Jeannin, Kozen,
+  Schlesinger, and Walker}{Anderson et~al\mbox{.}}{2014}]%
+        {netkat}
+\bibfield{author}{\bibinfo{person}{Carolyn~Jane Anderson},
+  \bibinfo{person}{Nate Foster}, \bibinfo{person}{Arjun Guha},
+  \bibinfo{person}{Jean-Baptiste Jeannin}, \bibinfo{person}{Dexter Kozen},
+  \bibinfo{person}{Cole Schlesinger}, {and} \bibinfo{person}{David Walker}.}
+  \bibinfo{year}{2014}\natexlab{}.
+\newblock \showarticletitle{NetKAT: Semantic Foundations for Networks}. In
+  \bibinfo{booktitle}{\emph{Proceedings of the 41st ACM SIGPLAN-SIGACT
+  Symposium on Principles of Programming Languages}}
+  \emph{(\bibinfo{series}{POPL '14})}. \bibinfo{publisher}{ACM},
+  \bibinfo{address}{New York, NY, USA}, \bibinfo{pages}{113--126}.
+\newblock
+\showISBNx{978-1-4503-2544-8}
+\urldef\tempurl%
+\url{https://doi.org/10.1145/2535838.2535862}
+\showDOI{\tempurl}
+
+
+\bibitem[\protect\citeauthoryear{Beckett, Mahajan, Millstein, Padhye, and
+  Walker}{Beckett et~al\mbox{.}}{2016}]%
+        {propane}
+\bibfield{author}{\bibinfo{person}{Ryan Beckett}, \bibinfo{person}{Ratul
+  Mahajan}, \bibinfo{person}{Todd Millstein}, \bibinfo{person}{Jitu Padhye},
+  {and} \bibinfo{person}{David Walker}.} \bibinfo{year}{2016}\natexlab{}.
+\newblock \showarticletitle{Don't Mind the Gap: Bridging Network-wide
+  Objectives and Device-level Configurations}. In
+  \bibinfo{booktitle}{\emph{Proceedings of the ACM SIGCOMM 2016 Conference on
+  SIGCOMM}} \emph{(\bibinfo{series}{SIGCOMM '16})}.
+\newblock
+
+
+\bibitem[\protect\citeauthoryear{Benson, Akella, and Maltz}{Benson
+  et~al\mbox{.}}{2009}]%
+        {complexity:nsdi09}
+\bibfield{author}{\bibinfo{person}{Theophilus Benson}, \bibinfo{person}{Aditya
+  Akella}, {and} \bibinfo{person}{David Maltz}.}
+  \bibinfo{year}{2009}\natexlab{}.
+\newblock \showarticletitle{Unraveling the Complexity of Network Management}.
+  In \bibinfo{booktitle}{\emph{Proceedings of the 6th USENIX Symposium on
+  Networked Systems Design and Implementation}}
+  \emph{(\bibinfo{series}{NSDI'09})}. \bibinfo{publisher}{USENIX Association},
+  \bibinfo{address}{Berkeley, CA, USA}, \bibinfo{pages}{335--348}.
+\newblock
+\urldef\tempurl%
+\url{http://dl.acm.org/citation.cfm?id=1558977.1559000}
+\showURL{%
+\tempurl}
+
+
+\bibitem[\protect\citeauthoryear{Benson, Akella, and Shaikh}{Benson
+  et~al\mbox{.}}{2011}]%
+        {complexity:sigcomm11}
+\bibfield{author}{\bibinfo{person}{Theophilus Benson}, \bibinfo{person}{Aditya
+  Akella}, {and} \bibinfo{person}{Aman Shaikh}.}
+  \bibinfo{year}{2011}\natexlab{}.
+\newblock \showarticletitle{Demystifying Configuration Challenges and
+  Trade-offs in Network-based ISP Services}. In
+  \bibinfo{booktitle}{\emph{Proceedings of the ACM SIGCOMM 2011 Conference}}
+  \emph{(\bibinfo{series}{SIGCOMM '11})}. \bibinfo{publisher}{ACM},
+  \bibinfo{address}{New York, NY, USA}, \bibinfo{pages}{302--313}.
+\newblock
+\showISBNx{978-1-4503-0797-0}
+\urldef\tempurl%
+\url{https://doi.org/10.1145/2018436.2018471}
+\showDOI{\tempurl}
+
+
+\bibitem[\protect\citeauthoryear{El-Hassany, Tsankov, Vanbever, and
+  Vechev}{El-Hassany et~al\mbox{.}}{2017}]%
+        {synet}
+\bibfield{author}{\bibinfo{person}{Ahmed El-Hassany}, \bibinfo{person}{Petar
+  Tsankov}, \bibinfo{person}{Laurent Vanbever}, {and} \bibinfo{person}{Martin
+  Vechev}.} \bibinfo{year}{2017}\natexlab{}.
+\newblock \showarticletitle{Network-wide Configuration Synthesis}. In
+  \bibinfo{booktitle}{\emph{29th International Conference on Computer Aided
+  Verification, Heidelberg, Germany, 2017}} \emph{(\bibinfo{series}{CAV'17})}.
+\newblock
+
+
+\bibitem[\protect\citeauthoryear{Gember-Jacobson, Wu, Li, Akella, and
+  Mahajan}{Gember-Jacobson et~al\mbox{.}}{2015}]%
+        {mpa-imc15}
+\bibfield{author}{\bibinfo{person}{Aaron Gember-Jacobson},
+  \bibinfo{person}{Wenfei Wu}, \bibinfo{person}{Xiujun Li},
+  \bibinfo{person}{Aditya Akella}, {and} \bibinfo{person}{Ratul Mahajan}.}
+  \bibinfo{year}{2015}\natexlab{}.
+\newblock \showarticletitle{Management Plane Analytics}. In
+  \bibinfo{booktitle}{\emph{IMC}}.
+\newblock
+
+
+\bibitem[\protect\citeauthoryear{Heorhiadi, Reiter, and Sekar}{Heorhiadi
+  et~al\mbox{.}}{2016}]%
+        {sol}
+\bibfield{author}{\bibinfo{person}{Victor Heorhiadi},
+  \bibinfo{person}{Michael~K Reiter}, {and} \bibinfo{person}{Vyas Sekar}.}
+  \bibinfo{year}{2016}\natexlab{}.
+\newblock \showarticletitle{Simplifying software-defined network optimization
+  using SOL}. In \bibinfo{booktitle}{\emph{13th USENIX Symposium on Networked
+  Systems Design and Implementation (NSDI 16)}}. \bibinfo{pages}{223--237}.
+\newblock
+
+
+\bibitem[\protect\citeauthoryear{Mahajan, Wetherall, and Anderson}{Mahajan
+  et~al\mbox{.}}{2002}]%
+        {bgpmisconfig}
+\bibfield{author}{\bibinfo{person}{Ratul Mahajan}, \bibinfo{person}{David
+  Wetherall}, {and} \bibinfo{person}{Thomas~E. Anderson}.}
+  \bibinfo{year}{2002}\natexlab{}.
+\newblock \showarticletitle{Understanding {BGP} misconfiguration}. In
+  \bibinfo{booktitle}{\emph{SIGCOMM}}.
+\newblock
+
+
+\bibitem[\protect\citeauthoryear{Maltz, Xie, Zhan, Zhang, Hj\'{a}lmt\'{y}sson,
+  and Greenberg}{Maltz et~al\mbox{.}}{2004}]%
+        {routingdesign}
+\bibfield{author}{\bibinfo{person}{David~A. Maltz}, \bibinfo{person}{Geoffrey
+  Xie}, \bibinfo{person}{Jibin Zhan}, \bibinfo{person}{Hui Zhang},
+  \bibinfo{person}{G\'{\i}sli Hj\'{a}lmt\'{y}sson}, {and}
+  \bibinfo{person}{Albert Greenberg}.} \bibinfo{year}{2004}\natexlab{}.
+\newblock \showarticletitle{Routing Design in Operational Networks: A Look from
+  the Inside}. In \bibinfo{booktitle}{\emph{Proceedings of the 2004 Conference
+  on Applications, Technologies, Architectures, and Protocols for Computer
+  Communications}} \emph{(\bibinfo{series}{SIGCOMM '04})}.
+  \bibinfo{publisher}{ACM}, \bibinfo{address}{New York, NY, USA},
+  \bibinfo{pages}{27--40}.
+\newblock
+\showISBNx{1-58113-862-8}
+\urldef\tempurl%
+\url{https://doi.org/10.1145/1015467.1015472}
+\showDOI{\tempurl}
+
+
+\bibitem[\protect\citeauthoryear{Qazi, Tu, Chiang, Miao, Sekar, and Yu}{Qazi
+  et~al\mbox{.}}{2013}]%
+        {simple}
+\bibfield{author}{\bibinfo{person}{Zafar~Ayyub Qazi},
+  \bibinfo{person}{Cheng-Chun Tu}, \bibinfo{person}{Luis Chiang},
+  \bibinfo{person}{Rui Miao}, \bibinfo{person}{Vyas Sekar}, {and}
+  \bibinfo{person}{Minlan Yu}.} \bibinfo{year}{2013}\natexlab{}.
+\newblock \showarticletitle{SIMPLE-fying Middlebox Policy Enforcement Using
+  {SDN}}. In \bibinfo{booktitle}{\emph{Proceedings of the ACM SIGCOMM 2013
+  Conference on SIGCOMM}} \emph{(\bibinfo{series}{SIGCOMM '13})}.
+  \bibinfo{publisher}{ACM}, \bibinfo{address}{New York, NY, USA},
+  \bibinfo{pages}{27--38}.
+\newblock
+\showISBNx{978-1-4503-2056-6}
+\urldef\tempurl%
+\url{https://doi.org/10.1145/2486001.2486022}
+\showDOI{\tempurl}
+
+
+\bibitem[\protect\citeauthoryear{Reitblatt, Canini, Guha, and Foster}{Reitblatt
+  et~al\mbox{.}}{2013}]%
+        {fattire}
+\bibfield{author}{\bibinfo{person}{Mark Reitblatt}, \bibinfo{person}{Marco
+  Canini}, \bibinfo{person}{Arjun Guha}, {and} \bibinfo{person}{Nate Foster}.}
+  \bibinfo{year}{2013}\natexlab{}.
+\newblock \showarticletitle{Fattire: Declarative fault tolerance for
+  software-defined networks}. In \bibinfo{booktitle}{\emph{Proceedings of the
+  second ACM SIGCOMM workshop on Hot topics in software defined networking}}.
+  ACM, \bibinfo{pages}{109--114}.
+\newblock
+
+
+\bibitem[\protect\citeauthoryear{Soul{\'e}, Basu, Marandi, Pedone, Kleinberg,
+  Sirer, and Foster}{Soul{\'e} et~al\mbox{.}}{2014}]%
+        {merlin}
+\bibfield{author}{\bibinfo{person}{Robert Soul{\'e}},
+  \bibinfo{person}{Shrutarshi Basu}, \bibinfo{person}{Parisa~Jalili Marandi},
+  \bibinfo{person}{Fernando Pedone}, \bibinfo{person}{Robert Kleinberg},
+  \bibinfo{person}{Emin~Gun Sirer}, {and} \bibinfo{person}{Nate Foster}.}
+  \bibinfo{year}{2014}\natexlab{}.
+\newblock \showarticletitle{Merlin: A Language for Provisioning Network
+  Resources}. In \bibinfo{booktitle}{\emph{Proceedings of the 10th ACM
+  International on Conference on Emerging Networking Experiments and
+  Technologies}} \emph{(\bibinfo{series}{CoNEXT '14})}.
+  \bibinfo{publisher}{ACM}, \bibinfo{address}{New York, NY, USA},
+  \bibinfo{pages}{213--226}.
+\newblock
+\showISBNx{978-1-4503-3279-8}
+\urldef\tempurl%
+\url{https://doi.org/10.1145/2674005.2674989}
+\showDOI{\tempurl}
+
+
+\bibitem[\protect\citeauthoryear{Subramanian, D'Antoni, and Akella}{Subramanian
+  et~al\mbox{.}}{2017}]%
+        {genesis}
+\bibfield{author}{\bibinfo{person}{Kausik Subramanian}, \bibinfo{person}{Loris
+  D'Antoni}, {and} \bibinfo{person}{Aditya Akella}.}
+  \bibinfo{year}{2017}\natexlab{}.
+\newblock \showarticletitle{Genesis: Synthesizing Forwarding Tables for
+  Multi-tenant Networks}. In \bibinfo{booktitle}{\emph{POPL}}. ACM.
+\newblock
+
+
+\bibitem[\protect\citeauthoryear{Subramanian, D'Antoni, and Akella}{Subramanian
+  et~al\mbox{.}}{2018}]%
+        {zeppelin}
+\bibfield{author}{\bibinfo{person}{Kausik Subramanian}, \bibinfo{person}{Loris
+  D'Antoni}, {and} \bibinfo{person}{Aditya Akella}.}
+  \bibinfo{year}{2018}\natexlab{}.
+\newblock \showarticletitle{Synthesis of Fault-Tolerant Distributed Router
+  Configurations}.
+\newblock \bibinfo{journal}{\emph{Proc. ACM Meas. Anal. Comput. Syst.}}
+  \bibinfo{volume}{2}, \bibinfo{number}{1}, Article \bibinfo{articleno}{22}
+  (\bibinfo{date}{April} \bibinfo{year}{2018}), \bibinfo{numpages}{26}~pages.
+\newblock
+\showISSN{2476-1249}
+\urldef\tempurl%
+\url{https://doi.org/10.1145/3179425}
+\showDOI{\tempurl}
+
+
+\bibitem[\protect\citeauthoryear{Yuan, Lin, Alur, and Loo}{Yuan
+  et~al\mbox{.}}{2015}]%
+        {netegg}
+\bibfield{author}{\bibinfo{person}{Yifei Yuan}, \bibinfo{person}{Dong Lin},
+  \bibinfo{person}{Rajeev Alur}, {and} \bibinfo{person}{Boon~Thau Loo}.}
+  \bibinfo{year}{2015}\natexlab{}.
+\newblock \showarticletitle{Scenario-based Programming for SDN Policies}. In
+  \bibinfo{booktitle}{\emph{Proceedings of the 11th ACM Conference on Emerging
+  Networking Experiments and Technologies}} \emph{(\bibinfo{series}{CoNEXT
+  '15})}. \bibinfo{publisher}{ACM}, \bibinfo{address}{New York, NY, USA},
+  Article \bibinfo{articleno}{34}, \bibinfo{numpages}{13}~pages.
+\newblock
+\showISBNx{978-1-4503-3412-9}
+\urldef\tempurl%
+\url{https://doi.org/10.1145/2716281.2836119}
+\showDOI{\tempurl}
+
+
+\bibitem[\protect\citeauthoryear{Zeng, Kazemian, Varghese, and McKeown}{Zeng
+  et~al\mbox{.}}{2012}]%
+        {troubleshooting}
+\bibfield{author}{\bibinfo{person}{H. Zeng}, \bibinfo{person}{P. Kazemian},
+  \bibinfo{person}{G. Varghese}, {and} \bibinfo{person}{N. McKeown}.}
+  \bibinfo{year}{2012}\natexlab{}.
+\newblock \bibinfo{booktitle}{\emph{A Survey on Network Troubleshooting}}.
+\newblock \bibinfo{type}{{T}echnical {R}eport} TR12-HPNG-061012.
+  \bibinfo{institution}{Stanford University}.
+\newblock
+
+
+\end{thebibliography}
